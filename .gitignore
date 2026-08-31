@@ -22,3 +22,7 @@ docs/*
 
 # El monitor en R es código de terceros: se conserva como referencia, no se redistribuye.
 docs/referencia/
+
+# Salida del ETL: se regenera desde data/sources/ con `npm run etl <año>`.
+# Un dato, un lugar: la fuente es data/sources/, esto es derivado.
+public/data/oleada_*.json

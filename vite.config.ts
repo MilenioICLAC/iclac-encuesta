@@ -10,7 +10,11 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5174,
+    // 5173 y 5174 se los lleva mapa_FDI cuando está corriendo, y las tres apps van a
+    // convivir en la misma máquina. `strictPort` para que un choque se vea, en vez de
+    // que Vite salte de puerto en silencio y uno termine mirando la app equivocada.
+    port: 5180,
+    strictPort: true,
     host: true
   },
   test: {

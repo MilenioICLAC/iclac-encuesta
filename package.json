@@ -12,7 +12,8 @@
     "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "sources:inspect": "node scripts/inspect_sources.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "etl": "node scripts/etl.mjs"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",
