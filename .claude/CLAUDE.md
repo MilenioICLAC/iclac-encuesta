@@ -23,10 +23,10 @@ Tres idiomas: español, inglés y chino.
 
 ---
 
-## Los cinco hechos de los datos que hay que saber antes de tocar nada
+## Los seis hechos de los datos que hay que saber antes de tocar nada
 
-Todos verificados el 13-08-2026 contra los archivos de `data/sources/`. Ninguno es evidente y todos
-cambian lo que se puede construir.
+Verificados contra los archivos de `data/sources/`: los cinco primeros el 13-08-2026, el sexto el
+31-08-2026. Ninguno es evidente y todos cambian lo que se puede construir.
 
 ### 1. No es un panel. Son tres cortes transversales
 
@@ -95,6 +95,35 @@ El cruce de dos variables es directamente ficción: región × educación da 99 
 **Consecuencia:** un corte a la vez, nunca dos. **Y agrupar antes de ofrecer**, que es lo que ya hace
 el monitor actual: macrozonas en vez de 16 regiones, y regiones por impacto. Los cruces libres entre
 dos variables están fuera del alcance por esta razón, no por costo.
+
+### 6. El archivo de 2025 trae dos muestras distintas, y los de 2023 y 2024 vienen sin etiquetas
+
+Verificado el 31-08-2026.
+
+**2025.** `Encuesta_data_2025.xlsx` tiene una hoja `labels` (respuestas en texto) y una hoja `data`
+(códigos numéricos). No son dos vistas de la misma tabla: cada una trae 662 personas y **comparten solo
+348 `key`**. En esas 348 todo calza celda a celda, así que son la misma encuesta, pero **dos sorteos
+distintos**. El archivo mismo lo explica: `total_muestra = 1228` casos completos y
+`total_seleccionados = 662`.
+
+La aritmética de la selección: `prop_region` es la participación de cada región dentro de los 1228
+(`prop_region × 1228` da entero en las 16) y `target_region = round(prop_region × 662)`. La submuestra
+**conserva** la forma regional del pozo, no la corrige. Y esa forma está lejos de la población: la
+Región Metropolitana pesa 16,5% cuando es cerca del 40% del país.
+
+**Consecuencia:** ninguna cifra de 2025 se publica hasta que ICLAC diga cuál hoja vale (`C8` en
+`docs/generales/correcciones_cliente.md`). Leer una hoja u otra mueve la opinión sobre China de
+**66,98 a 64,93**. Y no unir nunca las dos hojas por número de fila: solo 10 de 662 filas están
+alineadas posicionalmente. Si hay que cruzarlas, es por `key`.
+
+**2023 y 2024.** El `data_excel.xls` tiene **una sola hoja** con los valores en código numérico; no es
+el archivo de varias hojas que lee el monitor en R (`ICLACsurvey2023.xlsx`, hoja 2 datos y hoja 3 libro
+de variables), que no está entre los archivos recibidos.
+
+- **2023:** el `.dta` salva la oleada, con 24 conjuntos de value labels y el enunciado de cada pregunta.
+  Está en **latin-1, no utf-8**; leerlo como utf-8 falla en la primera tilde.
+- **2024:** **cero** value labels en el `.dta`, y sus variable labels son solo el nombre original de la
+  columna. No hay ninguna fuente de etiquetas legible por máquina para esa oleada.
 
 ---
 

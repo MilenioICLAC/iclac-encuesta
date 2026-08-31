@@ -23,10 +23,11 @@ Tres oleadas, en `data/sources/`:
 
 Cobertura: **Chile**, las 16 regiones. Las tres oleadas son públicas y se descargan del sitio de ICLAC.
 
-**Antes de escribir una línea de código, leer `.claude/CLAUDE.md`.** Documenta cinco cosas que se
+**Antes de escribir una línea de código, leer `.claude/CLAUDE.md`.** Documenta seis cosas que se
 descubrieron mirando estos archivos y que determinan lo que se puede construir: que no es un panel, que
 no hay ponderadores, que el mismo nombre de variable no siempre es la misma pregunta, que los libros de
-códigos no cuadran con sus datos, y hasta dónde aguanta la muestra al cortarla.
+códigos no cuadran con sus datos, hasta dónde aguanta la muestra al cortarla, y que el archivo de 2025 trae dos muestras distintas que no
+coinciden.
 
 ## El monitor que ya existe
 
