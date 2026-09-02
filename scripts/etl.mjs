@@ -12,7 +12,7 @@
 //   libro -> data/sources/<año>/data_stata.dta  (enunciados y etiquetas de respuesta)
 //
 // El .dta se usa solo como libro de códigos. Es la única fuente legible por máquina que
-// llegó de 2023; de 2024 no llegó ninguna. Ver docs/generales/correcciones_cliente.md C9.
+// llegó de 2023; de 2024 no llegó ninguna. Registro interno: C9.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'

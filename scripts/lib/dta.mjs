@@ -6,7 +6,7 @@
 //
 // Existe porque de la oleada 2023 no llegó el export etiquetado de cuatro hojas que sí
 // llegó de 2025, y el .dta es la única fuente legible por máquina de esas etiquetas.
-// Ver `docs/generales/correcciones_cliente.md` C9.
+// Registro interno: C9.
 //
 // Dos cosas del formato que cuestan si no se saben:
 //

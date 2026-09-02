@@ -39,8 +39,9 @@ tiene tres cifras distintas circulando para el mismo dato.
 ## El monitor que ya existe
 
 ICLAC publica hoy https://iclac.cl/monitor-de-opinion-publica/, que embebe una app Shiny alojada en la
-cuenta personal de un tercero. Su código está en `referencia/monitor_r/` **como especificación del
-tablero, no como dependencia**. No es código nuestro y esa carpeta se borra antes del traspaso.
+cuenta personal de un tercero. Su código lo escribió Bastián Olea Herrera y sirve como **especificación
+del tablero, no como dependencia**: no es código nuestro y nada de acá lo ejecuta ni lo importa. Se
+guarda en la documentación interna, en `encuesta/referencia/monitor_r/`.
 
 ## Cómo está organizado
 
@@ -48,12 +49,17 @@ tablero, no como dependencia**. No es código nuestro y esa carpeta se borra ant
 data/sources/    las bases de las tres oleadas; empezar por su README.md
 data/schema/     el contrato de datos (se define en E2)
 scripts/         ETL y validadores
-docs/            documentación interna, ver docs/README.md
-referencia/      el monitor en R; temporal, se borra antes del traspaso
 ```
 
-`.claude/CLAUDE.md` explica **por qué** las decisiones son las que son. `docs/estado.md` dice qué falta
-y de quién depende.
+`.claude/CLAUDE.md` explica **por qué** las decisiones son las que son: los hechos de los datos que
+cuesta caro volver a descubrir.
+
+La documentación interna del proyecto vive **fuera de este repositorio**, en `la documentación interna`
+(privado), carpeta `encuesta/`. Ahí están el estado del proyecto, el devlog, la cola de lo que
+hay que pedirle o decirle a ICLAC, los planes por sprint y el código del monitor en R. **Los
+identificadores `C<n>` que aparecen en comentarios del código** (por ejemplo `C9`, `C10`) son entradas
+de esa cola de correcciones; el hecho siempre está escrito en el comentario, la entrada solo agrega el
+contexto.
 
 ## Traspaso
 

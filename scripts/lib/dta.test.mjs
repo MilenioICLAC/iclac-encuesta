@@ -81,7 +81,7 @@ describe('parser de CSV', () => {
 // El conjunto de etiquetas de comuna llegó con toda ocurrencia de "vi" borrada. Se
 // documenta, no se parcha: reinsertarla exigiría una lista oficial de comunas que este
 // repositorio no tiene, y sería una reparación con criterio, no una corrección
-// determinista. Ver docs/generales/correcciones_cliente.md C10.
+// determinista. Registro interno: C10.
 describe('el defecto conocido de las etiquetas de comuna (2023)', () => {
   const comuna = buscar('COMUNA').categorias
 

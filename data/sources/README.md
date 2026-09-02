@@ -45,8 +45,8 @@ Contrastes verificados, útiles para saber sobre qué archivo está calculada un
 | China 2025 = **67,0** | `Encuesta_data_2025.xlsx`, hoja `labels`, 662 casos. **Es lo que muestra el sitio hoy** |
 | China 2025 = **64,9** | la combinada anterior al 01-09, armada sobre la hoja `data` |
 
-Las tres últimas describen la misma oleada. Cuál se publica es decisión pendiente: ver `C8` en
-`docs/generales/correcciones_cliente.md`.
+Las tres últimas describen la misma oleada. Cuál se publica es decisión pendiente: ver `C8` en la cola
+de correcciones al cliente, en la documentación interna.
 
 ## Libros de códigos
 

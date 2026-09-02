@@ -1,8 +1,9 @@
 # CLAUDE.md — Visualizador de la encuesta ICLAC
 
 Contexto para quien retome este repositorio, sea persona o agente. Acá van **las reglas que no
-caducan**: lo que se descubrió mirando los datos y que cuesta caro volver a descubrir. Lo que falta
-hacer vive en `docs/estado.md`.
+caducan**: lo que se descubrió mirando los datos y que cuesta caro volver a descubrir. **Lo que falta
+hacer vive fuera de este repositorio**, en la documentación interna: `la documentación interna` (privado),
+`encuesta/docs/estado.md`.
 
 ## Qué es
 
@@ -16,8 +17,8 @@ año. Dos tramos en una sola página, en este orden:
 
 El tablero **no se inventa**: reconstruye el monitor que ICLAC ya publica en
 https://iclac.cl/monitor-de-opinion-publica/, hoy una app Shiny alojada en la cuenta personal de un
-tercero (`bastianoleah.shinyapps.io/iclac_encuesta/`). Su código está en `docs/referencia/monitor_r/`.
-Reconstruirlo acá es lo que corta esa dependencia.
+tercero (`bastianoleah.shinyapps.io/iclac_encuesta/`). Su código está en la documentación interna,
+`encuesta/referencia/monitor_r/`. Reconstruirlo acá es lo que corta esa dependencia.
 
 Tres idiomas: español, inglés y chino.
 
@@ -71,7 +72,8 @@ con enunciado y categorías idénticas**. Las demás se muestran por oleada, sin
 
 **Y el fallo es invisible para un validador de datos:** si una pregunta conserva su nombre y cambia de
 enunciado, el nombre calza, el tipo calza y los valores son plausibles. Solo lo ve alguien leyendo el
-libro de códigos. Por eso está pendiente el **validador de instrumento** (ver `docs/estado.md`).
+libro de códigos. Por eso está pendiente el **validador de instrumento** (ver `estado.md` §2.1 en la
+documentación interna).
 
 ### 4. Los libros de códigos no cuadran con sus propios datos
 
@@ -214,9 +216,9 @@ informada». Filtrar los números redondos borraría dos categorías legítimas.
 
 ## Lo que hay que saber del monitor en R
 
-Código en `referencia/monitor_r/`. **No es nuestro**: lo escribió Bastián Olea Herrera. Sirve como
-especificación, no como dependencia, y la carpeta se borra antes del traspaso. Ver
-`referencia/README.md`.
+Código en `encuesta/referencia/monitor_r/`, dentro de la documentación interna. **No es nuestro**: lo
+escribió Bastián Olea Herrera. Sirve como especificación, no como dependencia. El inventario figura por
+figura está en `encuesta/docs/sprint_1/paridad_monitor.md`.
 
 - **`funciones.R`** son 27 funciones `iclac_*` de ETL puro (cargar, limpiar, categorizar regiones,
   recodificar edad/educación/ideología, pivotar multi-respuesta, tokenizar texto). Es especificación
@@ -266,4 +268,4 @@ Si hacen falta categóricos acá, se genera su propia paleta con el validador de
 
 ## Dónde está lo que falta
 
-`docs/estado.md`.
+`estado.md`, en `la documentación interna`, carpeta `encuesta/docs/`.
