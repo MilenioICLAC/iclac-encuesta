@@ -1,0 +1,178 @@
+import type { Caso, Encuesta, Variable } from './tipos'
+
+/**
+ * El único lugar donde se calcula un porcentaje.
+ *
+ * Lo usan los módulos del tablero, el recorrido y el explorador. La razón de que sea uno
+ * solo es que hay **dos criterios de denominador circulando en la misma casa**: el monitor
+ * publicado calcula sobre todos los casos, incluidos los que no contestaron, y el Policy
+ * Paper 2023 calcula sobre respuestas efectivas. Nuestro ETL reproduce las dieciocho cifras
+ * del informe con el segundo criterio, y ese es el que se usa acá. Si mañana ICLAC decide
+ * el otro, se cambia en este archivo y en ningún otro.
+ *
+ * `excluidos` existe por `p9`: en 2025 se agregó «No recuerdo» y se llevó al 17 % de la
+ * muestra. Sacarlo del denominador da 74,9 %, que es la cifra que ICLAC publica; dejarlo da
+ * 62,1 %. Las dos son correctas y describen cosas distintas, así que la figura tiene que
+ * declarar cuál usa, y por eso el resultado devuelve `excluidos` para poder mostrarlo.
+ */
+
+export interface Segmento {
+  codigo: number
+  etiqueta: string
+  n: number
+  /** Sobre la base de respuestas efectivas. */
+  porcentaje: number
+}
+
+export interface Agregado {
+  segmentos: Segmento[]
+  /** Denominador: respuestas efectivas, sin perdidos y sin códigos excluidos. */
+  base: number
+  /** Casos sin dato en la columna. */
+  perdidos: number
+  /** Casos con un código que se sacó del denominador a propósito. */
+  excluidos: number
+  /** Casos totales del recorte, antes de descontar nada. */
+  total: number
+}
+
+export interface Resumen {
+  media: number
+  base: number
+  perdidos: number
+  total: number
+}
+
+/** Un corte demográfico del tablero. `null` es «sin corte». */
+export type Corte = string | null
+
+export interface Recorte {
+  /** Oleadas a considerar. Vacío es «todas». */
+  olas: number[]
+  /** Si se descartan las personas que participaron en más de una oleada. */
+  soloIndependientes?: boolean
+}
+
+export function filtrar (encuesta: Encuesta, recorte: Recorte): Caso[] {
+  return encuesta.casos.filter((c) => {
+    if (recorte.olas.length > 0 && !recorte.olas.includes(Number(c.ola))) return false
+    if (recorte.soloIndependientes && Number(c.olas_panelista ?? 1) > 1) return false
+    return true
+  })
+}
+
+function categoriasDe (variable: Variable): Map<number, string> {
+  const m = new Map<number, string>()
+  for (const c of variable.categorias ?? []) m.set(c.codigo, c.etiqueta)
+  return m
+}
+
+/**
+ * Distribución de una variable categórica sobre un conjunto de casos.
+ *
+ * `excluidos` son códigos que salen **del numerador y del denominador**, no solo del
+ * numerador: es la diferencia entre «no lo cuento» y «no existió».
+ */
+export function distribucion (
+  casos: Caso[],
+  variable: Variable,
+  { excluidos = [] as number[] } = {},
+): Agregado {
+  const etiquetas = categoriasDe(variable)
+  const fuera = new Set(excluidos)
+
+  const conteo = new Map<number, number>()
+  let perdidos = 0
+  let excluidosN = 0
+
+  for (const caso of casos) {
+    const v = caso[variable.nombre]
+    if (v === null || v === undefined || v === '') { perdidos++; continue }
+    const codigo = Number(v)
+    if (Number.isNaN(codigo)) { perdidos++; continue }
+    if (fuera.has(codigo)) { excluidosN++; continue }
+    conteo.set(codigo, (conteo.get(codigo) ?? 0) + 1)
+  }
+
+  const base = [...conteo.values()].reduce((s, n) => s + n, 0)
+
+  const segmentos = [...conteo.entries()]
+    .map(([codigo, n]) => ({
+      codigo,
+      etiqueta: etiquetas.get(codigo) ?? `código ${codigo}`,
+      n,
+      porcentaje: base > 0 ? (100 * n) / base : 0,
+    }))
+    .sort((a, b) => a.codigo - b.codigo)
+
+  return { segmentos, base, perdidos, excluidos: excluidosN, total: casos.length }
+}
+
+/** Porcentaje que representan ciertos códigos, sobre respuestas efectivas. */
+export function proporcion (
+  casos: Caso[],
+  variable: Variable,
+  codigos: number[],
+  opciones: { excluidos?: number[] } = {},
+): { porcentaje: number, base: number } {
+  const d = distribucion(casos, variable, opciones)
+  const n = d.segmentos.filter((s) => codigos.includes(s.codigo)).reduce((s, x) => s + x.n, 0)
+  return { porcentaje: d.base > 0 ? (100 * n) / d.base : 0, base: d.base }
+}
+
+/** Media de una variable numérica, sobre los casos que tienen dato. */
+export function media (casos: Caso[], nombre: string): Resumen {
+  const valores: number[] = []
+  for (const caso of casos) {
+    const v = caso[nombre]
+    if (typeof v === 'number' && !Number.isNaN(v)) valores.push(v)
+  }
+  return {
+    media: valores.length > 0 ? valores.reduce((a, b) => a + b, 0) / valores.length : NaN,
+    base: valores.length,
+    perdidos: casos.length - valores.length,
+    total: casos.length,
+  }
+}
+
+/**
+ * La misma variable, ola por ola. Devuelve `null` en las oleadas donde la pregunta no se
+ * hizo, que **no es lo mismo que cero**: es la única señal de que ahí no hubo pregunta, y
+ * por eso la serie tiene que poder distinguirlas.
+ */
+export function serie (
+  encuesta: Encuesta,
+  variable: Variable,
+  calcular: (casos: Caso[]) => number,
+  recorte: Omit<Recorte, 'olas'> = {},
+): { ola: number, valor: number | null, base: number }[] {
+  return encuesta.olas.map((ola) => {
+    if (!variable.olas.includes(ola)) return { ola, valor: null, base: 0 }
+    const casos = filtrar(encuesta, { ...recorte, olas: [ola] })
+    return { ola, valor: calcular(casos), base: casos.length }
+  })
+}
+
+/** Corta un conjunto de casos por una variable de caracterización. */
+export function porGrupo (
+  casos: Caso[],
+  corte: string,
+  variables: Variable[],
+): { codigo: number, etiqueta: string, casos: Caso[] }[] {
+  const variable = variables.find((v) => v.nombre === corte)
+  const etiquetas = variable ? categoriasDe(variable) : new Map<number, string>()
+
+  const grupos = new Map<number, Caso[]>()
+  for (const caso of casos) {
+    const v = caso[corte]
+    if (v === null || v === undefined || v === '') continue
+    const codigo = Number(v)
+    if (Number.isNaN(codigo)) continue
+    if (!grupos.has(codigo)) grupos.set(codigo, [])
+    grupos.get(codigo)!.push(caso)
+  }
+
+  return [...grupos.entries()]
+    .map(([codigo, casos]) => ({ codigo, etiqueta: etiquetas.get(codigo) ?? `código ${codigo}`, casos }))
+    .sort((a, b) => a.codigo - b.codigo)
+}

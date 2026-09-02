@@ -13,7 +13,8 @@
     "sources:inspect": "node scripts/inspect_sources.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "etl": "node scripts/etl.mjs"
+    "etl": "node scripts/etl.mjs",
+    "etl:combinada": "node scripts/etl_combinada.mjs"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

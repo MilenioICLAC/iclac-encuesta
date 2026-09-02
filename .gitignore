@@ -17,6 +17,9 @@ __MACOSX/
 # Salida del ETL: se regenera desde data/sources/ con `npm run etl <año>`.
 # Un dato, un lugar: la fuente es data/sources/, esto es derivado.
 public/data/oleada_*.json
+# Salida del ETL: se regenera con `npm run etl:combinada` y la construccion la
+# rehace, asi que versionarla solo garantiza que se desincronice de sus fuentes.
+public/data/encuesta.json
 
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
