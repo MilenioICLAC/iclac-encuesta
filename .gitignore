@@ -14,15 +14,10 @@ dist/
 Thumbs.db
 __MACOSX/
 
-# Documentación: local por defecto, igual que en mapa_FDI.
-# Se versionan solo los dos documentos que el cliente necesita al recibir el repositorio.
-docs/*
-!docs/estado.md
-!docs/traspaso.md
-
-# El monitor en R es código de terceros: se conserva como referencia, no se redistribuye.
-docs/referencia/
-
 # Salida del ETL: se regenera desde data/sources/ con `npm run etl <año>`.
 # Un dato, un lugar: la fuente es data/sources/, esto es derivado.
 public/data/oleada_*.json
+
+# docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
+# máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
+# no al escribirlas. Ver docs/README.md y referencia/README.md.
