@@ -227,6 +227,30 @@ export function procesar () {
     // solapamiento sin permitir seguir a nadie.
     caso.olas_panelista = typeof f.olas_panelista === 'number' ? f.olas_panelista : 1
 
+    // Educación en cuatro niveles y nivel socioeconómico en cinco. Las categorías originales
+    // son diez y siete, y sus grupos más chicos tienen 7 y 35 casos: un porcentaje sobre siete
+    // personas no dice nada, y diez colores en una figura tampoco. Es la misma regla que ya
+    // aplica a las regiones: agrupar antes de ofrecer.
+    if (typeof f.educacion === 'number' && f.educacion <= 9) {
+      caso.educacion_rec = f.educacion <= 4
+        ? 'Media incompleta o menos'
+        : f.educacion === 5
+          ? 'Media completa'
+          : f.educacion <= 7
+            ? 'Técnica o universitaria incompleta'
+            : 'Universitaria completa o más'
+    }
+
+    if (typeof f.nse === 'number' && f.nse <= 7) {
+      caso.nse_rec = f.nse <= 3 ? 'AB · C1' : f.nse === 4 ? 'C2' : f.nse === 5 ? 'C3' : f.nse === 6 ? 'D' : 'E'
+    }
+
+    // Edad en cinco tramos: el ramo de color no distingue más de seis pasos, y el tramo 0-17
+    // de la variable original está vacío.
+    if (typeof f.edadr === 'number' && f.edadr >= 2) {
+      caso.edad_rec = f.edadr <= 3 ? '18 a 34' : f.edadr === 4 ? '35 a 44' : f.edadr === 5 ? '45 a 54' : f.edadr === 6 ? '55 a 64' : '65 o más'
+    }
+
     // Ideología en tres tramos. La escala cruda de 1 a 10 no sirve como corte: diez grupos
     // en una figura son ilegibles, y varios quedan con menos de cien casos. El monitor
     // tampoco la usa cruda, corta en tres.

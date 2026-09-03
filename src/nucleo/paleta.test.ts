@@ -1,0 +1,59 @@
+import { describe, it, expect } from 'vitest'
+import { IDENTIDAD, IDENTIDAD_CONTIGUA, ORDEN, SEMANTICOS, pasosDeOrden } from './paleta'
+
+/**
+ * La paleta pasó por el validador de la skill `dataviz`, que no se puede correr desde acá.
+ * Estas pruebas fijan **las consecuencias de lo que dijo**, para que un cambio de colores no
+ * las rompa en silencio:
+ *
+ * - Tres slots de identidad es el tope para figuras donde cualquier par de marcas puede
+ *   tocarse. Con cuatro, magenta y verde azulado colapsan bajo deuteranopía a ΔE 0,9.
+ * - Seis pasos es el tope de la rampa de orden. Con siete, dos pasos contiguos quedan a
+ *   ΔL 0,056 y dejan de distinguirse.
+ * - Ningún color se cicla: dos grupos con el mismo color en la misma figura es el defecto
+ *   que la paleta viene a evitar.
+ */
+
+describe('la paleta', () => {
+  it('mantiene el tope de tres identidades para marcas superpuestas', () => {
+    expect(IDENTIDAD).toHaveLength(3)
+    expect(new Set(IDENTIDAD).size).toBe(3)
+  })
+
+  it('mantiene el tope de seis pasos en la rampa de orden', () => {
+    expect(ORDEN.length).toBeLessThanOrEqual(6)
+    expect(new Set(ORDEN).size).toBe(ORDEN.length)
+  })
+
+  it('no repite colores en ningún corte de hasta seis grupos', () => {
+    for (let n = 1; n <= ORDEN.length; n++) {
+      const pasos = pasosDeOrden(n)
+      expect(pasos).toHaveLength(n)
+      expect(new Set(pasos).size, `con ${n} grupos hay colores repetidos`).toBe(n)
+    }
+  })
+
+  it('usa los extremos de la rampa cuando hay más de un grupo', () => {
+    // Sin esto, dos grupos quedarían con tonos casi iguales y el orden no se vería.
+    for (const n of [2, 3, 4, 5]) {
+      const pasos = pasosDeOrden(n)
+      expect(pasos[0]).toBe(ORDEN[0])
+      expect(pasos[n - 1]).toBe(ORDEN[ORDEN.length - 1])
+    }
+  })
+
+  it('empieza la paleta contigua con el mismo tono que la de identidad', () => {
+    // Que el primer color sea siempre el mismo es lo que hace que la página se lea como una
+    // sola cosa, en vez de como figuras sueltas de colores distintos.
+    expect(IDENTIDAD_CONTIGUA[0]).toBe(IDENTIDAD[0])
+  })
+
+  it('amarra los colores con significado a la etiqueta exacta que trae la base', () => {
+    expect(Object.keys(SEMANTICOS)).toEqual([
+      'A favor de China',
+      'A favor de EE. UU.',
+      'Mantener distancia de ambos',
+      'Relacionarse con ambos',
+    ])
+  })
+})

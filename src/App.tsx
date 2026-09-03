@@ -14,6 +14,7 @@ import Nubes from './componentes/Nubes'
 import Densidad from './componentes/Densidad'
 import Descargas from './componentes/Descargas'
 import { escalaDe } from './nucleo/escala'
+import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
 
@@ -205,14 +206,17 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
             evaluado de los cinco.
           </p>
           <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-            {termometro.map((t, i) => (
+            {/* Cinco paneles, uno por país, cada uno con su título. En paneles separados el
+                color no carga identidad —el título ya la carga— así que van todos del mismo,
+                que además evita el problema de cinco hues superpuestos. */}
+            {termometro.map((t) => (
               <Trazo
                 key={t.nombre}
                 puntos={t.puntos}
                 escala={escala}
                 unidad="media"
                 etiqueta={t.pais}
-                color={['#00776E', '#0176AF', '#7FBFB8', '#B8D8D4', '#F56A0D'][i]}
+                color={IDENTIDAD[0]}
               />
             ))}
           </div>
@@ -241,8 +245,8 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
           </p>
           <div className="mt-2 grid gap-x-6 sm:grid-cols-3">
             <Serie puntos={noAlineado} unidad="porcentaje" etiqueta="No alineamiento" />
-            <Serie puntos={proChina} unidad="porcentaje" etiqueta="A favor de China" color="#F56A0D" />
-            <Serie puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE.UU." color="#0176AF" />
+            <Serie puntos={proChina} unidad="porcentaje" etiqueta="A favor de China" color={SEMANTICOS['A favor de China']} />
+            <Serie puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE. UU." color={SEMANTICOS['A favor de EE. UU.']} />
           </div>
           <p className="mt-2 border-l-2 border-amber-400 bg-amber-50 px-3 py-2 text-xs leading-snug text-gray-700">
             <strong>Difiere de la guía.</strong> El documento de ICLAC describe este hallazgo como
@@ -480,7 +484,7 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
           <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
-          <li>Falta la paleta categórica propia y los tres idiomas: hoy solo español.</li>
+          <li>Falta el sitio en inglés y en chino: hoy solo español, y los textos viven en el código.</li>
           <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
         </ul>
       </div>

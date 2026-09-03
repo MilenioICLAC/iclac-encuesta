@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Caso, Encuesta } from '../nucleo/tipos'
 import { filtrar, media, regresion } from '../nucleo/agregar'
+import { IDENTIDAD, NEUTRO } from '../nucleo/paleta'
 import { decimal, numero } from '../locale'
 
 /**
@@ -28,7 +29,11 @@ const ALTO = 210
 const PAD = { arriba: 12, abajo: 30, izquierda: 30, derecha: 6 }
 const ANCHO = 320
 const ESCALA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-const COLOR_OLA: Record<number, string> = { 2023: '#00544D', 2024: '#00A89C', 2025: '#F56A0D' }
+/**
+ * Tres líneas que se cruzan en el mismo lienzo: cualquier par puede tocarse, así que aplica la
+ * comprobación de todos los pares, y ahí la paleta topa justo en tres.
+ */
+const COLOR_OLA: Record<number, string> = { 2023: IDENTIDAD[0], 2024: IDENTIDAD[1], 2025: IDENTIDAD[2] }
 
 interface Props {
   encuesta: Encuesta
@@ -79,16 +84,16 @@ export default function Ideologia ({ encuesta, olas, soloIndependientes, variabl
             {verAjuste && s.ajuste && (
               <polyline
                 points={s.ajuste.puntos.map((q) => `${x(q.x)},${y(q.y)}`).join(' ')}
-                fill="none" stroke={COLOR_OLA[s.ola] ?? '#666'} strokeWidth="1.2" strokeDasharray="4 3" opacity="0.9"
+                fill="none" stroke={COLOR_OLA[s.ola] ?? NEUTRO} strokeWidth="1.2" strokeDasharray="4 3" opacity="0.9"
               />
             )}
             <polyline
               points={s.puntos.filter((p) => p.valor !== null).map((p) => `${x(p.p)},${y(p.valor!)}`).join(' ')}
-              fill="none" stroke={COLOR_OLA[s.ola] ?? '#666'} strokeWidth="1.8" strokeLinecap="round"
+              fill="none" stroke={COLOR_OLA[s.ola] ?? NEUTRO} strokeWidth="1.8" strokeLinecap="round"
               opacity={verAjuste ? 0.35 : 1}
             />
             {s.puntos.filter((p) => p.valor !== null).map((p) => (
-              <circle key={p.p} cx={x(p.p)} cy={y(p.valor!)} r="2.4" fill={COLOR_OLA[s.ola] ?? '#666'} opacity={verAjuste ? 0.35 : 1}>
+              <circle key={p.p} cx={x(p.p)} cy={y(p.valor!)} r="2.4" fill={COLOR_OLA[s.ola] ?? NEUTRO} opacity={verAjuste ? 0.35 : 1}>
                 <title>{`${s.ola} · ideología ${p.p}: ${decimal(p.valor!)} puntos sobre ${numero(p.n)} personas`}</title>
               </circle>
             ))}
@@ -107,7 +112,7 @@ export default function Ideologia ({ encuesta, olas, soloIndependientes, variabl
           const dif = diferenciaExtremos(s.puntos)
           return (
             <li key={s.ola} className="flex items-center gap-1.5 text-xs text-gray-600 tabular-nums">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: COLOR_OLA[s.ola] ?? '#666' }} />
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: COLOR_OLA[s.ola] ?? NEUTRO }} />
               {s.ola}
               {dif !== null && (
                 <span className={dif < 0 ? 'text-amber-700' : undefined}>

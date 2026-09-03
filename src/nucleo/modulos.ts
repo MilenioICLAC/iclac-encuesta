@@ -337,9 +337,14 @@ export const TERMOMETRO = [
 export const CORTES = [
   { nombre: null, etiqueta: 'Sin corte', orden: undefined },
   { nombre: 'sexo', etiqueta: 'Género', orden: undefined },
-  { nombre: 'edadr', etiqueta: 'Edad', orden: undefined },
-  { nombre: 'educacion', etiqueta: 'Educación', orden: undefined },
-  { nombre: 'nse', etiqueta: 'Nivel socioeconómico', orden: undefined },
+  // Los tres van agrupados, no con sus categorías originales. Educación venía con diez
+  // niveles y su grupo más chico tenía siete casos; nivel socioeconómico con siete. Un
+  // porcentaje sobre siete personas no dice nada, y la rampa de color no distingue más de
+  // seis pasos. Es la misma regla que obliga a ofrecer macrozonas en vez de dieciséis
+  // regiones: agrupar antes de ofrecer.
+  { nombre: 'edad_rec', etiqueta: 'Edad', orden: ['18 a 34', '35 a 44', '45 a 54', '55 a 64', '65 o más'] },
+  { nombre: 'educacion_rec', etiqueta: 'Educación', orden: ['Media incompleta o menos', 'Media completa', 'Técnica o universitaria incompleta', 'Universitaria completa o más'] },
+  { nombre: 'nse_rec', etiqueta: 'Nivel socioeconómico', orden: ['AB · C1', 'C2', 'C3', 'D', 'E'] },
   // En tres tramos, no la escala cruda de 1 a 10: diez grupos en una figura son ilegibles.
   { nombre: 'p3_3', etiqueta: 'Ideología', orden: ['Izquierda', 'Centro', 'Derecha'] },
   // Los dos territoriales son derivados del ETL y sus valores son texto, así que llevan su

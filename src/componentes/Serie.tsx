@@ -1,4 +1,5 @@
 import { escalaDe } from '../nucleo/escala'
+import { IDENTIDAD } from '../nucleo/paleta'
 import { decimal, numero, porcentaje } from '../locale'
 
 /**
@@ -32,13 +33,13 @@ interface Props {
 const ALTO = 132
 const PAD_Y = 18
 
-export default function Serie ({ puntos, unidad, etiqueta, color = '#00776E' }: Props) {
+export default function Serie ({ puntos, unidad, etiqueta, color = IDENTIDAD[0] }: Props) {
   const escala = escalaDe([puntos], unidad)
   return <Trazo puntos={puntos} escala={escala} unidad={unidad} etiqueta={etiqueta} color={color} />
 }
 
 export function Trazo ({
-  puntos, escala, unidad, etiqueta, color = '#00776E', mostrarEjeX = true,
+  puntos, escala, unidad, etiqueta, color = IDENTIDAD[0], mostrarEjeX = true,
 }: Props & { escala: { min: number, max: number }, mostrarEjeX?: boolean }) {
   const ancho = 100
   const x = (i: number) => (puntos.length === 1 ? ancho / 2 : (i * ancho) / (puntos.length - 1))

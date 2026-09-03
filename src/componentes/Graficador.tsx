@@ -32,7 +32,8 @@ interface Props {
 
 /** Las de caracterización no se grafican: son los cortes, no las preguntas. */
 const CARACTERIZACION = new Set([
-  'sexo', 'edad', 'edadr', 'educacion', 'region', 'nse', 'region_macrozona', 'region_impacto', 'p3_3',
+  'sexo', 'edad', 'edadr', 'educacion', 'region', 'nse', 'region_macrozona', 'region_impacto',
+  'p3_3', 'edad_rec', 'educacion_rec', 'nse_rec',
   'olas_panelista', 'ola',
 ])
 

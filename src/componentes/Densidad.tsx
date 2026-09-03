@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Caso, Encuesta } from '../nucleo/tipos'
 import { porGrupo } from '../nucleo/agregar'
 import { CORTES } from '../nucleo/modulos'
+import { pasosDeOrden } from '../nucleo/paleta'
 import { numero } from '../locale'
 
 /**
@@ -24,7 +25,7 @@ const ALTO = 150
 // El margen lateral tiene que alcanzar para la mitad de «100», que va centrada bajo el
 // extremo derecho del eje. Con 6 se salía 2 px del lienzo.
 const PAD = { arriba: 8, abajo: 20, izquierda: 10, derecha: 12 }
-const COLORES = ['#00544D', '#00A89C', '#F56A0D', '#0176AF', '#7C7B7B', '#A344BA', '#E5087D']
+
 
 interface Props {
   encuesta: Encuesta
@@ -62,6 +63,10 @@ export default function Densidad ({ encuesta, casos, corte, variable }: Props) {
     return <p className="py-4 text-sm italic text-gray-500">No hay respuestas suficientes para este recorte.</p>
   }
 
+  // Curvas superpuestas: cualquier par puede tocarse. Con colores de identidad el validador
+  // topa en tres series, y los cortes tienen hasta seis, así que va la rampa de orden, que es
+  // además lo correcto porque los cortes están ordenados.
+  const colores = pasosDeOrden(series.length)
   const tope = Math.max(...series.flatMap((s) => s.curva.map((p) => p.y)))
   const x = (v: number) => PAD.izquierda + (v / 100) * (ANCHO - PAD.izquierda - PAD.derecha)
   const y = (v: number) => ALTO - PAD.abajo - (v / tope) * (ALTO - PAD.arriba - PAD.abajo)
@@ -80,12 +85,12 @@ export default function Densidad ({ encuesta, casos, corte, variable }: Props) {
           <g key={s.etiqueta}>
             <path
               d={`M ${x(0)},${y(0)} ${s.curva.map((p) => `L ${x(p.x)},${y(p.y)}`).join(' ')} L ${x(100)},${y(0)} Z`}
-              fill={COLORES[i % COLORES.length]}
+              fill={colores[i]}
               fillOpacity={apilar ? 0.22 : 0.1}
             />
             <polyline
               points={s.curva.map((p) => `${x(p.x)},${y(p.y)}`).join(' ')}
-              fill="none" stroke={COLORES[i % COLORES.length]} strokeWidth="1.6"
+              fill="none" stroke={colores[i]} strokeWidth="1.6"
             />
           </g>
         ))}
@@ -96,7 +101,7 @@ export default function Densidad ({ encuesta, casos, corte, variable }: Props) {
           <ul className="flex flex-wrap gap-x-3 gap-y-1">
             {series.map((s, i) => (
               <li key={s.etiqueta} className="flex items-center gap-1.5 text-xs text-gray-600">
-                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: COLORES[i % COLORES.length] }} />
+                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: colores[i] }} />
                 <span className="truncate">{s.etiqueta}</span>
                 <span className="tabular-nums text-gray-400">{numero(s.n)}</span>
               </li>

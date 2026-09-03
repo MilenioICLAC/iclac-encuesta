@@ -1,4 +1,5 @@
 import type { Multirespuesta } from '../nucleo/agregar'
+import { IDENTIDAD } from '../nucleo/paleta'
 import { numero, porcentaje } from '../locale'
 
 /**
@@ -40,8 +41,9 @@ export default function Menciones ({ datos, contraste }: Props) {
               <span className="truncate text-xs text-gray-600" title={m.opcion}>{m.opcion}</span>
               <div className="relative h-4 rounded-sm bg-gray-100">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-sm bg-brand-dark"
-                  style={{ width: `${(100 * m.porcentaje) / tope}%` }}
+                  className="absolute inset-y-0 left-0 rounded-sm"
+                  
+                  style={{ width: `${(100 * m.porcentaje) / tope}%`, backgroundColor: IDENTIDAD[0] }}
                 />
                 {contraste && otro && (
                   // El contraste va como una marca vertical, no como una segunda barra: la

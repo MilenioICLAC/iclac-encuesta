@@ -1,5 +1,6 @@
 import type { Caso, Encuesta, Variable } from '../nucleo/tipos'
 import { distribucion } from '../nucleo/agregar'
+import { IDENTIDAD_CONTIGUA } from '../nucleo/paleta'
 import { numero, porcentaje } from '../locale'
 
 /**
@@ -20,11 +21,12 @@ import { numero, porcentaje } from '../locale'
  */
 
 /**
- * Escala de un solo tono, de oscuro a claro. El paso más claro tiene que seguir leyéndose
- * contra el fondo blanco: con `#E8F1F0` la última categoría desaparecía y las barras parecían
- * no llegar al 100 %, cuando en realidad sí llegaban.
+ * Colores de identidad, no una rampa. Las cuatro categorías de `p8` (inversor, comprador,
+ * proveedor, competidor) son nominales: no hay orden entre ellas, y una rampa insinuaría uno.
+ * Son segmentos apilados, así que solo se tocan los vecinos y la comprobación de adyacencia
+ * alcanza.
  */
-const COLORES = ['#00544D', '#00877E', '#4FB3A9', '#A5D5CF', '#D2E8E5']
+const COLORES = IDENTIDAD_CONTIGUA
 const MINIMO_FIABLE = 30
 
 interface Props {
