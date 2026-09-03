@@ -16,7 +16,7 @@ import { media, proporcion } from './agregar'
 
 export type Ancho = 'tercio' | 'medio' | 'completo'
 
-export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region'
+export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region' | 'ideologia'
 
 export interface Modulo {
   id: string
@@ -48,6 +48,16 @@ export const MODULOS: Modulo[] = [
     forma: 'serie-media',
   },
 
+  {
+    id: 'ideologia',
+    bloque: 'potencias',
+    titulo: 'Opinión sobre China según ideología',
+    bajada: 'Una línea por oleada, porque el gradiente no es el mismo en las tres.',
+    variable: 'p5_1_val',
+    ancho: 'medio',
+    forma: 'ideologia',
+    advertencia: 'El hallazgo de que la evaluación cae hacia la derecha es de 2023, con 14,5 puntos entre los extremos. En 2024 se invierte (la derecha evalúa mejor, por 4,3 puntos) y en 2025 queda en 5,7. Juntar las tres oleadas lo hace desaparecer, así que la figura las separa.',
+  },
   {
     id: 'democracia',
     bloque: 'potencias',

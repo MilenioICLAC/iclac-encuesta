@@ -9,6 +9,7 @@ import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
 import Serie, { Trazo } from './componentes/Serie'
 import Graficador from './componentes/Graficador'
+import Ideologia from './componentes/Ideologia'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
@@ -93,7 +94,13 @@ export default function App () {
               onSoloIndependientes={setSoloIndependientes}
               n={casos.length}
             />
-            <Tablero encuesta={encuesta} casos={casos} corte={corte} soloIndependientes={soloIndependientes} />
+            <Tablero
+              encuesta={encuesta}
+              casos={casos}
+              corte={corte}
+              soloIndependientes={soloIndependientes}
+              olas={olas}
+            />
             <Graficador
               encuesta={encuesta}
               casos={casos}
@@ -253,11 +260,12 @@ function Tramo ({ titulo, children }: { titulo: string, children: React.ReactNod
   )
 }
 
-function Tablero ({ encuesta, casos, corte, soloIndependientes }: {
+function Tablero ({ encuesta, casos, corte, soloIndependientes, olas }: {
   encuesta: Encuesta
   casos: ReturnType<typeof filtrar>
   corte: string | null
   soloIndependientes: boolean
+  olas: number[]
 }) {
   return (
     <section className="mx-auto max-w-5xl px-4 py-10">
@@ -299,6 +307,7 @@ function Tablero ({ encuesta, casos, corte, soloIndependientes }: {
                     casos={casos}
                     corte={corte}
                     soloIndependientes={soloIndependientes}
+                    olas={olas}
                   />
                 )
               })}
@@ -311,7 +320,7 @@ function Tablero ({ encuesta, casos, corte, soloIndependientes }: {
 }
 
 function Figura ({
-  definicion, variable, encuesta, casos, corte, soloIndependientes,
+  definicion, variable, encuesta, casos, corte, soloIndependientes, olas,
 }: {
   definicion: typeof MODULOS[number]
   variable: NonNullable<ReturnType<typeof variableDe>>
@@ -319,10 +328,13 @@ function Figura ({
   casos: ReturnType<typeof filtrar>
   corte: string | null
   soloIndependientes: boolean
+  olas: number[]
 }) {
   // Con corte activo la figura muestra la distribución por grupo; sin corte, la serie por
   // oleada. Son dos preguntas distintas y no tiene sentido responder las dos a la vez.
-  if (corte && definicion.forma !== 'por-region') {
+  // `por-region` e `ideologia` ya son desagregaciones: aplicarles el corte encima cruzaría
+  // dos variables, que es justo lo que la muestra no aguanta.
+  if (corte && definicion.forma !== 'por-region' && definicion.forma !== 'ideologia') {
     const agregado = distribucion(casos, variable, { excluidos: definicion.excluidos })
     const orden = CORTES.find((c) => c.nombre === corte)?.orden
     const grupos = porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({
@@ -332,6 +344,20 @@ function Figura ({
     return (
       <Modulo definicion={definicion} variable={variable} base={agregado.base}>
         <Distribucion agregado={agregado} grupos={grupos} />
+      </Modulo>
+    )
+  }
+
+  if (definicion.forma === 'ideologia') {
+    const base = media(casos, definicion.variable).base
+    return (
+      <Modulo definicion={definicion} variable={variable} base={base}>
+        <Ideologia
+          encuesta={encuesta}
+          olas={olas}
+          soloIndependientes={soloIndependientes}
+          variable={definicion.variable}
+        />
       </Modulo>
     )
   }

@@ -235,3 +235,66 @@ export function porGrupo (
   }
   return filas.sort((a, b) => Number(a.clave) - Number(b.clave))
 }
+
+export interface Ajuste {
+  /** Intercepto y pendiente de la recta. */
+  a: number
+  b: number
+  /** Predicción con su intervalo de confianza al 95 %, para cada x pedido. */
+  puntos: { x: number, y: number, inferior: number, superior: number }[]
+  n: number
+  /** Proporción de la varianza explicada. Con una sola variable, suele ser baja. */
+  r2: number
+}
+
+/**
+ * Regresión lineal simple, en forma cerrada.
+ *
+ * Es lo que el monitor actual llama «predicción»: `lm(p5_1_1_value ~ p3)` con
+ * `predict(interval = "confidence")`. Una sola variable explicativa, así que no hace falta
+ * álgebra matricial ni una librería; la fórmula cabe en veinte líneas y se puede auditar.
+ *
+ * **El intervalo es de la media condicional, no de una observación nueva.** Es el que dibuja
+ * el monitor, y es el angosto: dice dónde está el promedio del grupo, no dónde caería la
+ * próxima persona.
+ */
+export function regresion (casos: Caso[], x: string, y: string, xs: number[]): Ajuste | null {
+  const pares: { x: number, y: number }[] = []
+  for (const caso of casos) {
+    const cx = caso[x]
+    const cy = caso[y]
+    if (typeof cx !== 'number' || typeof cy !== 'number') continue
+    if (Number.isNaN(cx) || Number.isNaN(cy)) continue
+    pares.push({ x: cx, y: cy })
+  }
+
+  const n = pares.length
+  if (n < 3) return null
+
+  const mediaX = pares.reduce((s, p) => s + p.x, 0) / n
+  const mediaY = pares.reduce((s, p) => s + p.y, 0) / n
+  const sxx = pares.reduce((s, p) => s + (p.x - mediaX) ** 2, 0)
+  if (sxx === 0) return null
+
+  const sxy = pares.reduce((s, p) => s + (p.x - mediaX) * (p.y - mediaY), 0)
+  const b = sxy / sxx
+  const a = mediaY - b * mediaX
+
+  const residuos = pares.reduce((s, p) => s + (p.y - (a + b * p.x)) ** 2, 0)
+  const syy = pares.reduce((s, p) => s + (p.y - mediaY) ** 2, 0)
+  const varianzaResidual = residuos / (n - 2)
+
+  // 1,96 en vez del cuantil t exacto: con más de 500 casos la diferencia es de milésimas, y
+  // traer una distribución t entera para eso no se justifica. Con n chico esto subestimaría
+  // el intervalo, así que la función exige al menos 30 casos para devolver algo.
+  if (n < 30) return null
+  const z = 1.96
+
+  const puntos = xs.map((xi) => {
+    const y = a + b * xi
+    const error = Math.sqrt(varianzaResidual * (1 / n + (xi - mediaX) ** 2 / sxx))
+    return { x: xi, y, inferior: y - z * error, superior: y + z * error }
+  })
+
+  return { a, b, puntos, n, r2: syy === 0 ? 0 : 1 - residuos / syy }
+}
