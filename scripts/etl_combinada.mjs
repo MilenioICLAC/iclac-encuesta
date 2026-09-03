@@ -18,6 +18,7 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { registros } from './lib/xlsx.mjs'
+import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -60,6 +61,27 @@ const DE_BLOQUE = {
   inversion: ['p19', 'p20', 'p21', 'p22'],
   cotidiana: ['p12', 'p13', 'p14', 'p15', 'p16', 'p17_escala', 'p18', 'p18a', 'p18c', 'p18d', 'p18e', 'p6a_1'],
   vacunas: ['p9', 'p10', 'p11'],
+}
+
+/**
+ * Preguntas de selección múltiple. En la base cada opción es una columna binaria
+ * (`p20_1`, `p20_2`, …) y la etiqueta del diccionario trae la opción y el enunciado pegados:
+ * «del cobre - ¿Cuáles sectores le parece que son más importantes limitar inversiones…?».
+ *
+ * El ETL las agrupa y separa la opción del enunciado, que es lo mismo que hace
+ * `iclac_multiples()` en el monitor en R. Sin esto no se pueden graficar: son las dos
+ * preguntas que cruzan con el repositorio de inversiones.
+ */
+const MULTIPLES = [
+  { id: 'p20', prefijo: 'p20_', titulo: 'Sectores donde limitar la inversión extranjera' },
+  { id: 'p22', prefijo: 'p22_', titulo: 'Efectos observados de la inversión china en su comuna' },
+  { id: 'p18a', prefijo: 'p18a_', titulo: 'Cómo se informa de asuntos internacionales' },
+  { id: 'p6b', prefijo: 'p6b_', titulo: 'Países visitados' },
+]
+
+/** «del cobre - ¿Cuáles sectores…?» → «del cobre». */
+function opcionDe (etiqueta) {
+  return String(etiqueta ?? '').split(' - ')[0].trim().replace(/\s*:$/, '')
 }
 
 function bloqueDe (nombre) {
@@ -116,16 +138,40 @@ export function procesar () {
     })
   }
 
+  // Grupos de selección múltiple, con la opción de cada columna ya separada del enunciado.
+  const multiples = MULTIPLES.map((m) => {
+    const opciones = dicc
+      .map((d) => String(d.variable ?? '').trim())
+      .filter((n) => n.startsWith(m.prefijo) && !n.endsWith('_txt'))
+      .map((n) => {
+        const d = dicc.find((x) => String(x.variable ?? '').trim() === n)
+        return {
+          columna: n,
+          opcion: opcionDe(d.etiqueta),
+          olas: [2023, 2024, 2025].filter((a) => d[`ola_${a}`] === 'sí'),
+        }
+      })
+    return { ...m, opciones }
+  }).filter((m) => m.opciones.length > 0)
+
+  const columnasMultiples = new Set(multiples.flatMap((m) => m.opciones.map((o) => o.columna)))
+
   const publicadas = new Set(variables.map((v) => v.nombre))
   const casos = filas.map((f) => {
     const caso = { ola: f.ola }
     for (const [k, v] of Object.entries(f)) {
-      if (k === 'ola' || !publicadas.has(k)) continue
+      if (k === 'ola' || !(publicadas.has(k) || columnasMultiples.has(k))) continue
       caso[k] = v === '' ? null : v
     }
     // Número de oleadas en que participó la persona. Sin identificador: permite filtrar el
     // solapamiento sin permitir seguir a nadie.
     caso.olas_panelista = typeof f.olas_panelista === 'number' ? f.olas_panelista : 1
+
+    // Agrupaciones de región: la muestra no aguanta cortar por las dieciséis.
+    if (typeof f.region === 'number') {
+      caso.region_macrozona = macrozona(f.region)
+      caso.region_impacto = impacto(f.region)
+    }
     return caso
   })
 
@@ -139,6 +185,12 @@ export function procesar () {
     olas: Object.keys(porOla).map(Number).sort(),
     n: porOla,
     bloques: BLOQUES,
+    multiples,
+    // Regiones de norte a sur, con el número romano fuera del nombre: ocupa eje y no aporta.
+    regiones: (etiquetas.get('region') ? [...etiquetas.get('region').values()] : [])
+      .filter((c) => c.codigo <= 16)
+      .map((c) => ({ codigo: c.codigo, etiqueta: nombreCorto(c.etiqueta), orden: orden(c.codigo) }))
+      .sort((a, b) => a.orden - b.orden),
     variables,
     casos,
   }
@@ -154,6 +206,7 @@ if (esEjecutable) {
 
   console.log(`\nOleadas: ${datos.olas.map((o) => `${o} (${datos.n[o]})`).join(' · ')}`)
   console.log(`Variables publicadas: ${datos.variables.length}`)
+  console.log(`Grupos de selección múltiple: ${datos.multiples.map((m) => `${m.id} (${m.opciones.length})`).join(' · ')}`)
   console.log(`En serie longitudinal: ${datos.variables.filter((v) => v.serie).length}`)
   console.log(`\nEscrito en ${salida}\n`)
 }

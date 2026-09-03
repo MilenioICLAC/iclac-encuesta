@@ -1,4 +1,4 @@
-import type { Caso, Encuesta, Variable } from './tipos'
+import type { Caso, Encuesta, Multiple, Variable } from './tipos'
 
 /**
  * El único lugar donde se calcula un porcentaje.
@@ -153,26 +153,85 @@ export function serie (
   })
 }
 
-/** Corta un conjunto de casos por una variable de caracterización. */
+export interface Mencion {
+  columna: string
+  opcion: string
+  n: number
+  /** Sobre las personas que contestaron la pregunta, no sobre el total de menciones. */
+  porcentaje: number
+}
+
+export interface Multirespuesta {
+  menciones: Mencion[]
+  /** Personas que marcaron al menos una opción. Es el denominador. */
+  base: number
+  /** Personas a las que no se les hizo la pregunta, o que no contestaron. */
+  sinRespuesta: number
+}
+
+/**
+ * Una pregunta de selección múltiple.
+ *
+ * **El porcentaje va sobre personas, no sobre menciones**, y ahí difiere del monitor actual,
+ * que divide por el total de menciones. Con «elegir hasta dos opciones» las dos cifras son
+ * distintas y la de personas es la que se puede leer en voz alta: «el 34 % mencionó
+ * contaminación» tiene sentido, «el 19 % de las menciones fue contaminación» no dice cuánta
+ * gente la eligió. Los porcentajes suman más de 100 a propósito.
+ */
+export function multirespuesta (casos: Caso[], grupo: Multiple, ola?: number): Multirespuesta {
+  const opciones = ola === undefined
+    ? grupo.opciones
+    : grupo.opciones.filter((o) => o.olas.includes(ola))
+
+  const respondieron = casos.filter((c) => opciones.some((o) => c[o.columna] !== null && c[o.columna] !== undefined))
+
+  const menciones = opciones.map((o) => {
+    const n = respondieron.filter((c) => Number(c[o.columna]) === 1).length
+    return {
+      columna: o.columna,
+      opcion: o.opcion,
+      n,
+      porcentaje: respondieron.length > 0 ? (100 * n) / respondieron.length : 0,
+    }
+  }).sort((a, b) => b.n - a.n)
+
+  return { menciones, base: respondieron.length, sinRespuesta: casos.length - respondieron.length }
+}
+
+/**
+ * Corta un conjunto de casos por una variable de caracterización.
+ *
+ * Acepta cortes codificados (género, edad, educación) y cortes de texto (macrozona, impacto),
+ * que son derivados del ETL y no tienen código. `orden` permite fijar la secuencia de los de
+ * texto, donde el alfabético diría cosas falsas: «Alto, Bajo, Medio, Muy alto» sugiere una
+ * escala que no es la que tiene.
+ */
 export function porGrupo (
   casos: Caso[],
   corte: string,
   variables: Variable[],
-): { codigo: number, etiqueta: string, casos: Caso[] }[] {
+  orden?: string[],
+): { clave: string, etiqueta: string, casos: Caso[] }[] {
   const variable = variables.find((v) => v.nombre === corte)
   const etiquetas = variable ? categoriasDe(variable) : new Map<number, string>()
 
-  const grupos = new Map<number, Caso[]>()
+  const grupos = new Map<string, Caso[]>()
   for (const caso of casos) {
     const v = caso[corte]
     if (v === null || v === undefined || v === '') continue
-    const codigo = Number(v)
-    if (Number.isNaN(codigo)) continue
-    if (!grupos.has(codigo)) grupos.set(codigo, [])
-    grupos.get(codigo)!.push(caso)
+    const clave = String(v)
+    if (!grupos.has(clave)) grupos.set(clave, [])
+    grupos.get(clave)!.push(caso)
   }
 
-  return [...grupos.entries()]
-    .map(([codigo, casos]) => ({ codigo, etiqueta: etiquetas.get(codigo) ?? `código ${codigo}`, casos }))
-    .sort((a, b) => a.codigo - b.codigo)
+  const filas = [...grupos.entries()].map(([clave, casos]) => ({
+    clave,
+    etiqueta: etiquetas.get(Number(clave)) ?? clave,
+    casos,
+  }))
+
+  if (orden) {
+    return filas.sort((a, b) => orden.indexOf(a.etiqueta) - orden.indexOf(b.etiqueta))
+  }
+  return filas.sort((a, b) => Number(a.clave) - Number(b.clave))
 }

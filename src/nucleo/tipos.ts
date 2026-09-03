@@ -34,6 +34,29 @@ export interface Bloque {
 
 export type Caso = Record<string, number | string | null>
 
+export interface OpcionMultiple {
+  columna: string
+  opcion: string
+  olas: number[]
+}
+
+/**
+ * Una pregunta de selección múltiple. En la base cada opción es una columna binaria, así que
+ * el grupo es la pregunta y `opciones` son sus alternativas.
+ */
+export interface Multiple {
+  id: string
+  titulo: string
+  opciones: OpcionMultiple[]
+}
+
+export interface Region {
+  codigo: number
+  etiqueta: string
+  /** Posición de norte a sur, para ordenar el eje. */
+  orden: number
+}
+
 export interface Encuesta {
   generado: string
   fuente: string
@@ -41,6 +64,8 @@ export interface Encuesta {
   olas: number[]
   n: Record<string, number>
   bloques: Bloque[]
+  multiples: Multiple[]
+  regiones: Region[]
   variables: Variable[]
   casos: Caso[]
 }

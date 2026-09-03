@@ -16,6 +16,8 @@ import { media, proporcion } from './agregar'
 
 export type Ancho = 'tercio' | 'medio' | 'completo'
 
+export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region'
+
 export interface Modulo {
   id: string
   bloque: string
@@ -25,7 +27,7 @@ export interface Modulo {
   variable: string
   ancho: Ancho
   /** Cómo se lee la figura. */
-  forma: 'serie-media' | 'serie-porcentaje' | 'distribucion'
+  forma: Forma
   /** Para las figuras de porcentaje: qué códigos son «el dato» que se sigue. */
   codigos?: number[]
   /** Códigos que salen del denominador, no solo del numerador. */
@@ -44,6 +46,17 @@ export const MODULOS: Modulo[] = [
     variable: 'p5_1_val',
     ancho: 'completo',
     forma: 'serie-media',
+  },
+
+  {
+    id: 'democracia',
+    bloque: 'potencias',
+    titulo: 'Importa que el socio comercial sea democrático',
+    bajada: 'Cuánto pesa el régimen político del país con el que Chile se relaciona económicamente.',
+    variable: 'p6',
+    ancho: 'medio',
+    forma: 'distribucion',
+    advertencia: 'Cambio menor de redacción entre oleadas: en 2023 dice «gobierno democrático» y en 2025 «democracia». Las categorías son idénticas.',
   },
 
   // --- Bloque dos: Chile entre Washington y Beijing ------------------------
@@ -66,6 +79,16 @@ export const MODULOS: Modulo[] = [
     forma: 'distribucion',
   },
   {
+    id: 'derechos-humanos',
+    bloque: 'geopolitica',
+    titulo: 'Priorizar derechos humanos con China',
+    bajada: 'Si Chile debe poner la agenda de derechos humanos en la relación con China.',
+    variable: 'p37',
+    ancho: 'medio',
+    forma: 'distribucion',
+    advertencia: 'Solo se preguntó en 2025, y después del bloque experimental. No se lee como una medición limpia.',
+  },
+  {
     id: 'posicionamiento',
     bloque: 'geopolitica',
     titulo: 'Cómo debería posicionarse Chile',
@@ -84,6 +107,15 @@ export const MODULOS: Modulo[] = [
     variable: 'p7',
     ancho: 'medio',
     forma: 'distribucion',
+  },
+  {
+    id: 'rol-por-region',
+    bloque: 'territorio',
+    titulo: 'Qué rol cumple China, región por región',
+    bajada: 'La única figura con desagregación territorial completa, y la que justifica el diseño muestral.',
+    variable: 'p8',
+    ancho: 'completo',
+    forma: 'por-region',
   },
   {
     id: 'rol-china',
@@ -106,6 +138,37 @@ export const MODULOS: Modulo[] = [
     forma: 'serie-porcentaje',
     codigos: [1],
     advertencia: 'En 2025 esta pregunta se respondió después del bloque experimental. La posición en un cuestionario largo importa.',
+  },
+
+  {
+    id: 'sectores',
+    bloque: 'inversion',
+    titulo: 'En qué sectores limitar',
+    bajada: 'El cobre primero, la distribución eléctrica tercera pese a concentrar la mayoría de la inversión china.',
+    variable: 'p20',
+    ancho: 'medio',
+    forma: 'multiple',
+    advertencia: 'Solo se preguntó en 2023 y 2024.',
+  },
+  {
+    id: 'efectos',
+    bloque: 'inversion',
+    titulo: 'Efectos de la inversión china en su comuna',
+    bajada: 'Qué observa la gente donde vive, no qué opina en general.',
+    variable: 'p22',
+    ancho: 'medio',
+    forma: 'multiple',
+    advertencia: 'Solo se preguntó en 2023 y 2024.',
+  },
+  {
+    id: 'inversion-extranjera',
+    bloque: 'inversion',
+    titulo: 'Opinión sobre recibir más inversión',
+    bajada: 'En 2023 preguntaba por inversión de China; desde 2024, por inversión extranjera en general.',
+    variable: 'p21',
+    ancho: 'medio',
+    forma: 'distribucion',
+    advertencia: 'No es serie: la pregunta cambió de objeto entre 2023 y 2024, así que las oleadas miden cosas distintas. Además en 2025 se respondió después del bloque experimental.',
   },
 
   // --- Bloque cinco: la China cotidiana ------------------------------------
@@ -151,6 +214,57 @@ export const MODULOS: Modulo[] = [
     advertencia: 'Que baje puede ser una mejora del clima o una caída de la saliencia del tema. No se lee de un lado solo.',
   },
 
+  {
+    id: 'medios',
+    bloque: 'cotidiana',
+    titulo: 'Cómo se informa de asuntos internacionales',
+    bajada: 'Fuentes de información.',
+    variable: 'p18a',
+    ancho: 'medio',
+    forma: 'multiple',
+    advertencia: 'En 2023 no se preguntó, y en 2025 cambió de «cómo te informas sobre China» a «sobre asuntos internacionales»: no es la misma pregunta.',
+  },
+  {
+    id: 'marcas',
+    bloque: 'cotidiana',
+    titulo: 'Puede nombrar tres marcas chinas',
+    bajada: 'Conocimiento espontáneo de empresas chinas.',
+    variable: 'p6a_1',
+    ancho: 'tercio',
+    forma: 'serie-porcentaje',
+    codigos: [1],
+  },
+  {
+    id: 'paises',
+    bloque: 'cotidiana',
+    titulo: 'Países que ha visitado',
+    bajada: 'Contacto directo con los países que la encuesta pide evaluar.',
+    variable: 'p6b',
+    ancho: 'medio',
+    forma: 'multiple',
+    advertencia: 'Solo se preguntó en 2025.',
+  },
+  {
+    id: 'buses',
+    bloque: 'cotidiana',
+    titulo: 'Sabía que los buses eléctricos son chinos',
+    bajada: 'La presencia china que funciona sin ser percibida como tal.',
+    variable: 'p18e',
+    ancho: 'tercio',
+    forma: 'distribucion',
+    advertencia: 'Solo se preguntó en 2025.',
+  },
+  {
+    id: 'electrificacion',
+    bloque: 'cotidiana',
+    titulo: 'Evaluación de la electrificación de la flota',
+    bajada: 'La misma gente que en su mayoría no sabía de dónde venían los buses.',
+    variable: 'p18d',
+    ancho: 'tercio',
+    forma: 'distribucion',
+    advertencia: 'Solo se preguntó en 2025.',
+  },
+
   // --- Bloque seis: vacunas -----------------------------------------------
   {
     id: 'sinovac',
@@ -163,6 +277,24 @@ export const MODULOS: Modulo[] = [
     codigos: [1, 2],
     excluidos: [4],
     advertencia: 'En 2025 se agregó «No recuerdo» y se llevó al 17 % de la muestra. Acá esa categoría sale del denominador: sobre todas las respuestas la cifra baja a 62,1 %. El olvido es en sí mismo un hallazgo.',
+  },
+  {
+    id: 'opinion-sinovac',
+    bloque: 'vacunas',
+    titulo: 'Opinión de las vacunas Sinovac',
+    bajada: 'Qué quedó de la reputación que China ganó proveyendo un bien público concreto.',
+    variable: 'p11',
+    ancho: 'medio',
+    forma: 'distribucion',
+  },
+  {
+    id: 'preferencia-vacuna',
+    bloque: 'vacunas',
+    titulo: 'Hubiese preferido Pfizer o Moderna',
+    bajada: 'De haber estado disponibles en ese momento.',
+    variable: 'p10',
+    ancho: 'medio',
+    forma: 'distribucion',
   },
 ]
 
@@ -184,12 +316,16 @@ export const TERMOMETRO = [
  * es un corte de caracterización.
  */
 export const CORTES = [
-  { nombre: null, etiqueta: 'Sin corte' },
-  { nombre: 'sexo', etiqueta: 'Género' },
-  { nombre: 'edadr', etiqueta: 'Edad' },
-  { nombre: 'educacion', etiqueta: 'Educación' },
-  { nombre: 'nse', etiqueta: 'Nivel socioeconómico' },
-  { nombre: 'p3', etiqueta: 'Ideología' },
+  { nombre: null, etiqueta: 'Sin corte', orden: undefined },
+  { nombre: 'sexo', etiqueta: 'Género', orden: undefined },
+  { nombre: 'edadr', etiqueta: 'Edad', orden: undefined },
+  { nombre: 'educacion', etiqueta: 'Educación', orden: undefined },
+  { nombre: 'nse', etiqueta: 'Nivel socioeconómico', orden: undefined },
+  { nombre: 'p3', etiqueta: 'Ideología', orden: undefined },
+  // Los dos territoriales son derivados del ETL y sus valores son texto, así que llevan su
+  // orden explícito: alfabéticamente, «Alto, Bajo, Medio, Muy alto» sugiere una escala falsa.
+  { nombre: 'region_macrozona', etiqueta: 'Macrozona', orden: ['Norte', 'Centro', 'Centro sur', 'Sur'] },
+  { nombre: 'region_impacto', etiqueta: 'Impacto económico de China', orden: ['Bajo', 'Medio', 'Alto', 'Muy alto'] },
 ]
 
 /** El valor que sigue un módulo, sobre un conjunto de casos ya recortado. */

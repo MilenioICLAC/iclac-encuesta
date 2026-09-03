@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Encuesta } from './nucleo/tipos'
-import { distribucion, filtrar, media, porGrupo, proporcion, serie } from './nucleo/agregar'
-import { MODULOS, TERMOMETRO, variableDe, valorDe } from './nucleo/modulos'
+import { distribucion, filtrar, media, multirespuesta, porGrupo, proporcion, serie } from './nucleo/agregar'
+import { CORTES, MODULOS, TERMOMETRO, variableDe, valorDe } from './nucleo/modulos'
 import BarraEstado from './componentes/BarraEstado'
 import Modulo from './componentes/Modulo'
 import Distribucion from './componentes/Distribucion'
+import Menciones from './componentes/Menciones'
+import PorRegion from './componentes/PorRegion'
 import Serie, { Trazo } from './componentes/Serie'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
@@ -268,6 +270,17 @@ function Tablero ({ encuesta, casos, corte, soloIndependientes }: {
             </h3>
             <div className="grid gap-3 md:grid-cols-6">
               {suyos.map((def) => {
+                if (def.forma === 'multiple') {
+                  return (
+                    <MultipleFigura
+                      key={def.id}
+                      definicion={def}
+                      encuesta={encuesta}
+                      casos={casos}
+                      corte={corte}
+                    />
+                  )
+                }
                 const variable = variableDe(encuesta, def.variable)
                 if (!variable) return null
                 return (
@@ -302,15 +315,25 @@ function Figura ({
 }) {
   // Con corte activo la figura muestra la distribución por grupo; sin corte, la serie por
   // oleada. Son dos preguntas distintas y no tiene sentido responder las dos a la vez.
-  if (corte) {
+  if (corte && definicion.forma !== 'por-region') {
     const agregado = distribucion(casos, variable, { excluidos: definicion.excluidos })
-    const grupos = porGrupo(casos, corte, encuesta.variables).map((g) => ({
+    const orden = CORTES.find((c) => c.nombre === corte)?.orden
+    const grupos = porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({
       etiqueta: g.etiqueta,
       agregado: distribucion(g.casos, variable, { excluidos: definicion.excluidos }),
     }))
     return (
       <Modulo definicion={definicion} variable={variable} base={agregado.base}>
         <Distribucion agregado={agregado} grupos={grupos} />
+      </Modulo>
+    )
+  }
+
+  if (definicion.forma === 'por-region') {
+    const agregado = distribucion(casos, variable)
+    return (
+      <Modulo definicion={definicion} variable={variable} base={agregado.base}>
+        <PorRegion encuesta={encuesta} casos={casos} variable={variable} />
       </Modulo>
     )
   }
@@ -332,6 +355,52 @@ function Figura ({
   return (
     <Modulo definicion={definicion} variable={variable} base={base}>
       <Serie puntos={puntos} unidad={definicion.forma === 'serie-media' ? 'media' : 'porcentaje'} />
+    </Modulo>
+  )
+}
+
+/**
+ * Los módulos de selección múltiple no tienen una variable en el diccionario: su `variable` es
+ * el id de un grupo de columnas binarias. Por eso van por su propio camino, con una ficha
+ * sintética que le da al pie del módulo lo que necesita.
+ */
+function MultipleFigura ({
+  definicion, encuesta, casos, corte,
+}: {
+  definicion: typeof MODULOS[number]
+  encuesta: Encuesta
+  casos: ReturnType<typeof filtrar>
+  corte: string | null
+}) {
+  const grupo = encuesta.multiples.find((m) => m.id === definicion.variable)
+  if (!grupo) return null
+
+  const olas = [...new Set(grupo.opciones.flatMap((o) => o.olas))].sort()
+  const variable = {
+    nombre: grupo.id,
+    etiqueta: grupo.titulo,
+    tipo: 'selección múltiple',
+    olas,
+    serie: false,
+    comparabilidad: null,
+    nota: null,
+    bloque: definicion.bloque,
+    categorias: null,
+  }
+
+  const datos = multirespuesta(casos, grupo)
+
+  // Con corte activo se contrasta contra el primer grupo, en vez de dibujar una barra por
+  // categoría: con nueve opciones y cinco grupos serían cuarenta y cinco barras.
+  const orden = CORTES.find((c) => c.nombre === corte)?.orden
+  const grupos = corte ? porGrupo(casos, corte, encuesta.variables, orden) : []
+  const contraste = grupos.length > 0
+    ? { etiqueta: grupos[0].etiqueta, datos: multirespuesta(grupos[0].casos, grupo) }
+    : undefined
+
+  return (
+    <Modulo definicion={definicion} variable={variable} base={datos.base}>
+      <Menciones datos={datos} contraste={contraste} />
     </Modulo>
   )
 }
