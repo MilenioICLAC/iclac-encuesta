@@ -1,5 +1,5 @@
 import { escalaDe } from '../nucleo/escala'
-import { numero, porcentaje } from '../locale'
+import { decimal, numero, porcentaje } from '../locale'
 
 /**
  * Una variable a lo largo de las tres oleadas.
@@ -48,7 +48,13 @@ export function Trazo ({
   }
 
   const conDato = puntos.map((p, i) => ({ ...p, i })).filter((p) => p.valor !== null)
-  const fmt = (v: number) => (unidad === 'porcentaje' ? porcentaje(v, 0) : v.toFixed(1))
+  const fmt = (v: number) => (unidad === 'porcentaje' ? porcentaje(v, 0) : decimal(v))
+
+  // El texto de los puntos extremos se ancla al borde en vez de centrarse. Centrado, la
+  // etiqueta del primer punto se sale por la izquierda y la del último por la derecha: son
+  // 9 unidades de tipografía sobre un lienzo de 100 de ancho, así que media etiqueta queda
+  // fuera. Se ve en pantalla angosta, pero pasa en los tres anchos.
+  const anclaje = (i: number) => (i === 0 ? 'start' : i === puntos.length - 1 ? 'end' : 'middle')
 
   // Los tramos se cortan donde falta una oleada, en vez de saltarla con una línea recta que
   // insinuaría continuidad.
@@ -64,7 +70,9 @@ export function Trazo ({
   return (
     <figure className="mt-1">
       {etiqueta && <figcaption className="mb-1 text-xs text-gray-500">{etiqueta}</figcaption>}
-      <svg viewBox={`-6 0 ${ancho + 12} ${ALTO}`} className="w-full" role="img"
+      {/* El margen lateral es el radio del punto más su trazo: sin él, los círculos de los
+          extremos quedan cortados por la mitad contra el borde del lienzo. */}
+      <svg viewBox={`-5 0 ${ancho + 10} ${ALTO}`} className="w-full" role="img"
         aria-label={`${etiqueta ?? 'Serie'}: ${conDato.map((p) => `${p.ola} ${fmt(p.valor!)}`).join(', ')}`}
       >
         {tramos.map((tramo, k) => (
@@ -78,7 +86,7 @@ export function Trazo ({
           <g key={p.ola}>
             <circle cx={x(p.i)} cy={y(p.valor!)} r="3.4" fill="white" stroke={color} strokeWidth="1.6" />
             <text
-              x={x(p.i)} y={y(p.valor!) - 8} textAnchor="middle"
+              x={x(p.i)} y={y(p.valor!) - 8} textAnchor={anclaje(p.i)}
               className="fill-gray-900 text-[9px] font-medium tabular-nums"
             >
               {fmt(p.valor!)}
@@ -86,7 +94,7 @@ export function Trazo ({
           </g>
         ))}
         {mostrarEjeX && puntos.map((p, i) => (
-          <text key={p.ola} x={x(i)} y={ALTO - 3} textAnchor="middle" className="fill-gray-500 text-[8px] tabular-nums">
+          <text key={p.ola} x={x(i)} y={ALTO - 3} textAnchor={anclaje(i)} className="fill-gray-500 text-[8px] tabular-nums">
             {p.ola}
           </text>
         ))}

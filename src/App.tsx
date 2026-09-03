@@ -8,7 +8,7 @@ import Distribucion from './componentes/Distribucion'
 import Serie, { Trazo } from './componentes/Serie'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
-import { numero, porcentaje } from './locale'
+import { decimal, numero, porcentaje } from './locale'
 
 /**
  * Borrador del visualizador.
@@ -178,8 +178,8 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
         <Tramo titulo="China pasa a Estados Unidos, y no es porque China haya subido">
           <p>
             En 2023 y 2024 Estados Unidos estaba mejor evaluado que China. En 2025 se invierte: China
-            llega a {termometro[0].puntos.at(-1)!.valor.toFixed(1)} y Estados Unidos cae a{' '}
-            {termometro[1].puntos.at(-1)!.valor.toFixed(1)}. Es la primera vez que China queda por
+            llega a {decimal(termometro[0].puntos.at(-1)!.valor)} y Estados Unidos cae a{' '}
+            {decimal(termometro[1].puntos.at(-1)!.valor)}. Es la primera vez que China queda por
             encima, y pesa más la caída estadounidense que el alza china. Japón sigue siendo el mejor
             evaluado de los cinco.
           </p>

@@ -34,6 +34,14 @@ export function porcentaje (valor: number, decimales = 1): string {
   }).format(valor / 100)
 }
 
+/** Un decimal, con el separador del idioma activo. En español es coma, no punto. */
+export function decimal (valor: number, decimales = 1): string {
+  return new Intl.NumberFormat(locale(), {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales
+  }).format(valor)
+}
+
 export function fecha (iso: string): string {
   return new Intl.DateTimeFormat(locale(), { dateStyle: 'long' }).format(new Date(iso))
 }
