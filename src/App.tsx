@@ -11,6 +11,7 @@ import Serie, { Trazo } from './componentes/Serie'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
+import Densidad from './componentes/Densidad'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
@@ -336,7 +337,8 @@ function Figura ({
   // oleada. Son dos preguntas distintas y no tiene sentido responder las dos a la vez.
   // `por-region` e `ideologia` ya son desagregaciones: aplicarles el corte encima cruzaría
   // dos variables, que es justo lo que la muestra no aguanta.
-  if (corte && definicion.forma !== 'por-region' && definicion.forma !== 'ideologia') {
+  const yaDesagrega = definicion.forma === 'por-region' || definicion.forma === 'ideologia' || definicion.forma === 'densidad'
+  if (corte && !yaDesagrega) {
     const agregado = distribucion(casos, variable, { excluidos: definicion.excluidos })
     const orden = CORTES.find((c) => c.nombre === corte)?.orden
     const grupos = porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({
@@ -346,6 +348,15 @@ function Figura ({
     return (
       <Modulo definicion={definicion} variable={variable} base={agregado.base}>
         <Distribucion agregado={agregado} grupos={grupos} />
+      </Modulo>
+    )
+  }
+
+  if (definicion.forma === 'densidad') {
+    const base = media(casos, definicion.variable).base
+    return (
+      <Modulo definicion={definicion} variable={variable} base={base}>
+        <Densidad encuesta={encuesta} casos={casos} corte={corte} variable={definicion.variable} />
       </Modulo>
     )
   }
@@ -467,7 +478,7 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
           <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
-          <li>Falta la densidad del termómetro, y las descargas de las bases.</li>
+          <li>Faltan las descargas de las bases con su nota metodológica.</li>
           <li>Falta la paleta categórica propia y los tres idiomas.</li>
           <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
         </ul>

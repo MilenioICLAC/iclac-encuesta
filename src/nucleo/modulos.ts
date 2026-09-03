@@ -16,7 +16,7 @@ import { media, proporcion } from './agregar'
 
 export type Ancho = 'tercio' | 'medio' | 'completo'
 
-export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region' | 'ideologia'
+export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region' | 'ideologia' | 'densidad'
 
 export interface Modulo {
   id: string
@@ -48,6 +48,15 @@ export const MODULOS: Modulo[] = [
     forma: 'serie-media',
   },
 
+  {
+    id: 'densidad',
+    bloque: 'potencias',
+    titulo: 'Cómo se reparten las respuestas',
+    bajada: 'El promedio esconde la forma: dos oleadas con la misma media pueden repartirse muy distinto.',
+    variable: 'p5_1_val',
+    ancho: 'medio',
+    forma: 'densidad',
+  },
   {
     id: 'ideologia',
     bloque: 'potencias',
@@ -331,7 +340,8 @@ export const CORTES = [
   { nombre: 'edadr', etiqueta: 'Edad', orden: undefined },
   { nombre: 'educacion', etiqueta: 'Educación', orden: undefined },
   { nombre: 'nse', etiqueta: 'Nivel socioeconómico', orden: undefined },
-  { nombre: 'p3', etiqueta: 'Ideología', orden: undefined },
+  // En tres tramos, no la escala cruda de 1 a 10: diez grupos en una figura son ilegibles.
+  { nombre: 'p3_3', etiqueta: 'Ideología', orden: ['Izquierda', 'Centro', 'Derecha'] },
   // Los dos territoriales son derivados del ETL y sus valores son texto, así que llevan su
   // orden explícito: alfabéticamente, «Alto, Bajo, Medio, Muy alto» sugiere una escala falsa.
   { nombre: 'region_macrozona', etiqueta: 'Macrozona', orden: ['Norte', 'Centro', 'Centro sur', 'Sur'] },

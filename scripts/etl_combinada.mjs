@@ -227,6 +227,13 @@ export function procesar () {
     // solapamiento sin permitir seguir a nadie.
     caso.olas_panelista = typeof f.olas_panelista === 'number' ? f.olas_panelista : 1
 
+    // Ideología en tres tramos. La escala cruda de 1 a 10 no sirve como corte: diez grupos
+    // en una figura son ilegibles, y varios quedan con menos de cien casos. El monitor
+    // tampoco la usa cruda, corta en tres.
+    if (typeof f.p3 === 'number') {
+      caso.p3_3 = f.p3 <= 4 ? 'Izquierda' : f.p3 <= 6 ? 'Centro' : 'Derecha'
+    }
+
     // Agrupaciones de región: la muestra no aguanta cortar por las dieciséis.
     if (typeof f.region === 'number') {
       caso.region_macrozona = macrozona(f.region)
