@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "etl": "node scripts/etl.mjs",
-    "etl:combinada": "node scripts/etl_combinada.mjs"
+    "etl:combinada": "node scripts/etl_combinada.mjs",
+    "descargas": "node scripts/descargas.mjs",
+    "datos": "npm run etl:combinada && npm run descargas"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

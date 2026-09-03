@@ -12,6 +12,7 @@ import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
 import Densidad from './componentes/Densidad'
+import Descargas from './componentes/Descargas'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
@@ -110,6 +111,7 @@ export default function App () {
               corte={corte}
               soloIndependientes={soloIndependientes}
             />
+            <Descargas />
             <Pie encuesta={encuesta} />
           </>
           )}
@@ -478,8 +480,7 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
           <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
-          <li>Faltan las descargas de las bases con su nota metodológica.</li>
-          <li>Falta la paleta categórica propia y los tres idiomas.</li>
+          <li>Falta la paleta categórica propia y los tres idiomas: hoy solo español.</li>
           <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
         </ul>
       </div>
