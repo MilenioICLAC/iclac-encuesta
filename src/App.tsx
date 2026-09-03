@@ -8,6 +8,7 @@ import Distribucion from './componentes/Distribucion'
 import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
 import Serie, { Trazo } from './componentes/Serie'
+import Graficador from './componentes/Graficador'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
@@ -93,6 +94,12 @@ export default function App () {
               n={casos.length}
             />
             <Tablero encuesta={encuesta} casos={casos} corte={corte} soloIndependientes={soloIndependientes} />
+            <Graficador
+              encuesta={encuesta}
+              casos={casos}
+              corte={corte}
+              soloIndependientes={soloIndependientes}
+            />
             <Pie encuesta={encuesta} />
           </>
           )}
@@ -431,8 +438,9 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <h2 className="mt-6 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h2>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
-          <li>Falta el resto de los módulos: nubes de palabras, multi-respuesta (p20, p22) y el explorador libre integrado.</li>
-          <li>Falta la paleta categórica propia y la verificación en los tres anchos de pantalla.</li>
+          <li>Faltan las nubes de palabras y el gráfico de marcas: dependen del pipeline de tokenización de texto, que hoy no está.</li>
+          <li>Falta la curva de ideología con su regresión, y la densidad del termómetro.</li>
+          <li>Falta la paleta categórica propia.</li>
           <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
         </ul>
       </div>
