@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { registros } from './lib/xlsx.mjs'
+import { casosDe, media as mediaDe, porcentaje as pctDe } from './lib/combinada.mjs'
 
 /**
  * Contrasta la base canónica contra las cifras que ICLAC publica de sus tres oleadas.
@@ -14,10 +14,10 @@ import { registros } from './lib/xlsx.mjs'
  * circulando para el mismo dato. Esta guía publica más de veinte cifras de las tres oleadas y
  * cierra ese hueco.
  *
- * Qué prueba y qué no. Hoy lee el .xlsx canónico directo, **sin pasar por nuestro ETL**, así
- * que lo que verifica es que la base que nos entregaron produce las cifras que su propio autor
- * publica. Cuando el ETL se reescriba sobre las bases canónicas, esta prueba pasa a leer su
- * salida y se convierte en la prueba de aceptación de 2024 y 2025.
+ * Qué prueba y qué no. Mide sobre el .xlsx canónico con el mismo módulo que
+ * `informe_2023.test.mjs`, así que las dos pruebas no pueden discrepar entre sí por diferencias
+ * de conteo. Lo que verifica es que la base entregada produce las cifras que su propio autor
+ * publica: es la prueba de aceptación de 2024 y 2025, que hasta el 02-09 no tenían ninguna.
  *
  * De paso deja cerrado `C8`: estas cifras solo cuadran sobre la entrega original de 1.228 casos.
  * Si ICLAC hubiera calculado sobre la base derivada de 662, ninguna daría.
@@ -26,43 +26,25 @@ import { registros } from './lib/xlsx.mjs'
  * Las pruebas afirman lo que dicen los datos, no lo que dice la guía.
  */
 
-const RUTA = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
-const { datos } = registros(RUTA, 'datos')
-
-const porOla = new Map([2023, 2024, 2025].map((o) => [o, datos.filter((d) => d.ola === o)]))
-
-/** Media de una columna numérica sobre sus valores presentes. */
-function media (ola, columna) {
-  const v = porOla.get(ola).map((d) => d[columna]).filter((x) => typeof x === 'number')
-  return v.reduce((a, b) => a + b, 0) / v.length
-}
-
-function nEfectivo (ola, columna) {
-  return porOla.get(ola).filter((d) => typeof d[columna] === 'number').length
-}
-
 /**
- * Porcentaje de los casos cuya respuesta está en `codigos`, sobre las respuestas efectivas.
- * `excluir` saca códigos del denominador además del numerador, que es lo que hace la guía con
- * «No recuerdo» en `p9`.
+ * Las respuestas se nombran **por código y no por etiqueta**, al revés que en
+ * `informe_2023.test.mjs`, y no es una inconsistencia: la hoja `valores` de la base combinada
+ * trae 537 etiquetas para 2023 y 656 para 2025, pero **solo 5 para 2024** (`C12`). Como esta
+ * prueba recorre las tres oleadas, el código es lo único que existe en todas. Cada bloque deja
+ * escrito qué significa cada número.
  */
-function porcentaje (ola, columna, codigos, { excluir = [] } = {}) {
-  const fuera = new Set(excluir)
-  const base = porOla.get(ola)
-    .map((d) => d[columna])
-    .filter((v) => v !== null && v !== undefined && !fuera.has(v))
-  const hit = base.filter((v) => codigos.includes(v)).length
-  return (100 * hit) / base.length
-}
+const media = (ola, columna) => mediaDe(ola, columna).media
+const nEfectivo = (ola, columna) => mediaDe(ola, columna).base
+const porcentaje = (ola, variable, etiquetas, opciones) => pctDe(ola, variable, etiquetas, opciones).porcentaje
 
 const casi = (valor, esperado, tolerancia = 0.05) => expect(Math.abs(valor - esperado)).toBeLessThan(tolerancia)
 
 describe('la base canónica reproduce las cifras que ICLAC publica de sus tres oleadas', () => {
   it('trae las tres oleadas con el tamaño que declara la guía', () => {
-    expect(porOla.get(2023).length).toBe(664)
-    expect(porOla.get(2024).length).toBe(668)
+    expect(casosDe(2023)).toHaveLength(664)
+    expect(casosDe(2024)).toHaveLength(668)
     // 1.228 de terreno menos un panelista que respondió dos veces.
-    expect(porOla.get(2025).length).toBe(1227)
+    expect(casosDe(2025)).toHaveLength(1227)
   })
 
   // El termómetro de 0 a 100 es la cifra que ICLAC cita y la que abre el monitor.
@@ -82,7 +64,7 @@ describe('la base canónica reproduce las cifras que ICLAC publica de sus tres o
     it('los 65,8 de China en 2025 salen de 1.046 respuestas, no de los 1.227 casos', () => {
       expect(nEfectivo(2025, 'p5_1_val')).toBe(1046)
       // 181 personas eligieron «prefiero no responder», que en p5_1 viene como 999.
-      expect(porOla.get(2025).filter((d) => d.p5_1 === 999).length).toBe(1227 - 1046)
+      expect(casosDe(2025).filter((d) => d.p5_1 === 999)).toHaveLength(1227 - 1046)
     })
 
     it('Japón sigue siendo el mejor evaluado de los cinco en 2025', () => {
@@ -205,8 +187,10 @@ describe('la base canónica reproduce las cifras que ICLAC publica de sus tres o
      * cerca del resultado de la segunda vuelta del 14 de diciembre (58,6 contra 41,4).
      */
     it('reparte 55 a 45 a favor de Kast entre quienes eligen uno de los dos', () => {
-      const kast = porOla.get(2025).filter((d) => d.p4 === 1).length
-      const jara = porOla.get(2025).filter((d) => d.p4 === 2).length
+      // Por código y no por etiqueta a propósito: en 2025 el 1 es Kast y el 2 es Jara, al
+      // revés que en 2023. Escribirlo con el número deja el cambio a la vista.
+      const kast = casosDe(2025).filter((d) => d.p4 === 1).length
+      const jara = casosDe(2025).filter((d) => d.p4 === 2).length
       casi((100 * kast) / (kast + jara), 55.0, 0.1)
       expect(kast + jara).toBe(876)
     })
@@ -215,7 +199,7 @@ describe('la base canónica reproduce las cifras que ICLAC publica de sus tres o
   describe('lo que condiciona cualquier comparación entre oleadas', () => {
     it('159 panelistas participan en más de una oleada, 338 filas en total', () => {
       const veces = new Map()
-      for (const d of datos) {
+      for (const d of [2023, 2024, 2025].flatMap((o) => casosDe(o))) {
         if (d.codpanelista === null || d.codpanelista === undefined) continue
         veces.set(d.codpanelista, (veces.get(d.codpanelista) ?? 0) + 1)
       }
@@ -225,11 +209,12 @@ describe('la base canónica reproduce las cifras que ICLAC publica de sus tres o
     })
 
     it('p20 solo existe en 2023 y 2024, con el cobre primero y la eléctrica tercera', () => {
-      expect(porOla.get(2025).every((d) => d.p20_1 === null)).toBe(true)
+      expect(casosDe(2025).every((d) => d.p20_1 === null)).toBe(true)
       const sectores = { p20_1: 'distribución eléctrica', p20_2: 'cobre', p20_3: 'litio', p20_7: 'bancario' }
+      const anteriores = [...casosDe(2023), ...casosDe(2024)]
       const conteo = Object.keys(sectores).map((c) => ({
         sector: sectores[c],
-        n: datos.filter((d) => d.ola !== 2025 && d[c] === 1).length,
+        n: anteriores.filter((d) => d[c] === 1).length,
       })).sort((a, b) => b.n - a.n)
       expect(conteo.map((x) => x.sector)).toEqual(['cobre', 'litio', 'distribución eléctrica', 'bancario'])
     })
