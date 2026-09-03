@@ -220,3 +220,43 @@ describe('la base canónica reproduce las cifras que ICLAC publica de sus tres o
     })
   })
 })
+
+/**
+ * `C17`: el gradiente ideológico que la guía presenta como característica del caso chileno
+ * es de la oleada 2023, y no se sostiene en las otras dos.
+ *
+ * La guía dice que «la evaluación de China cae de manera ordenada a medida que uno se mueve
+ * hacia la derecha del espectro, con una diferencia cercana a quince puntos entre los
+ * extremos», y con eso argumenta que Chile es un caso desviado frente a Morgenstern y
+ * Bohigues, que no encuentran estructura ideológica en las actitudes hacia China.
+ *
+ * Los quince puntos existen, en 2023. En 2024 el signo se invierte y en 2025 el gradiente
+ * queda en menos de la mitad. Sobre las tres oleadas juntas el efecto desaparece.
+ *
+ * Estas pruebas afirman lo que dicen los datos. Si una oleada futura devuelve el gradiente,
+ * fallan, que es cuando conviene volver a mirar el argumento.
+ */
+describe('C17 · el gradiente ideológico no es estable entre oleadas', () => {
+  const extremos = (ola) => {
+    const casos = casosDe(ola).filter((d) => typeof d.p3 === 'number' && typeof d.p5_1_val === 'number')
+    const media = (filtro) => {
+      const g = casos.filter(filtro)
+      return g.reduce((s, d) => s + d.p5_1_val, 0) / g.length
+    }
+    return media((d) => d.p3 <= 2) - media((d) => d.p3 >= 9)
+  }
+
+  it('en 2023 la izquierda evalúa a China 14,5 puntos mejor que la derecha', () => {
+    casi(extremos(2023), 14.5, 0.1)
+  })
+
+  it('en 2024 el signo se invierte: la derecha evalúa mejor', () => {
+    expect(extremos(2024)).toBeLessThan(0)
+    casi(extremos(2024), -4.3, 0.1)
+  })
+
+  it('en 2025 el gradiente es menos de la mitad del de 2023', () => {
+    casi(extremos(2025), 5.7, 0.1)
+    expect(extremos(2025)).toBeLessThan(extremos(2023) / 2)
+  })
+})
