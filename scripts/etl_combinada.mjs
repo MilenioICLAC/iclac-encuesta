@@ -19,6 +19,7 @@ import { dirname, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { registros } from './lib/xlsx.mjs'
 import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
+import { contar } from './lib/texto.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -83,6 +84,31 @@ const MULTIPLES = [
 function opcionDe (etiqueta) {
   return String(etiqueta ?? '').split(' - ')[0].trim().replace(/\s*:$/, '')
 }
+
+/**
+ * Respuestas abiertas que alimentan las nubes de palabras.
+ *
+ * **El verbatim no viaja al navegador.** Se tokeniza y se cuenta acá, y al artefacto van
+ * conteos agregados, que es lo que permite tener nubes sin romper la anonimización. El precio
+ * es que los cortes disponibles son los que se precalculan, y por eso están declarados.
+ */
+const TEXTOS = [
+  { id: 'p4_1', titulo: 'China', columnas: ['p4_1'], conCortes: true },
+  { id: 'p4_2', titulo: 'Estados Unidos', columnas: ['p4_2'], conCortes: true },
+  { id: 'p4_3', titulo: 'Corea del Sur', columnas: ['p4_3'], conCortes: true },
+  { id: 'p4_4', titulo: 'Francia', columnas: ['p4_4'], conCortes: true },
+  { id: 'p4_5', titulo: 'Japón', columnas: ['p4_5'], conCortes: true },
+  { id: 'p16', titulo: 'Contextos de interacción', columnas: ['p16'], conCortes: false },
+  { id: 'p17_texto', titulo: 'Cómo fueron las interacciones', columnas: ['p17_texto'], conCortes: false },
+  { id: 'p6a', titulo: 'Marcas chinas mencionadas', columnas: ['p6a_2_txt', 'p6a_3_txt', 'p6a_4_txt'], conCortes: false },
+]
+
+/** Los tres tramos de ideología con los que el monitor parte las nubes. */
+const TRAMOS_IDEOLOGIA = [
+  { id: 'izquierda', etiqueta: 'Izquierda (1-4)', prueba: (p) => p >= 1 && p <= 4 },
+  { id: 'centro', etiqueta: 'Centro (5-6)', prueba: (p) => p === 5 || p === 6 },
+  { id: 'derecha', etiqueta: 'Derecha (7-10)', prueba: (p) => p >= 7 && p <= 10 },
+]
 
 function bloqueDe (nombre) {
   for (const [id, variables] of Object.entries(DE_BLOQUE)) {
@@ -156,6 +182,40 @@ export function procesar () {
 
   const columnasMultiples = new Set(multiples.flatMap((m) => m.opciones.map((o) => o.columna)))
 
+  // Nubes de palabras, ya contadas. El texto crudo se queda acá.
+  const etiquetasP8 = etiquetas.get('p8')
+  const nubes = TEXTOS.map((t) => {
+    const disponibles = t.columnas.filter((c) => dicc.some((d) => String(d.variable ?? '').trim() === c))
+    if (disponibles.length === 0) return null
+
+    const textosDe = (filas) => filas.flatMap((f) => disponibles.map((c) => f[c]))
+    const olasCon = [2023, 2024, 2025].filter((a) => filas.some((f) => f.ola === a && disponibles.some((c) => f[c])))
+
+    const nube = {
+      id: t.id,
+      titulo: t.titulo,
+      olas: olasCon,
+      total: contar(textosDe(filas)).slice(0, 80),
+      porOla: Object.fromEntries(olasCon.map((a) => [a, contar(textosDe(filas.filter((f) => f.ola === a))).slice(0, 60)])),
+    }
+
+    if (t.conCortes) {
+      nube.porIdeologia = TRAMOS_IDEOLOGIA.map((tramo) => ({
+        id: tramo.id,
+        etiqueta: tramo.etiqueta,
+        palabras: contar(textosDe(filas.filter((f) => typeof f.p3 === 'number' && tramo.prueba(f.p3)))).slice(0, 40),
+      }))
+
+      nube.porRol = [...(etiquetasP8?.values() ?? [])].map((cat) => ({
+        id: String(cat.codigo),
+        etiqueta: cat.etiqueta,
+        palabras: contar(textosDe(filas.filter((f) => f.p8 === cat.codigo))).slice(0, 40),
+      })).filter((g) => g.palabras.length > 0)
+    }
+
+    return nube
+  }).filter(Boolean)
+
   const publicadas = new Set(variables.map((v) => v.nombre))
   const casos = filas.map((f) => {
     const caso = { ola: f.ola }
@@ -186,6 +246,7 @@ export function procesar () {
     n: porOla,
     bloques: BLOQUES,
     multiples,
+    nubes,
     // Regiones de norte a sur, con el número romano fuera del nombre: ocupa eje y no aporta.
     regiones: (etiquetas.get('region') ? [...etiquetas.get('region').values()] : [])
       .filter((c) => c.codigo <= 16)
@@ -207,6 +268,7 @@ if (esEjecutable) {
   console.log(`\nOleadas: ${datos.olas.map((o) => `${o} (${datos.n[o]})`).join(' · ')}`)
   console.log(`Variables publicadas: ${datos.variables.length}`)
   console.log(`Grupos de selección múltiple: ${datos.multiples.map((m) => `${m.id} (${m.opciones.length})`).join(' · ')}`)
+  console.log(`Nubes de palabras: ${datos.nubes.map((n) => `${n.id} (${n.total.length})`).join(' · ')}`)
   console.log(`En serie longitudinal: ${datos.variables.filter((v) => v.serie).length}`)
   console.log(`\nEscrito en ${salida}\n`)
 }

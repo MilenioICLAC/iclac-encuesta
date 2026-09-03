@@ -57,6 +57,31 @@ export interface Region {
   orden: number
 }
 
+export interface Palabra {
+  palabra: string
+  n: number
+}
+
+export interface GrupoNube {
+  id: string
+  etiqueta: string
+  palabras: Palabra[]
+}
+
+/**
+ * Una respuesta abierta, ya contada. **No trae el texto que la persona escribió**: la
+ * tokenización ocurre en el ETL y al navegador solo viajan frecuencias.
+ */
+export interface NubePalabras {
+  id: string
+  titulo: string
+  olas: number[]
+  total: Palabra[]
+  porOla: Record<string, Palabra[]>
+  porIdeologia?: GrupoNube[]
+  porRol?: GrupoNube[]
+}
+
 export interface Encuesta {
   generado: string
   fuente: string
@@ -65,6 +90,7 @@ export interface Encuesta {
   n: Record<string, number>
   bloques: Bloque[]
   multiples: Multiple[]
+  nubes: NubePalabras[]
   regiones: Region[]
   variables: Variable[]
   casos: Caso[]

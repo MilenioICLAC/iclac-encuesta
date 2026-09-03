@@ -10,6 +10,7 @@ import PorRegion from './componentes/PorRegion'
 import Serie, { Trazo } from './componentes/Serie'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
+import Nubes from './componentes/Nubes'
 import { escalaDe } from './nucleo/escala'
 import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
@@ -101,6 +102,7 @@ export default function App () {
               soloIndependientes={soloIndependientes}
               olas={olas}
             />
+            <Nubes encuesta={encuesta} />
             <Graficador
               encuesta={encuesta}
               casos={casos}
@@ -464,9 +466,9 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <h2 className="mt-6 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h2>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
-          <li>Faltan las nubes de palabras y el gráfico de marcas: dependen del pipeline de tokenización de texto, que hoy no está.</li>
-          <li>Falta la curva de ideología con su regresión, y la densidad del termómetro.</li>
-          <li>Falta la paleta categórica propia.</li>
+          <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
+          <li>Falta la densidad del termómetro, y las descargas de las bases.</li>
+          <li>Falta la paleta categórica propia y los tres idiomas.</li>
           <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
         </ul>
       </div>
