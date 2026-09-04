@@ -189,6 +189,11 @@ export function procesar () {
     if (disponibles.length === 0) return null
 
     const textosDe = (filas) => filas.flatMap((f) => disponibles.map((c) => f[c]))
+
+    // Cuánta gente contestó la pregunta. Sin esto no se puede comparar entre oleadas: 2025
+    // tiene 1.227 casos contra 664 de 2023, así que un conteo crudo dice más sobre el tamaño
+    // de la muestra que sobre la palabra.
+    const respondieron = (filas) => filas.filter((f) => disponibles.some((c) => typeof f[c] === 'string' && f[c].trim())).length
     const olasCon = [2023, 2024, 2025].filter((a) => filas.some((f) => f.ola === a && disponibles.some((c) => f[c])))
 
     const nube = {
@@ -196,21 +201,26 @@ export function procesar () {
       titulo: t.titulo,
       olas: olasCon,
       total: contar(textosDe(filas)).slice(0, 80),
+      base: respondieron(filas),
       porOla: Object.fromEntries(olasCon.map((a) => [a, contar(textosDe(filas.filter((f) => f.ola === a))).slice(0, 60)])),
+      baseOla: Object.fromEntries(olasCon.map((a) => [a, respondieron(filas.filter((f) => f.ola === a))])),
     }
 
     if (t.conCortes) {
-      nube.porIdeologia = TRAMOS_IDEOLOGIA.map((tramo) => ({
-        id: tramo.id,
-        etiqueta: tramo.etiqueta,
-        palabras: contar(textosDe(filas.filter((f) => typeof f.p3 === 'number' && tramo.prueba(f.p3)))).slice(0, 40),
-      }))
+      nube.porIdeologia = TRAMOS_IDEOLOGIA.map((tramo) => {
+        const suyas = filas.filter((f) => typeof f.p3 === 'number' && tramo.prueba(f.p3))
+        return {
+          id: tramo.id,
+          etiqueta: tramo.etiqueta,
+          base: respondieron(suyas),
+          palabras: contar(textosDe(suyas)).slice(0, 40),
+        }
+      })
 
-      nube.porRol = [...(etiquetasP8?.values() ?? [])].map((cat) => ({
-        id: String(cat.codigo),
-        etiqueta: cat.etiqueta,
-        palabras: contar(textosDe(filas.filter((f) => f.p8 === cat.codigo))).slice(0, 40),
-      })).filter((g) => g.palabras.length > 0)
+      // El corte por rol de China queda fuera: son cuatro categorías, y la paleta validada
+      // admite tres series cuando las marcas pueden tocarse. Con la cuarta, dos colores
+      // colapsan bajo deuteranopía.
+      nube.porRol = []
     }
 
     return nube

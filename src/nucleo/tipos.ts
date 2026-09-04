@@ -65,6 +65,8 @@ export interface Palabra {
 export interface GrupoNube {
   id: string
   etiqueta: string
+  /** Personas que contestaron la pregunta en ese grupo. Es el denominador del porcentaje. */
+  base?: number
   palabras: Palabra[]
 }
 
@@ -77,6 +79,9 @@ export interface NubePalabras {
   titulo: string
   olas: number[]
   total: Palabra[]
+  /** Personas que contestaron la pregunta, en total y por oleada. */
+  base?: number
+  baseOla?: Record<string, number>
   porOla: Record<string, Palabra[]>
   porIdeologia?: GrupoNube[]
   porRol?: GrupoNube[]

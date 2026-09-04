@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import type { Encuesta } from '../nucleo/tipos'
-import Nube from './Nube'
+import PalabrasPorGrupo from './PalabrasPorGrupo'
 import { numero } from '../locale'
 
 /**
  * Las respuestas abiertas: qué palabra asocia la gente a cada país, en qué contexto ocurre el
  * contacto, y qué marcas chinas puede nombrar.
+ *
+ * **Van en barras y no en nube.** Una nube compara áreas, y el ojo compara áreas mal; peor
+ * todavía cuando una palabra larga ocupa más espacio que una corta con la misma frecuencia.
+ * Con barras alineadas se compara entre palabras y entre oleadas de verdad.
  *
  * **Los conteos vienen ya calculados del ETL.** El texto que la persona escribió no viaja al
  * navegador: una respuesta abierta puede contener datos que identifican, y el producto no la
@@ -17,8 +21,6 @@ import { numero } from '../locale'
  * que algunas palabras se agrupan distinto. Se dice en la figura.
  */
 
-type Corte = 'total' | 'ideologia' | 'rol'
-
 interface Props {
   encuesta: Encuesta
 }
@@ -27,7 +29,6 @@ const PAISES = ['p4_1', 'p4_2', 'p4_3', 'p4_4', 'p4_5']
 
 export default function Nubes ({ encuesta }: Props) {
   const [pais, setPais] = useState('p4_1')
-  const [corte, setCorte] = useState<Corte>('total')
 
   const nubes = encuesta.nubes ?? []
   const dePais = nubes.filter((n) => PAISES.includes(n.id))
@@ -35,9 +36,7 @@ export default function Nubes ({ encuesta }: Props) {
   const contactos = nubes.find((n) => n.id === 'p16')
   const marcas = nubes.find((n) => n.id === 'p6a')
 
-  if (nubes.length === 0) return null
-
-  const grupos = corte === 'ideologia' ? elegida?.porIdeologia : corte === 'rol' ? elegida?.porRol : undefined
+  if (nubes.length === 0 || !elegida) return null
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-4">
@@ -69,39 +68,16 @@ export default function Nubes ({ encuesta }: Props) {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Separar por</span>
-                <select
-                  value={corte}
-                  onChange={(e) => setCorte(e.target.value as Corte)}
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
-                >
-                  <option value="total">Nada</option>
-                  <option value="ideologia">Ideología</option>
-                  <option value="rol">Rol de China en su comuna</option>
-                </select>
-              </label>
             </div>
           </div>
 
-          <div className="mt-3">
-            {grupos
-              ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {grupos.map((g) => (
-                    <div key={g.id}>
-                      <p className="mb-1 text-xs font-medium text-gray-700">{g.etiqueta}</p>
-                      <Nube palabras={g.palabras} tope={22} />
-                    </div>
-                  ))}
-                </div>
-                )
-              : <Nube palabras={elegida?.total ?? []} />}
+          <div className="mt-4">
+            <PalabrasPorGrupo nube={elegida} />
           </div>
 
           <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
             Los conteos se calculan en el procesamiento, así que el texto que la persona escribió no sale
-            del origen. Estos cortes son los precalculados y no siguen la barra de estado.
+            del origen. Por eso los cortes son los precalculados y no siguen la barra de estado.
           </p>
         </article>
 
@@ -111,7 +87,7 @@ export default function Nubes ({ encuesta }: Props) {
             <p className="mt-0.5 text-sm text-gray-600">
               En qué contextos interactúa con personas de China o de ascendencia china.
             </p>
-            <div className="mt-3 grow"><Nube palabras={contactos.total} tope={30} /></div>
+            <div className="mt-3 grow"><PalabrasPorGrupo nube={contactos} tope={10} /></div>
             <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
               {numero(contactos.total.reduce((s, p) => s + p.n, 0))} menciones.
             </p>
@@ -124,7 +100,7 @@ export default function Nubes ({ encuesta }: Props) {
             <p className="mt-0.5 text-sm text-gray-600">
               Hasta tres por persona, escritas a mano y sin lista de dónde elegir.
             </p>
-            <div className="mt-3 grow"><Nube palabras={marcas.total} tope={30} /></div>
+            <div className="mt-3 grow"><PalabrasPorGrupo nube={marcas} tope={10} /></div>
             <p className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
               Solo se preguntó desde 2024.
             </p>
@@ -133,10 +109,11 @@ export default function Nubes ({ encuesta }: Props) {
       </div>
 
       <p className="mt-3 text-xs leading-snug text-gray-500">
-        <strong>Estas figuras no reproducen exactamente las del sitio actual.</strong> El monitor agrupa
-        las palabras con el lematizador de Snowball y acá se normalizan los sufijos frecuentes del
-        español, así que algunas formas se juntan distinto. El diccionario de correcciones de grafía sí
-        es el mismo.
+        <strong>Estas figuras no reproducen las del sitio actual, y en dos sentidos.</strong> El monitor
+        las dibuja como nubes de palabras, y acá van en barras porque una nube no se puede comparar. Y
+        agrupa las palabras con el lematizador de Snowball, mientras que acá se normalizan los sufijos
+        frecuentes del español, así que algunas formas se juntan distinto. El diccionario de
+        correcciones de grafía sí es el mismo.
       </p>
     </section>
   )
