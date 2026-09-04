@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Fila del gráfico de puntos.
+ *
+ * El ancho de la columna de nombres es un parámetro del componente, así que no puede ser una
+ * clase de Tailwind: una clase con interpolación no la ve el compilador y sale sin definir. Y
+ * tampoco puede ir en el atributo `style`, porque ahí no hay media query y el estilo en línea
+ * le gana a la clase, con lo que las dos columnas se aplican también en teléfono. Va como
+ * variable CSS: el componente pone el valor, la media query decide desde cuándo se usa.
+ *
+ * En angosto es una sola columna, con el nombre sobre su fila: al lado se comía 88 de los 296
+ * px disponibles y los puntos quedaban unos encima de otros.
+ */
+.fila-puntos {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .fila-puntos {
+    grid-template-columns: minmax(0, var(--ancho-etiqueta, 5.5rem)) 1fr;
+    column-gap: 0.5rem;
+  }
+}

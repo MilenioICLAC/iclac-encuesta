@@ -7,13 +7,14 @@ import Modulo from './componentes/Modulo'
 import Distribucion from './componentes/Distribucion'
 import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
-import Serie, { Trazo } from './componentes/Serie'
+import Serie from './componentes/Serie'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
 import Densidad from './componentes/Densidad'
+import Puntos from './componentes/Puntos'
 import Descargas from './componentes/Descargas'
-import { escalaDe } from './nucleo/escala'
+import { escalaRedonda } from './nucleo/escala'
 import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
 import { decimal, numero, porcentaje } from './locale'
 
@@ -136,11 +137,28 @@ function Encabezado () {
 function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   const todos = (ola: number) => filtrar(encuesta, { olas: [ola] })
 
+  // Una fila por país y un punto por oleada, ordenadas por la última oleada. Con tres
+  // encuestas sueltas una línea prometería interpolación que no existe, y cinco líneas que se
+  // cruzan obligarían a distinguir todos los pares de color contra todos, que es el caso donde
+  // la paleta topa en tres (un registro de decisiones interno). Acá el color son las tres oleadas y el nombre del país
+  // carga la identidad, así que el tope alcanza justo.
   const termometro = TERMOMETRO.map((p) => ({
     ...p,
-    puntos: encuesta.olas.map((ola) => ({ ola, valor: media(todos(ola), p.nombre).media, base: todos(ola).length })),
+    valores: encuesta.olas.map((ola) => media(todos(ola), p.nombre)),
   }))
-  const escala = escalaDe(termometro.map((t) => t.puntos), 'media')
+  const ordenados = [...termometro].sort((a, b) => (b.valores.at(-1)?.media ?? 0) - (a.valores.at(-1)?.media ?? 0))
+  const escalaTermometro = escalaRedonda(termometro.flatMap((t) => t.valores.map((v) => v.media)), 5)
+
+  const chinaT = termometro[0].valores
+  const eeuuT = termometro[1].valores
+  const subeChina = (chinaT.at(-1)?.media ?? 0) - (chinaT.at(-2)?.media ?? 0)
+  const bajaEeuu = (eeuuT.at(-2)?.media ?? 0) - (eeuuT.at(-1)?.media ?? 0)
+  // El mayor movimiento de cualquier país entre las dos primeras oleadas. Se calcula en vez de
+  // escribirse porque la frase que lo usa deja de ser cierta el día que entre una oleada nueva.
+  const quietas = Math.max(...termometro.map((t) => Math.abs((t.valores[1]?.media ?? 0) - (t.valores[0]?.media ?? 0))))
+  const bases = termometro.flatMap((t) => t.valores.map((v) => v.base)).filter((n) => n > 0)
+  const baseMinima = Math.min(...bases)
+  const baseMaxima = Math.max(...bases)
 
   const p24 = variableDe(encuesta, 'p24')
   const p26 = variableDe(encuesta, 'p26')
@@ -171,28 +189,45 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
       </p>
 
       <div className="mt-6 flex flex-col gap-4">
-        <Tramo titulo="China pasa a Estados Unidos, y no es porque China haya subido">
+        <Tramo titulo="China pasa a Estados Unidos, y el cambio entero ocurre en 2025">
           <p>
             En 2023 y 2024 Estados Unidos estaba mejor evaluado que China. En 2025 se invierte: China
-            llega a {decimal(termometro[0].puntos.at(-1)!.valor)} y Estados Unidos cae a{' '}
-            {decimal(termometro[1].puntos.at(-1)!.valor)}. Es la primera vez que China queda por
-            encima, y pesa más la caída estadounidense que el alza china. Japón sigue siendo el mejor
-            evaluado de los cinco.
+            llega a {decimal(chinaT.at(-1)!.media)} y Estados Unidos cae a{' '}
+            {decimal(eeuuT.at(-1)!.media)}. Es la primera vez que China queda por encima, y se mueven
+            las dos: China sube {decimal(subeChina)} puntos respecto de 2024 y Estados Unidos baja{' '}
+            {decimal(bajaEeuu)}, en direcciones opuestas y en magnitud parecida. Japón sigue siendo el
+            mejor evaluado de los cinco. Y todo ocurre en la última oleada: entre 2023 y 2024 ningún
+            país se mueve más de {decimal(quietas)} puntos.
           </p>
-          <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Cinco paneles, uno por país, cada uno con su título. En paneles separados el
-                color no carga identidad —el título ya la carga— así que van todos del mismo,
-                que además evita el problema de cinco hues superpuestos. */}
-            {termometro.map((t) => (
-              <Trazo
-                key={t.nombre}
-                puntos={t.puntos}
-                escala={escala}
-                unidad="media"
-                etiqueta={t.pais}
-                color={IDENTIDAD[0]}
-              />
-            ))}
+          <div className="mt-3">
+            <Puntos
+              series={encuesta.olas.map((ola, i) => ({
+                clave: String(ola),
+                etiqueta: String(ola),
+                color: IDENTIDAD[i % IDENTIDAD.length],
+              }))}
+              filas={ordenados.map((t) => ({
+                clave: t.nombre,
+                etiqueta: t.pais,
+                valores: t.valores.map((v) => (v.base > 0 ? v.media : null)),
+              }))}
+              escala={escalaTermometro}
+              formato={(v) => decimal(v, 1)}
+              formatoEje={(v) => decimal(v, 0)}
+              titulo={(fila, serie, valor) => {
+                const i = encuesta.olas.indexOf(Number(serie.clave))
+                const v = ordenados.find((t) => t.nombre === fila.clave)!.valores[i]
+                return `${fila.etiqueta} · ${serie.etiqueta}: ${decimal(valor)} sobre 100 (n = ${numero(v.base)})`
+              }}
+              marcas={5}
+              anchoEtiqueta="7.5rem"
+              rotular={encuesta.olas.length - 1}
+            />
+            <p className="mt-2 text-xs leading-snug text-gray-500">
+              Evaluación de 0 a 100, promedio de quienes contestaron. Rotulada la última oleada; el resto
+              aparece al pasar el cursor. Las bases van de {numero(baseMinima)} a {numero(baseMaxima)} casos
+              según país y oleada, así que los promedios se comparan pero los n no son iguales.
+            </p>
           </div>
         </Tramo>
 
