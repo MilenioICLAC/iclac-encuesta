@@ -4,15 +4,21 @@ Publica los resultados de la encuesta anual de ICLAC en una sola página con dos
 **recorrido** que cuenta qué encontró la encuesta y qué se movió entre oleadas, después un **tablero**
 para consultar un año concreto. En español, inglés y chino.
 
-**Estado: E1 en curso.** Andamiaje en pie, ETL de 2023 corriendo y contrastado contra el informe
-publicado por ICLAC, explorador de datos en el navegador. Alcance y calendario en
+**Estado: E1 en curso.** Visualizador funcionando con paridad casi completa contra el monitor actual:
+recorrido, 27 módulos, nubes de palabras, explorador de 72 preguntas y descargas. Las tres oleadas
+tienen prueba de aceptación contra cifras publicadas por ICLAC. Alcance y calendario en
 `../admin/cotizaciones/cotizacion_iclac_fases2y3_felipe.pdf`, enviada a ICLAC el 14-08-2026.
 
 ---
 
 ## Los datos
 
-Tres oleadas, en `data/sources/`. **Cada una llegó en varias versiones**, y no todas dicen lo mismo:
+**El producto corre sobre `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx`**, la base que ICLAC
+rehízo el 01-09-2026 con las tres oleadas unificadas. Reproduce las dieciocho cifras del Policy Paper
+2023, incluido el termómetro que la microdata publicada no permite calcular.
+
+Las entregas por oleada siguen en el repositorio y sirven de respaldo y de contraste. Tres oleadas, en
+`data/sources/`. **Cada una llegó en varias versiones**, y no todas dicen lo mismo:
 `data/sources/README.md` dice cuál manda y por qué. Estas son las canónicas:
 
 | | 2023 | 2024 | 2025 |

@@ -46,6 +46,7 @@ export const MODULOS: Modulo[] = [
     variable: 'p5_1_val',
     ancho: 'completo',
     forma: 'serie-media',
+    advertencia: 'Sobre la entrega completa de 2025, de 1.228 casos: China da 65,8. El monitor que ICLAC publica hoy muestra 67,0, porque calcula sobre una submuestra de 662 que se armó con un script corrido dos veces. Cuál se publica es decisión de ICLAC.',
   },
 
   {

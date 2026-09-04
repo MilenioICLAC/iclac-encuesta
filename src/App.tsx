@@ -15,7 +15,6 @@ import Densidad from './componentes/Densidad'
 import Descargas from './componentes/Descargas'
 import { escalaDe } from './nucleo/escala'
 import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
-import Explorador from './Explorador'
 import { decimal, numero, porcentaje } from './locale'
 
 /**
@@ -39,12 +38,9 @@ import { decimal, numero, porcentaje } from './locale'
  * Lo que falta está anotado al pie de la página, a la vista y no en un comentario.
  */
 
-type Vista = 'visualizador' | 'explorador'
-
 export default function App () {
   const [encuesta, setEncuesta] = useState<Encuesta | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [vista, setVista] = useState<Vista>('visualizador')
 
   const [olas, setOlas] = useState<number[]>([])
   const [corte, setCorte] = useState<string | null>(null)
@@ -81,46 +77,39 @@ export default function App () {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <Encabezado vista={vista} onVista={setVista} />
-
-      {vista === 'explorador'
-        ? <Explorador />
-        : (
-          <>
-            <Recorrido encuesta={encuesta} />
-            <BarraEstado
-              olas={encuesta.olas}
-              olasActivas={olas}
-              onOlas={setOlas}
-              corte={corte}
-              onCorte={setCorte}
-              soloIndependientes={soloIndependientes}
-              onSoloIndependientes={setSoloIndependientes}
-              n={casos.length}
-            />
-            <Tablero
-              encuesta={encuesta}
-              casos={casos}
-              corte={corte}
-              soloIndependientes={soloIndependientes}
-              olas={olas}
-            />
-            <Nubes encuesta={encuesta} />
-            <Graficador
-              encuesta={encuesta}
-              casos={casos}
-              corte={corte}
-              soloIndependientes={soloIndependientes}
-            />
-            <Descargas />
-            <Pie encuesta={encuesta} />
-          </>
-          )}
+      <Encabezado />
+      <Recorrido encuesta={encuesta} />
+      <BarraEstado
+        olas={encuesta.olas}
+        olasActivas={olas}
+        onOlas={setOlas}
+        corte={corte}
+        onCorte={setCorte}
+        soloIndependientes={soloIndependientes}
+        onSoloIndependientes={setSoloIndependientes}
+        n={casos.length}
+      />
+      <Tablero
+        encuesta={encuesta}
+        casos={casos}
+        corte={corte}
+        soloIndependientes={soloIndependientes}
+        olas={olas}
+      />
+      <Nubes encuesta={encuesta} />
+      <Graficador
+        encuesta={encuesta}
+        casos={casos}
+        corte={corte}
+        soloIndependientes={soloIndependientes}
+      />
+      <Descargas />
+      <Pie encuesta={encuesta} />
     </div>
   )
 }
 
-function Encabezado ({ vista, onVista }: { vista: Vista, onVista: (v: Vista) => void }) {
+function Encabezado () {
   return (
     <header className="bg-brand-dark text-white">
       <div className="mx-auto max-w-5xl px-4 py-8">
@@ -129,21 +118,6 @@ function Encabezado ({ vista, onVista }: { vista: Vista, onVista: (v: Vista) => 
         <p className="mt-2 max-w-2xl text-sm text-white/80">
           Tres oleadas de la Encuesta de Percepciones sobre China en Chile: 2023, 2024 y 2025.
         </p>
-        <nav className="mt-5 flex gap-2 text-sm">
-          {([['visualizador', 'Visualizador'], ['explorador', 'Explorador de datos']] as const).map(([id, texto]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onVista(id)}
-              aria-current={vista === id ? 'page' : undefined}
-              className={`rounded-md px-3 py-1.5 transition-colors ${
-                vista === id ? 'bg-white text-gray-900' : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              {texto}
-            </button>
-          ))}
-        </nav>
       </div>
     </header>
   )
@@ -465,6 +439,12 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
           <li>
             {encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])} casos`).join(' · ')}. {encuesta.procedencia}
+          </li>
+          <li>
+            <strong>Las cifras de 2025 no coinciden con las del monitor anterior, y es esperable.</strong> Ese
+            sitio calcula sobre una submuestra de 662 casos que se armó con un script corrido dos veces sobre
+            hojas ordenadas distinto. Acá se usa la entrega completa de 1.228, así que la opinión sobre China
+            da 65,8 en vez de 67,0. Cuál de las dos se publica es decisión de ICLAC.
           </li>
           <li>
             <strong>Sin ponderadores.</strong> Es un panel en línea por cuotas, así que la muestra no es

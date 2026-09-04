@@ -31,6 +31,11 @@ const ANCHO = {
 export default function Modulo ({ definicion, variable, base, children }: Props) {
   const olas = variable.olas
   const parcial = olas.length < 3
+  // Con una sola oleada no hay nada que comparar, así que afirmar comparabilidad sería una
+  // contradicción impresa en la propia figura. El diccionario de ICLAC marca
+  // `uso_serie_longitudinal = sí` en preguntas que solo se hicieron en 2025, y la figura no
+  // tiene por qué repetir esa marca cuando no aplica.
+  const comparable = olas.length > 1
 
   return (
     <article className={`${ANCHO[definicion.ancho]} flex flex-col rounded-lg border border-gray-200 bg-white p-4`}>
@@ -53,12 +58,16 @@ export default function Modulo ({ definicion, variable, base, children }: Props)
         <span className="tabular-nums">n = {numero(base)}</span>
         <span aria-hidden>·</span>
         <span className={parcial ? 'text-amber-700' : undefined}>
-          {parcial ? `Solo ${olas.join(' y ')}` : 'Las tres oleadas'}
+          {olas.length === 1 ? `Solo ${olas[0]}` : parcial ? `Solo ${olas.join(' y ')}` : 'Las tres oleadas'}
         </span>
-        <span aria-hidden>·</span>
-        <span className={variable.serie ? undefined : 'text-amber-700'}>
-          {variable.serie ? 'Comparable entre oleadas' : 'No comparable entre oleadas'}
-        </span>
+        {comparable && (
+          <>
+            <span aria-hidden>·</span>
+            <span className={variable.serie ? undefined : 'text-amber-700'}>
+              {variable.serie ? 'Comparable entre oleadas' : 'No comparable entre oleadas'}
+            </span>
+          </>
+        )}
       </footer>
     </article>
   )
