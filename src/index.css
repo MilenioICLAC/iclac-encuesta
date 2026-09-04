@@ -25,3 +25,11 @@
     column-gap: 0.5rem;
   }
 }
+
+/* Los puntos apagados del recorrido son una capa de lectura, no un recorte de los datos: al
+   imprimir se encienden todos. */
+@media print {
+  .punto {
+    opacity: 1 !important;
+  }
+}

@@ -15,6 +15,7 @@ import Densidad from './componentes/Densidad'
 import Puntos from './componentes/Puntos'
 import Descargas from './componentes/Descargas'
 import { escalaRedonda } from './nucleo/escala'
+import { usePasoActivo } from './nucleo/pasos'
 import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
 import { decimal, numero, porcentaje } from './locale'
 
@@ -134,6 +135,26 @@ function Encabezado () {
  * Y las cifras se calculan, no se transcriben. Es la diferencia entre una frase que envejece
  * mal y una que se corrige sola al incorporar una oleada.
  */
+/**
+ * Qué puntos enciende cada paso del primer tramo.
+ *
+ * Va como tabla y no repartido por el texto porque es la parte que hay que poder auditar de un
+ * vistazo: es lo único que decide qué dato se muestra y qué dato se calla. **El último paso
+ * enciende todo**, que es la garantía de que el recorrido no termina escondiendo nada, y el
+ * estado sin JavaScript o con `prefers-reduced-motion` (ver `nucleo/pasos.ts`).
+ */
+function encendidos (olas: number[]) {
+  const ultima = olas.at(-1)
+  const dosPotencias = (pais: string) => pais === 'China' || pais === 'Estados Unidos'
+  return [
+    // Las dos potencias, sin la última oleada todavía: el paso habla de 2023 y 2024.
+    (pais: string, ola: number) => dosPotencias(pais) && ola !== ultima,
+    (pais: string) => dosPotencias(pais),
+    (pais: string) => dosPotencias(pais) || pais === 'Japón',
+    () => true,
+  ]
+}
+
 function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   const todos = (ola: number) => filtrar(encuesta, { olas: [ola] })
 
@@ -156,6 +177,7 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   // El mayor movimiento de cualquier país entre las dos primeras oleadas. Se calcula en vez de
   // escribirse porque la frase que lo usa deja de ser cierta el día que entre una oleada nueva.
   const quietas = Math.max(...termometro.map((t) => Math.abs((t.valores[1]?.media ?? 0) - (t.valores[0]?.media ?? 0))))
+  const pasosEncendidos = encendidos(encuesta.olas)
   const bases = termometro.flatMap((t) => t.valores.map((v) => v.base)).filter((n) => n > 0)
   const baseMinima = Math.min(...bases)
   const baseMaxima = Math.max(...bases)
@@ -189,47 +211,69 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
       </p>
 
       <div className="mt-6 flex flex-col gap-4">
-        <Tramo titulo="China pasa a Estados Unidos, y el cambio entero ocurre en 2025">
-          <p>
-            En 2023 y 2024 Estados Unidos estaba mejor evaluado que China. En 2025 se invierte: China
-            llega a {decimal(chinaT.at(-1)!.media)} y Estados Unidos cae a{' '}
-            {decimal(eeuuT.at(-1)!.media)}. Es la primera vez que China queda por encima, y se mueven
-            las dos: China sube {decimal(subeChina)} puntos respecto de 2024 y Estados Unidos baja{' '}
-            {decimal(bajaEeuu)}, en direcciones opuestas y en magnitud parecida. Japón sigue siendo el
-            mejor evaluado de los cinco. Y todo ocurre en la última oleada: entre 2023 y 2024 ningún
-            país se mueve más de {decimal(quietas)} puntos.
-          </p>
-          <div className="mt-3">
-            <Puntos
-              series={encuesta.olas.map((ola, i) => ({
-                clave: String(ola),
-                etiqueta: String(ola),
-                color: IDENTIDAD[i % IDENTIDAD.length],
-              }))}
-              filas={ordenados.map((t) => ({
-                clave: t.nombre,
-                etiqueta: t.pais,
-                valores: t.valores.map((v) => (v.base > 0 ? v.media : null)),
-              }))}
-              escala={escalaTermometro}
-              formato={(v) => decimal(v, 1)}
-              formatoEje={(v) => decimal(v, 0)}
-              titulo={(fila, serie, valor) => {
-                const i = encuesta.olas.indexOf(Number(serie.clave))
-                const v = ordenados.find((t) => t.nombre === fila.clave)!.valores[i]
-                return `${fila.etiqueta} · ${serie.etiqueta}: ${decimal(valor)} sobre 100 (n = ${numero(v.base)})`
-              }}
-              marcas={5}
-              anchoEtiqueta="7.5rem"
-              rotular={encuesta.olas.length - 1}
-            />
-            <p className="mt-2 text-xs leading-snug text-gray-500">
-              Evaluación de 0 a 100, promedio de quienes contestaron. Rotulada la última oleada; el resto
-              aparece al pasar el cursor. Las bases van de {numero(baseMinima)} a {numero(baseMaxima)} casos
-              según país y oleada, así que los promedios se comparan pero los n no son iguales.
+        <TramoConPasos
+          titulo="China pasa a Estados Unidos, y el cambio entero ocurre en 2025"
+          pasos={[
+            <>
+              Los cinco países se evalúan de 0 a 100. En 2023 y 2024 <strong>Estados Unidos estaba
+              mejor evaluado que China</strong>, y las dos oleadas dan casi lo mismo.
+            </>,
+            <>
+              En 2025 se invierte: China llega a {decimal(chinaT.at(-1)!.media)} y Estados Unidos cae
+              a {decimal(eeuuT.at(-1)!.media)}. Es <strong>la primera vez que China queda por
+              encima</strong>. Se mueven las dos, en direcciones opuestas y en magnitud parecida:
+              China sube {decimal(subeChina)} puntos respecto de 2024 y Estados Unidos baja{' '}
+              {decimal(bajaEeuu)}.
+            </>,
+            <>
+              <strong>Japón sigue siendo el mejor evaluado de los cinco</strong>, en las tres oleadas
+              y sin acercarse a nadie. La comparación con China no es entre China y un promedio: es
+              contra países que la gente evalúa muy distinto entre sí.
+            </>,
+            <>
+              Con los cinco a la vista se ve lo demás: <strong>2024 no pasó nada</strong>. Ningún país
+              se mueve más de {decimal(quietas)} puntos entre 2023 y 2024, así que el cambio entero
+              ocurre en la última oleada. Y Estados Unidos termina abajo de Corea del Sur, aunque por
+              una diferencia demasiado chica para afirmarla.
+            </>,
+          ]}
+          figura={(activo) => (
+            <>
+              <Puntos
+                series={encuesta.olas.map((ola, i) => ({
+                  clave: String(ola),
+                  etiqueta: String(ola),
+                  color: IDENTIDAD[i % IDENTIDAD.length],
+                }))}
+                filas={ordenados.map((t) => ({
+                  clave: t.pais,
+                  etiqueta: t.pais,
+                  valores: t.valores.map((v) => (v.base > 0 ? v.media : null)),
+                }))}
+                escala={escalaTermometro}
+                formato={(v) => decimal(v, 1)}
+                formatoEje={(v) => decimal(v, 0)}
+                titulo={(fila, serie, valor) => {
+                  const i = encuesta.olas.indexOf(Number(serie.clave))
+                  const v = ordenados.find((t) => t.pais === fila.clave)!.valores[i]
+                  return `${fila.etiqueta} · ${serie.etiqueta}: ${decimal(valor)} sobre 100 (n = ${numero(v.base)})`
+                }}
+                marcas={5}
+                anchoEtiqueta="7.5rem"
+                rotular={encuesta.olas.length - 1}
+                visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
+              />
+            </>
+          )}
+          nota={(
+            <p className="text-xs leading-snug text-gray-500">
+              Evaluación de 0 a 100, promedio de quienes contestaron. Rotulada la última oleada; el
+              resto aparece al pasar el cursor. Las bases van de {numero(baseMinima)} a{' '}
+              {numero(baseMaxima)} casos según país y oleada, así que los promedios se comparan pero
+              los n no son iguales.
             </p>
-          </div>
-        </Tramo>
+          )}
+        />
 
         <Tramo titulo="La confianza en China crece, y la brecha se abre por un lado solo">
           <p>
@@ -266,6 +310,61 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
         </Tramo>
       </div>
     </section>
+  )
+}
+
+/**
+ * Un tramo que se lee con el scroll: cada frase enciende los puntos de los que habla.
+ *
+ * La figura queda pegada arriba (al costado en pantalla ancha) mientras las frases pasan por
+ * debajo. La frase que está en la banda central de la pantalla es la activa, y las otras se
+ * apagan a gris: sin eso, cuatro frases a la vez compiten por la atención con la figura.
+ *
+ * **Con `prefers-reduced-motion` no hay recorrido**: el hook salta al último paso, que es el
+ * que muestra la figura entera, y las frases van todas en negro. Quien pide menos movimiento
+ * no recibe menos datos.
+ */
+function TramoConPasos ({ titulo, pasos, figura, nota }: {
+  titulo: string
+  pasos: React.ReactNode[]
+  figura: (activo: number) => React.ReactNode
+  /** El pie de la figura. Va **fuera** del bloque pegado: adentro, en teléfono, la figura se
+   *  comía la mitad de la pantalla y no quedaba sitio para la frase que la explica. */
+  nota?: React.ReactNode
+}) {
+  const { activo, refs, reducido } = usePasoActivo(pasos.length)
+
+  return (
+    <article className="rounded-lg border border-gray-200 bg-white p-5">
+      <h3 className="font-display text-lg font-semibold">{titulo}</h3>
+      <div className="mt-3 grid gap-2 lg:grid-cols-2 lg:gap-8">
+        {/* Fondo opaco y pegado a cero, sin hueco arriba: con `bg-white/95` el texto que pasa
+            por detrás se transparentaba sobre la figura, y con `top-2` asomaba por el hueco. */}
+        <div className="sticky top-0 z-10 -mx-2 bg-white px-2 pb-3 pt-2 lg:col-start-2 lg:row-start-1 lg:top-[26vh]">
+          {figura(activo)}
+        </div>
+        <div className="lg:col-start-1 lg:row-start-1">
+          {pasos.map((paso, i) => (
+            // El `flex` va en el contenedor y no en el párrafo: sobre un `<p>` convierte cada
+            // trozo de texto en un elemento flex y la frase sale partida en columnas.
+            <div
+              key={i}
+              ref={(el) => { refs.current[i] = el }}
+              data-paso={i}
+              className="flex min-h-[45vh] items-center"
+            >
+              <p className={`text-sm leading-relaxed transition-colors duration-300 ${
+                !reducido && i !== activo ? 'text-gray-400' : 'text-gray-700'
+              }`}
+              >
+                {paso}
+              </p>
+            </div>
+          ))}
+          {nota && <div className="pb-2">{nota}</div>}
+        </div>
+      </div>
+    </article>
   )
 }
 

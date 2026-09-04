@@ -64,11 +64,17 @@ interface Props {
    * donde lo que importa es dónde está cada país hoy y no cuál fue su extremo histórico.
    */
   rotular?: 'extremos' | number
+  /**
+   * Qué puntos están encendidos, para el recorrido con scroll. Los apagados **siguen en el
+   * documento** con opacidad cero: están al imprimir y para un lector de pantalla, y la
+   * escala no depende de ellos, así que un punto nunca cambia de lugar al encenderse.
+   */
+  visible?: (fila: string, serie: string) => boolean
 }
 
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
-  anchoEtiqueta = '5.5rem', rotular = 'extremos',
+  anchoEtiqueta = '5.5rem', rotular = 'extremos', visible,
 }: Props) {
   const rango = escala.max - escala.min || 1
   /** Posición en el lienzo, de 0 a 100. */
@@ -100,9 +106,12 @@ export default function Puntos ({
 
       <div className="flex flex-col">
         {filas.map((fila) => {
-          const puntos = fila.valores
+          const todos = fila.valores
             .map((v, i) => ({ valor: v, serie: series[i] }))
             .filter((p): p is { valor: number, serie: SerieDePuntos } => p.valor !== null && p.serie !== undefined)
+          // El trazo, los rótulos y los extremos se calculan sobre lo encendido: si no, el
+          // trazo anunciaría un rango que todavía no se mostró.
+          const puntos = visible ? todos.filter((p) => visible(fila.clave, p.serie.clave)) : todos
           const posiciones = puntos.map((p) => x(p.valor))
           const min = Math.min(...posiciones)
           const max = Math.max(...posiciones)
@@ -112,15 +121,18 @@ export default function Puntos ({
           const enMax = puntos[posiciones.indexOf(max)]
           // Con una serie destacada, esa va rotulada aunque quede en medio, y la otra solo si
           // hay espacio. Sin ella, se rotulan los dos extremos cuando están separados.
+          // Si la serie destacada todavía no está encendida, se rotulan los extremos: una fila
+          // con puntos y sin ningún número obliga a leer el eje a ojo.
           const destacado = typeof rotular === 'number'
             ? puntos.find((p) => p.serie.clave === series[rotular]?.clave)
             : undefined
-          const aIzquierda = typeof rotular === 'number'
-            ? (destacado === enMin ? destacado : separados ? enMin : undefined)
-            : (separados ? enMin : undefined)
-          const aDerecha = typeof rotular === 'number'
-            ? (destacado === enMin ? (separados ? enMax : undefined) : destacado)
-            : enMax
+          const porExtremos = destacado === undefined
+          const aIzquierda = porExtremos
+            ? (separados ? enMin : undefined)
+            : (destacado === enMin ? destacado : separados ? enMin : undefined)
+          const aDerecha = porExtremos
+            ? enMax
+            : (destacado === enMin ? (separados ? enMax : undefined) : destacado)
 
           return (
             // En pantalla angosta el nombre va sobre su fila y no al lado: la columna de texto
@@ -142,7 +154,7 @@ export default function Puntos ({
                     sin él se lee como puntos sueltos en vez de como un recorrido. */}
                 {puntos.length > 1 && (
                   <span
-                    className="absolute top-1/2 h-px -translate-y-1/2 bg-gray-200"
+                    className="absolute top-1/2 h-px -translate-y-1/2 bg-gray-200 transition-all duration-500"
                     style={{ left: `${min}%`, width: `${max - min}%` }}
                   />
                 )}
@@ -150,10 +162,12 @@ export default function Puntos ({
                 {/* El anillo blanco separa dos puntos vecinos. Dos puntos con el mismo valor sí
                     se tapan: el número exacto está al pasar el cursor. No se desplazan, porque
                     desplazarlos sería dibujar un valor que no es. */}
-                {puntos.map((p) => (
+                {todos.map((p) => (
                   <span
                     key={p.serie.clave}
-                    className="absolute top-1/2 rounded-full ring-2 ring-white"
+                    className={`punto absolute top-1/2 rounded-full ring-2 ring-white transition-opacity duration-500 ${
+                      puntos.includes(p) ? 'opacity-100' : 'opacity-0'
+                    }`}
                     style={{
                       left: `${x(p.valor)}%`,
                       width: `${PUNTO}px`,
