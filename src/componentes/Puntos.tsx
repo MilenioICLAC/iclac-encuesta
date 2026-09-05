@@ -70,11 +70,14 @@ interface Props {
    * escala no depende de ellos, así que un punto nunca cambia de lugar al encenderse.
    */
   visible?: (fila: string, serie: string) => boolean
+  /** Nombre siempre al lado y nunca sobre la fila, aunque la pantalla sea angosta. Es para la
+   *  capa del recorrido, donde el alto está contado: apilar cuesta 18 px por fila. */
+  compacto?: boolean
 }
 
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
-  anchoEtiqueta = '5.5rem', rotular = 'extremos', visible,
+  anchoEtiqueta = '5.5rem', rotular = 'extremos', visible, compacto = false,
 }: Props) {
   const rango = escala.max - escala.min || 1
   /** Posición en el lienzo, de 0 a 100. */
@@ -84,13 +87,14 @@ export default function Puntos ({
   // en index.css: ni clase de Tailwind (interpolada, el compilador no la ve) ni estilo en línea
   // (sin media query, y le gana a la clase, así que rompe el apilado en teléfono).
   const ancho = { '--ancho-etiqueta': anchoEtiqueta } as React.CSSProperties
+  const rejilla = compacto ? 'fila-puntos compacta' : 'fila-puntos'
 
   return (
     <div>
       {/* Eje arriba. Va sobre el mismo lienzo que los puntos, márgenes incluidos, o las marcas
           quedan corridas respecto de lo que rotulan. */}
-      <div className="fila-puntos items-end" style={ancho}>
-        <span className="hidden sm:block" />
+      <div className={`${rejilla} items-end`} style={ancho}>
+        <span className={compacto ? undefined : 'hidden sm:block'} />
         <div className="relative h-4" style={{ marginLeft: MARGEN, marginRight: MARGEN }}>
           {cortes.map((f) => (
             <span
@@ -139,7 +143,7 @@ export default function Puntos ({
             // se comía 88 de los 296 px disponibles y los puntos quedaban unos encima de otros.
             <div
               key={fila.clave}
-              className="fila-puntos items-center pb-1 sm:pb-0"
+              className={`${rejilla} items-center ${compacto ? '' : 'pb-1 sm:pb-0'}`}
               style={ancho}
             >
               <span className="truncate text-xs text-gray-700 sm:text-right" title={fila.etiqueta}>
