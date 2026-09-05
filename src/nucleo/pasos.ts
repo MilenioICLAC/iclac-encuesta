@@ -32,11 +32,31 @@ export function useMovimientoReducido () {
 /**
  * Cuál de los pasos está en la banda de lectura, que es el 10 % central de la pantalla.
  *
+ * **Qué se observa cambia con el ancho, y no es un capricho.** En pantalla ancha el párrafo y la
+ * figura caben juntos y quedan fijos, así que lo que se mueve es una pista invisible: sin ella el
+ * párrafo mide 190 px y el recorrido entero pasaría en un golpe de rueda. En teléfono los dos
+ * juntos miden más que la pantalla, así que la figura se pega arriba, el párrafo corre por debajo
+ * y **las frases se observan a sí mismas**: ahí el propio texto da el ritmo y la pista sobra.
+ *
  * La banda es angosta a propósito: con una más ancha hay dos pasos dentro a la vez y el paso
  * activo depende del orden en que el navegador entregue las entradas, que no está garantizado.
  * El precio es que cada paso tiene que ser más alto que la banda, y de eso se encarga el
  * `min-h` de la columna de texto.
  */
+/** Si la pantalla llega a un ancho. Para elegir disposición, no para maquillar una sola. */
+export function useAnchoMinimo (px: number) {
+  const [alcanza, setAlcanza] = useState(false)
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return
+    const consulta = matchMedia(`(min-width: ${px}px)`)
+    setAlcanza(consulta.matches)
+    const alCambiar = () => { setAlcanza(consulta.matches) }
+    consulta.addEventListener('change', alCambiar)
+    return () => { consulta.removeEventListener('change', alCambiar) }
+  }, [px])
+  return alcanza
+}
+
 export function usePasoActivo (cantidad: number) {
   const refs = useRef<(HTMLElement | null)[]>([])
   const [activo, setActivo] = useState(0)

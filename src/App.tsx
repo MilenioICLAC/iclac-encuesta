@@ -15,7 +15,7 @@ import Densidad from './componentes/Densidad'
 import Puntos from './componentes/Puntos'
 import Descargas from './componentes/Descargas'
 import { escalaRedonda } from './nucleo/escala'
-import { usePasoActivo } from './nucleo/pasos'
+import { useAnchoMinimo, usePasoActivo } from './nucleo/pasos'
 import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
 import { decimal, numero, porcentaje } from './locale'
 
@@ -206,35 +206,33 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
     <section className="mx-auto max-w-5xl px-4 py-10">
       <h2 className="font-display text-2xl font-semibold">Qué se movió entre 2023 y 2025</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Tres cambios que ordenan el resto. Las cifras se calculan sobre la base publicada, así que se
-        corrigen solas cuando entra una oleada nueva.
+        Tres cambios que ordenan el resto.
       </p>
 
       <div className="mt-6 flex flex-col gap-4">
         <TramoConPasos
           titulo="China pasa a Estados Unidos, y el cambio entero ocurre en 2025"
-          pasos={[
+          frases={[
             <>
               Los cinco países se evalúan de 0 a 100. En 2023 y 2024 <strong>Estados Unidos estaba
               mejor evaluado que China</strong>, y las dos oleadas dan casi lo mismo.
             </>,
             <>
               En 2025 se invierte: China llega a {decimal(chinaT.at(-1)!.media)} y Estados Unidos cae
-              a {decimal(eeuuT.at(-1)!.media)}. Es <strong>la primera vez que China queda por
+              a {decimal(eeuuT.at(-1)!.media)}, <strong>la primera vez que China queda por
               encima</strong>. Se mueven las dos, en direcciones opuestas y en magnitud parecida:
               China sube {decimal(subeChina)} puntos respecto de 2024 y Estados Unidos baja{' '}
               {decimal(bajaEeuu)}.
             </>,
             <>
               <strong>Japón sigue siendo el mejor evaluado de los cinco</strong>, en las tres oleadas
-              y sin acercarse a nadie. La comparación con China no es entre China y un promedio: es
-              contra países que la gente evalúa muy distinto entre sí.
+              y sin acercarse a nadie: la comparación con China no es contra un promedio, sino contra
+              países que la gente evalúa muy distinto entre sí.
             </>,
             <>
-              Con los cinco a la vista se ve lo demás: <strong>2024 no pasó nada</strong>. Ningún país
-              se mueve más de {decimal(quietas)} puntos entre 2023 y 2024, así que el cambio entero
-              ocurre en la última oleada. Y Estados Unidos termina abajo de Corea del Sur, aunque por
-              una diferencia demasiado chica para afirmarla.
+              Y con los cinco a la vista se ve lo demás: <strong>2024 no pasó nada</strong>. Ningún
+              país se mueve más de {decimal(quietas)} puntos entre 2023 y 2024, así que el cambio
+              entero ocurre en la última oleada.
             </>,
           ]}
           figura={(activo) => (
@@ -314,56 +312,83 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
 }
 
 /**
- * Un tramo que se lee con el scroll: cada frase enciende los puntos de los que habla.
+ * Un tramo que se lee con el scroll: **el párrafo va entero desde el principio** y sus frases se
+ * encienden a medida que el scroll avanza, en el mismo compás en que se encienden los puntos.
  *
- * La figura queda pegada arriba (al costado en pantalla ancha) mientras las frases pasan por
- * debajo. La frase que está en la banda central de la pantalla es la activa, y las otras se
- * apagan a gris: sin eso, cuatro frases a la vez compiten por la atención con la figura.
+ * Es una escena pegada. El párrafo y la figura quedan fijos en pantalla y lo que se mueve es una
+ * pista invisible debajo, que es la que gobierna el paso activo. La alternativa era una frase por
+ * pantalla, que obliga al lector a recordar lo anterior en vez de poder releerlo.
  *
- * **Con `prefers-reduced-motion` no hay recorrido**: el hook salta al último paso, que es el
- * que muestra la figura entera, y las frases van todas en negro. Quien pide menos movimiento
- * no recibe menos datos.
+ * Las frases que todavía no llegaron van en gris claro, no ocultas: el texto está completo para
+ * copiarlo, buscarlo o leerlo con un lector de pantalla, y la opacidad es solo una capa de lectura.
+ *
+ * **Con `prefers-reduced-motion` no hay recorrido**: el hook salta al último paso, con la figura
+ * entera y el párrafo entero en negro. Quien pide menos movimiento no recibe menos.
  */
-function TramoConPasos ({ titulo, pasos, figura, nota }: {
+function TramoConPasos ({ titulo, frases, figura, nota }: {
   titulo: string
-  pasos: React.ReactNode[]
+  /** Las frases del párrafo, en orden. Cada una enciende el paso de su mismo índice. */
+  frases: React.ReactNode[]
   figura: (activo: number) => React.ReactNode
-  /** El pie de la figura. Va **fuera** del bloque pegado: adentro, en teléfono, la figura se
-   *  comía la mitad de la pantalla y no quedaba sitio para la frase que la explica. */
+  /** El pie de la figura. Va fuera de lo que queda pegado: adentro, en teléfono, se comía media
+   *  pantalla y no quedaba sitio para el párrafo. */
   nota?: React.ReactNode
 }) {
-  const { activo, refs, reducido } = usePasoActivo(pasos.length)
+  const { activo, refs, reducido } = usePasoActivo(frases.length)
+  const escena = useAnchoMinimo(1024)
+
+  const parrafo = (conRefs: boolean) => (
+    <p className="text-sm leading-relaxed">
+      {frases.map((frase, i) => (
+        <span
+          key={i}
+          ref={conRefs ? (el) => { refs.current[i] = el } : undefined}
+          data-paso={conRefs ? i : undefined}
+          className={`transition-colors duration-500 ${
+            !reducido && i > activo ? 'text-gray-300' : 'text-gray-700'
+          }`}
+        >
+          {frase}{' '}
+        </span>
+      ))}
+    </p>
+  )
 
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 className="font-display text-lg font-semibold">{titulo}</h3>
-      <div className="mt-3 grid gap-2 lg:grid-cols-2 lg:gap-8">
-        {/* Fondo opaco y pegado a cero, sin hueco arriba: con `bg-white/95` el texto que pasa
-            por detrás se transparentaba sobre la figura, y con `top-2` asomaba por el hueco. */}
-        <div className="sticky top-0 z-10 -mx-2 bg-white px-2 pb-3 pt-2 lg:col-start-2 lg:row-start-1 lg:top-[26vh]">
-          {figura(activo)}
-        </div>
-        <div className="lg:col-start-1 lg:row-start-1">
-          {pasos.map((paso, i) => (
-            // El `flex` va en el contenedor y no en el párrafo: sobre un `<p>` convierte cada
-            // trozo de texto en un elemento flex y la frase sale partida en columnas.
-            <div
-              key={i}
-              ref={(el) => { refs.current[i] = el }}
-              data-paso={i}
-              className="flex min-h-[45vh] items-center"
-            >
-              <p className={`text-sm leading-relaxed transition-colors duration-300 ${
-                !reducido && i !== activo ? 'text-gray-400' : 'text-gray-700'
-              }`}
-              >
-                {paso}
-              </p>
+      {escena
+        ? (
+          // Pantalla ancha: párrafo y figura caben juntos y quedan fijos. Lo que se mueve es una
+          // pista invisible, porque el párrafo mide unos 190 px y sin ella el recorrido entero
+          // pasaría en un golpe de rueda.
+          <div className="relative">
+            <div className="sticky top-[14vh] z-10 bg-white pb-3">
+              <h3 className="font-display text-lg font-semibold">{titulo}</h3>
+              <div className="mt-3 grid grid-cols-2 items-center gap-8">
+                {parrafo(false)}
+                <div>{figura(activo)}</div>
+              </div>
             </div>
-          ))}
-          {nota && <div className="pb-2">{nota}</div>}
-        </div>
-      </div>
+            <div aria-hidden>
+              {frases.map((_, i) => (
+                <div key={i} ref={(el) => { refs.current[i] = el }} data-paso={i} className="h-[50vh]" />
+              ))}
+            </div>
+          </div>
+          )
+        : (
+          // Teléfono: los dos juntos miden más que la pantalla, así que la figura se pega arriba y
+          // el párrafo corre por debajo. Las frases se observan a sí mismas y el texto da el ritmo.
+          <>
+            <h3 className="font-display text-lg font-semibold">{titulo}</h3>
+            <div className="sticky top-0 z-10 -mx-2 mt-3 bg-white px-2 pb-3 pt-2">
+              {figura(activo)}
+            </div>
+            <div className="mt-2">{parrafo(true)}</div>
+          </>
+          )}
+
+      {nota && <div className="mt-3">{nota}</div>}
     </article>
   )
 }
