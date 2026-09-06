@@ -73,12 +73,32 @@ interface Props {
   /** Nombre siempre al lado y nunca sobre la fila, aunque la pantalla sea angosta. Es para la
    *  capa del recorrido, donde el alto está contado: apilar cuesta 18 px por fila. */
   compacto?: boolean
+  /** Alto de cada fila en px. Se sube en el recorrido, donde la figura es lo que se mira. */
+  altoFila?: number
+  /**
+   * El punto crece con el orden de la serie.
+   *
+   * Solo para series **ordenadas**, como las oleadas: el tamaño dice cuál es la más nueva, y así
+   * el orden se lee también sin color, que es lo que necesita alguien que no distingue dos tonos
+   * vecinos. En series nominales sería inventar una jerarquía que no existe.
+   */
+  radioCreciente?: boolean
+  /** Unidad de la escala, junto al eje. Escrita acá se lee una vez; escrita en el relato hay que
+   *  repetirla en cada frase. */
+  unidadEje?: string
+  /** La leyenda al pie. Se apaga cuando quien usa la figura pone la suya, como el recorrido, que
+   *  la necesita arriba y como rampa: dos leyendas de lo mismo es peor que ninguna. */
+  leyenda?: boolean
 }
 
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
   anchoEtiqueta = '5.5rem', rotular = 'extremos', visible, compacto = false,
+  altoFila = ALTO_FILA, radioCreciente = false, unidadEje, leyenda = true,
 }: Props) {
+  // Tres oleadas dan 8, 10 y 12 px. El escalón es de 2 px porque con 1 no se distingue y con 3
+  // el punto más nuevo empieza a tapar a su vecino.
+  const tamano = (i: number) => (radioCreciente ? PUNTO - 2 + i * 2 : PUNTO)
   const rango = escala.max - escala.min || 1
   /** Posición en el lienzo, de 0 a 100. */
   const x = (v: number) => Math.min(100, Math.max(0, (100 * (v - escala.min)) / rango))
@@ -108,6 +128,21 @@ export default function Puntos ({
         </div>
       </div>
 
+      {/* La unidad va pegada al eje y alineada con el lienzo, no con la columna de nombres. Dice
+          además dónde empieza la escala: un eje recortado que no lo declara exagera la pendiente,
+          que es el defecto del monitor actual. */}
+      {unidadEje && (
+        <div className={rejilla} style={ancho}>
+          <span className={compacto ? undefined : 'hidden sm:block'} />
+          <p
+            className="text-[10px] leading-tight text-gray-500"
+            style={{ marginLeft: MARGEN, marginRight: MARGEN }}
+          >
+            {unidadEje}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col">
         {filas.map((fila) => {
           const todos = fila.valores
@@ -130,13 +165,16 @@ export default function Puntos ({
           const destacado = typeof rotular === 'number'
             ? puntos.find((p) => p.serie.clave === series[rotular]?.clave)
             : undefined
+          // Con una serie destacada y encendida va **solo** ella. Antes se le sumaba el otro
+          // extremo si había espacio, y en el recorrido eso dejaba el número de una oleada vieja
+          // pegado al lado del de la última: dos números, y solo uno era del que hablaba el paso.
           const porExtremos = destacado === undefined
           const aIzquierda = porExtremos
             ? (separados ? enMin : undefined)
-            : (destacado === enMin ? destacado : separados ? enMin : undefined)
+            : (destacado === enMin ? destacado : undefined)
           const aDerecha = porExtremos
             ? enMax
-            : (destacado === enMin ? (separados ? enMax : undefined) : destacado)
+            : (destacado === enMin ? undefined : destacado)
 
           return (
             // En pantalla angosta el nombre va sobre su fila y no al lado: la columna de texto
@@ -149,7 +187,7 @@ export default function Puntos ({
               <span className="truncate text-xs text-gray-700 sm:text-right" title={fila.etiqueta}>
                 {fila.etiqueta}
               </span>
-              <div className="relative" style={{ height: `${ALTO_FILA}px`, marginLeft: MARGEN, marginRight: MARGEN }}>
+              <div className="relative" style={{ height: `${altoFila}px`, marginLeft: MARGEN, marginRight: MARGEN }}>
                 {cortes.map((f) => (
                   <span key={f} className="absolute inset-y-0 w-px bg-gray-100" style={{ left: `${f * 100}%` }} />
                 ))}
@@ -166,25 +204,31 @@ export default function Puntos ({
                 {/* El anillo blanco separa dos puntos vecinos. Dos puntos con el mismo valor sí
                     se tapan: el número exacto está al pasar el cursor. No se desplazan, porque
                     desplazarlos sería dibujar un valor que no es. */}
-                {todos.map((p) => (
+                {todos.map((p) => {
+                  const d = tamano(series.indexOf(p.serie))
+                  return (
                   <span
                     key={p.serie.clave}
                     className={`punto absolute top-1/2 rounded-full ring-2 ring-white transition-opacity duration-500 ${
-                      puntos.includes(p) ? 'opacity-100' : 'opacity-0'
+                      puntos.includes(p) ? 'opacity-100 dato-nuevo' : 'opacity-0'
                     }`}
                     style={{
                       left: `${x(p.valor)}%`,
-                      width: `${PUNTO}px`,
-                      height: `${PUNTO}px`,
-                      marginLeft: `${-PUNTO / 2}px`,
-                      marginTop: `${-PUNTO / 2}px`,
+                      width: `${d}px`,
+                      height: `${d}px`,
+                      marginLeft: `${-d / 2}px`,
+                      marginTop: `${-d / 2}px`,
                       backgroundColor: p.serie.color,
+                      // El destello sale de `currentColor`: sin esto, el halo toma el color del
+                      // texto heredado y no el del dato.
+                      color: p.serie.color,
                     }}
                     title={titulo
                       ? titulo(fila, p.serie, p.valor)
                       : `${p.serie.etiqueta} · ${fila.etiqueta}: ${formato(p.valor)}`}
                   />
-                ))}
+                  )
+                })}
 
                 {aIzquierda && (
                   <span
@@ -208,7 +252,7 @@ export default function Puntos ({
         })}
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+      <ul className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 ${leyenda ? '' : 'hidden'}`}>
         {series.map((s) => (
           <li key={s.clave} className="flex items-center gap-1.5 text-xs text-gray-600">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />

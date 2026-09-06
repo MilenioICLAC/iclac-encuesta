@@ -16,7 +16,7 @@ import Puntos from './componentes/Puntos'
 import CapaRecorrido, { Escena } from './componentes/CapaRecorrido'
 import Descargas from './componentes/Descargas'
 import { escalaRedonda } from './nucleo/escala'
-import { IDENTIDAD, SEMANTICOS } from './nucleo/paleta'
+import { SEMANTICOS, pasosDeOrden } from './nucleo/paleta'
 import { decimal, numero, porcentaje } from './locale'
 
 /**
@@ -155,6 +155,50 @@ function encendidos (olas: number[]) {
   ]
 }
 
+/**
+ * El año del dato más nuevo que ya entró, en grande y arriba de la figura.
+ *
+ * Hace el trabajo que la leyenda sola no hace: dice de qué oleada habla **este** paso, sin mandar
+ * la vista fuera de la figura y traerla de vuelta. Va fuera del lienzo porque flotando sobre los
+ * puntos chocaba con la fila de arriba, que es la del país mejor evaluado.
+ */
+function AnioDelPaso ({ olas, tonos, hasta }: { olas: number[], tonos: string[], hasta: number }) {
+  return (
+    <div className="mb-1 flex justify-end">
+      <span
+        className="font-display text-[34px] font-bold leading-none tracking-tight tabular-nums opacity-40 transition-colors duration-500"
+        style={{ color: tonos[hasta] }}
+        aria-hidden
+      >
+        {olas[hasta]}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Qué color es qué oleada, al pie de la figura y a la derecha.
+ *
+ * **La muestra es el punto, del mismo tamaño que tiene en la figura**, incluido el crecimiento por
+ * oleada: la leyenda tiene que verse como lo que el lector está mirando. Con barras de color había
+ * que traducir de barra a punto.
+ */
+function LeyendaDeOleadas ({ olas, tonos }: { olas: number[], tonos: string[] }) {
+  return (
+    <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
+      {olas.map((ola, i) => (
+        <li key={ola} className="flex items-center gap-1.5 text-[11px] tabular-nums text-gray-500">
+          <span
+            className="inline-block shrink-0 rounded-full"
+            style={{ backgroundColor: tonos[i], width: 8 + i * 2, height: 8 + i * 2 }}
+          />
+          {ola}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   const todos = (ola: number) => filtrar(encuesta, { olas: [ola] })
 
@@ -177,17 +221,36 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   // El mayor movimiento de cualquier país entre las dos primeras oleadas. Se calcula en vez de
   // escribirse porque la frase que lo usa deja de ser cierta el día que entre una oleada nueva.
   const quietas = Math.max(...termometro.map((t) => Math.abs((t.valores[1]?.media ?? 0) - (t.valores[0]?.media ?? 0))))
+  // El mejor evaluado sale de los datos, no del texto: hoy es Japón, y la frase que lo nombra se
+  // corrige sola si deja de serlo. `siempreMejor` es lo que habilita decir «sigue», que es una
+  // afirmación sobre las tres oleadas y no sobre la última.
+  const mejor = ordenados[0]
+  const siempreMejor = encuesta.olas.every((_, i) =>
+    termometro.every((t) => (t.valores[i]?.media ?? 0) <= (mejor.valores[i]?.media ?? 0)))
   const pasosEncendidos = encendidos(encuesta.olas)
   const bases = termometro.flatMap((t) => t.valores.map((v) => v.base)).filter((n) => n > 0)
   const baseMinima = Math.min(...bases)
   const baseMaxima = Math.max(...bases)
 
   const p24 = variableDe(encuesta, 'p24')
+  const p25 = variableDe(encuesta, 'p25')
   const p26 = variableDe(encuesta, 'p26')
 
   const confianza = p24
     ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p24, [1]).porcentaje, base: todos(ola).length }))
     : []
+  // La misma pregunta sobre la otra potencia. Va en la figura y no solo en el texto: la frase
+  // afirma que la brecha se abre por un lado solo, y esa afirmación se lee comparando dos series.
+  const confianzaEeuu = p25
+    ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p25, [1]).porcentaje, base: todos(ola).length }))
+    : []
+  const subeConfChina = (confianza.at(-1)?.valor ?? 0) - (confianza.at(0)?.valor ?? 0)
+  const subeConfEeuu = (confianzaEeuu.at(-1)?.valor ?? 0) - (confianzaEeuu.at(0)?.valor ?? 0)
+  // La afirmación «por primera vez China queda por encima» se comprueba, no se escribe: el día que
+  // entre una oleada nueva, la frase se corrige sola o desaparece.
+  const encimaPorPrimeraVez = confianza.length > 1 && confianzaEeuu.length === confianza.length &&
+    (confianza.at(-1)?.valor ?? 0) > (confianzaEeuu.at(-1)?.valor ?? 0) &&
+    confianza.slice(0, -1).every((c, i) => c.valor <= (confianzaEeuu[i]?.valor ?? 0))
 
   const noAlineado = p26
     ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p26, [3, 4]).porcentaje, base: todos(ola).length }))
@@ -204,10 +267,14 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
 
   const [abierta, setAbierta] = useState(false)
 
+  // Las oleadas son una secuencia, no tres categorías sueltas: van en un tono de claro a oscuro,
+  // que es la paleta de orden del proyecto. Con tres colores distintos hay que aprenderse cuál es
+  // cuál; con la rampa, más oscuro es más nuevo y no hay nada que memorizar.
+  const tonos = pasosDeOrden(encuesta.olas.length)
   const serieTermometro = encuesta.olas.map((ola, i) => ({
     clave: String(ola),
     etiqueta: String(ola),
-    color: IDENTIDAD[i % IDENTIDAD.length],
+    color: tonos[i],
   }))
 
   return (
@@ -240,28 +307,40 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
           <>
             <Escena
               raiz={raiz}
-              titulo="China pasa a Estados Unidos, y el cambio entero ocurre en 2025"
+              // El encabezado en dos niveles, como quedó en el laboratorio: arriba qué se está
+              // mirando, y el hallazgo lo cuentan las frases. «Las personas encuestadas» y no «los
+              // chilenos»: la muestra no es probabilística y no habla por el país.
+              titulo="Cómo evalúan a cinco países las personas encuestadas, de 0 a 100"
+              bajada="Un punto por oleada. Promedio de quienes contestaron."
+              cabecera={(activo) => (
+                <AnioDelPaso
+                  olas={encuesta.olas}
+                  tonos={tonos}
+                  // Hasta qué oleada llegó el relato: es la más nueva que el paso enciende.
+                  hasta={Math.max(0, ...encuesta.olas.map((ola, i) => (
+                    termometro.some((t) => pasosEncendidos[activo]?.(t.pais, ola)) ? i : 0
+                  )))}
+                />
+              )}
               frases={[
                 <>
-                  Los cinco países se evalúan de 0 a 100. En 2023 y 2024 <strong>Estados Unidos
-                  estaba mejor evaluado que China</strong>, y las dos oleadas dan casi lo mismo.
+                  En 2023 y 2024 <strong>Estados Unidos estaba mejor evaluado que China</strong>.
                 </>,
                 <>
-                  En 2025 se invierte: China llega a {decimal(chinaT.at(-1)!.media)} y Estados Unidos
-                  cae a {decimal(eeuuT.at(-1)!.media)}, <strong>la primera vez que China queda por
-                  encima</strong>. Se mueven las dos, en direcciones opuestas y en magnitud parecida:
-                  China sube {decimal(subeChina)} puntos respecto de 2024 y Estados Unidos baja{' '}
-                  {decimal(bajaEeuu)}.
+                  <strong>En {encuesta.olas.at(-1)} se invierte</strong>: China llega a{' '}
+                  {decimal(chinaT.at(-1)!.media)} (sube {decimal(subeChina)} puntos) y Estados
+                  Unidos cae a {decimal(eeuuT.at(-1)!.media)} (baja {decimal(bajaEeuu)}).
                 </>,
                 <>
-                  <strong>Japón sigue siendo el mejor evaluado de los cinco</strong>, en las tres
-                  oleadas y sin acercarse a nadie: la comparación con China no es contra un promedio,
-                  sino contra países que la gente evalúa muy distinto entre sí.
+                  <strong>{mejor.pais} {siempreMejor ? 'encabeza las tres oleadas' : `encabeza ${encuesta.olas.at(-1)}`}</strong>,
+                  con {decimal(mejor.valores.at(-1)!.media)} en {encuesta.olas.at(-1)}:{' '}
+                  {decimal((mejor.valores.at(-1)?.media ?? 0) - (chinaT.at(-1)?.media ?? 0))} puntos
+                  sobre China.
                 </>,
                 <>
-                  Y con los cinco a la vista se ve lo demás: <strong>2024 no pasó nada</strong>.
-                  Ningún país se mueve más de {decimal(quietas)} puntos entre 2023 y 2024, así que el
-                  cambio entero ocurre en la última oleada.
+                  <strong>Todo el cambio de la serie ocurre en {encuesta.olas.at(-1)}</strong>: entre{' '}
+                  {encuesta.olas.at(0)} y {encuesta.olas.at(-2)} ningún país se movió más de{' '}
+                  {decimal(quietas)} {quietas === 1 ? 'punto' : 'puntos'}.
                 </>,
               ]}
               figura={(activo) => (
@@ -283,16 +362,24 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                   marcas={5}
                   anchoEtiqueta="6.5rem"
                   compacto
+                  altoFila={40}
+                  radioCreciente
+                  leyenda={false}
+                  unidadEje={`Evaluación de 0 a 100 · el eje muestra el tramo ${numero(escalaTermometro.min)} a ${numero(escalaTermometro.max)}`}
                   rotular={encuesta.olas.length - 1}
                   visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
                 />
               )}
               nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  Evaluación de 0 a 100, promedio de quienes contestaron. Rotulada la última oleada.
-                  Las bases van de {numero(baseMinima)} a {numero(baseMaxima)} casos según país y
-                  oleada, así que los promedios se comparan pero los n no son iguales.
-                </p>
+                // La leyenda va acá, en la esquina de abajo a la derecha del gráfico: el lector la
+                // busca cuando ya vio los puntos, no antes.
+                <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+                  <p className="max-w-[22rem] text-xs leading-snug text-gray-500">
+                    Rotulada la última oleada. Bases de {numero(baseMinima)} a {numero(baseMaxima)}{' '}
+                    casos según país y oleada.
+                  </p>
+                  <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
+                </div>
               )}
             />
 
@@ -307,13 +394,36 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                   {porcentaje(confianza.at(-1)?.valor ?? 0, 1)}.
                 </>,
                 <>
-                  La confianza en Estados Unidos se mantiene prácticamente igual en las tres oleadas,
-                  así que <strong>la brecha se abre por un lado solo</strong>: no es que Estados
-                  Unidos pierda confianza, es que China gana.
+                  La confianza en Estados Unidos también sube, de{' '}
+                  {porcentaje(confianzaEeuu.at(0)?.valor ?? 0, 1)} a{' '}
+                  {porcentaje(confianzaEeuu.at(-1)?.valor ?? 0, 1)}, pero{' '}
+                  {decimal(subeConfEeuu)} puntos contra los {decimal(subeConfChina)} de China:{' '}
+                  <strong>no es que Estados Unidos pierda confianza, es que China crece mucho más
+                  rápido</strong>
+                  {encimaPorPrimeraVez && <>, y en {encuesta.olas.at(-1)} la pasa por primera vez</>}.
                 </>,
               ]}
-              figura={() => (
-                <Serie puntos={confianza} unidad="porcentaje" etiqueta="Mucha confianza en China" />
+              figura={(activo) => (
+                <div className="grid gap-x-6 sm:grid-cols-2">
+                  <Serie
+                    puntos={confianza} unidad="porcentaje" etiqueta="Mucha confianza en China"
+                    color={SEMANTICOS['A favor de China']}
+                  />
+                  {/* La segunda potencia se enciende con su frase: en el primer paso el panel está
+                      con su eje y sin sus puntos, que es la manera de decir «esto viene» sin
+                      mostrar todavía el dato del que no se habló. */}
+                  <Serie
+                    puntos={confianzaEeuu} unidad="porcentaje" etiqueta="Mucha confianza en EE. UU."
+                    color={SEMANTICOS['A favor de EE. UU.']}
+                    visible={() => activo >= 1}
+                  />
+                </div>
+              )}
+              nota={(
+                <p className="text-xs leading-snug text-gray-500">
+                  Porcentaje que responde «mucha», sobre quienes contestaron la pregunta. Las dos
+                  figuras comparten eje de 0 a 100, así que las pendientes se comparan directo.
+                </p>
               )}
             />
 
@@ -336,11 +446,19 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                   más chilenos que quieren alinearse con China que con Estados Unidos.</strong>
                 </>,
               ]}
-              figura={() => (
+              figura={(activo) => (
                 <div className="grid gap-x-6 sm:grid-cols-3">
                   <Serie puntos={noAlineado} unidad="porcentaje" etiqueta="No alineamiento" />
-                  <Serie puntos={proChina} unidad="porcentaje" etiqueta="A favor de China" color={SEMANTICOS['A favor de China']} />
-                  <Serie puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE. UU." color={SEMANTICOS['A favor de EE. UU.']} />
+                  {/* La composición de la minoría entra con la frase que la cuenta: en el primer
+                      paso la figura es una sola serie, la que se está leyendo. */}
+                  <Serie
+                    puntos={proChina} unidad="porcentaje" etiqueta="A favor de China"
+                    color={SEMANTICOS['A favor de China']} visible={() => activo >= 1}
+                  />
+                  <Serie
+                    puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE. UU."
+                    color={SEMANTICOS['A favor de EE. UU.']} visible={() => activo >= 1}
+                  />
                 </div>
               )}
               nota={(

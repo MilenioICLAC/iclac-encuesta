@@ -28,18 +28,27 @@ interface Props {
   /** Varias series en la misma figura, cada una con su etiqueta. */
   etiqueta?: string
   color?: string
+  /**
+   * Qué oleadas están encendidas en este paso del recorrido. Sin ella, todas.
+   *
+   * **Apagar no es borrar** (ver `nucleo/pasos.ts`): el punto apagado sigue en el documento con
+   * opacidad cero, así que está al imprimir y para un lector de pantalla. Lo que sí se calcula
+   * sobre lo encendido son el trazo y los números, que anunciarían un recorrido todavía no
+   * contado. La escala no: se calcula siempre sobre todos los puntos.
+   */
+  visible?: (ola: number) => boolean
 }
 
 const ALTO = 132
 const PAD_Y = 18
 
-export default function Serie ({ puntos, unidad, etiqueta, color = IDENTIDAD[0] }: Props) {
+export default function Serie ({ puntos, unidad, etiqueta, color = IDENTIDAD[0], visible }: Props) {
   const escala = escalaDe([puntos], unidad)
-  return <Trazo puntos={puntos} escala={escala} unidad={unidad} etiqueta={etiqueta} color={color} />
+  return <Trazo puntos={puntos} escala={escala} unidad={unidad} etiqueta={etiqueta} color={color} visible={visible} />
 }
 
 export function Trazo ({
-  puntos, escala, unidad, etiqueta, color = IDENTIDAD[0], mostrarEjeX = true,
+  puntos, escala, unidad, etiqueta, color = IDENTIDAD[0], mostrarEjeX = true, visible,
 }: Props & { escala: { min: number, max: number }, mostrarEjeX?: boolean }) {
   const ancho = 100
   const x = (i: number) => (puntos.length === 1 ? ancho / 2 : (i * ancho) / (puntos.length - 1))
@@ -49,6 +58,7 @@ export function Trazo ({
   }
 
   const conDato = puntos.map((p, i) => ({ ...p, i })).filter((p) => p.valor !== null)
+  const encendido = (ola: number) => (visible ? visible(ola) : true)
   const fmt = (v: number) => (unidad === 'porcentaje' ? porcentaje(v, 0) : decimal(v))
 
   // El texto de los puntos extremos se ancla al borde en vez de centrarse. Centrado, la
@@ -59,10 +69,12 @@ export function Trazo ({
 
   // Los tramos se cortan donde falta una oleada, en vez de saltarla con una línea recta que
   // insinuaría continuidad.
+  // Un punto apagado corta el tramo igual que una oleada sin dato: el segmento aparece recién
+  // cuando el paso enciende sus dos extremos.
   const tramos: { i: number, valor: number }[][] = []
   let actual: { i: number, valor: number }[] = []
   for (const p of puntos.map((p, i) => ({ ...p, i }))) {
-    if (p.valor === null) { if (actual.length) tramos.push(actual); actual = [] } else {
+    if (p.valor === null || !encendido(p.ola)) { if (actual.length) tramos.push(actual); actual = [] } else {
       actual.push({ i: p.i, valor: p.valor })
     }
   }
@@ -83,8 +95,13 @@ export function Trazo ({
             fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round"
           />
         ))}
+        {/* `punto` es la clase que enciende lo apagado al imprimir (ver `index.css`). */}
         {conDato.map((p) => (
-          <g key={p.ola}>
+          <g
+            key={p.ola}
+            style={{ color }}
+            className={`punto transition-opacity duration-500 ${encendido(p.ola) ? 'opacity-100 dato-nuevo' : 'opacity-0'}`}
+          >
             <circle cx={x(p.i)} cy={y(p.valor!)} r="3.4" fill="white" stroke={color} strokeWidth="1.6" />
             <text
               x={x(p.i)} y={y(p.valor!) - 8} textAnchor={anclaje(p.i)}

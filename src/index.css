@@ -32,14 +32,105 @@
   .punto {
     opacity: 1 !important;
   }
+
+  /* El pulso de entrada no corre al imprimir, y con `both` el dato quedaría congelado en el
+     fotograma inicial, que es 2,4 veces su tamaño. */
+  .dato-nuevo {
+    animation: none;
+  }
 }
 
-/* Una escena del recorrido ocupa la pantalla menos la barra de la capa. `svh` es la pantalla
-   chica, la que queda cuando el navegador del teléfono muestra su propia barra: con `vh` la
-   figura queda tapada justo en el móvil, que es donde más se mira. */
+/* Una escena del recorrido ocupa la capa menos su barra.
+   **El alto sale del contenedor y no de la pantalla.** La capa es `fixed inset-0`, así que su
+   alto ya es el viewport real en cada momento: `100%` acierta también cuando el navegador del
+   teléfono muestra u oculta su propia barra, cosa que ni `vh` (pantalla grande) ni `svh` (chica)
+   hacen. Quedan como respaldo para el primer cuadro y para un navegador sin altura resuelta.
+
+   **Y se pega debajo de la barra, no debajo del borde de la pantalla.** Con `top: 0` la barra le
+   tapa el aire de arriba al título: el espacio existe pero queda detrás. */
 .escena {
-  min-height: calc(100vh - 2.5rem);
-  min-height: calc(100svh - 2.5rem);
+  --barra-capa: 2.5rem;
+  top: var(--barra-capa);
+  min-height: calc(100vh - var(--barra-capa));
+  min-height: calc(100svh - var(--barra-capa));
+  min-height: calc(100% - var(--barra-capa));
+}
+
+/* El dato que acaba de encenderse destella una vez, en su propio color.
+   Sin eso, un punto que aparece con opacidad pasa desapercibido: el lector está leyendo la frase
+   y no mira la figura hasta que algo cambia. **El destello no mueve nada**: ni la posición, ni el
+   tamaño, ni el eje. Mover un punto para llamar la atención sería dibujar un valor que no es.
+   El color sale de `currentColor`, así que cada marca tiene que llevar su propio `color`; con el
+   heredado, el halo sale del color del texto y no del dato. Probado en el laboratorio del
+   recorrido antes de traerlo (06-09-2026). */
+@keyframes destello-dato {
+  0% { filter: drop-shadow(0 0 0 currentColor); }
+  35% { filter: drop-shadow(0 0 7px currentColor); }
+  100% { filter: drop-shadow(0 0 0 currentColor); }
+}
+
+.dato-nuevo {
+  animation: destello-dato 680ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dato-nuevo {
+    animation: none;
+  }
+}
+
+/* Un paso de la pista invisible que mide el scroll. Va acá y no en el marcado para que el alto
+   del paso y el de la escena se lean juntos: el paso tiene que ser más alto que la banda de
+   lectura del observador (el 10 % central) y más bajo que la escena, y con las dos medidas en
+   archivos distintos se desincronizan. Misma unidad que la escena: con `vh` en uno y `svh` en el
+   otro, en el teléfono los pasos quedan ~10 % más altos de lo que la escena supone. */
+.paso-recorrido {
+  height: 75vh;
+  height: 75svh;
+}
+
+/* La pausa entre pasos, con imán nativo.
+   `proximity` y no `mandatory`: con `mandatory` el navegador siempre tiene que terminar en un
+   punto de imán, y el cierre de la capa («Ir al tablero») no es uno, así que puede quedar fuera de
+   alcance. Con `proximity` el gesto sigue siendo del lector, un tirón largo se acomoda al paso más
+   cercano al detenerse, y el teclado y el lector de pantalla no pierden nada. Nada de interceptar
+   el scroll: eso es scroll-jacking y deja gente afuera. */
+.capa-recorrido {
+  scroll-snap-type: y proximity;
+}
+
+.paso-recorrido {
+  scroll-snap-align: start;
+}
+
+/* Los colchones que emparejan el paso. El de arriba vale el 55 % de la pantalla, que es lo que
+   hace que el paso i entre a la banda de lectura exactamente a `i × alto de paso`; el de abajo
+   existe para que el último paso alcance a activarse. Los dos se recalculan en píxeles cuando se
+   conoce el alto real del contenedor (ver `CapaRecorrido.tsx`): esto es solo el primer cuadro. */
+.colchon-recorrido {
+  height: 55vh;
+  height: 55svh;
+}
+
+/* El párrafo de la escena en el teléfono: todas las frases en la misma celda de una grilla de
+   una sola celda. El bloque mide lo que la frase más alta y no cambia de alto al avanzar, sin
+   ningún número mágico. En pantalla ancha vuelve a ser un párrafo corrido. */
+.parrafo-escena {
+  display: grid;
+}
+
+.parrafo-escena > span {
+  grid-area: 1 / 1;
+}
+
+@media (min-width: 640px) {
+  .parrafo-escena {
+    display: block;
+  }
+
+  .parrafo-escena > span {
+    grid-area: auto;
+  }
 }
 
 /* Modo compacto: el nombre nunca sube sobre su fila. Cuesta lienzo (124 px de canvas en 360)
