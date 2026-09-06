@@ -176,7 +176,11 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
   raiz: HTMLElement | null
 }) {
   const { activo, refs, reducido } = usePasoActivo(frases.length, raiz)
+  const escena = useRef<HTMLDivElement | null>(null)
   const alto = useAltoDe(raiz)
+  // El alto de la escena **no** es el de la pantalla: con la figura grande y el texto a 19 px mide
+  // bastante más, y esa diferencia era exactamente lo que le sobraba al primer paso.
+  const altoEscena = useAltoDe(escena.current, alto)
 
   /*
    * Los pasos tienen que costar todos lo mismo, y no salen parejos solos: la escena pegada ocupa
@@ -195,7 +199,20 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
    */
   const altoPaso = alto ? Math.round(alto * 0.75) : undefined
   const colchon = alto ? Math.round(alto * 0.55) : undefined
-  const subirPista = alto ? -(alto - (colchon ?? 0)) : undefined
+  // La pista sube **el alto de la escena entero**, y nada más.
+  //
+  // Dos errores medidos con Playwright el 06-09-2026, los dos en esta línea: subir el alto de la
+  // pantalla en vez del de la escena (la escena mide más: figura grande y texto de 19 px), y
+  // restarle además el colchón, que ya está dentro de la pista y quedaba contado dos veces. Con
+  // los dos, el primer paso empezaba en 858 px en vez de 429 y duraba el doble que los demás.
+  //
+  // Con la pista arriba de todo, el paso i entra a la banda de lectura en `colchón + i × paso`
+  // menos el propio colchón: exactamente `i × alto de paso`.
+  const subirPista = altoEscena ? -altoEscena : undefined
+  // El colchón de salida solo tiene que alcanzar para que el último paso entre a la banda. Al 55 %
+  // sumaba media pantalla de scroll muerto a cada escena, encima del alto de la escena que ya hay
+  // que recorrer para que salga.
+  const colchonFinal = alto ? Math.round(alto * 0.2) : undefined
 
   // Una frase por paso solo en el teléfono, y solo con movimiento normal. La regla vive acá y no
   // en el CSS porque depende del paso activo, que es estado de React.
@@ -211,7 +228,7 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
     <section className="relative">
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
           arriba es padding real y no compensación de la barra, así que no se pierde al pegarse. */}
-      <div className="escena sticky flex flex-col justify-start gap-6 px-4 pb-6 pt-6 sm:px-6">
+      <div ref={escena} className="escena sticky flex flex-col justify-start gap-6 px-4 pb-6 pt-6 sm:px-6">
         <div className="mx-auto w-full max-w-2xl">
           <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{titulo}</h3>
           {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es el
@@ -258,7 +275,7 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
             }}
           />
         ))}
-        <div className="colchon-recorrido" style={colchon ? { height: colchon } : undefined} />
+        <div className="colchon-recorrido" style={colchonFinal ? { height: colchonFinal } : undefined} />
       </div>
     </section>
   )
@@ -276,7 +293,7 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
  * distingue una rotación o un cambio de ventana de la barra yendo y viniendo. La escena no lo
  * necesita: su alto es `100%` del contenedor y se adapta sola (ver `.escena` en `index.css`).
  */
-function useAltoDe (el: HTMLElement | null) {
+function useAltoDe (el: HTMLElement | null, cuando?: number) {
   const [alto, setAlto] = useState(0)
   const ancho = useRef(0)
   useEffect(() => {
@@ -295,6 +312,8 @@ function useAltoDe (el: HTMLElement | null) {
     const observador = new ResizeObserver(() => { medir(false) })
     observador.observe(el)
     return () => { observador.disconnect() }
-  }, [el])
+    // `cuando` fuerza una remedición: la escena se mide recién cuando ya se conoce el alto de la
+    // capa, porque su propio alto depende de él.
+  }, [el, cuando])
   return alto
 }

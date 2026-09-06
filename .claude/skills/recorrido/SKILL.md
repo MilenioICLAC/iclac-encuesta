@@ -106,6 +106,13 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   espacio» deja el número de una oleada vieja al lado del de la última: dos números, y solo uno es
   del que habla el paso. Los extremos se rotulan únicamente mientras la destacada no entró, para que
   ninguna fila quede sin un número que leer.
+- **Una figura hecha para una columna angosta no se pone a pantalla completa sin revisar su
+  lienzo.** El `viewBox` de `Serie` es casi cuadrado (100 × 132) porque en el tablero vive en una
+  columna: a 360 px de ancho se escala 3,6 veces y los números salen a 32 px. En el recorrido va con
+  `anchoLienzo={300}`, que da una figura ancha y baja. Lo mismo vale para cualquier figura que se
+  mude del tablero al recorrido.
+- **El rótulo de la unidad necesita su propio aire.** Pegado al eje se lee como una marca más, y en
+  360 px una frase larga se parte en tres líneas encima de las marcas.
 - **El contexto va más apagado que el relato, con piso.** Bajada y nota en gris 500: es el último
   tono que mantiene 4,5:1 sobre blanco, que es el piso de lectura para texto chico. Más apagado se
   ve mejor y deja gente afuera.
@@ -129,6 +136,12 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   principio (hace que el paso *i* entre a la banda en `i × alto de paso`) y otro al final (sin él, el
   último paso no se activa nunca). **En píxeles medidos, nunca en porcentaje:** un margen en
   porcentaje se resuelve contra el ancho.
+- **La geometría se mide, no se calcula.** El desfase del primer paso se calculó mal dos veces en el
+  papel —primero descontando el alto de la pantalla en vez del de la escena, después restando el
+  colchón dos veces— y las dos veces el error era invisible en el código y evidente en la medición:
+  el primer paso duraba 1.080 px contra 600 de los demás. Se corre `scripts/mirar_recorrido.mjs` y
+  los costos tienen que salir iguales entre sí (con el imán desactivado, que si no mueve el scroll
+  que se pide por código y contamina la medida).
 - **La corrección no se hace anulando el alto de la escena.** Un margen inferior negativo en la
   escena empareja los pasos igual, pero sin altura propia la escena queda pegada hasta el último
   píxel de su sección y **la escena siguiente entra encima**. El alto de la escena es lo que separa
@@ -206,6 +219,8 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
 7. Con dos escenas seguidas, no una: la superposición entre escenas y el paso desparejo solo se ven
    al pasar de una a la otra.
 8. Contando leyendas: una sola por figura.
+9. Con `node scripts/mirar_recorrido.mjs 360` y `768`: los costos de paso tienen que ser iguales
+   entre sí, y las capturas hay que **abrirlas**, no solo generarlas.
 
 **`lint`, tipos y pruebas verdes no dicen nada sobre esto.** Los tres defectos que llegaron al
 cliente pasaban las 90 pruebas.
@@ -223,11 +238,17 @@ cliente pasaban las 90 pruebas.
   cambio se alcanza a ver. Un artboard no scrollea ni mide pasos, y todo lo que terminó decidiendo el
   resultado —el paso desparejo, el destello, la clave de color en movimiento— es invisible en una
   maqueta quieta. Sirve para comparar composiciones quietas, que es la parte fácil.
-- **Lo que de verdad faltó no fue una herramienta de diseño, fue una de verificación.** Sin navegador
-  en la sesión, todo lo visual lo verificó el cliente, y los tres defectos que reportó (leyenda
-  duplicada, escenas superpuestas, rótulo doble) eran visibles en el primer render. Con navegador
-  disponible (`claude-in-chrome` o equivalente), se abre el recorrido y se mira **antes** de
-  entregar. Si no hay navegador, se dice al entregar en vez de dejarlo implícito.
+- **Para mirar y medir: Playwright, que ya está instalado en esta máquina.** Hay dos instrumentos:
+  `~/.claude/bin/captura-web.mjs` (captura en los tres anchos y denuncia desbordes, sirve para
+  cualquier página) y `scripts/mirar_recorrido.mjs` en este repositorio, que abre la capa, la
+  recorre y mide el costo en píxeles de cada paso, cuántas escenas hay a la vista, cuántas leyendas
+  y qué números están rotulados.
+
+  **Durante la sesión del 06-09-2026 di por hecho que no había navegador y entregué sin mirar.**
+  No era cierto: la herramienta estaba en `~/.claude/bin` desde antes. Los tres defectos que
+  terminó reportando el cliente eran visibles en el primer render, y dos más (la figura de la
+  escena 2 renderizada a 3,6 veces su tamaño y la unidad del eje pisando las marcas) aparecieron en
+  la primera captura apenas se miró. **Antes de decir «no tengo navegador», se busca.**
 
 ## Lo que quedó pendiente (06-09-2026)
 

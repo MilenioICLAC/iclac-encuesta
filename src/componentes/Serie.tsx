@@ -37,20 +37,32 @@ interface Props {
    * contado. La escala no: se calcula siempre sobre todos los puntos.
    */
   visible?: (ola: number) => boolean
+  /**
+   * Ancho del lienzo en unidades del `viewBox`. Con 100 (el del tablero, en columnas angostas) la
+   * figura es casi cuadrada, y a pantalla completa se escala 3,6 veces: los números salen a 32 px
+   * y la figura se come la escena. En el recorrido va 300, que da una figura ancha y baja.
+   */
+  anchoLienzo?: number
 }
 
 const ALTO = 132
 const PAD_Y = 18
 
-export default function Serie ({ puntos, unidad, etiqueta, color = IDENTIDAD[0], visible }: Props) {
+export default function Serie ({ puntos, unidad, etiqueta, color = IDENTIDAD[0], visible, anchoLienzo }: Props) {
   const escala = escalaDe([puntos], unidad)
-  return <Trazo puntos={puntos} escala={escala} unidad={unidad} etiqueta={etiqueta} color={color} visible={visible} />
+  return (
+    <Trazo
+      puntos={puntos} escala={escala} unidad={unidad} etiqueta={etiqueta} color={color}
+      visible={visible} anchoLienzo={anchoLienzo}
+    />
+  )
 }
 
 export function Trazo ({
   puntos, escala, unidad, etiqueta, color = IDENTIDAD[0], mostrarEjeX = true, visible,
+  anchoLienzo = 100,
 }: Props & { escala: { min: number, max: number }, mostrarEjeX?: boolean }) {
-  const ancho = 100
+  const ancho = anchoLienzo
   const x = (i: number) => (puntos.length === 1 ? ancho / 2 : (i * ancho) / (puntos.length - 1))
   const y = (v: number) => {
     const t = (v - escala.min) / (escala.max - escala.min || 1)

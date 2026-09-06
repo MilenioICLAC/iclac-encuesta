@@ -365,7 +365,9 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                   altoFila={40}
                   radioCreciente
                   leyenda={false}
-                  unidadEje={`Evaluación de 0 a 100 · el eje muestra el tramo ${numero(escalaTermometro.min)} a ${numero(escalaTermometro.max)}`}
+                  // Corto a propósito: en 360 px, la versión larga se partía en tres líneas y se
+                  // pegaba a las marcas del eje.
+                  unidadEje={`Evaluación de 0 a 100 · eje recortado a ${numero(escalaTermometro.min)}-${numero(escalaTermometro.max)}`}
                   rotular={encuesta.olas.length - 1}
                   visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
                 />
@@ -406,6 +408,7 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
               figura={(activo) => (
                 <div className="grid gap-x-6 sm:grid-cols-2">
                   <Serie
+                    anchoLienzo={300}
                     puntos={confianza} unidad="porcentaje" etiqueta="Mucha confianza en China"
                     color={SEMANTICOS['A favor de China']}
                   />
@@ -413,6 +416,7 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                       con su eje y sin sus puntos, que es la manera de decir «esto viene» sin
                       mostrar todavía el dato del que no se habló. */}
                   <Serie
+                    anchoLienzo={300}
                     puntos={confianzaEeuu} unidad="porcentaje" etiqueta="Mucha confianza en EE. UU."
                     color={SEMANTICOS['A favor de EE. UU.']}
                     visible={() => activo >= 1}
@@ -448,14 +452,16 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
               ]}
               figura={(activo) => (
                 <div className="grid gap-x-6 sm:grid-cols-3">
-                  <Serie puntos={noAlineado} unidad="porcentaje" etiqueta="No alineamiento" />
+                  <Serie anchoLienzo={300} puntos={noAlineado} unidad="porcentaje" etiqueta="No alineamiento" />
                   {/* La composición de la minoría entra con la frase que la cuenta: en el primer
                       paso la figura es una sola serie, la que se está leyendo. */}
                   <Serie
+                    anchoLienzo={300}
                     puntos={proChina} unidad="porcentaje" etiqueta="A favor de China"
                     color={SEMANTICOS['A favor de China']} visible={() => activo >= 1}
                   />
                   <Serie
+                    anchoLienzo={300}
                     puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE. UU."
                     color={SEMANTICOS['A favor de EE. UU.']} visible={() => activo >= 1}
                   />

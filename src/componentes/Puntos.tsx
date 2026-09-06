@@ -135,7 +135,7 @@ export default function Puntos ({
         <div className={rejilla} style={ancho}>
           <span className={compacto ? undefined : 'hidden sm:block'} />
           <p
-            className="text-[10px] leading-tight text-gray-500"
+            className="mt-1.5 text-[10px] leading-tight text-gray-500"
             style={{ marginLeft: MARGEN, marginRight: MARGEN }}
           >
             {unidadEje}
