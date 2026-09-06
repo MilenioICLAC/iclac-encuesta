@@ -146,10 +146,19 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   escena empareja los pasos igual, pero sin altura propia la escena queda pegada hasta el último
   píxel de su sección y **la escena siguiente entra encima**. El alto de la escena es lo que separa
   una escena de la que viene.
-- **La pausa entre pasos es `scroll-snap-type: y proximity`** en el contenedor y `scroll-snap-align:
+- **La pausa entre pasos es `scroll-snap-type: y mandatory`** en el contenedor y `scroll-snap-align:
   start` en cada paso, con `scroll-margin-top` igual al colchón para que el imán caiga donde cambia
-  la figura. `mandatory` no: el navegador tiene que terminar siempre en un punto de imán, y el
-  cierre de la capa no es uno, así que puede quedar fuera de alcance.
+  la figura.
+
+  **`proximity` no sirve acá, y esto está medido:** con pasos de 585 px, un gesto que deja el scroll
+  a 285 px del punto más cercano no mueve nada, así que el imán no existe en la práctica. Lo que
+  hace seguro a `mandatory` es que **todo el recorrido tenga puntos** —los pasos, los dos colchones
+  de cada escena y el cierre de la capa—, y que **ningún par de puntos consecutivos quede más lejos
+  que una pantalla**; si no, el navegador salta entre puntos lejanos y deja contenido inalcanzable,
+  empezando por el botón de salida. Los dos se comprueban con `scripts/mirar_recorrido.mjs`.
+
+  Cuidado al medirlo: mover el scroll por código (`scrollTop = …`) no dispara el imán igual que un
+  gesto, así que la comprobación va con rueda o arrastre de verdad.
 - **El bloque de texto no cambia de alto entre pasos.** Todas las frases en la misma celda de una
   grilla de una celda: mide lo que la más alta, sin `min-height` mágico y sin saltos.
 - **El alto sale del contenedor, no de la pantalla.** La capa es `fixed inset-0`, así que su alto

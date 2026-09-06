@@ -130,7 +130,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
 
       {children(raiz)}
 
-      <div className="flex flex-col items-center gap-3 px-4 py-16">
+      <div className="cierre-recorrido flex flex-col items-center gap-3 px-4 py-16">
         <p className="text-sm text-gray-600">Hasta acá el recorrido. El tablero queda abajo, para consultar.</p>
         <button
           type="button"
@@ -260,7 +260,10 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
           `index.css`). El colchón de arriba es lo que empareja los pasos, y el de abajo lo que
           permite que el último alcance a activarse. */}
       <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>
-        <div className="colchon-recorrido" style={colchon ? { height: colchon } : undefined} />
+        <div
+          className="colchon-recorrido"
+          style={{ ...(colchon ? { height: colchon } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
+        />
         {frases.map((_, i) => (
           <div
             key={i}
@@ -275,7 +278,10 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
             }}
           />
         ))}
-        <div className="colchon-recorrido" style={colchonFinal ? { height: colchonFinal } : undefined} />
+        <div
+          className="colchon-recorrido"
+          style={{ ...(colchonFinal ? { height: colchonFinal } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
+        />
       </div>
     </section>
   )

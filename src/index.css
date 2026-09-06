@@ -90,16 +90,25 @@
 }
 
 /* La pausa entre pasos, con imán nativo.
-   `proximity` y no `mandatory`: con `mandatory` el navegador siempre tiene que terminar en un
-   punto de imán, y el cierre de la capa («Ir al tablero») no es uno, así que puede quedar fuera de
-   alcance. Con `proximity` el gesto sigue siendo del lector, un tirón largo se acomoda al paso más
-   cercano al detenerse, y el teclado y el lector de pantalla no pierden nada. Nada de interceptar
-   el scroll: eso es scroll-jacking y deja gente afuera. */
+
+   **`mandatory`, no `proximity`.** Medido con Playwright el 06-09-2026: con pasos de 585 px, un
+   gesto que deja el scroll a 285 px del punto más cercano no mueve nada en `proximity`, así que el
+   imán no existía en la práctica. Con `mandatory` el navegador siempre termina en un punto.
+
+   Lo que hace seguro a `mandatory` es que **todo el recorrido tenga puntos**: los pasos, los dos
+   colchones de cada escena y el cierre de la capa. Sin eso, el navegador tiene que saltar entre
+   puntos lejanos y deja contenido inalcanzable, que es justo lo que pasa con el botón de salida.
+   Ningún par de puntos consecutivos puede quedar más lejos que una pantalla.
+
+   Sigue sin interceptarse el scroll: el imán es del navegador, el gesto es del lector, y el teclado
+   y el lector de pantalla no pierden nada. */
 .capa-recorrido {
-  scroll-snap-type: y proximity;
+  scroll-snap-type: y mandatory;
 }
 
-.paso-recorrido {
+.paso-recorrido,
+.colchon-recorrido,
+.cierre-recorrido {
   scroll-snap-align: start;
 }
 
