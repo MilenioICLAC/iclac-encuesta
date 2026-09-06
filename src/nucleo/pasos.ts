@@ -41,6 +41,30 @@ export function useMovimientoReducido () {
  * El precio es que cada paso tiene que ser más alto que la banda, y de eso se encarga el
  * `min-h` de la columna de texto.
  */
+/**
+ * Cuál es el paso activo dado lo que el observador acaba de reportar.
+ *
+ * Va aparte del hook, y como función pura, porque es la única decisión del recorrido que se puede
+ * equivocar en silencio: el navegador **no garantiza el orden** de las entradas de una misma
+ * entrega, así que «la última entrada que intersecta» da un paso distinto según el orden en que
+ * llegue. Acá la regla no depende del orden y se puede probar sin DOM.
+ *
+ * Con la banda angosta lo normal es que intersecte uno solo. Si intersectan varios (una entrega
+ * después de un salto, o pasos más bajos que la banda), gana el más cercano al que estaba activo,
+ * y en empate el mayor: el lector avanza más veces de las que retrocede.
+ */
+export function pasoActivo (entradas: { paso: number, dentro: boolean }[], actual: number): number {
+  const candidatos = entradas.filter((e) => e.dentro && Number.isInteger(e.paso)).map((e) => e.paso)
+  if (candidatos.length === 0) return actual
+  return candidatos.reduce((mejor, paso) => {
+    const d = Math.abs(paso - actual)
+    const dMejor = Math.abs(mejor - actual)
+    if (d < dMejor) return paso
+    if (d === dMejor) return Math.max(paso, mejor)
+    return mejor
+  })
+}
+
 export function usePasoActivo (cantidad: number, raiz?: HTMLElement | null) {
   const refs = useRef<(HTMLElement | null)[]>([])
   const [activo, setActivo] = useState(0)
@@ -53,11 +77,11 @@ export function usePasoActivo (cantidad: number, raiz?: HTMLElement | null) {
       return
     }
     const observador = new IntersectionObserver((entradas) => {
-      for (const entrada of entradas) {
-        if (!entrada.isIntersecting) continue
-        const i = Number((entrada.target as HTMLElement).dataset.paso)
-        if (Number.isInteger(i)) setActivo(i)
-      }
+      const reportadas = entradas.map((entrada) => ({
+        paso: Number((entrada.target as HTMLElement).dataset.paso),
+        dentro: entrada.isIntersecting,
+      }))
+      setActivo((actual) => pasoActivo(reportadas, actual))
     // `root` es el contenedor que hace scroll. Dentro de una capa con scroll propio, dejarlo
     // en la pantalla mide contra algo que no se mueve y ningún paso se activa nunca.
     }, { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 })
