@@ -266,6 +266,14 @@ Si hacen falta categóricos acá, se genera su propia paleta con el validador de
 
 ---
 
+## Las reglas del recorrido viven en su skill
+
+El scrollytelling del recorrido (cuándo un paso se gana su scroll, qué puede hacer una figura
+mientras avanza el scroll, la mecánica de `sticky` + `IntersectionObserver`, y qué no se hace) está
+en `.claude/skills/recorrido/SKILL.md`, con sus fuentes. Acá no se duplica: un dato, un lugar.
+
+---
+
 ## Dónde está lo que falta
 
 `estado.md`, en `la documentación interna`, carpeta `encuesta/docs/`.
