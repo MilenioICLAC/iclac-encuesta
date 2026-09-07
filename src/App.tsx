@@ -221,12 +221,19 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
   // El mayor movimiento de cualquier país entre las dos primeras oleadas. Se calcula en vez de
   // escribirse porque la frase que lo usa deja de ser cierta el día que entre una oleada nueva.
   const quietas = Math.max(...termometro.map((t) => Math.abs((t.valores[1]?.media ?? 0) - (t.valores[0]?.media ?? 0))))
+  // El singular se decide sobre el número que se **muestra**, no sobre el crudo. Con el crudo, el
+  // mayor movimiento (0,973) se escribe «1,0» y se leía «más de 1,0 puntos».
+  const quietasRedondo = Math.round(quietas * 10) / 10
   // El mejor evaluado sale de los datos, no del texto: hoy es Japón, y la frase que lo nombra se
   // corrige sola si deja de serlo. `siempreMejor` es lo que habilita decir «sigue», que es una
   // afirmación sobre las tres oleadas y no sobre la última.
   const mejor = ordenados[0]
   const siempreMejor = encuesta.olas.every((_, i) =>
     termometro.every((t) => (t.valores[i]?.media ?? 0) <= (mejor.valores[i]?.media ?? 0)))
+  // El titular afirma quién quedó por encima en la última oleada, así que se arma con el dato y
+  // no se escribe: el día que entre una oleada que dé vuelta la serie, el título se da vuelta con
+  // ella en vez de quedar publicado diciendo lo contrario de su propia figura.
+  const chinaSobreEeuu = (chinaT.at(-1)?.media ?? 0) > (eeuuT.at(-1)?.media ?? 0)
   const pasosEncendidos = encendidos(encuesta.olas)
   const bases = termometro.flatMap((t) => t.valores.map((v) => v.base)).filter((n) => n > 0)
   const baseMinima = Math.min(...bases)
@@ -307,11 +314,12 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
           <>
             <Escena
               raiz={raiz}
-              // El encabezado en dos niveles, como quedó en el laboratorio: arriba qué se está
-              // mirando, y el hallazgo lo cuentan las frases. «Las personas encuestadas» y no «los
-              // chilenos»: la muestra no es probabilística y no habla por el país.
-              titulo="Cómo evalúan a cinco países las personas encuestadas, de 0 a 100"
-              bajada="Un punto por oleada. Promedio de quienes contestaron."
+              // Un solo nivel de encabezado, con el hallazgo, como quedó en el laboratorio el
+              // 07-09-2026. Lo que se está mirando bajó al pie de la figura, junto con las bases:
+              // ahí se consulta cuando ya se vieron los puntos, y no compite con el titular.
+              // «Las personas» y no «los chilenos»: la muestra no es probabilística y no habla
+              // por el país.
+              titulo={`En el ${encuesta.olas.at(-1)} las personas evalúan mejor a ${chinaSobreEeuu ? 'China que a Estados Unidos' : 'Estados Unidos que a China'}.`}
               cabecera={(activo) => (
                 <AnioDelPaso
                   olas={encuesta.olas}
@@ -340,7 +348,7 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                 <>
                   <strong>Todo el cambio de la serie ocurre en {encuesta.olas.at(-1)}</strong>: entre{' '}
                   {encuesta.olas.at(0)} y {encuesta.olas.at(-2)} ningún país se movió más de{' '}
-                  {decimal(quietas)} {quietas === 1 ? 'punto' : 'puntos'}.
+                  {decimal(quietas)} {quietasRedondo === 1 ? 'punto' : 'puntos'}.
                 </>,
               ]}
               figura={(activo) => (
@@ -377,8 +385,8 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
                 // busca cuando ya vio los puntos, no antes.
                 <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
                   <p className="max-w-[22rem] text-xs leading-snug text-gray-500">
-                    Rotulada la última oleada. Bases de {numero(baseMinima)} a {numero(baseMaxima)}{' '}
-                    casos según país y oleada.
+                    Un punto por oleada. Promedio de quienes contestaron. Bases de{' '}
+                    {numero(baseMinima)} a {numero(baseMaxima)} casos según país y oleada.
                   </p>
                   <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
                 </div>

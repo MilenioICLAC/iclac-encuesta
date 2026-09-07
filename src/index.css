@@ -42,9 +42,18 @@
 
 /* Una escena del recorrido ocupa la capa menos su barra.
    **El alto sale del contenedor y no de la pantalla.** La capa es `fixed inset-0`, así que su
-   alto ya es el viewport real en cada momento: `100%` acierta también cuando el navegador del
-   teléfono muestra u oculta su propia barra, cosa que ni `vh` (pantalla grande) ni `svh` (chica)
-   hacen. Quedan como respaldo para el primer cuadro y para un navegador sin altura resuelta.
+   alto ya es el viewport real en cada momento, también cuando el navegador del teléfono muestra u
+   oculta su propia barra, cosa que ni `vh` (pantalla grande) ni `svh` (chica) hacen.
+
+   **Pero no puede venir de un `100%`,** y esto está medido (07-09-2026): entre la capa y la escena
+   hay una `<section>` de alto automático, así que un porcentaje se resuelve contra un contenedor
+   sin alto definido y el navegador lo descarta. Como era la última declaración, pisaba a las otras
+   dos y la escena terminaba midiendo su contenido: 657 px en una capa de 780. Mientras el
+   contenido entrara nadie lo notaba, pero dejaba a `justify-center` sin espacio que repartir, o
+   sea el bloque centrado no estaba centrado en ninguna parte.
+
+   El alto va en píxeles medidos, que `CapaRecorrido` ya calcula para los pasos y pone acá como
+   `--alto-capa`. `svh` queda de respaldo para el primer cuadro, antes de la primera medición.
 
    **Y se pega debajo de la barra, no debajo del borde de la pantalla.** Con `top: 0` la barra le
    tapa el aire de arriba al título: el espacio existe pero queda detrás. */
@@ -52,8 +61,7 @@
   --barra-capa: 2.5rem;
   top: var(--barra-capa);
   min-height: calc(100vh - var(--barra-capa));
-  min-height: calc(100svh - var(--barra-capa));
-  min-height: calc(100% - var(--barra-capa));
+  min-height: calc(var(--alto-capa, 100svh) - var(--barra-capa));
 }
 
 /* El dato que acaba de encenderse destella una vez, en su propio color.
@@ -70,7 +78,7 @@
 }
 
 .dato-nuevo {
-  animation: destello-dato 680ms ease-out both;
+  animation: destello-dato 700ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

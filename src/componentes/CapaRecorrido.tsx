@@ -228,22 +228,27 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
     <section className="relative">
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
           arriba es padding real y no compensación de la barra, así que no se pierde al pegarse. */}
-      <div ref={escena} className="escena sticky flex flex-col justify-start gap-6 px-4 pb-6 pt-6 sm:px-6">
+      {/* El orden es titular, frase, figura, y el bloque va centrado en la escena. Salió del
+          laboratorio del recorrido el 07-09-2026 (preset «La elegida»): con la figura arriba, la
+          frase quedaba al pie de la pantalla, que es donde el pulgar la tapa. */}
+      <div
+        ref={escena}
+        className="escena sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6"
+        // El alto de la capa, en píxeles medidos. `.escena` lo usa para su `min-height`, que es lo
+        // que le da a `justify-center` espacio que repartir (ver `index.css`).
+        style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+      >
         <div className="mx-auto w-full max-w-2xl">
           <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{titulo}</h3>
           {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es el
               piso de lectura para texto chico. Más apagado se ve mejor y deja gente afuera. */}
           {bajada && <p className="mt-1 text-[13px] leading-snug text-gray-500">{bajada}</p>}
         </div>
-        <div className="mx-auto w-full max-w-2xl pt-3 sm:pt-4">
-          {cabecera?.(activo)}
-          {figura(activo)}
-          {nota && <div className="mt-2">{nota}</div>}
-        </div>
         <div className="mx-auto w-full max-w-2xl pt-2 sm:pt-3">
           {/* Una frase por paso en el teléfono, con todas en la misma celda de grilla: el bloque
               mide lo que la frase más alta y no cambia de alto al avanzar (ver `.parrafo-escena`
-              en `index.css`). En pantalla ancha vuelve a ser un párrafo corrido. */}
+              en `index.css`). Sin eso, la figura sube y baja a cada paso. En pantalla ancha vuelve
+              a ser un párrafo corrido. */}
           <p className="parrafo-escena text-[19px] leading-[1.4] sm:text-lg sm:leading-relaxed">
             {frases.map((f, i) => (
               <span key={i} className={`transition-opacity duration-500 sm:transition-colors ${frase(i)}`}>
@@ -251,6 +256,11 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
               </span>
             ))}
           </p>
+        </div>
+        <div className="mx-auto w-full max-w-2xl pt-3 sm:pt-4">
+          {cabecera?.(activo)}
+          {figura(activo)}
+          {nota && <div className="mt-2">{nota}</div>}
         </div>
       </div>
 
