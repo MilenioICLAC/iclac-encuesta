@@ -22,6 +22,10 @@ public/data/oleada_*.json
 public/data/encuesta.json
 # Igual que el artefacto: se regeneran con `npm run descargas`.
 public/descargas/
+# El laboratorio del recorrido se sirve desde acá para abrirlo en el teléfono, pero **no es parte
+# del producto** y no se publica con el sitio: es una copia que `npm run lab` genera a partir de
+# `laboratorio/recorrido.html`, que sí se versiona.
+public/laboratorio.html
 
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
