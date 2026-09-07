@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
 import { distribucion, filtrar, media, multirespuesta, porGrupo, proporcion, serie } from './nucleo/agregar'
 import { CORTES, MODULOS, TERMOMETRO, variableDe, valorDe } from './nucleo/modulos'
@@ -15,9 +16,11 @@ import Densidad from './componentes/Densidad'
 import Puntos from './componentes/Puntos'
 import CapaRecorrido, { Escena } from './componentes/CapaRecorrido'
 import Descargas from './componentes/Descargas'
+import Encabezado from './componentes/Encabezado'
 import { escalaRedonda } from './nucleo/escala'
 import { SEMANTICOS, pasosDeOrden } from './nucleo/paleta'
-import { decimal, numero, porcentaje } from './locale'
+import { decimal, fijarIdioma, locale, numero, porcentaje, type Idioma } from './locale'
+import { TEXTOS } from './textos'
 
 /**
  * Borrador del visualizador.
@@ -48,6 +51,15 @@ export default function App () {
   const [corte, setCorte] = useState<string | null>(null)
   const [soloIndependientes, setSoloIndependientes] = useState(false)
 
+  // El idioma vive acá arriba y no en el encabezado: además de los textos del cromo gobierna el
+  // formato de los números, que se resuelve en `locale.ts` y lo usa toda la página.
+  const [idioma, setIdioma] = useState<Idioma>('es')
+  const cambiarIdioma = (siguiente: Idioma) => {
+    fijarIdioma(siguiente)
+    setIdioma(siguiente)
+    document.documentElement.lang = locale()
+  }
+
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/encuesta.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -77,51 +89,111 @@ export default function App () {
     return <main className="mx-auto max-w-2xl p-8 text-sm text-gray-500">Cargando…</main>
   }
 
+  const barra = (
+    <BarraEstado
+      olas={encuesta.olas}
+      olasActivas={olas}
+      onOlas={setOlas}
+      corte={corte}
+      onCorte={setCorte}
+      soloIndependientes={soloIndependientes}
+      onSoloIndependientes={setSoloIndependientes}
+      n={casos.length}
+    />
+  )
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <Encabezado />
-      <Recorrido encuesta={encuesta} />
-      <BarraEstado
-        olas={encuesta.olas}
-        olasActivas={olas}
-        onOlas={setOlas}
-        corte={corte}
-        onCorte={setCorte}
-        soloIndependientes={soloIndependientes}
-        onSoloIndependientes={setSoloIndependientes}
-        n={casos.length}
-      />
-      <Tablero
-        encuesta={encuesta}
-        casos={casos}
-        corte={corte}
-        soloIndependientes={soloIndependientes}
-        olas={olas}
-      />
-      <Nubes encuesta={encuesta} />
-      <Graficador
-        encuesta={encuesta}
-        casos={casos}
-        corte={corte}
-        soloIndependientes={soloIndependientes}
-      />
-      <Descargas />
-      <Pie encuesta={encuesta} />
-    </div>
+    // **Rutas por hash y no por ruta limpia.** El sitio todavía no tiene servidor elegido, y
+    // `/tablero` como ruta real necesita que ese servidor devuelva el index en cualquier ruta.
+    // Con hash funciona en cualquier hosting estático, incluido abrir el `dist/` a mano. Cuando
+    // haya servidor con reescritura, esto pasa a `BrowserRouter` y no cambia nada más.
+    <HashRouter>
+      <Routes>
+        <Route element={<Marco idioma={idioma} onIdioma={cambiarIdioma} />}>
+          <Route index element={<Recorrido encuesta={encuesta} />} />
+          <Route
+            path="tablero"
+            element={(
+              <>
+                {barra}
+                <Tablero
+                  encuesta={encuesta}
+                  casos={casos}
+                  corte={corte}
+                  soloIndependientes={soloIndependientes}
+                  olas={olas}
+                />
+                <Nubes encuesta={encuesta} />
+              </>
+            )}
+          />
+          <Route
+            path="explorar"
+            element={(
+              <>
+                {barra}
+                <Graficador
+                  encuesta={encuesta}
+                  casos={casos}
+                  corte={corte}
+                  soloIndependientes={soloIndependientes}
+                />
+              </>
+            )}
+          />
+          <Route path="descargas" element={<Descargas />} />
+          <Route path="datos" element={<SobreLosDatos encuesta={encuesta} />} />
+          {/* Un hash escrito a mano o un enlace viejo no dejan al lector en una página en blanco. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   )
 }
 
-function Encabezado () {
+/**
+ * El marco de todas las vistas: encabezado pegado arriba, la vista, y el pie de crédito.
+ *
+ * **Cada destino del nav es una vista con su URL.** Antes era una sola página con anclas, y una
+ * página que se scrollea sin fin no se recorre: se abandona. Separada en vistas, cada una entra
+ * en una o dos pantallas, el botón de atrás del navegador funciona, y un enlace a `#/descargas`
+ * lleva a las descargas.
+ *
+ * **El recorte del tablero no se pierde al cambiar de vista.** El estado vive en `App`, que no se
+ * desmonta: quien elige 2025 y va a explorar sigue con 2025.
+ */
+function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) => void }) {
+  const { pathname } = useLocation()
+
+  // Cambiar de vista deja la vista nueva empezada por la mitad si se hereda el desplazamiento
+  // de la anterior, que es más larga.
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+
   return (
-    <header className="bg-brand-dark text-white">
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-xs uppercase tracking-widest text-white/70">ICLAC · Borrador</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold">Monitor de opinión pública sobre China</h1>
-        <p className="mt-2 max-w-2xl text-sm text-white/80">
-          Tres oleadas de la Encuesta de Percepciones sobre China en Chile: 2023, 2024 y 2025.
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+      <Encabezado idioma={idioma} onIdioma={onIdioma} />
+      {idioma !== 'es' && (
+        <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
+          {TEXTOS.soloCromo[idioma]}
         </p>
-      </div>
-    </header>
+      )}
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
+          <span>
+            Núcleo Milenio Impactos de China en América Latina y el Caribe ·{' '}
+            <a href="https://iclac.cl/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-dark">
+              iclac.cl
+            </a>
+          </span>
+          <NavLink to="/datos" className="underline hover:text-brand-dark">
+            {TEXTOS.nav.datos[idioma]}
+          </NavLink>
+        </div>
+      </footer>
+    </div>
   )
 }
 
@@ -682,11 +754,22 @@ function MultipleFigura ({
   )
 }
 
-function Pie ({ encuesta }: { encuesta: Encuesta }) {
+/**
+ * La vista «Sobre los datos»: lo que hay que saber antes de citar una cifra.
+ *
+ * Era el pie de la página única. Como vista tiene destino propio en el nav y en el pie de
+ * crédito, que es donde alguien la va a buscar cuando ya vio una figura y quiere saber sobre
+ * qué está parada.
+ */
+function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
   return (
-    <footer className="border-t border-gray-200 bg-white">
-      <div className="mx-auto max-w-5xl px-4 py-8 text-sm text-gray-600">
-        <h2 className="font-display text-base font-semibold text-gray-900">Sobre estos datos</h2>
+    <section className="mx-auto max-w-5xl px-4 py-10">
+      <h2 className="font-display text-2xl font-semibold text-gray-900">Sobre los datos</h2>
+      <p className="mt-2 max-w-2xl text-sm text-gray-600">
+        Lo que hay que saber antes de citar una cifra de este sitio.
+      </p>
+      <div className="mt-6 text-sm text-gray-600">
+        <h3 className="font-display text-base font-semibold text-gray-900">Cómo se leen las cifras</h3>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
           <li>
             {encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])} casos`).join(' · ')}. {encuesta.procedencia}
@@ -703,7 +786,7 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
           </li>
           <li>
             <strong>No es un panel.</strong> Son tres cortes transversales. 159 personas participaron en
-            más de una oleada y se pueden excluir con el control de arriba.
+            más de una oleada y se pueden excluir con el control del tablero.
           </li>
           <li>
             <strong>Los porcentajes van sobre respuestas efectivas</strong>, sin perdidos. Cada figura
@@ -711,14 +794,17 @@ function Pie ({ encuesta }: { encuesta: Encuesta }) {
           </li>
         </ul>
 
-        <h2 className="mt-6 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h2>
+        <h3 className="mt-6 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h3>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
           <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
           <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
-          <li>Falta el sitio en inglés y en chino: hoy solo español, y los textos viven en el código.</li>
-          <li>Sin descargas todavía: la base combinada, las tres por ola y los libros de códigos van con la nota metodológica.</li>
+          <li>
+            El sitio todavía no está en inglés ni en chino: el selector de idioma cambia el nav, los
+            títulos del encabezado y el formato de los números, pero las figuras, sus notas y el
+            recorrido siguen en español.
+          </li>
         </ul>
       </div>
-    </footer>
+    </section>
   )
 }

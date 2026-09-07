@@ -1,3 +1,15 @@
+/* Raleway es la tipografía del encabezado de iclac.cl, y acá se usa en lo mismo: el
+   encabezado y los títulos (`font-display`). Pasar del sitio institucional a esta app no
+   tiene que leerse como cambiar de sitio. Autohospedada por npm, no por CDN, y solo el
+   subconjunto latino: el chino cae a la fuente del sistema, igual que en iclac.cl, porque
+   Raleway no trae glifos CJK.
+
+   Sin estos dos `@import` la familia `display` de Tailwind estaba declarada y no cargada:
+   no falla, cae al respaldo del sistema, y el encabezado se veía en otra tipografía que la
+   del sitio institucional sin que nada lo dijera. */
+@import '@fontsource/raleway/latin-400.css';
+@import '@fontsource/raleway/latin-600.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

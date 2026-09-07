@@ -1,8 +1,10 @@
 # Visualizador de la Encuesta de Percepciones sobre China en Chile
 
-Publica los resultados de la encuesta anual de ICLAC en una sola página con dos tramos: primero un
-**recorrido** que cuenta qué encontró la encuesta y qué se movió entre oleadas, después un **tablero**
-para consultar un año concreto. En español, inglés y chino.
+Publica los resultados de la encuesta anual de ICLAC en dos tramos: un **recorrido** que cuenta qué
+encontró la encuesta y qué se movió entre oleadas, y un **tablero** para consultar un año concreto. El
+sitio son cinco vistas con URL propia (portada del recorrido, tablero, explorador, descargas y sobre
+los datos), con el encabezado de iclac.cl. En español, inglés y chino: hoy el nav y el encabezado están
+traducidos, el contenido de las figuras todavía no.
 
 **Estado: E1 en curso.** Visualizador funcionando con paridad casi completa contra el monitor actual:
 recorrido, 27 módulos, nubes de palabras, explorador de 72 preguntas y descargas. Las tres oleadas

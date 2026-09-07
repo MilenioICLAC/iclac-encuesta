@@ -84,7 +84,8 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   lector paga scroll y no recibe nada. Es el error que tuvieron las escenas 2 y 3 hasta que `Serie`
   aprendió a encender por oleada.
 - **El recorrido afirma, el tablero consulta** (un registro de decisiones interno). Una frase del recorrido dice algo; un
-  módulo del tablero no dice nada, deja consultar. No se mezclan en el mismo scroll.
+  módulo del tablero no dice nada, deja consultar. No se mezclan en el mismo scroll, y desde el
+  07-09-2026 tampoco en la misma vista: el tablero tiene su propia ruta.
 - **Las cifras se calculan, no se transcriben.** Una frase con el número escrito a mano envejece con
   la oleada siguiente. Ver `encendidos()` y las escenas en `src/App.tsx`.
 - **Pocos pasos.** Dos minutos de lectura, tres o cuatro frases por escena. El formato premia salir

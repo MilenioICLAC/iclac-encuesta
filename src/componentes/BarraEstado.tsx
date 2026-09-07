@@ -41,7 +41,10 @@ export default function BarraEstado ({
   const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta ?? 'Sin corte'
 
   return (
-    <div className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
+    // El `top` sale del alto que el encabezado publica al medirse: pegada a `top-0` quedaba
+    // debajo del encabezado pegajoso y sus controles no se veían. No es un número a mano
+    // porque el encabezado mide 79 px en teléfono y 88 en escritorio.
+    <div className="sticky z-10 border-b border-gray-200 bg-white/95 backdrop-blur" style={{ top: 'var(--alto-encabezado, 0px)' }}>
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Oleada</span>

@@ -271,6 +271,48 @@ Si hacen falta categóricos acá, se genera su propia paleta con el validador de
 
 ---
 
+## El armazón del sitio: encabezado, rutas e idioma
+
+Decidido el 07-09-2026 y medido en el navegador. Son reglas del producto, no preferencias de estilo.
+
+**El encabezado se clona del repositorio de inversiones, y eso es a propósito.** Las dos apps las
+publica ICLAC y el lector llega desde iclac.cl: el encabezado de ese sitio mide **88 px** en escritorio
+(logo de 68 px con 10 arriba y abajo) y se separa del contenido con **sombra, no con borde**. Las dos
+cosas están replicadas para que el salto no se lea como cambiar de sitio. En teléfono baja a 79 px,
+porque ahí cada píxel de alto se lo quita al contenido. El nav completo aparece en `lg` y no en `md`:
+entre 768 y 1023 px no queda ancho al lado del título y el `h1` se parte en varias líneas.
+
+**Una familia tipográfica declarada no es una familia cargada.** `font-display: Raleway` estaba en
+`tailwind.config.js` y `@fontsource/raleway` en `package.json` desde el principio, sin ningún `@import`:
+no falla, cae a la fuente del sistema, y el encabezado se veía en otra tipografía sin que nada lo dijera.
+Los dos subconjuntos latinos se importan en `src/index.css`. Es la misma clase de fallo silencioso que
+el locale escrito a mano.
+
+**Un solo alto medido, publicado como variable CSS.** El encabezado es pegajoso y la barra de controles
+del tablero también: la barra se pega en `var(--alto-encabezado)`, que el encabezado escribe midiéndose
+con un `ResizeObserver`. **El alto no se escribe a mano en ninguna de las dos**, porque cambia con el
+ancho y dos literales se desincronizan. Quien agregue otra cosa pegajosa usa la misma variable.
+
+**El sitio son cinco vistas con URL, no una página que se scrollea sin fin.** Una sola página larga no
+se recorre, se abandona, y un nav que solo mueve el scroll no da ganas de navegarla. Las vistas son la
+portada del recorrido, el tablero, el explorador, las descargas y «Sobre los datos».
+
+- **Las rutas van por hash (`#/tablero`) mientras no haya servidor elegido.** Una ruta limpia exige que
+  el servidor devuelva el index en cualquier ruta; el hash funciona en cualquier hosting estático,
+  incluido abrir `dist/` a mano. Cuando el despliegue se decida, `HashRouter` pasa a `BrowserRouter` y
+  no cambia nada más.
+- **El estado del tablero vive en `App`**, que no se desmonta: el recorte elegido sobrevive al cambio de
+  vista. Un filtro que se resetea al navegar hace que el lector desconfíe de lo que está viendo.
+
+**El selector de idioma cubre el cromo, y lo dice.** `src/textos.ts` tiene el encabezado, el nav y los
+avisos en los tres idiomas; el contenido de las figuras y del recorrido sigue en español y dentro del
+código. Elegir «EN» cambia además el formato de los números, porque el idioma gobierna `locale.ts`.
+**Y aparece una franja que declara hasta dónde llega la traducción**: sin ella el botón parece roto.
+La regla general es esa, no la excepción: un control que no hace nada no se publica, y uno que hace la
+mitad dice cuál mitad.
+
+---
+
 ## Las reglas del recorrido viven en su skill
 
 El scrollytelling del recorrido (cuándo un paso se gana su scroll, qué puede hacer una figura
