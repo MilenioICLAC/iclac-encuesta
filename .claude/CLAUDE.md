@@ -258,8 +258,13 @@ Salieron de problemas concretos del repositorio de inversiones y aplican igual a
 - **`cn` no es una etiqueta BCP-47.** Es la etiqueta interna; `Intl` conoce `zh`.
 - **El vocabulario del equipo se queda fuera de la interfaz.** «Microdata», «ponderador», «quiebre de
   serie» son términos del esquema, no del lector.
-- **Lo visible se verifica en el navegador**, y en los tres anchos: teléfono (360), tablet (768-1023) y
-  escritorio.
+- **Lo visible se verifica en el navegador**, y en cinco anchos: teléfono (360), tablet (768), el
+  umbral de escritorio justo encima y justo debajo (900) y dos escritorios (1512 y 1920).
+- **Un valor en el atributo `style` le gana a cualquier regla, también cuando define una variable
+  CSS.** Si un componente escribe `--algo` en línea, ninguna media query lo alcanza. Para que un
+  ancestro pueda pasarlo por encima hacen falta dos nombres y una cadena de respaldo:
+  `var(--algo-ancho, var(--algo))`. Está usado en `Puntos` para el alto de fila y el ancho de la
+  columna de nombres.
 
 **La paleta de ocho sectores de `mapa_FDI` no se copia:** se generó para esas ocho categorías de FDI.
 Si hacen falta categóricos acá, se genera su propia paleta con el validador de la skill `dataviz`.

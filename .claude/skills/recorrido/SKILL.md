@@ -16,36 +16,67 @@ el 05 y 06-09-2026: el primer intento se escribió directo en la app, se «verif
 y pruebas, y aun así el cliente lo describió como cansador. Lo que fallaba no era ningún archivo en
 particular, era la composición, y eso no se ve en un diff.
 
-**Producto intermedio: un laboratorio.** Una página aparte, publicada como artefacto, con **una
-escena real y datos reales**, la misma mecánica (`sticky` + `IntersectionObserver` + pista), y cada
-decisión convertida en un parámetro. Terminó con catorce combinaciones de arranque y dieciocho
-parámetros: orden, anclaje, cuánto texto a la vez, tipografía, fondo, forma, alto, entrada del dato,
-opacidad de lo apagado, duración, alto del paso, rótulos, color de las oleadas, clave, tamaño del
-punto, aire, avance y encabezado.
+**Producto intermedio: un laboratorio.** Una página aparte, publicada como artefacto, con **las
+escenas reales y datos reales**, la misma mecánica (`sticky` + `IntersectionObserver` + pista), y
+cada decisión convertida en un parámetro. Hoy son veintiún parámetros: orden, anclaje, cuánto texto
+a la vez, tipografía, fondo, forma, alto, escala del eje, entrada del dato, opacidad de lo apagado,
+duración, alto del paso, rótulos, color de las oleadas, clave, tamaño del punto, aire, avance,
+encabezado, unidad en el eje, y las columnas de escritorio con su escala de texto.
 
-El de esta vuelta está publicado como artefacto privado:
-https://claude.ai/code/artifact/97f6b345-ef4e-4c25-96ba-740ef1948b54 (06-09-2026). Sirve como punto
-de partida para el tramo siguiente: se le cambian los datos y las frases y queda listo.
+Está publicado como artefacto privado:
+https://claude.ai/code/artifact/97f6b345-ef4e-4c25-96ba-740ef1948b54 (06-09-2026, rehecho el
+07-09-2026).
 
-Tres cosas lo hacen funcionar, y sin ellas no sirve:
+Siete cosas lo hacen funcionar, y sin ellas no sirve:
 
 1. **Exporta lo que se probó.** El cliente marca combinaciones, escribe una nota por cada una y
    copia un JSON con parámetros, textos y notas. Eso es lo que llega al chat: no «no me gusta», sino
-   qué parámetro con qué valor y por qué.
-2. **Los textos se editan ahí mismo.** El guion es la mitad del problema y el cliente es quien sabe
-   cómo debe sonar. Editables, con el largo en caracteres a la vista, y viajan en la exportación.
-3. **Pantalla completa.** Se prueba en el aparato donde se va a leer. Un visor chico embebido en una
+   qué parámetro con qué valor y por qué. La exportación lleva **los textos de todas las escenas**,
+   no solo la abierta: un comentario tipo «la 2 quedó mejor que la 3» necesita las dos.
+2. **Los textos se editan ahí mismo,** por escena, con almacenamiento propio cada una: con una sola
+   clave, abrir la escena 2 pisaba el trabajo hecho sobre la 1.
+3. **El largo de cada frase, a la vista, con umbral.** La escena 1 quedó en ~110 caracteres y se lee
+   sin cansar; las de la 2 y la 3 andaban en 180 y 270. El contador se marca pasados los 130. No
+   decide nada, pero pone el número donde se está escribiendo.
+4. **Los parámetros se guardan, no solo los textos.** Sin eso, cada recarga volvía al preset de
+   arranque y una combinación elegida se perdía al cerrar la pestaña.
+5. **Los presets con nombre son decisiones, no puntos de partida.** «La elegida» es la combinación
+   aprobada, y al lado va «Como está la app» para poder ver la diferencia de un clic.
+6. **Todas las vistas en el mismo laboratorio, con selector de ancho** (390 / 768 / todo). Partirlo
+   en dos artefactos —uno de teléfono y otro de escritorio— es la tentación obvia y es un error: dos
+   archivos con la misma escena divergen a la segunda edición y después ninguno manda. Lo incómodo
+   no era que fuera uno, era tener que entrar y salir de pantalla completa para ver escritorio.
+7. **Pantalla completa.** Se prueba en el aparato donde se va a leer. Un visor chico embebido en una
    página no dice nada sobre cuánta pantalla se come el texto.
+
+Tres reglas más del laboratorio, todas de esta segunda vuelta:
+
+- **Los rótulos de los parámetros tienen que decir lo que hacen.** «Leyenda arriba» siguió diciendo
+  eso una vuelta entera después de bajar la leyenda al pie. Un panel que miente sobre lo que hace es
+  peor que no tenerlo, porque el cliente decide sobre esa etiqueta.
+- **Un parámetro que en esta escena no significa nada se saca del panel**, no se deja marcado sin
+  efecto. En las escenas 2 y 3 el color son las variables y no las oleadas, así que la leyenda de
+  años y la rampa de color desaparecen.
+- **El laboratorio se pone al día con el código, no solo al revés.** Cuando la app arregló el
+  párrafo apilado, el laboratorio seguía con la versión vieja y la comparación dejaba de ser
+  comparación.
 
 **Lo que apareció en el laboratorio y no habría aparecido de otra manera:** que el año no se
 entendía sin clave de color; que el paso costaba distinto entre tramos; que el texto le ganaba la
 atención a la figura; y que el pulgar tapa lo que está abajo.
 
-**Al llevarlo al código, se lleva completo y verbatim.** Los tres errores de esta transcripción
+**Al llevarlo al código, se lleva completo y verbatim.** Los tres errores de la primera vuelta
 fueron los tres del mismo tipo: llevar una versión propia en vez de la aprobada (el titular donde
 iba la descripción), sumar en vez de reemplazar (dos leyendas), y arreglar un problema creando otro
 (el margen negativo que superpuso las escenas). Antes de dar por aplicada una combinación, se
-compara parámetro por parámetro contra el JSON exportado.
+compara parámetro por parámetro contra el JSON exportado. En la segunda vuelta se coló uno más, del
+mismo tipo: un preset «tuyo» escrito de memoria con `clave: leyenda` cuando el JSON decía `ambas`.
+
+**Y una regla de método, que costó una discusión:** cuando el cliente dice que algo se le mueve
+solo, **no se le devuelve una causa sin haberla medido**. Acá se le dijo que la culpa era que el
+laboratorio no persistía los parámetros; era verdad que no los persistía, pero el JSON que él había
+mandado mostraba los parámetros correctos, o sea que no era eso. Se arregla lo que sí está mal, se
+dice qué se midió, y lo que no se sabe se dice que no se sabe.
 
 ## Editorial: cuándo un paso se gana su scroll
 
@@ -160,11 +191,27 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   Cuidado al medirlo: mover el scroll por código (`scrollTop = …`) no dispara el imán igual que un
   gesto, así que la comprobación va con rueda o arrastre de verdad.
 - **El bloque de texto no cambia de alto entre pasos.** Todas las frases en la misma celda de una
-  grilla de una celda: mide lo que la más alta, sin `min-height` mágico y sin saltos.
-- **El alto sale del contenedor, no de la pantalla.** La capa es `fixed inset-0`, así que su alto
-  ya es el viewport real en cada momento: `100%` acierta también cuando el navegador del teléfono
-  muestra u oculta su barra, cosa que ni `vh` ni `svh` hacen. Esos quedan de respaldo para el
-  primer cuadro.
+  grilla de una celda: mide lo que la más alta, sin `min-height` mágico y sin saltos. Medido: con
+  las inactivas fuera del flujo (`position: absolute`), el bloque medía la frase activa y la figura
+  subía y bajaba a cada paso; con la grilla, 0 px de movimiento en los cuatro pasos.
+
+  **Cuidado con `prefers-reduced-motion`:** ahí se muestran todas las frases a la vez, y en la misma
+  celda se superponen. Con movimiento reducido el párrafo **no lleva** la clase de grilla. Fue un
+  defecto real en teléfono desde que se apiló el párrafo, y no lo vio ninguna prueba.
+- **Una frase por paso en todos los anchos.** Al principio, desde 640 px el párrafo se leía entero
+  con las futuras en gris claro. Con el texto de escritorio a 34 px son cuatro frases que no entran,
+  y además contradice la premisa: un paso muestra lo que ese paso cuenta.
+- **El alto sale del contenedor, no de la pantalla, y hay que dárselo en píxeles.** La capa es
+  `fixed inset-0`, así que su alto ya es el viewport real en cada momento, también cuando el
+  navegador del teléfono muestra u oculta su barra, cosa que ni `vh` ni `svh` hacen.
+
+  **Pero no puede venir de un `100%`, y esto está medido (07-09-2026):** entre la capa y la escena
+  hay una `<section>` de alto automático, así que un porcentaje se resuelve contra un contenedor sin
+  alto definido y el navegador lo descarta. Como era la última declaración, pisaba a las de `vh` y
+  `svh`, y la escena terminaba midiendo su contenido: 657 px en una capa de 780. **El síntoma no era
+  el alto**, era que `justify-center` no hacía nada, porque no había espacio libre que repartir. El
+  alto va como variable en píxeles, la misma medición que la capa ya hace para los pasos; `svh`
+  queda de respaldo para el primer cuadro.
 - **La escena se pega debajo de la barra de la capa, no debajo del borde de la pantalla.** Con
   `top: 0` la barra tapa el aire de arriba del título: el espacio existe, pero queda detrás.
 - **El alto de la geometría se fija al abrir y solo se rehace si cambia el ancho.** La barra del
@@ -184,8 +231,40 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   en cada cuadro. Transiciones de 150-500 ms.
 - **En iOS, `body { overflow: hidden }` no bloquea el scroll de fondo.** Hace falta `position: fixed`
   con `top: -scrollY`, restaurando la posición al cerrar.
+- **Un valor escrito en el atributo `style` le gana a cualquier regla, también cuando lo que define
+  es una variable CSS.** Si un componente escribe `--alto-fila` en línea, ninguna media query lo
+  alcanza. Para dejar que un ancestro lo pase por encima hacen falta **dos nombres** y una cadena de
+  respaldo: el componente lee `var(--alto-fila-ancho, var(--alto-fila))` y quien manda define
+  `--alto-fila-ancho` más arriba. Lo mismo pasó en el laboratorio con un `font-size` en línea, que
+  dejaba la frase en el tamaño del teléfono con las dos columnas puestas.
 - **La capa entra al historial.** En Android el gesto de atrás es el gesto de cerrar; sin entrada
   propia se lleva puesta la página entera.
+
+## Escritorio: dos columnas
+
+Decidido en el laboratorio el 07-09-2026, y medido antes: en una sola columna el bloque se quedaba
+en 672 px sea cual sea la pantalla, así que en 1512×945 se usaba el 44 % del ancho, sobraban 276 px
+de alto y **la figura arrancaba a 528 px del techo**, o sea a medias en un portátil.
+
+- **El umbral son 900 px de ventana**, que es donde la columna de la figura deja de apretar las
+  cinco filas de países.
+- **Acá sí va media query, y en el laboratorio no.** La capa es `fixed inset-0`: su ancho **es** el
+  de la ventana. El visor del laboratorio, en cambio, es un contenedor dentro de una página, así que
+  ahí el ancho se mide por JavaScript o la media query miente justo donde importa.
+- **El titular y la frase son la misma voz y viajan juntos**, en una columna; la figura en la otra.
+  El envoltorio es `display: contents` en angosto, así que no cambia nada abajo del umbral.
+- **El titular pegado arriba y la frase centrada en lo que sobra:** la columna del relato va
+  `align-self: stretch` y la frase lleva `margin-block: auto`. Hacer que la figura ocupe dos filas
+  de la grilla parece equivalente y no lo es: su altura empuja la segunda fila y abre 200 px entre
+  el titular y su propia frase.
+- **El texto crece con la pantalla**, al escalón del 80 % sobre las medidas del teléfono: titular
+  27 px, frase 34.
+- **La figura también crece**, o queda un dibujo chico en una columna ancha: filas de 40 a 58 px y
+  nombres de país de 12 a 14. Y al agrandar la tipografía hay que volver a mirar la columna de
+  nombres: «Estados Unidos» empezó a salir cortado con puntos suspensivos.
+- **Dos columnas solo donde la figura es una sola figura.** Las escenas con dos o tres paneles en
+  paralelo quedan con cada panel en 192 px y los números a 6 px. Va por escena (`dosColumnas` en
+  `Escena`), no global.
 
 ## Accesibilidad
 
@@ -214,7 +293,9 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
 ## Verificación antes de dar por cerrado un tramo
 
 1. `npm run lint && npm test`.
-2. En los tres anchos (360, 768, escritorio), con `npm run dev`:
+2. En cinco anchos, con `npm run dev`: **360, 768, 900, 1512 y 1920**. Los tres de siempre no
+   alcanzan desde que hay dos columnas: 900 es el umbral y hay que verlo justo encima y justo
+   debajo, y 1920 es donde se nota si algo se estira sin tope.
    - cada frase cambia algo en la figura;
    - la figura entra completa en pantalla en 360 con la barra del navegador a la vista;
    - el botón atrás cierra la capa y deja el tablero donde estaba;
@@ -224,12 +305,17 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
 5. El emulador móvil de Chrome **no** reproduce el comportamiento de la barra del navegador. Lo de
    `svh` se comprueba en un teléfono de verdad.
 6. Contra el JSON exportado del laboratorio, parámetro por parámetro: orden, anclaje, tipografía,
-   fondo, alto, entrada, aire, rótulos, clave de color, y los textos **verbatim**.
+   fondo, alto, entrada, aire, rótulos, clave de color, columnas, escala de escritorio, y los textos
+   **verbatim**. Se leen del JSON, no de memoria.
 7. Con dos escenas seguidas, no una: la superposición entre escenas y el paso desparejo solo se ven
    al pasar de una a la otra.
 8. Contando leyendas: una sola por figura.
 9. Con `node scripts/mirar_recorrido.mjs 360` y `768`: los costos de paso tienen que ser iguales
    entre sí, y las capturas hay que **abrirlas**, no solo generarlas.
+10. Midiendo, no mirando: que la figura no se mueva entre pasos (el borde superior del bloque de la
+    figura tiene que dar el mismo número en todos), y que la escena no sea más alta que la capa.
+11. Con `prefers-reduced-motion` **y** el párrafo apilado: que las frases no queden una encima de
+    otra.
 
 **`lint`, tipos y pruebas verdes no dicen nada sobre esto.** Los tres defectos que llegaron al
 cliente pasaban las 90 pruebas.
@@ -259,17 +345,25 @@ cliente pasaban las 90 pruebas.
   escena 2 renderizada a 3,6 veces su tamaño y la unidad del eje pisando las marcas) aparecieron en
   la primera captura apenas se miró. **Antes de decir «no tengo navegador», se busca.**
 
-## Lo que quedó pendiente (06-09-2026)
+## Lo que quedó pendiente (07-09-2026)
 
-- **Las escenas 2 y 3 no pasaron por el laboratorio.** Tienen el tratamiento nuevo de composición
-  (figura arriba, una frase por paso, destello, tipografía de 19 px), pero **su guion sigue siendo el
-  viejo**: frases de hasta 290 caracteres, contra las ~110 de la escena 1. En 19 px eso es mucha
-  pantalla. Falta cortarlas con el mismo criterio y, si hace falta, pasarlas por el laboratorio.
+- **Las escenas 2 y 3 siguen con el guion viejo.** Tienen la composición nueva de una columna, pero
+  frases de 183, 227 y 270 caracteres contra las ~110 de la escena 1. **Ya están cargadas en el
+  laboratorio**, con las cifras reales y un botón «Probar el guion corto» que propone tres pasos de
+  un dato cada uno. Falta la vuelta con el cliente.
+- **Y a 360 px la escena 3 no cabe:** mide 1.018 px contra una pantalla de 780. Es anterior a los
+  cambios de composición (verificado revirtiendo), y la causa es la frase de 270 caracteres. Lo que
+  cambió es qué queda cortado: antes la cola del párrafo, ahora la figura.
+- **Las escenas 2 y 3 no tienen escritorio.** Se quedan en una columna porque sus dos y tres paneles
+  en paralelo no entran en media pantalla. La salida probable es apilar los paneles, y hay que
+  medirla: tres paneles apilados a 576 px de ancho son ~760 px de alto, que en una ventana de
+  1280×800 no entran.
+- **La frase 2 de la escena 3 dice «hay más chilenos».** Habla por el país sobre una muestra no
+  probabilística (hecho 2 del `CLAUDE.md`). La corrección está propuesta en el laboratorio y no
+  aplicada al código.
 - **La leyenda y el año de las escenas 2 y 3.** Solo la escena 1 tiene clave de oleadas: las otras
   dos usan `Serie`, con una serie por figura y color propio, así que hoy no la necesitan. Si alguna
   pasa a mostrar varias oleadas a la vez, hay que darle la misma clave.
-- **Nada de esto se vio renderizado desde la sesión.** Todo lo visual lo verificó el cliente en su
-  teléfono. Ver «Qué herramienta usar, y cuál no».
 
 ## Fuentes
 
