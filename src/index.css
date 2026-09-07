@@ -19,9 +19,12 @@
   grid-template-columns: 1fr;
 }
 
+/* `--ancho-etiqueta-ancho` va primero en la cadena para que quien quiera pasar por encima del
+   valor que el componente escribe en línea pueda hacerlo desde un ancestro: un estilo en línea
+   le gana a cualquier regla, también para una variable. Lo usa el recorrido en escritorio. */
 @media (min-width: 640px) {
   .fila-puntos {
-    grid-template-columns: minmax(0, var(--ancho-etiqueta, 5.5rem)) 1fr;
+    grid-template-columns: minmax(0, var(--ancho-etiqueta-ancho, var(--ancho-etiqueta, 5.5rem))) 1fr;
     column-gap: 0.5rem;
   }
 }
@@ -129,9 +132,14 @@
   height: 55svh;
 }
 
-/* El párrafo de la escena en el teléfono: todas las frases en la misma celda de una grilla de
-   una sola celda. El bloque mide lo que la frase más alta y no cambia de alto al avanzar, sin
-   ningún número mágico. En pantalla ancha vuelve a ser un párrafo corrido. */
+/* Todas las frases en la misma celda de una grilla de una sola celda: el bloque mide lo que la
+   frase más alta y no cambia de alto al avanzar, sin ningún número mágico.
+
+   **En todos los anchos.** Hasta el 07-09-2026 esto valía solo en el teléfono y en pantalla ancha
+   el párrafo se leía entero, con las futuras en gris claro. Con el texto de escritorio a 34 px son
+   cuatro frases que no entran, y además contradice la premisa: un paso muestra lo que ese paso
+   cuenta. Con `prefers-reduced-motion` el párrafo no lleva esta clase, porque ahí se leen todas a
+   la vez y la grilla las superpondría. */
 .parrafo-escena {
   display: grid;
 }
@@ -140,19 +148,96 @@
   grid-area: 1 / 1;
 }
 
-@media (min-width: 640px) {
-  .parrafo-escena {
-    display: block;
+/* El relato (titular más frase) es un bloque solo en escritorio. En angosto no tiene que existir:
+   con `display: contents` sus hijos siguen siendo elementos del flex de la escena. */
+.columna-relato {
+  display: contents;
+}
+
+/* Escritorio: el relato a la izquierda y la figura a la derecha.
+   Salió del laboratorio del recorrido (preset «La elegida» con dos columnas, 07-09-2026). En una
+   columna, la figura arrancaba a 528 px del techo en una ventana de 1512×945 y quedaba a medias
+   en un portátil, mientras el bloque usaba 672 px de 1512 y sobraban 276 px de alto.
+
+   El umbral son 900 px, que es donde la columna de la figura deja de apretar las cinco filas de
+   países. Va como media query y no medido por JavaScript porque la capa es `fixed inset-0`: su
+   ancho **es** el de la ventana, así que acá la media query dice la verdad. */
+@media (min-width: 900px) {
+  .capa-recorrido .escena.en-columnas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-content: center;
+    align-items: center;
+    column-gap: 2.75rem;
+    max-width: 74rem;
+    margin-inline: auto;
+    padding-inline: 2rem;
   }
 
-  .parrafo-escena > span {
-    grid-area: auto;
+  /* El relato ocupa el alto de la fila, que lo fija la figura. Dentro, el titular queda pegado
+     arriba y la frase se centra en lo que sobra: `margin-block: auto` reparte el hueco a los dos
+     lados de la frase sin mover el titular. */
+  .capa-recorrido .escena.en-columnas > .columna-relato {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-self: stretch;
+  }
+
+  .capa-recorrido .escena.en-columnas > .columna-relato > .bloque-texto {
+    margin-block: auto;
+    padding-top: 0;
+  }
+
+  .capa-recorrido .escena.en-columnas > .bloque-figura {
+    grid-column: 2;
+    padding-top: 0;
+  }
+
+  /* Las columnas mandan sobre el ancho de lectura: `max-w-2xl` las dejaría en 672 px cada una y
+     el aire volvería a los costados. */
+  .capa-recorrido .escena.en-columnas .bloque-encabezado,
+  .capa-recorrido .escena.en-columnas .bloque-texto,
+  .capa-recorrido .escena.en-columnas .bloque-figura {
+    max-width: none;
+  }
+
+  /* Hay ancho y alto de sobra, así que el texto crece: es el escalón del 80 % del laboratorio
+     sobre las medidas del teléfono (15 y 19 px). */
+  .capa-recorrido .escena.en-columnas .bloque-encabezado h3 {
+    font-size: 27px;
+    line-height: 1.2;
+  }
+
+  .capa-recorrido .escena.en-columnas .bajada-escena {
+    font-size: 22px;
+    line-height: 1.35;
+  }
+
+  .capa-recorrido .escena.en-columnas .parrafo-escena {
+    font-size: 34px;
+    line-height: 1.3;
+  }
+
+  /* La figura crece con el texto. En el teléfono las filas van a 40 px porque ahí el alto es lo
+     escaso; en una columna de 576 px con 900 px de escena, esas mismas filas dejan la figura en
+     314 px y el resto en blanco. El nombre del país sube a 14 px por lo mismo. */
+  .capa-recorrido .escena.en-columnas {
+    --alto-fila-ancho: 58px;
+    /* 6,5rem alcanzaba a 14 px de tipografía solo hasta «Corea del Sur»: «Estados Unidos» salía
+       cortado con puntos suspensivos. */
+    --ancho-etiqueta-ancho: 9.5rem;
+  }
+
+  .capa-recorrido .escena .fila-puntos > span:first-child {
+    font-size: 14px;
   }
 }
 
 /* Modo compacto: el nombre nunca sube sobre su fila. Cuesta lienzo (124 px de canvas en 360)
    y ahorra 18 px de alto por fila, que es el cambio que hace entrar la figura en una escena. */
 .fila-puntos.compacta {
-  grid-template-columns: minmax(0, var(--ancho-etiqueta, 5.5rem)) 1fr;
+  grid-template-columns: minmax(0, var(--ancho-etiqueta-ancho, var(--ancho-etiqueta, 5.5rem))) 1fr;
   column-gap: 0.5rem;
 }

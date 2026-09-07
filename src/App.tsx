@@ -314,6 +314,9 @@ function Recorrido ({ encuesta }: { encuesta: Encuesta }) {
           <>
             <Escena
               raiz={raiz}
+              // La única escena con una figura sola: la 2 y la 3 tienen dos y tres paneles en
+              // paralelo, que en media pantalla quedan ilegibles.
+              dosColumnas
               // Un solo nivel de encabezado, con el hallazgo, como quedó en el laboratorio el
               // 07-09-2026. Lo que se está mirando bajó al pie de la figura, junto con las bases:
               // ahí se consulta cuando ya se vieron los puntos, y no compite con el titular.

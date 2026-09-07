@@ -106,7 +106,15 @@ export default function Puntos ({
   // El ancho de la columna de nombres viaja como variable CSS. El porqué está en `.fila-puntos`,
   // en index.css: ni clase de Tailwind (interpolada, el compilador no la ve) ni estilo en línea
   // (sin media query, y le gana a la clase, así que rompe el apilado en teléfono).
-  const ancho = { '--ancho-etiqueta': anchoEtiqueta } as React.CSSProperties
+  // El alto de la fila viaja como variable por la misma razón que el ancho de la etiqueta: escrito
+  // en el atributo `style` no hay media query que lo alcance. Y con **dos** nombres, no uno: un
+  // valor en línea le gana a cualquier regla, incluso para una variable, así que quien quiera
+  // pasarlo por encima (el recorrido en escritorio, ver `.capa-recorrido` en index.css) define
+  // `--alto-fila-ancho` en un ancestro y esa gana por ser la primera de la cadena.
+  const ancho = {
+    '--ancho-etiqueta': anchoEtiqueta,
+    '--alto-fila': `${altoFila}px`,
+  } as React.CSSProperties
   const rejilla = compacto ? 'fila-puntos compacta' : 'fila-puntos'
 
   return (
@@ -187,7 +195,10 @@ export default function Puntos ({
               <span className="truncate text-xs text-gray-700 sm:text-right" title={fila.etiqueta}>
                 {fila.etiqueta}
               </span>
-              <div className="relative" style={{ height: `${altoFila}px`, marginLeft: MARGEN, marginRight: MARGEN }}>
+              <div
+                className="relative"
+                style={{ height: 'var(--alto-fila-ancho, var(--alto-fila))', marginLeft: MARGEN, marginRight: MARGEN }}
+              >
                 {cortes.map((f) => (
                   <span key={f} className="absolute inset-y-0 w-px bg-gray-100" style={{ left: `${f * 100}%` }} />
                 ))}

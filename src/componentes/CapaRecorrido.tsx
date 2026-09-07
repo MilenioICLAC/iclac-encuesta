@@ -163,7 +163,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
  * Con `prefers-reduced-motion` el párrafo va entero también en el teléfono: quien pide menos
  * movimiento ve todo, no una versión recortada.
  */
-export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }: {
+export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, dosColumnas = false }: {
   titulo: string
   /** Qué se está mirando, en una línea. El título dice el hallazgo y esta dice la figura: sin
    *  ella hay que repetir la unidad en cada frase. */
@@ -174,6 +174,13 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
   cabecera?: (activo: number) => React.ReactNode
   nota?: React.ReactNode
   raiz: HTMLElement | null
+  /**
+   * En escritorio, el relato a la izquierda y la figura a la derecha (ver `.escena.en-columnas` en
+   * `index.css`). **Es por escena y no global**: sirve cuando la figura es una sola, como el
+   * termómetro, y no cuando son varios paneles al lado. Las escenas 2 y 3 tienen tres series en
+   * paralelo, y en media pantalla cada panel queda en 192 px, con los números a 6 px.
+   */
+  dosColumnas?: boolean
 }) {
   const { activo, refs, reducido } = usePasoActivo(frases.length, raiz)
   const escena = useRef<HTMLDivElement | null>(null)
@@ -214,14 +221,17 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
   // que recorrer para que salga.
   const colchonFinal = alto ? Math.round(alto * 0.2) : undefined
 
-  // Una frase por paso solo en el teléfono, y solo con movimiento normal. La regla vive acá y no
-  // en el CSS porque depende del paso activo, que es estado de React.
+  // Una frase por paso, en todos los anchos. La regla vive acá y no en el CSS porque depende del
+  // paso activo, que es estado de React.
+  //
+  // **En escritorio también.** Antes el párrafo se leía entero en pantalla ancha, con las futuras
+  // en gris claro. Con el texto de escritorio a 34 px eso son cuatro frases que no entran, y
+  // además rompe la premisa del recorrido: un paso muestra lo que ese paso cuenta.
   const frase = (i: number) => {
     if (reducido) return 'text-gray-700'
     if (i === activo) return 'text-gray-800'
-    // Invisible en angosto (todas comparten celda de grilla, así que el bloque no cambia de alto)
-    // y en gris claro en ancho, donde el párrafo se lee entero.
-    return 'opacity-0 sm:opacity-100 sm:text-gray-300'
+    // Todas comparten celda de grilla, así que el bloque no cambia de alto al avanzar.
+    return 'opacity-0'
   }
 
   return (
@@ -233,31 +243,37 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz }
           frase quedaba al pie de la pantalla, que es donde el pulgar la tapa. */}
       <div
         ref={escena}
-        className="escena sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6"
+        className={`escena${dosColumnas ? ' en-columnas' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
         // El alto de la capa, en píxeles medidos. `.escena` lo usa para su `min-height`, que es lo
         // que le da a `justify-center` espacio que repartir (ver `index.css`).
         style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
       >
-        <div className="mx-auto w-full max-w-2xl">
-          <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{titulo}</h3>
-          {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es el
-              piso de lectura para texto chico. Más apagado se ve mejor y deja gente afuera. */}
-          {bajada && <p className="mt-1 text-[13px] leading-snug text-gray-500">{bajada}</p>}
+        {/* El titular y la frase son la misma voz, así que viajan juntos: en escritorio son una
+            columna y la figura es la otra. En angosto el envoltorio es `display: contents` y no
+            cambia nada (ver `.columna-relato` en `index.css`). */}
+        <div className="columna-relato">
+          <div className="bloque-encabezado mx-auto w-full max-w-2xl">
+            <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{titulo}</h3>
+            {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es
+                el piso de lectura para texto chico. Más apagado se ve mejor y deja gente afuera. */}
+            {bajada && <p className="bajada-escena mt-1 text-[13px] leading-snug text-gray-500">{bajada}</p>}
+          </div>
+          <div className="bloque-texto mx-auto w-full max-w-2xl pt-2 sm:pt-3">
+            {/* Todas las frases en la misma celda de grilla: el bloque mide lo que la frase más
+                alta y no cambia de alto al avanzar (ver `.parrafo-escena` en `index.css`). Sin
+                eso, la figura sube y baja a cada paso.
+                Con `prefers-reduced-motion` se leen todas a la vez, y ahí la grilla las
+                superpondría: en ese caso el párrafo vuelve a ser un párrafo. */}
+            <p className={`${reducido ? '' : 'parrafo-escena'} text-[19px] leading-[1.4] sm:text-lg sm:leading-relaxed`}>
+              {frases.map((f, i) => (
+                <span key={i} className={`transition-opacity duration-500 ${frase(i)}`}>
+                  {f}{' '}
+                </span>
+              ))}
+            </p>
+          </div>
         </div>
-        <div className="mx-auto w-full max-w-2xl pt-2 sm:pt-3">
-          {/* Una frase por paso en el teléfono, con todas en la misma celda de grilla: el bloque
-              mide lo que la frase más alta y no cambia de alto al avanzar (ver `.parrafo-escena`
-              en `index.css`). Sin eso, la figura sube y baja a cada paso. En pantalla ancha vuelve
-              a ser un párrafo corrido. */}
-          <p className="parrafo-escena text-[19px] leading-[1.4] sm:text-lg sm:leading-relaxed">
-            {frases.map((f, i) => (
-              <span key={i} className={`transition-opacity duration-500 sm:transition-colors ${frase(i)}`}>
-                {f}{' '}
-              </span>
-            ))}
-          </p>
-        </div>
-        <div className="mx-auto w-full max-w-2xl pt-3 sm:pt-4">
+        <div className="bloque-figura mx-auto w-full max-w-2xl pt-3 sm:pt-4">
           {cabecera?.(activo)}
           {figura(activo)}
           {nota && <div className="mt-2">{nota}</div>}
