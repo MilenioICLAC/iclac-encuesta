@@ -27,19 +27,30 @@ export function numero (valor: number): string {
 }
 
 export function porcentaje (valor: number, decimales = 1): string {
-  return new Intl.NumberFormat(locale(), {
+  return menos(new Intl.NumberFormat(locale(), {
     style: 'percent',
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales
-  }).format(valor / 100)
+  }).format(valor / 100))
 }
+
+/**
+ * El signo menos tipográfico (−, U+2212), no el guion del teclado (-, U+002D).
+ *
+ * `Intl` devuelve el guion, que es más corto y más alto: al lado de un texto de lectura se ve como
+ * un guion de palabra y no como un signo. Se cambia acá y no en cada figura porque es el mismo
+ * criterio del locale: un dato, un lugar.
+ *
+ * **No toca las descargas:** los CSV los generan los scripts de Node, que no pasan por este módulo.
+ */
+const menos = (texto: string): string => texto.replace('-', '\u2212')
 
 /** Un decimal, con el separador del idioma activo. En español es coma, no punto. */
 export function decimal (valor: number, decimales = 1): string {
-  return new Intl.NumberFormat(locale(), {
+  return menos(new Intl.NumberFormat(locale(), {
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales
-  }).format(valor)
+  }).format(valor))
 }
 
 export function fecha (iso: string): string {

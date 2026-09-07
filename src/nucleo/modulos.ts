@@ -16,7 +16,7 @@ import { media, proporcion } from './agregar'
 
 export type Ancho = 'tercio' | 'medio' | 'completo'
 
-export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region' | 'ideologia' | 'densidad'
+export type Forma = 'serie-media' | 'serie-porcentaje' | 'distribucion' | 'multiple' | 'por-region' | 'ideologia' | 'densidad' | 'termometro'
 
 export interface Modulo {
   id: string
@@ -42,10 +42,16 @@ export const MODULOS: Modulo[] = [
     id: 'termometro',
     bloque: 'potencias',
     titulo: 'Opinión sobre China, en perspectiva',
-    bajada: 'Evaluación de 0 a 100. Los cinco países juntos, porque un 65,8 solo no significa nada.',
+    // La bajada tiene que ser cierta en los dos estados del módulo: sin corte compara países, con
+    // corte compara grupos. Prometer «los cinco países» a secas era falso apenas se elegía un corte.
+    bajada: 'Evaluación de 0 a 100. Sin corte, los cinco países juntos, porque un 65,8 solo no significa nada; con un corte activo, China grupo por grupo.',
     variable: 'p5_1_val',
     ancho: 'completo',
-    forma: 'serie-media',
+    // Su propia figura, y no `serie-media`: es la misma del recorrido, con los cinco países en
+    // filas. Con `serie-media` mostraba una línea de un solo país estirada a la tarjeta entera
+    // (1.385 px de alto, números a 91 px) y, con un corte activo, le pedía una distribución por
+    // categoría a una variable continua de 0 a 100: cien filas por grupo, 4.247 px de tarjeta.
+    forma: 'termometro',
     advertencia: 'Sobre la entrega completa de 2025, de 1.228 casos: China da 65,8. El monitor que ICLAC publica hoy muestra 67,0, porque calcula sobre una submuestra de 662 que se armó con un script corrido dos veces. Cuál se publica es decisión de ICLAC.',
   },
 

@@ -20,6 +20,7 @@ import { parseArgs } from 'node:util'
 import { registros } from './lib/xlsx.mjs'
 import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
 import { contar } from './lib/texto.mjs'
+import { contrastes } from './lib/contrastes.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -295,6 +296,10 @@ export function procesar () {
       .sort((a, b) => a.orden - b.orden),
     variables,
     casos,
+    // Qué diferencias entre oleadas superan el azar de la propia muestra. Se calcula acá y no en
+    // la aplicación porque son diez mil permutaciones por comparación: es trabajo del artefacto,
+    // no del navegador de nadie. Ver `lib/contraste.mjs` para el método y su alcance.
+    contrastes: contrastes(casos),
   }
 }
 
@@ -311,5 +316,7 @@ if (esEjecutable) {
   console.log(`Grupos de selección múltiple: ${datos.multiples.map((m) => `${m.id} (${m.opciones.length})`).join(' · ')}`)
   console.log(`Nubes de palabras: ${datos.nubes.map((n) => `${n.id} (${n.total.length})`).join(' · ')}`)
   console.log(`En serie longitudinal: ${datos.variables.filter((v) => v.serie).length}`)
+  const comparaciones = datos.contrastes.medidas.flatMap((m) => m.comparaciones)
+  console.log(`Contrastes: ${comparaciones.length} comparaciones, ${comparaciones.filter((c) => c.p < 0.05).length} por encima del ruido (p < 0,05)`)
   console.log(`\nEscrito en ${salida}\n`)
 }

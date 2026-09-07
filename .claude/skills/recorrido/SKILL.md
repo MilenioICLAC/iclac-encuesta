@@ -23,9 +23,23 @@ a la vez, tipografía, fondo, forma, alto, escala del eje, entrada del dato, opa
 duración, alto del paso, rótulos, color de las oleadas, clave, tamaño del punto, aire, avance,
 encabezado, unidad en el eje, y las columnas de escritorio con su escala de texto.
 
-Está publicado como artefacto privado:
-https://claude.ai/code/artifact/97f6b345-ef4e-4c25-96ba-740ef1948b54 (06-09-2026, rehecho el
-07-09-2026).
+**El laboratorio vive en el repositorio y se sirve desde el servidor de desarrollo.** La fuente es
+`laboratorio/recorrido.html`; `npm run lab` la copia a `public/laboratorio.html` poniéndole el
+`<head>` con el `meta viewport`, y queda en `http://<máquina>:5180/laboratorio.html`.
+
+**Ya no se publica como artefacto** (decidido el 07-09-2026). Un artefacto pertenece a la cuenta
+que lo publica: al trabajar desde dos cuentas, el enlace deja de abrir para una de ellas, y la
+copia que sí abre no se puede actualizar desde la otra. El servidor no tiene ese problema, además
+de que evita el marco embebido, donde `position: fixed` y `svh` significan otra cosa. El artefacto
+anterior (`fd09e261…`) queda como está y no se mantiene.
+
+**El anterior (`97f6b345…`) quedó en otra cuenta.** Los artefactos son de la cuenta que los
+publica: al cambiar de cuenta, el enlace viejo responde «no existe o no está compartido contigo»,
+que se lee igual que un borrado y no lo es. Dos consecuencias operativas: **el enlace de acá se
+verifica antes de mandárselo a nadie**, porque publicar de nuevo crea otra dirección y esta línea es
+lo único que la ata al proyecto; y **lo que el laboratorio guarda vive en el navegador, no en el
+artefacto** (`localStorage` por origen), así que los textos y parámetros guardados no viajan a la
+dirección nueva. Lo que sí viaja es el JSON exportado, que para eso existe.
 
 Siete cosas lo hacen funcionar, y sin ellas no sirve:
 
@@ -48,6 +62,40 @@ Siete cosas lo hacen funcionar, y sin ellas no sirve:
    no era que fuera uno, era tener que entrar y salir de pantalla completa para ver escritorio.
 7. **Pantalla completa.** Se prueba en el aparato donde se va a leer. Un visor chico embebido en una
    página no dice nada sobre cuánta pantalla se come el texto.
+
+   **Y hay dos capas más de encierro, y las dos rompieron el laboratorio el 07-09-2026.**
+
+   Primero, **el visor en 390 dentro de una ventana grande no es la ventana en 390.** El 07-09-2026 el
+   cliente abrió el laboratorio en su teléfono y era inusable, con todas las medidas del visor
+   verificadas: el rótulo «Paso 1 de 4 · visor 356 px» se partía en seis líneas, los veinte presets
+   envueltos se comían 1.200 px antes de la primera figura, y el selector de anchos ocupaba lugar
+   para elegir un ancho que ya era el real. **La verificación del laboratorio se hace con la ventana
+   del navegador en 390, no con su selector.**
+
+   Segundo, **un artefacto se mira dentro de un marco, así que se prueba dentro de un marco.** El
+   modo de pantalla completa del laboratorio restaba `41px` a mano por su barra y medía el resto en
+   `svh`. Las dos cosas fallan ahí: la barra deja de medir una línea apenas los botones no caben, y
+   `svh` dentro de un artefacto es el alto del marco que lo hospeda, no el de la pantalla. El visor
+   terminaba cuatro píxeles más abajo del borde y el contenido se salía. **Ningún alto se calcula
+   restando el de otra cosa dibujada:** la caja va en columna y el visor crece con lo que queda. Es
+   la misma regla que en la app (`--alto-encabezado`, `--barra-capa`), acá resuelta sin variable
+   porque el navegador la reparte solo. La comprobación se hace cargando el laboratorio dentro de un
+   `<iframe>` del alto del teléfono, no como página suelta.
+
+   Tercero, y es el que costó tres rondas: **dentro de un artefacto no se usa `position: fixed`.**
+   El navegador del teléfono lo posiciona contra la ventana de afuera y no contra el marco, así que
+   el elemento sale más ancho que el marco y se desborda por la derecha. **No se reproduce en el
+   emulador ni con un `<iframe>` local**: las tres auditorías dieron limpio mientras el cliente lo
+   veía roto. El modo de pantalla completa del laboratorio se hace sin salir del flujo (el
+   envoltorio toma el alto del documento, se esconde lo demás, el marco se queda con lo que hay) y
+   la hoja de ajustes se ancla al marco con `position: absolute`. Dos cuidados que salieron de ahí:
+   al vaciar el flujo hay que esconder **también** la columna de controles, que vive dentro del
+   tablero (si no, el marco mide 7.887 px), y el marco normal es pegajoso con `top: 8px`, que en
+   relativo se convierte en desplazamiento.
+
+   **Y cuando el marco estorba, hay una vía sin marco:** el laboratorio se copia a `public/` y se
+   abre desde el servidor de desarrollo por la red local, que en el teléfono es una página normal.
+   Está en `.gitignore`: es herramienta, no producto.
 
 Tres reglas más del laboratorio, todas de esta segunda vuelta:
 
@@ -86,6 +134,40 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
 - **El recorrido afirma, el tablero consulta** (un registro de decisiones interno). Una frase del recorrido dice algo; un
   módulo del tablero no dice nada, deja consultar. No se mezclan en el mismo scroll, y desde el
   07-09-2026 tampoco en la misma vista: el tablero tiene su propia ruta.
+- **Cuando una escena cambia de tema a mitad de camino, todo su encabezado la sigue.** La escena 1
+  empieza comparando países y termina mostrando que la posición política no ordena nada: el
+  titular, el pie y el año grande son funciones del paso, no constantes. Un pie fijo que dice «543
+  personas» mientras la figura muestra 513, o un titular sobre el termómetro encima de una figura
+  de ideología, contradicen a la figura, que es peor que no decir nada. Por eso `titulo`, `nota` y
+  `cabecera` aceptan una función del paso.
+- **Y la leyenda aparece cuando el color significa algo.** En los cuatro primeros pasos del
+  experimento hay una sola oleada dibujada: una clave de tres años ofrecería dos colores que no
+  están en la figura.
+- **Contar el método es contar un hallazgo, cuando el método *es* el hallazgo.** Los cinco pasos
+  del experimento muestran la recta que publica el monitor, marcan el punto de treinta personas que
+  la sostiene, lo retiran y la recta se endereza. Una línea plana no tiene épica; verla enderezarse
+  sí. El scroll sirve para mostrar un cambio, así que el método se muestra en vez de resumirse.
+  **La condición para contarlo** es que el retiro dé vuelta la conclusión (la recta pasa el
+  contraste y sin ese punto no): si no, los pasos no se dibujan.
+- **Una escena puede cambiar de filas sin cambiar de eje.** La escena 1 pasa de cinco países a
+  tres tramos ideológicos en el paso 5: misma figura, misma escala (calculada sobre los dos juegos
+  de filas juntos, así que ninguna marca se mueve), y el pie y el año grande cambian con ella. Un
+  pie que sigue describiendo la figura anterior es peor que no tener pie, así que `nota` acepta una
+  función del paso, igual que `cabecera`.
+- **Una escena solo afirma lo que pasa el contraste.** «Se movió» y «no se movió» son afirmaciones
+  estadísticas: van contra los contrastes que el ETL calcula (permutación y bootstrap, ver
+  `CLAUDE.md`, «Cuándo un cambio entre oleadas es un cambio»), y hay una prueba que falla si el
+  recorrido afirma una diferencia que no los pasa.
+- **Y una cifra que el lector no puede calibrar no es una cifra, es relleno.** La escena 1 decía
+  «ningún país se movió más de 1,0 puntos»: cierto, y nadie sabe si 1,0 es mucho en una escala de
+  0 a 100 con desviación de 28. Ahora dice que ninguno de los cinco se distingue del ruido, que es
+  más fuerte y no tiene número arbitrario. **El hecho no se cortó, se dijo mejor:** es lo que
+  sostiene el titular, porque sin él no se distingue un quiebre de una tendencia que ya venía.
+- **Donde el intervalo cruza el cero, se dice «parejos».** No se elige un ganador por el signo del
+  promedio. La escena 1 afirmaba que en 2023 y 2024 Estados Unidos estaba mejor evaluado; en 2023
+  la brecha era de 2,1 puntos con un intervalo que cruza el cero, o sea que esa mitad afirmaba de
+  más. Y como los rótulos de la figura muestran los promedios (61,4 contra 64,2), la nota tiene que
+  decir de dónde sale «parejos», o el texto parece contradecir a la figura.
 - **Las cifras se calculan, no se transcriben.** Una frase con el número escrito a mano envejece con
   la oleada siguiente. Ver `encendidos()` y las escenas en `src/App.tsx`.
 - **Pocos pasos.** Dos minutos de lectura, tres o cuatro frases por escena. El formato premia salir
@@ -151,6 +233,33 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
 - **No se habla por la población.** «Las personas encuestadas», no «los chilenos»: la muestra no es
   probabilística (hecho 2 del `CLAUDE.md`).
 
+## La capa: entrada, posición y salida
+
+Decidido con el cliente el 07-09-2026, y lo que sostiene el resto de esta sección.
+
+- **La raíz del sitio es el recorrido**, y `#/recorrido` es su alias. El tablero no afirma nada:
+  sin el relato hay que saber de antemano qué buscar.
+- **La portada es la primera pantalla de la capa, no una página anterior.** Fue una vista aparte
+  durante media tarde y el lector no la veía nunca, porque la capa se abría encima: entraba en
+  mitad de la escena 1 sin saber qué era esto ni cuánto duraba. Adentro, ocupa **una pantalla
+  exacta**, es punto del imán, no se numera y no cuenta como escena en la barra («Portada», no
+  «escena 1 de 5»). Lleva un botón que hace lo mismo que el gesto, para rueda y teclado.
+- **La capa es una ruta, no un estado suelto.** De ahí salen gratis el gesto de atrás del teléfono
+  y el enlace. **No se le suma `pushState` propio:** con la ruta encima, la entrada quedaba
+  duplicada y el botón de atrás pedía dos toques. En la raíz no hay nada detrás, así que ahí el
+  gesto de atrás sale del sitio, que es lo que hace cualquier página de entrada; entrando desde el
+  tablero, vuelve al tablero.
+- **Salir lleva al tablero, y el botón lo dice.** Salir de un relato es ir a consultar; «Cerrar» no
+  dice qué pasa después.
+- **La posición se muestra en dos niveles:** «Escena N de M» y un punto por paso de esa escena,
+  además de la barra de avance. La barra sola dice cuánto falta pero no dice de qué. Va también en
+  texto (`sr-only` con `aria-live="polite"`) para quien no ve ninguno de los dos.
+- **Cada escena ofrece su módulo del tablero** (`#/tablero?foco=<id>`), que llega enfocado y
+  marcado. Mandar al tablero entero no es una respuesta: son veintisiete tarjetas.
+- **La escena que informa su posición es la que cruza la banda de lectura**, medida con la misma
+  banda de los pasos (`-45%`) sobre la sección de la escena. Con la escena pegada, su sección
+  ocupa toda su tajada de scroll, así que solo una la cruza a la vez.
+
 ## Mecánica
 
 - **La figura se fija con `position: sticky`, nunca con un listener de scroll.** El listener es
@@ -215,6 +324,14 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   queda de respaldo para el primer cuadro.
 - **La escena se pega debajo de la barra de la capa, no debajo del borde de la pantalla.** Con
   `top: 0` la barra tapa el aire de arriba del título: el espacio existe, pero queda detrás.
+- **El alto de esa barra se mide y se publica (`--barra-capa`), no se escribe a mano.** Estaba
+  escrito `2.5rem` y la barra mide 43 px: cada escena terminaba 3 px por debajo del borde de la
+  capa, y en la escena más apretada eso es la última línea de la nota. Es la misma regla del
+  encabezado del sitio (`--alto-encabezado`). El valor del CSS queda solo como respaldo del primer
+  cuadro, en la cadena `var(--barra-capa, 2.5rem)`.
+- **El alto útil de una escena es la capa menos su barra.** En 360 px son **737 px**, y ahí entra
+  todo: encabezado, frase, figura y nota. Se mide, no se estima: la escena de cierre pedía 776 con
+  frases de dos líneas y una nota de cuatro.
 - **El alto de la geometría se fija al abrir y solo se rehace si cambia el ancho.** La barra del
   navegador móvil cambia el alto del contenedor entre un 8 % y un 15 % al ir y venir; si el alto de
   los pasos siguiera cada cambio, se recalcularía en pleno gesto y el contenido saltaría bajo el
@@ -347,6 +464,10 @@ cliente pasaban las 90 pruebas.
   la primera captura apenas se miró. **Antes de decir «no tengo navegador», se busca.**
 
 ## Lo que quedó pendiente (07-09-2026)
+
+- **La escena 4 y la portada son borrador.** La escena de cierre repite las tres medidas, una por
+  panel, con frases de una línea; la portada dice qué es el recorrido, cuánto dura y por dónde va.
+  Ninguna de las dos tiene guion acordado con ICLAC, igual que las escenas 2 y 3.
 
 - **Las escenas 2 y 3 siguen con el guion viejo.** Tienen la composición nueva de una columna, pero
   frases de 183, 227 y 270 caracteres contra las ~110 de la escena 1. **Ya están cargadas en el

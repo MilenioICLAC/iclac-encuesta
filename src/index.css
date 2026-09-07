@@ -73,10 +73,14 @@
    **Y se pega debajo de la barra, no debajo del borde de la pantalla.** Con `top: 0` la barra le
    tapa el aire de arriba al título: el espacio existe pero queda detrás. */
 .escena {
-  --barra-capa: 2.5rem;
-  top: var(--barra-capa);
-  min-height: calc(100vh - var(--barra-capa));
-  min-height: calc(var(--alto-capa, 100svh) - var(--barra-capa));
+  /* El alto de la barra de la capa lo mide `CapaRecorrido` y lo escribe en la capa, igual que
+     `--alto-encabezado` en el encabezado. Acá va solo el respaldo del primer cuadro: escrito a
+     mano decía 2,5rem cuando la barra mide 43 px, y esos 3 px hacían que cada escena terminara
+     3 px más abajo que el borde de la capa. Un número a mano que describe algo dibujado siempre
+     termina describiéndolo mal. */
+  top: var(--barra-capa, 2.5rem);
+  min-height: calc(100vh - var(--barra-capa, 2.5rem));
+  min-height: calc(var(--alto-capa, 100svh) - var(--barra-capa, 2.5rem));
 }
 
 /* El dato que acaba de encenderse destella una vez, en su propio color.
@@ -131,7 +135,8 @@
 
 .paso-recorrido,
 .colchon-recorrido,
-.cierre-recorrido {
+.cierre-recorrido,
+.portada-recorrido {
   scroll-snap-align: start;
 }
 

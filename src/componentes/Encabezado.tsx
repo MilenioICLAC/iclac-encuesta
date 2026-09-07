@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import type { Idioma } from '../locale'
 import { TEXTOS } from '../textos'
 
@@ -32,8 +32,23 @@ const IDIOMAS: { codigo: Idioma, etiqueta: string }[] = [
   { codigo: 'cn', etiqueta: '中文' },
 ]
 
+/**
+ * El ícono del recorrido: un triángulo de reproducción.
+ *
+ * El recorrido no es una página más del sitio, es algo que se mira y que dura: el ícono lo dice
+ * antes de que el lector haga clic. Se exporta porque el botón de la portada usa el mismo glifo,
+ * que es lo que ata las dos entradas al mismo lugar.
+ */
+export function IconoRecorrido ({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M8 5.5v13a1 1 0 0 0 1.54.84l10-6.5a1 1 0 0 0 0-1.68l-10-6.5A1 1 0 0 0 8 5.5Z" />
+    </svg>
+  )
+}
+
 const NAV: { a: string, clave: keyof typeof TEXTOS.nav }[] = [
-  { a: '/', clave: 'recorrido' },
+  { a: '/recorrido', clave: 'recorrido' },
   { a: '/tablero', clave: 'tablero' },
   { a: '/explorar', clave: 'explorar' },
   { a: '/descargas', clave: 'descargas' },
@@ -50,6 +65,10 @@ const clase = ({ isActive }: { isActive: boolean }) =>
 export default function Encabezado ({ idioma, onIdioma }: Props) {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const caja = useRef<HTMLElement | null>(null)
+  // La portada y la capa son el mismo destino para el lector, aunque sean dos rutas: el ítem se
+  // marca en las dos. `NavLink` solo por sí mismo marcaría la capa y dejaría la portada sin marca.
+  const { pathname } = useLocation()
+  const enRecorrido = pathname === '/' || pathname === '/recorrido'
 
   // El alto medido, no declarado: lo lee quien tenga que pegarse debajo.
   useEffect(() => {
@@ -117,12 +136,27 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
             al lado de un título largo, entre 768 y 1023 px no queda ancho y el h1 se parte en
             varias líneas estirando el encabezado. */}
         <div className="hidden shrink-0 items-center gap-4 lg:flex">
-          <nav className="flex gap-4 font-display text-[0.8125rem]">
-            {NAV.map((n) => (
-              <NavLink key={n.a} to={n.a} end={n.a === '/'} className={clase}>
-                {TEXTOS.nav[n.clave][idioma]}
-              </NavLink>
-            ))}
+          <nav className="flex items-center gap-4 font-display text-[0.8125rem]">
+            {NAV.map((n) => (n.clave === 'recorrido'
+              ? (
+                <NavLink
+                  key={n.a}
+                  to={n.a}
+                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${
+                    enRecorrido
+                      ? 'border-brand-dark bg-brand-dark font-semibold text-white'
+                      : 'border-brand-dark/40 text-brand-dark hover:bg-brand hover:text-gray-900'
+                  }`}
+                >
+                  <IconoRecorrido className="h-3 w-3 shrink-0" />
+                  {TEXTOS.nav[n.clave][idioma]}
+                </NavLink>
+                )
+              : (
+                <NavLink key={n.a} to={n.a} className={clase}>
+                  {TEXTOS.nav[n.clave][idioma]}
+                </NavLink>
+                )))}
           </nav>
           <span className="h-5 w-px bg-gray-300" aria-hidden />
           {botonesIdioma}
@@ -150,10 +184,14 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
               <NavLink
                 key={n.a}
                 to={n.a}
-                end={n.a === '/'}
                 onClick={() => { setMenuAbierto(false) }}
-                className={({ isActive }) => `rounded px-2 py-2 hover:bg-brand hover:text-gray-900 ${clase({ isActive })}`}
+                className={({ isActive }) => `flex items-center gap-2 rounded px-2 py-2 hover:bg-brand hover:text-gray-900 ${
+                  n.clave === 'recorrido'
+                    ? (enRecorrido ? 'font-semibold text-brand-dark' : 'text-brand-dark')
+                    : clase({ isActive })
+                }`}
               >
+                {n.clave === 'recorrido' && <IconoRecorrido className="h-3 w-3 shrink-0" />}
                 {TEXTOS.nav[n.clave][idioma]}
               </NavLink>
             ))}

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { usePasoActivo } from '../nucleo/pasos'
 
 /**
@@ -16,9 +17,36 @@ import { usePasoActivo } from '../nucleo/pasos'
  * El foco se lleva al botón de cierre al abrir y vuelve a donde estaba al cerrar, el `Tab` no se
  * escapa a la página de atrás, y el cuerpo queda sin scroll mientras la capa está abierta.
  *
- * **La capa entra al historial.** En el teléfono, el gesto de atrás es el gesto de cerrar: sin una
- * entrada propia, el lector que quiere salir del recorrido se lleva puesto el sitio entero.
+ * **La capa es una ruta, no un estado suelto.** Vive en `#/recorrido`, y de ahí salen tres cosas
+ * gratis: el gesto de atrás del teléfono la cierra (es el gesto de cerrar en Android), se puede
+ * enlazar, y quien entra al sitio por la raíz cae adentro sin que nadie tenga que apretar nada.
+ * Antes la capa se metía sola al historial con `pushState`; con la ruta encima eso duplicaba
+ * entradas y el botón de atrás pedía dos toques.
+ *
+ * **Se sale al tablero.** Salir del recorrido es ir a consultar, así que el botón no dice
+ * «cerrar»: dice a dónde lleva.
  */
+
+/**
+ * Dónde va el lector: qué escena y qué paso dentro de ella.
+ *
+ * Cada escena informa su estado y la capa lo pinta arriba. Va por contexto y no por props porque
+ * las escenas son hijas del `children` que arma la página: la capa no las conoce.
+ */
+interface EstadoEscena {
+  indice: number
+  /**
+   * El titular de la escena. **Puede depender del paso**: una escena que cambia de tema a mitad de
+   * camino (la 1 pasa del termómetro a la ideología) necesita que el encabezado la siga, o el
+   * lector lee un hallazgo sobre una figura que ya no está.
+   */
+  titulo: string | ((activo: number) => string)
+  pasos: number
+  activo: number
+  enVista: boolean
+}
+
+const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
 interface Props {
   abierta: boolean
@@ -38,7 +66,33 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
   const alCerrarRef = useRef(alCerrar)
   alCerrarRef.current = alCerrar
   const [raiz, setRaiz] = useState<HTMLElement | null>(null)
+  const barra = useRef<HTMLDivElement | null>(null)
   const [avance, setAvance] = useState(0)
+  const [escenas, setEscenas] = useState<Record<number, EstadoEscena>>({})
+
+  // Cada escena informa; la capa se queda con lo último de cada una. Se compara antes de escribir
+  // porque el observador de pasos reporta también cuando nada cambió, y un `setState` por reporte
+  // vuelve a renderizar la capa entera en pleno scroll.
+  const informar = useCallback((estado: EstadoEscena) => {
+    setEscenas((previo) => {
+      const antes = previo[estado.indice]
+      if (antes && antes.activo === estado.activo && antes.enVista === estado.enVista && antes.pasos === estado.pasos) {
+        return previo
+      }
+      return { ...previo, [estado.indice]: estado }
+    })
+  }, [])
+
+  const lista = useMemo(
+    () => Object.values(escenas).sort((a, b) => a.indice - b.indice),
+    [escenas],
+  )
+  // La escena en vista, y si ninguna lo está todavía (primer cuadro), la primera.
+  const actual = lista.find((e) => e.enVista) ?? lista[0]
+  // La portada se registra con el índice 0 y no cuenta como escena: es la tapa del recorrido, no
+  // uno de sus hallazgos. Si se contara, el lector leería «escena 1 de 5» sin haber visto ningún
+  // dato todavía.
+  const numeradas = lista.filter((e) => e.indice > 0).length
 
   useEffect(() => {
     if (!abierta) return
@@ -54,12 +108,6 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
     estilo.position = 'fixed'
     estilo.top = `-${desplazado}px`
     estilo.width = '100%'
-
-    // Una entrada propia en el historial, sin cambiar la URL: el recorrido no es una dirección
-    // distinta del tablero, es una capa encima.
-    history.pushState({ recorrido: true }, '')
-    const alVolver = () => { alCerrarRef.current() }
-    window.addEventListener('popstate', alVolver)
 
     cerrar.current?.focus()
 
@@ -79,19 +127,30 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
     document.addEventListener('keydown', alTeclear)
     return () => {
       document.removeEventListener('keydown', alTeclear)
-      window.removeEventListener('popstate', alVolver)
       estilo.overflow = previo.overflow
       estilo.position = previo.position
       estilo.top = previo.top
       estilo.width = previo.width
       window.scrollTo(0, desplazado)
-      // Si la entrada del historial sigue siendo la nuestra, el cierre vino del botón o de
-      // `Escape` y hay que sacarla. Si vino del botón de atrás, ya no está y `back()` sacaría una
-      // entrada ajena.
-      if (history.state?.recorrido) history.back()
       anterior?.focus()
     }
   }, [abierta])
+
+  // El alto real de la barra, publicado para que la escena se pegue justo debajo. Escrito a mano
+  // en el CSS decía 2,5 rem y la barra mide 43 px: la escena quedaba 3 px más alta que el hueco
+  // que le toca, y su última línea caía bajo el borde de la capa.
+  useEffect(() => {
+    const nodo = barra.current
+    const contenedor = capa.current
+    if (!nodo || !contenedor) return
+    const publicar = () => {
+      contenedor.style.setProperty('--barra-capa', `${Math.round(nodo.getBoundingClientRect().height)}px`)
+    }
+    publicar()
+    const observador = new ResizeObserver(publicar)
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [abierta, raiz])
 
   if (!abierta) return null
 
@@ -110,25 +169,63 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
       onScroll={alDesplazar}
       className="capa-recorrido fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-white"
     >
-      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
-        <span className="truncate font-display text-sm font-semibold text-gray-900">{titulo}</span>
+      <div ref={barra} className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
+        {/* Dónde va el lector, en dos niveles: qué escena de cuántas, y qué paso dentro de ella.
+            La barra de avance sola dice cuánto falta pero no dice de qué; los puntos dicen que la
+            escena tiene tres momentos y que este es el segundo. */}
+        {actual
+          ? (
+            <span className="shrink-0 font-display text-xs font-semibold tabular-nums text-gray-900">
+              {actual.indice === 0 ? 'Portada' : `Escena ${actual.indice} de ${numeradas}`}
+            </span>
+            )
+          : <span className="truncate font-display text-sm font-semibold text-gray-900">{titulo}</span>}
+
+        {actual && actual.indice > 0 && actual.pasos > 1 && (
+          <ol aria-hidden className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+            {Array.from({ length: actual.pasos }, (_, i) => (
+              <li
+                key={i}
+                className={`h-1.5 w-1.5 rounded-full transition-colors ${i <= actual.activo ? 'bg-brand-dark' : 'bg-gray-300'}`}
+              />
+            ))}
+          </ol>
+        )}
+
         <div className="h-1 grow rounded-full bg-gray-200">
           <div
             className="h-1 rounded-full bg-brand-dark transition-[width] duration-200"
             style={{ width: `${Math.round(avance * 100)}%` }}
           />
         </div>
+
+        {/* Lo mismo, en texto, para quien no ve la barra ni los puntos. `polite` y no `assertive`:
+            avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
+        <p aria-live="polite" className="sr-only">
+          {actual
+            ? (actual.indice === 0
+                ? `Portada. ${actual.titulo}. El recorrido tiene ${numeradas} escenas.`
+                : `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`)
+            : titulo}
+        </p>
+
+        {/* El botón dice a dónde lleva. «Cerrar» no dice nada sobre qué pasa después, y salir de
+            un relato para caer en la nada es peor que no poder salir. */}
         <button
           ref={cerrar}
           type="button"
           onClick={alCerrar}
-          className="shrink-0 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
         >
-          Cerrar
+          <span className="hidden sm:inline">Salir al tablero</span>
+          <span className="sm:hidden">Salir</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden className="h-3.5 w-3.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
         </button>
       </div>
 
-      {children(raiz)}
+      <Registro.Provider value={informar}>{children(raiz)}</Registro.Provider>
 
       <div className="cierre-recorrido flex flex-col items-center gap-3 px-4 py-16">
         <p className="text-sm text-gray-600">Hasta acá el recorrido. El tablero queda abajo, para consultar.</p>
@@ -141,6 +238,56 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
         </button>
       </div>
     </div>
+  )
+}
+
+/**
+ * La portada, **dentro** del recorrido y no antes de él.
+ *
+ * Entrar al sitio y aparecer en mitad de la primera escena no dice qué es esto ni cuánto dura.
+ * La portada era una página aparte y el lector nunca la veía, porque la capa se abría encima:
+ * como primera pantalla de la propia capa, es lo primero que se lee y se pasa con el mismo gesto
+ * que el resto del recorrido.
+ *
+ * No es una escena: no tiene pasos, no cuenta un hallazgo y no se numera. Ocupa una pantalla
+ * exacta —el mismo alto que una escena— y su sección es un punto del imán, así que el primer
+ * gesto la deja atrás entera.
+ */
+export function Portada ({ raiz, titulo, children }: {
+  raiz: HTMLElement | null
+  /** Para el anuncio del lector de pantalla, que no ve la tapa. */
+  titulo: string
+  children: React.ReactNode
+}) {
+  const seccion = useRef<HTMLElement | null>(null)
+  const alto = useAltoDe(raiz)
+  const informar = useContext(Registro)
+  const [enVista, setEnVista] = useState(true)
+
+  useEffect(() => {
+    const nodo = seccion.current
+    if (!nodo || typeof IntersectionObserver === 'undefined') return
+    const observador = new IntersectionObserver(
+      ([e]) => { setEnVista(e.isIntersecting) },
+      { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    )
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [raiz])
+
+  useEffect(() => {
+    informar?.({ indice: 0, titulo, pasos: 1, activo: 0, enVista })
+  }, [informar, titulo, enVista])
+
+  return (
+    <section ref={seccion} className="portada-recorrido relative">
+      <div
+        className="escena sticky flex flex-col justify-center gap-6 px-4 py-6 sm:px-6"
+        style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+      >
+        {children}
+      </div>
+    </section>
   )
 }
 
@@ -163,17 +310,40 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
  * Con `prefers-reduced-motion` el párrafo va entero también en el teléfono: quien pide menos
  * movimiento ve todo, no una versión recortada.
  */
-export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, dosColumnas = false }: {
-  titulo: string
+export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, raiz, modulo, dosColumnas = false }: {
+  /** Qué número de escena es, para la barra de la capa. Va explícito y no contado solo: las
+   *  escenas se escriben a mano en la página, y un contador implícito se desordena en silencio
+   *  al mover una. */
+  indice: number
+  /**
+   * El titular de la escena. **Puede depender del paso**: una escena que cambia de tema a mitad de
+   * camino (la 1 pasa del termómetro a la ideología) necesita que el encabezado la siga, o el
+   * lector lee un hallazgo sobre una figura que ya no está.
+   */
+  titulo: string | ((activo: number) => string)
   /** Qué se está mirando, en una línea. El título dice el hallazgo y esta dice la figura: sin
    *  ella hay que repetir la unidad en cada frase. */
   bajada?: React.ReactNode
   frases: React.ReactNode[]
-  figura: (activo: number) => React.ReactNode
+  /**
+   * La figura del paso. `reducido` avisa que se está mostrando el relato entero de una vez
+   * (`prefers-reduced-motion`), y una escena que **cambia de figura** entre pasos tiene que
+   * mostrarlas todas ahí: si no, la mitad del texto habla de algo que no está dibujado.
+   */
+  figura: (activo: number, reducido: boolean) => React.ReactNode
   /** Leyenda y año del paso, arriba de la figura y fuera del lienzo. */
   cabecera?: (activo: number) => React.ReactNode
-  nota?: React.ReactNode
+  /** El pie de la figura. **Puede depender del paso**: cuando una escena cambia lo que muestra la
+   *  figura (la 1 pasa de países a tramos ideológicos), el pie tiene que cambiar con ella o queda
+   *  describiendo una figura que ya no está. */
+  nota?: React.ReactNode | ((activo: number, reducido: boolean) => React.ReactNode)
   raiz: HTMLElement | null
+  /**
+   * El módulo del tablero que responde esta misma pregunta, si lo hay. Con él, la escena termina
+   * ofreciendo el camino del tramo que afirma al que deja consultar (un registro de decisiones interno), con el módulo ya
+   * enfocado. Sin él, la escena no ofrece nada: mandar al tablero entero no es una respuesta.
+   */
+  modulo?: string
   /**
    * En escritorio, el relato a la izquierda y la figura a la derecha (ver `.escena.en-columnas` en
    * `index.css`). **Es por escena y no global**: sirve cuando la figura es una sola, como el
@@ -184,6 +354,27 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, 
 }) {
   const { activo, refs, reducido } = usePasoActivo(frases.length, raiz)
   const escena = useRef<HTMLDivElement | null>(null)
+  const seccion = useRef<HTMLElement | null>(null)
+  const informar = useContext(Registro)
+
+  // **Cuál escena está en vista se mide con la misma banda que los pasos.** Con la escena pegada,
+  // su sección ocupa toda su tajada de scroll: la que cruza el centro del contenedor es la que el
+  // lector tiene delante, y las de arriba y abajo no compiten.
+  const [enVista, setEnVista] = useState(indice === 1)
+  useEffect(() => {
+    const nodo = seccion.current
+    if (!nodo || typeof IntersectionObserver === 'undefined') return
+    const observador = new IntersectionObserver(
+      ([e]) => { setEnVista(e.isIntersecting) },
+      { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    )
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [raiz])
+
+  useEffect(() => {
+    informar?.({ indice, titulo: typeof titulo === 'function' ? titulo(activo) : titulo, pasos: frases.length, activo, enVista })
+  }, [informar, indice, titulo, frases.length, activo, enVista])
   const alto = useAltoDe(raiz)
   // El alto de la escena **no** es el de la pantalla: con la figura grande y el texto a 19 px mide
   // bastante más, y esa diferencia era exactamente lo que le sobraba al primer paso.
@@ -235,7 +426,7 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, 
   }
 
   return (
-    <section className="relative">
+    <section ref={seccion} className="relative">
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
           arriba es padding real y no compensación de la barra, así que no se pierde al pegarse. */}
       {/* El orden es titular, frase, figura, y el bloque va centrado en la escena. Salió del
@@ -253,7 +444,9 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, 
             cambia nada (ver `.columna-relato` en `index.css`). */}
         <div className="columna-relato">
           <div className="bloque-encabezado mx-auto w-full max-w-2xl">
-            <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{titulo}</h3>
+            <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">
+              {typeof titulo === 'function' ? titulo(activo) : titulo}
+            </h3>
             {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es
                 el piso de lectura para texto chico. Más apagado se ve mejor y deja gente afuera. */}
             {bajada && <p className="bajada-escena mt-1 text-[13px] leading-snug text-gray-500">{bajada}</p>}
@@ -275,8 +468,17 @@ export function Escena ({ titulo, bajada, frases, figura, cabecera, nota, raiz, 
         </div>
         <div className="bloque-figura mx-auto w-full max-w-2xl pt-3 sm:pt-4">
           {cabecera?.(activo)}
-          {figura(activo)}
-          {nota && <div className="mt-2">{nota}</div>}
+          {figura(activo, reducido)}
+          {nota && <div className="mt-2">{typeof nota === 'function' ? nota(activo, reducido) : nota}</div>}
+          {modulo && (
+            <Link
+              to={`/tablero?foco=${modulo}`}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-dark underline underline-offset-2 hover:text-gray-900"
+            >
+              Ver esta pregunta en el tablero
+              <span aria-hidden>→</span>
+            </Link>
+          )}
         </div>
       </div>
 

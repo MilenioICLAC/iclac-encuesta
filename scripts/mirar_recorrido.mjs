@@ -29,8 +29,10 @@ const ancho = Number(process.argv[2] ?? 360)
 
 const navegador = await chromium.launch()
 const pagina = await navegador.newPage({ viewport: { width: ancho, height: 780 }, deviceScaleFactor: 2 })
-await pagina.goto('http://localhost:5180/', { waitUntil: 'networkidle' })
-await pagina.getByRole('button', { name: 'Ver el recorrido' }).click()
+// La capa es una ruta: se entra por ella y no hay botón que apretar. Entrar por `#/recorrido` y
+// no por la raíz además evita depender de la apertura automática, que es lo que se quiere medir
+// aparte.
+await pagina.goto('http://localhost:5180/#/recorrido', { waitUntil: 'networkidle' })
 await pagina.waitForSelector('[role="dialog"]')
 // El imán mueve el scroll que se pide por código y contamina la medición de la geometría.
 await pagina.addStyleTag({ content: '.capa-recorrido { scroll-snap-type: none !important }' })

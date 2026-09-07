@@ -6,6 +6,12 @@ sitio son cinco vistas con URL propia (portada del recorrido, tablero, explorado
 los datos), con el encabezado de iclac.cl. En español, inglés y chino: hoy el nav y el encabezado están
 traducidos, el contenido de las figuras todavía no.
 
+**Las diferencias entre oleadas van contrastadas.** El ETL calcula, para cada comparación que el
+producto muestra, una prueba de permutación, un intervalo bootstrap y la misma diferencia con la
+composición de edad y sexo fija. La muestra no es probabilística, así que **no son margen de error**:
+comparan las oleadas entre sí. El método y sus límites están en `.claude/CLAUDE.md` y publicados en
+la vista «Sobre los datos».
+
 **Estado: E1 en curso.** Visualizador funcionando con paridad casi completa contra el monitor actual:
 recorrido, 27 módulos, nubes de palabras, explorador de 72 preguntas y descargas. Las tres oleadas
 tienen prueba de aceptación contra cifras publicadas por ICLAC. Alcance y calendario en

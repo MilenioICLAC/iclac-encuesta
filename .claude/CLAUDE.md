@@ -271,6 +271,111 @@ Si hacen falta categóricos acá, se genera su propia paleta con el validador de
 
 ---
 
+## Una figura, dos vistas
+
+**El recorrido y el tablero muestran las mismas preguntas: cuando comparten una, comparten la
+figura.** El termómetro estuvo hasta el 07-09-2026 dibujado de dos maneras que no se parecían en
+nada, y ninguna prueba lo vio porque las dos compilaban. Ahora la escala, el orden de las filas y
+el rótulo del eje viven en `src/nucleo/termometro.ts`, y hay una prueba que **lee `App.tsx`** y
+falla si alguna de las dos vistas deja de pasar por ahí: un componente compartido no sirve de nada
+si alguien deja de llamarlo.
+
+Tres trampas concretas, las tres medidas:
+
+- **Un lienzo pensado para una columna angosta, estirado a una tarjeta de ancho completo.** El
+  `viewBox` de `Serie` es de 110×132: en una tarjeta de 992 px daba un SVG de 1.150 px de alto con
+  los números a 91 px. Es la misma regla que ya estaba escrita para el recorrido, y aplica igual en
+  el tablero.
+- **A una variable continua nunca se le pide una distribución por categoría.** El termómetro es de
+  0 a 100: con un corte activo, la rama de distribución le armaba una categoría por valor y la
+  tarjeta medía 4.247 px. Lo que corresponde con un corte es la **media por grupo**, que es otra
+  figura y no una versión estrecha de la misma.
+- **La bajada tiene que ser cierta en todos los estados del módulo.** «Los cinco países juntos»
+  dejaba de ser verdad apenas se elegía un corte, porque con corte las filas son los grupos.
+
+**Y la regla editorial que salió de ahí:** con un corte activo la pregunta cambia. Sin corte, el
+termómetro compara países; con corte, compara grupos dentro de un país. Cinco países por seis
+grupos son treinta filas que nadie lee, así que se elige una lectura y se dice cuál.
+
+---
+
+## Cuándo un cambio entre oleadas es un cambio
+
+Decidido e implementado el 07-09-2026, después de que el cliente preguntara si las diferencias que
+afirma el recorrido son reales o son ruido. La maquinaria está en `scripts/lib/contraste.mjs`, las
+comparaciones publicadas en `scripts/lib/contrastes.mjs`, y las dos tienen prueba en
+`scripts/contrastes.test.mjs`.
+
+**Nada de esto es margen de error, y la regla del hecho 2 no cambia.** La muestra no es
+probabilística: estos números comparan las oleadas **entre sí** y no estiman a la población.
+
+**No se usa un t de Student, y no es preferencia de estilo.** El t supone que cada oleada es una
+muestra aleatoria de Chile, que es justo lo que no tenemos, y su resultado se lee como margen de
+error. La **permutación** supone algo mucho más chico: que la etiqueta de año es intercambiable
+entre estas respuestas. Se junta todo en un montón, se baraja el año diez mil veces y se cuenta
+cuántas barajadas dan una diferencia al menos tan grande como la observada. Es una afirmación sobre
+los datos que tenemos, no sobre el país. El supuesto es más débil que en un experimento, donde las
+etiquetas se asignaron al azar de verdad: acá las oleadas son tres reclutamientos distintos del
+mismo panel.
+
+**Cada diferencia viaja con tres cosas, y las tres importan:** el intervalo bootstrap (95 %
+percentil), el `p` de la permutación, y **la misma diferencia con la composición de edad y sexo
+fija**. La tercera responde lo que las otras dos no: si cambió el resultado porque la gente piensa
+distinto o porque contestó otra gente. En el alza de China de 2025 la cruda da +4,9 y la
+estandarizada +4,8, así que es opinión.
+
+**Donde la misma persona contesta por los dos lados, la resta va dentro del caso.** El termómetro
+pregunta por cinco países al mismo encuestado: la brecha China − Estados Unidos calculada persona a
+persona saca del medio que una oleada use la escala más generosa que otra, y su contraste es de
+signo (se le cambia el signo al azar a cada diferencia individual). Restar dos promedios sueltos
+tira esa información a la basura.
+
+**Y el recorrido solo puede afirmar lo que pasa el contraste.** Eso está fijado como prueba: si una
+oleada nueva deja sin sustento una frase de una escena, `npm test` falla en vez de que la frase
+quede publicada.
+
+Dos cosas que costaron caro y no se vuelven a descubrir:
+
+- **El congruencial clásico no sirve como generador en JavaScript.** `semilla * 1103515245` pasa de
+  2^53 y la multiplicación pierde precisión, así que la secuencia deja de ser uniforme. Va
+  `mulberry32`, con `Math.imul`. El síntoma fue un intervalo bootstrap incoherente con su propio
+  `p`, y se vio **porque las dos cosas se calculan por caminos distintos y tienen que contarse lo
+  mismo**.
+- **El `p` se publica como `(extremos + 1) / (rondas + 1)`**, nunca como una proporción cruda: con
+  diez mil rondas el piso es 0,0001, y un «p = 0» afirmaría algo que el método no puede afirmar.
+
+**El gradiente ideológico de la guía no se sostiene, y ahora está medido dos veces.** `C17` dice
+que en 2023 hay un gradiente por ideología que después se invierte.
+
+- **Por tramos** (izquierda 1-4, centro 5-6, derecha 7-10), la brecha entre las puntas es +5,2
+  puntos en 2023 (p = 0,11), −4,8 en 2024 (p = 0,20) y +1,2 en 2025 (p = 0,61): en ninguna oleada
+  se distingue del ruido.
+- **Sobre la escala entera**, la regresión de 2023 sí da pendiente (−1,42, p = 0,015), y ahí está
+  la trampa: **toda esa inclinación la sostiene el punto 10, que tiene treinta personas.** Sin él,
+  −0,29 (p = 0,68) y R² 0,0 %. Sacar cualquier otro punto mueve la pendiente 0,53 como máximo;
+  sacar el 10 la mueve 1,14. Y sin ese punto, ninguna de las tres oleadas tiene pendiente.
+
+**Las dos pruebas son correctas y responden preguntas distintas**, así que hay que decir cuál se
+usa. La conclusión que sobrevive a las dos: la posición política no ordena la opinión sobre China,
+y el gradiente de 2023 que el monitor publica descansa en una celda de treinta casos. El promedio de
+esa celda es 43,0 con intervalo de 31 a 55.
+
+**Lo que no es cierto es que en 2023 hubiera menos gente de derecha:** la proporción casi no cambia
+entre oleadas (23 %, 25 %, 29 %). Lo que cambia es el número de casos, porque la muestra de 2025 es
+el doble: 126 personas en la derecha en 2023 contra 300, y en el punto 10, treinta contra noventa y
+nueve. La celda no era chica por composición, era chica por tamaño de muestra.
+
+**Ponderadores: medidos y descartados, no olvidados.** Rastrillar por región deja un efecto de
+diseño de 1,6 y baja la muestra efectiva de 2025 de 1.227 a 775, para mover los niveles 1,5 puntos
+o menos y **ninguna** afirmación del recorrido (China 2024→2025 pasa de +4,9 a +4,3). Cuesta entre
+20 y 30 horas, incluye mapear educación contra el marco del INE y toparse con que el NSE chileno de
+uso comercial no tiene marco público, y **no arregla lo que la gente cree que arregla**: con pesos y
+todo sigue sin corresponder declarar margen de error. Ponderar corrige el nivel, no la tendencia, y
+el producto está hecho de tendencias. Si ICLAC lo pide igual, la versión barata es región × sexo ×
+edad, como columna en la descarga y con el n efectivo a la vista.
+
+---
+
 ## El armazón del sitio: encabezado, rutas e idioma
 
 Decidido el 07-09-2026 y medido en el navegador. Son reglas del producto, no preferencias de estilo.
@@ -293,9 +398,13 @@ del tablero también: la barra se pega en `var(--alto-encabezado)`, que el encab
 con un `ResizeObserver`. **El alto no se escribe a mano en ninguna de las dos**, porque cambia con el
 ancho y dos literales se desincronizan. Quien agregue otra cosa pegajosa usa la misma variable.
 
+**La raíz del sitio es el recorrido**, con su portada como primera pantalla dentro de la capa. Las
+reglas de esa capa —entrada, portada, posición, salida al tablero— viven en la skill `recorrido`,
+no acá.
+
 **El sitio son cinco vistas con URL, no una página que se scrollea sin fin.** Una sola página larga no
-se recorre, se abandona, y un nav que solo mueve el scroll no da ganas de navegarla. Las vistas son la
-portada del recorrido, el tablero, el explorador, las descargas y «Sobre los datos».
+se recorre, se abandona, y un nav que solo mueve el scroll no da ganas de navegarla. Las vistas son el
+recorrido, el tablero, el explorador, las descargas y «Sobre los datos».
 
 - **Las rutas van por hash (`#/tablero`) mientras no haya servidor elegido.** Una ruta limpia exige que
   el servidor devuelva el index en cualquier ruta; el hash funciona en cualquier hosting estático,

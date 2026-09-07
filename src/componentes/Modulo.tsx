@@ -20,6 +20,9 @@ interface Props {
   variable: Variable
   base: number
   children: ReactNode
+  /** Llega enfocado desde el recorrido (`#/tablero?foco=<id>`): se marca para que el lector
+   *  encuentre de qué figura le hablaron, en una rejilla de veintisiete. */
+  destacado?: boolean
 }
 
 const ANCHO = {
@@ -28,7 +31,7 @@ const ANCHO = {
   completo: 'md:col-span-6',
 }
 
-export default function Modulo ({ definicion, variable, base, children }: Props) {
+export default function Modulo ({ definicion, variable, base, children, destacado = false }: Props) {
   const olas = variable.olas
   const parcial = olas.length < 3
   // Con una sola oleada no hay nada que comparar, así que afirmar comparabilidad sería una
@@ -38,7 +41,14 @@ export default function Modulo ({ definicion, variable, base, children }: Props)
   const comparable = olas.length > 1
 
   return (
-    <article className={`${ANCHO[definicion.ancho]} flex flex-col rounded-lg border border-gray-200 bg-white p-4`}>
+    <article
+      id={`modulo-${definicion.id}`}
+      // `scroll-mt-40` son los dos pegajosos que hay encima (encabezado y barra de controles) más
+      // aire: sin eso el módulo enfocado queda debajo de ellos y parece que el enlace no hizo nada.
+      className={`${ANCHO[definicion.ancho]} flex flex-col scroll-mt-40 rounded-lg border bg-white p-4 ${
+        destacado ? 'border-brand-dark ring-2 ring-brand-dark/30' : 'border-gray-200'
+      }`}
+    >
       <h3 className="font-display text-base font-semibold text-gray-900">{definicion.titulo}</h3>
       <p className="mt-0.5 text-sm text-gray-600">{definicion.bajada}</p>
 
