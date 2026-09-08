@@ -336,6 +336,86 @@ ruido y la de Estados Unidos casi no se mueve en la serie. Con «mucha o algo» 
 Estados Unidos sube en 2024 y **vuelve** en 2025 (−5,1 puntos, p = 0,03), que con la caja de arriba
 no se veía.
 
+## Una elección única no se compara restando dos porcentajes
+
+Decidido e implementado el 08-09-2026 sobre `p26` («¿cómo debería posicionarse Chile en la
+competencia entre Estados Unidos y China?»), y vale para cualquier pregunta donde la persona
+marca una sola opción.
+
+**Quien contesta «China» está a la vez no contestando «Estados Unidos».** Restar dos
+proporciones independientes tira esa dependencia a la basura. La medida correcta es la ventaja
+**dentro de la persona** (+100 China, −100 Estados Unidos, 0 quien no elige bando), con prueba de
+signo: está en `BRECHAS` como `ventaja-china-p26` y es la misma maquinaria que ya usaba la brecha
+del termómetro.
+
+| Oleada | Ventaja de China | IC 95 % | p |
+|---|---|---|---|
+| 2023 | −6,63 | [−10,24; −3,01] | 0,0007 |
+| 2024 | −7,19 | [−10,93; −3,44] | 0,0003 |
+| 2025 | **+4,40** | [+1,39; +7,33] | 0,0032 |
+
+**Las tres pasan, y ahí está la fuerza del hallazgo:** no es una oleada que sobresale, es un
+vuelco con dos oleadas de línea base apuntando al otro lado.
+
+### El guion que se cayó, para que no vuelva
+
+Hasta el 08-09-2026 la escena 5 afirmaba que «la mayoría no alineada se erosiona, y lo que pierde
+se va a China». Salió por tres razones medidas:
+
+- **La aritmética no da.** El no alineamiento pierde 5,0 puntos y China gana 8,0. No puede venir
+  todo de ahí; el alza se arma de pedazos que ninguno se prueba solo.
+- **Ninguna de las dos categorías del no alineamiento se mueve por su cuenta** en ningún par de
+  oleadas: «mantener distancia» −0,8 (p = 0,75) y «relacionarse con ambos» −4,2 (p = 0,08) entre
+  2023 y 2025. El hallazgo dependía de sumarlas **y** de mirar solo las puntas.
+- **No cabía.** Tres paneles de `Serie` en una grilla de tres columnas colapsan bajo 640 px: 1.088
+  px de escena contra 857 de pantalla, con el tercer panel y la nota entera bajo el borde.
+
+Las dos primeras están fijadas como prueba en `scripts/contrastes.test.mjs`.
+
+**Y hay una tentación que ya se probó y no se sostiene:** decir que el alza de China sale de un
+grupo concreto. Se midió con cuatro cortes distintos del termómetro y **cuál estrato la lleva
+cambia con el corte** (por signo la lleva el campo pro China; por banda muerta o terciles, el
+centro). Lo único robusto a los cuatro cortes es que **quien tiene mejor opinión de Estados Unidos
+no se movió nada** (+0,9, +0,7, +0,5, todos con p > 0,66) y que dos tercios del alza se sostienen
+con la composición del termómetro fija. Es la misma clase de defecto que el umbral de las escalas
+ordinales: una conclusión cuyo dueño depende de un corte que la figura no declara.
+
+### Y las tres preguntas que comparan a China con Estados Unidos no son tres testigos
+
+`p5_1`/`p5_2` (termómetro), `p24`/`p25` (confianza) y `p26` (posicionamiento) las contesta la
+misma persona y **coinciden de signo entre el 85 % y el 94 % de las veces**, sin que ese acuerdo
+cambie entre oleadas. Sirven para decir que el hallazgo es consistente, **no** para multiplicarlo
+por tres. Y la confianza **nunca cruza**: China ya iba arriba en 2023, así que «las tres se dan
+vuelta» es falso.
+
+---
+
+## La figura de una minoría que se cruza dentro de un total grande
+
+`src/componentes/Cruce.tsx`, decidido con el laboratorio el 08-09-2026. Dos escalas en una figura,
+y cada una resuelve lo que la otra rompe:
+
+- **Un solo eje con las cuatro categorías aplasta el cruce.** El no alineamiento es tres veces más
+  grande que las dos series juntas: con un eje que lo contenga, el cruce entero mide once píxeles.
+- **Solo las dos líneas miente por omisión.** 16 % parece mucho hasta que uno sabe que el 72 % no
+  eligió.
+
+La salida es la franja de arriba: el reparto completo al 100 %, sin números y sin eje, que dice
+«estas dos líneas son este pedazo del total» y nada más. **Con leyenda que nombra las cuatro:**
+«mantener distancia de ambos» y «relacionarse con ambos» son dos posiciones distintas de política
+exterior, y dejarlas sin nombre las convierte en un bloque gris sin significado.
+
+Dos reglas más que salieron de mirarla avanzar:
+
+- **No se marca la intersección.** Estuvo dibujada como línea vertical con un círculo, y se sacó:
+  no sabemos en qué momento entre dos oleadas se cruzaron las series, y marcar un punto del eje
+  afirma una fecha que los datos no tienen. Tres oleadas son tres mediciones, no una curva.
+- **El nombre de la serie sigue al último punto *encendido*, no al último.** Anclado al final, en
+  el primer paso los dos nombres aparecen ya en el orden del desenlace y la figura cuenta el final
+  antes que el relato. El valor sí espera al último punto: es lo que el paso está por contar.
+
+---
+
 ## Cuándo un cambio entre oleadas es un cambio
 
 Decidido e implementado el 07-09-2026, después de que el cliente preguntara si las diferencias que

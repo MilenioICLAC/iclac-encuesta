@@ -70,7 +70,22 @@ export const BRECHAS = [
   // porcentaje: no se publica como cifra en el recorrido, sirve para probar que el balance de una
   // oleada se inclina hacia un lado y no es el reparto que cabría esperar del azar.
   { id: 'brecha-confianza', etiqueta: 'Confianza en China menos confianza en Estados Unidos', unidad: 'escalones', valor: brechaConfianza },
+  // **La ventaja de una potencia sobre la otra en `p26`, dentro de la persona.** Es la que
+  // sostiene el titular de la escena 5, y va acá y no como dos proporciones sueltas porque `p26`
+  // es una elección **única**: quien contesta «China» está a la vez no contestando «Estados
+  // Unidos», así que restar dos porcentajes independientes tira esa dependencia a la basura. La
+  // permutación de signo es la prueba exacta para esto, y es la misma que ya usa la brecha del
+  // termómetro. Quien no elige bando entra con cero: no inclina la balanza, pero cuenta en el
+  // denominador, que es lo que hace que la cifra sea comparable con las proporciones publicadas.
+  { id: 'ventaja-china-p26', etiqueta: 'Prefiere alinearse con China menos prefiere alinearse con Estados Unidos', unidad: 'puntos porcentuales', valor: ventajaP26 },
 ]
+
+/** +100 si prefiere a China, −100 si prefiere a Estados Unidos, 0 si no elige bando. */
+function ventajaP26 (c) {
+  const v = numero(c.p26)
+  if (v === null) return null
+  return v === 1 ? 100 : v === 2 ? -100 : 0
+}
 
 /**
  * La escala de `p24` y `p25`, de menos a más, con la distancia entre escalones dada por igual.

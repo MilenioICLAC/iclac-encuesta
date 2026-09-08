@@ -118,7 +118,12 @@ export const MODULOS: Modulo[] = [
     id: 'posicionamiento',
     bloque: 'geopolitica',
     titulo: 'Cómo debería posicionarse Chile',
-    bajada: 'La mayoría no alineada se erosiona, y lo que pierde se va a China.',
+    // **El tablero no afirma, deja consultar** (un registro de decisiones interno). Acá decía «la mayoría no alineada se
+    // erosiona, y lo que pierde se va a China», que además de afirmar no se sostiene: la caída
+    // pasa el contraste solo en la serie completa y ninguna de sus dos categorías se mueve sola
+    // (ver `scripts/contrastes.test.mjs`). Se fue de la escena 5 el 08-09-2026 y no puede quedar
+    // sobreviviendo en el tablero.
+    bajada: 'El reparto entre alinearse con una potencia, con la otra, o con ninguna de las dos.',
     variable: 'p26',
     ancho: 'completo',
     forma: 'distribucion',

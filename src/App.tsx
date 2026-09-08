@@ -9,6 +9,7 @@ import Distribucion from './componentes/Distribucion'
 import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
 import Serie from './componentes/Serie'
+import Cruce from './componentes/Cruce'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
@@ -24,7 +25,7 @@ import Encabezado from './componentes/Encabezado'
 import { figuraTermometro } from './nucleo/termometro'
 import { escalaRedonda } from './nucleo/escala'
 import Regresion from './componentes/Regresion'
-import { SEMANTICOS, pasosDeOrden } from './nucleo/paleta'
+import { NEUTRO, SEMANTICOS, pasosDeOrden } from './nucleo/paleta'
 import { decimal, fijarIdioma, locale, numero, porcentaje, type Idioma } from './locale'
 import { TEXTOS } from './textos'
 
@@ -332,6 +333,15 @@ function lector (encuesta: Encuesta) {
     regresion: c?.regresiones.find((r) => r.id === 'ideologia-china') ?? null,
     /** En cuántos grupos de cada corte sube la opinión sobre China, entre las dos últimas oleadas. */
     transversal: c?.transversal.find((t) => t.id === 'opinion-china') ?? null,
+    /**
+     * La ventaja de una potencia sobre la otra en `p26`, **dentro de la persona**.
+     *
+     * Es lo que sostiene el titular de la escena 5. Va por acá y no restando dos porcentajes
+     * sueltos porque `p26` es una elección única: quien contesta «China» está a la vez no
+     * contestando «Estados Unidos», y la prueba de signo usa esa dependencia.
+     */
+    ventajaP26: (ola: number) =>
+      c?.brechas.find((b) => b.id === 'ventaja-china-p26')?.porOla.find((x) => x.ola === ola) ?? null,
   }
 }
 
@@ -428,18 +438,55 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
   /** Poca o ninguna confianza: el lado que se achica, y el que la primera frase afirma. */
   const desconfia = (variable: typeof p24, ola: number) =>
     (variable ? proporcion(todos(ola), variable, [3, 99]).porcentaje : 0)
-  const noAlineado = p26
-    ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p26, [3, 4]).porcentaje, base: todos(ola).length }))
-    : []
-  const proChina = p26
-    ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p26, [1]).porcentaje, base: todos(ola).length }))
-    : []
-  const proEeuu = p26
-    ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p26, [2]).porcentaje, base: todos(ola).length }))
-    : []
-
-  const primera = noAlineado.at(0)?.valor ?? 0
-  const ultima = noAlineado.at(-1)?.valor ?? 0
+  /**
+   * `p26` para la escena 5, armado desde el libro de códigos del artefacto.
+   *
+   * **Ningún código ni etiqueta se escribe acá.** Las categorías salen de la variable, el color de
+   * cada una sale de `SEMANTICOS` por su etiqueta, y el denominador es el de `proporcion`: las
+   * personas que contestaron, que en `p26` son todas las de la oleada porque no tiene faltantes.
+   * Una oleada nueva que agregue o renombre una categoría entra sola.
+   */
+  const catP26 = p26?.categorias ?? []
+  const cuota = (codigo: number, ola: number) =>
+    (p26 ? proporcion(todos(ola), p26, [codigo]) : { porcentaje: 0, base: 0 })
+  const serieDe = (codigo: number) => encuesta.olas.map((ola) => {
+    const { porcentaje: valor, base } = cuota(codigo, ola)
+    return { ola, valor, base }
+  })
+  const proChina = catP26.some((c) => c.codigo === 1) ? serieDe(1) : []
+  const proEeuu = catP26.some((c) => c.codigo === 2) ? serieDe(2) : []
+  /**
+   * El reparto completo, en orden visual: las dos que se cruzan a los extremos y las que no
+   * eligen bando al medio. Es el orden que hace legible la franja, porque deja juntas a las dos
+   * que la escena compara.
+   */
+  const repartoP26 = [2, 3, 4, 1]
+    .map((codigo) => catP26.find((c) => c.codigo === codigo))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    .map((c) => ({
+      clave: String(c.codigo),
+      etiqueta: c.etiqueta,
+      color: SEMANTICOS[c.etiqueta] ?? NEUTRO,
+      valores: encuesta.olas.map((ola) => cuota(c.codigo, ola).porcentaje),
+    }))
+  /** Las dos series que se cruzan. El nombre corto es para el rótulo pegado al último punto: la
+   *  etiqueta entera vive en la leyenda, y repetida en la línea no entra en 360 px. */
+  const seriesP26 = [
+    { codigo: 2, puntos: proEeuu },
+    { codigo: 1, puntos: proChina },
+  ]
+    .map(({ codigo, puntos }) => {
+      const cat = catP26.find((c) => c.codigo === codigo)
+      return cat && puntos.length > 0
+        ? {
+            clave: String(codigo),
+            etiqueta: cat.etiqueta.replace(/^A favor de\s+/i, ''),
+            color: SEMANTICOS[cat.etiqueta] ?? NEUTRO,
+            puntos,
+          }
+        : null
+    })
+    .filter((s): s is NonNullable<typeof s> => Boolean(s))
 
   // La escena de cierre repite las tres medidas del recorrido, una por panel, en la unidad de cada
   // una. `opinionChina` es el termómetro en el formato que `Serie` espera.
@@ -477,6 +524,16 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
   // muestra **por qué** el monitor publicado encuentra un gradiente donde no lo hay, y eso solo se
   // puede contar mostrándolo. El hallazgo que se perdió (las dos puntas suben) sigue publicado en
   // «Sobre los datos».
+  /**
+   * **El vuelco de `p26`, comprobado antes de titularlo.** Tres condiciones: las dos primeras
+   * oleadas favorecen a Estados Unidos, la última a China, y las tres pasan el contraste. Sin las
+   * tres, el titular cae a uno descriptivo en vez de afirmar algo que la figura no sostiene.
+   */
+  const ventajasP26 = encuesta.olas.map((ola) => contraste.ventajaP26(ola))
+  const vuelcoP26 = ventajasP26.length > 1 && ventajasP26.every((v) => v !== null && v.p < 0.05) &&
+    ventajasP26.slice(0, -1).every((v) => (v?.diferencia ?? 0) < 0) &&
+    (ventajasP26.at(-1)?.diferencia ?? 0) > 0
+
   const regresion = contraste.regresion
   const primeraDeLaSerie = regresion?.porOla.find((o) => o.ola === primeraOla) ?? null
   // La escala vertical es una sola para los cinco pasos y para las tres oleadas: si dependiera de
@@ -940,50 +997,68 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               />
             )}
 
+            {/*
+              * **La escena 5, rehecha el 08-09-2026.** Antes afirmaba que el no alineamiento se
+              * erosiona «y lo que pierde se va a China», con tres paneles apilados. Salió por tres
+              * razones medidas, no por gusto:
+              *
+              *  - **La aritmética no daba.** El no alineamiento pierde 5,0 puntos y China gana
+              *    8,0: no puede venir todo de ahí.
+              *  - **Ninguna de las dos categorías del no alineamiento se mueve sola** en ningún
+              *    par de oleadas. El hallazgo dependía de sumarlas y de mirar solo las puntas, y
+              *    hay una prueba que lo deja escrito (`scripts/contrastes.test.mjs`).
+              *  - **No cabía.** Bajo 640 px la grilla de tres columnas colapsa y los paneles se
+              *    apilan: 1.088 px de escena contra 857 de pantalla, con el tercer panel y la nota
+              *    entera bajo el borde.
+              *
+              * Lo que quedó es el hallazgo firme de la pregunta: el vuelco. Las tres oleadas pasan
+              * el contraste, dos hacia Estados Unidos y la última hacia China, así que la línea
+              * base no es una oleada suelta.
+              */}
             <Escena
               indice={5}
               modulo="posicionamiento"
               raiz={raiz}
-              titulo="La mayoría no alineada se erosiona, y lo que pierde se va a China"
+              // Una figura sola, así que en escritorio va el relato a un lado y la figura al otro.
+              dosColumnas
+              // **El titular se comprueba antes de escribirse.** Si una oleada nueva deja el vuelco
+              // sin sustento, el título cambia solo en vez de quedar contradiciendo a su figura.
+              titulo={vuelcoP26
+                ? `En ${ultimaOla}, alinearse con China supera a alinearse con Estados Unidos`
+                : 'Con qué potencia debería alinearse Chile'}
+              bajada="Con qué potencia debería alinearse Chile, según las personas encuestadas."
               frases={[
                 <>
-                  Sumando a quienes quieren relacionarse con ambas potencias y a quienes prefieren
-                  mantener distancia de las dos, <strong>el no alineamiento cae de{' '}
-                  {porcentaje(primera, 1)} a {porcentaje(ultima, 1)}</strong>. Sigue siendo una
-                  mayoría amplia, pero se desgasta.
+                  En {primeraOla} y {penultima} <strong>ganaba Estados Unidos</strong>:{' '}
+                  {porcentaje(proEeuu.at(0)?.valor ?? 0, 1)} y{' '}
+                  {porcentaje(proEeuu.at(1)?.valor ?? 0, 1)} contra{' '}
+                  {porcentaje(proChina.at(0)?.valor ?? 0, 1)} y{' '}
+                  {porcentaje(proChina.at(1)?.valor ?? 0, 1)}.
                 </>,
                 <>
-                  Lo interesante es la composición de la minoría que sí quiere elegir: preferir a
-                  China pasa de {porcentaje(proChina.at(0)?.valor ?? 0, 1)} a{' '}
-                  {porcentaje(proChina.at(-1)?.valor ?? 0, 1)}, mientras preferir a Estados Unidos
-                  baja de {porcentaje(proEeuu.at(0)?.valor ?? 0, 1)} a{' '}
-                  {porcentaje(proEeuu.at(-1)?.valor ?? 0, 1)}. <strong>En 2025, por primera vez, hay
-                  más chilenos que quieren alinearse con China que con Estados Unidos.</strong>
+                  <strong>En {ultimaOla} se da vuelta:</strong> China llega a{' '}
+                  {porcentaje(proChina.at(-1)?.valor ?? 0, 1)} y Estados Unidos baja a{' '}
+                  {porcentaje(proEeuu.at(-1)?.valor ?? 0, 1)}.
                 </>,
               ]}
-              figura={(activo) => (
-                <div className="grid gap-x-6 sm:grid-cols-3">
-                  <Serie anchoLienzo={300} puntos={noAlineado} unidad="porcentaje" etiqueta="No alineamiento" />
-                  {/* La composición de la minoría entra con la frase que la cuenta: en el primer
-                      paso la figura es una sola serie, la que se está leyendo. */}
-                  <Serie
-                    anchoLienzo={300}
-                    puntos={proChina} unidad="porcentaje" etiqueta="A favor de China"
-                    color={SEMANTICOS['A favor de China']} visible={() => activo >= 1}
-                  />
-                  <Serie
-                    anchoLienzo={300}
-                    puntos={proEeuu} unidad="porcentaje" etiqueta="A favor de EE. UU."
-                    color={SEMANTICOS['A favor de EE. UU.']} visible={() => activo >= 1}
-                  />
-                </div>
+              figura={(activo, reducido) => (
+                <Cruce
+                  olas={encuesta.olas}
+                  series={seriesP26}
+                  reparto={repartoP26}
+                  // El paso 1 muestra las dos primeras oleadas y el 2 suma la última: la escala
+                  // está calculada sobre todos los puntos, así que nada se mueve de lugar al
+                  // entrar 2025 (ver `nucleo/pasos.ts`).
+                  visible={(ola) => reducido || activo >= 1 || ola !== ultimaOla}
+                  unidadEje={`Porcentaje sobre quienes contestaron. La franja de arriba es el reparto completo de cada oleada: las dos líneas son la parte que sí elige bando.`}
+                />
               )}
               nota={(
-                <p className="border-l-2 border-amber-400 bg-amber-50 px-3 py-2 text-xs leading-snug text-gray-700">
-                  <strong>Difiere de la guía.</strong> El documento de ICLAC describe este hallazgo
-                  como estable, «alrededor del 72 % en las tres olas». Sobre la base publicada el no
-                  alineamiento cae cinco puntos y cae de forma monótona; el 72 % describe solo a 2025.
-                  Está consultado con ICLAC (<code className="rounded bg-white/70 px-1">C16</code>).
+                <p className="text-xs leading-snug text-gray-500">
+                  Bases: {proChina.map((p) => numero(p.base)).join(', ')} personas. La pregunta la
+                  contestan todas, sin faltantes. «Supera» compara las dos preferencias{' '}
+                  <strong>dentro de cada persona</strong>, que es lo que corresponde en una
+                  elección única, y pasa el contraste en las tres oleadas.
                 </p>
               )}
             />

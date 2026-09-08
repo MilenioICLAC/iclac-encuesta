@@ -272,6 +272,59 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
     }
   })
 
+  /**
+   * El titular de la escena 5 dice que en 2025 alinearse con China supera a alinearse con
+   * Estados Unidos. Es una afirmación de tres partes y las tres se comprueban acá: que en las dos
+   * primeras oleadas mandaba Estados Unidos, que en la última manda China, y que las tres pasan el
+   * contraste. **Si una oleada nueva deja alguna sin sustento, esto falla antes de que la frase
+   * quede publicada**, que es la única manera de que la regla se sostenga sola.
+   *
+   * La medida es la ventaja dentro de la persona, no la resta de dos porcentajes: `p26` es una
+   * elección única, así que quien contesta «China» está a la vez no contestando «Estados Unidos».
+   */
+  it('el vuelco de p26 que afirma la escena 5 pasa el contraste en las tres oleadas', () => {
+    const brecha = calculado.brechas.find((b) => b.id === 'ventaja-china-p26')
+    expect(brecha, 'la brecha existe en el artefacto').toBeTruthy()
+    expect(brecha.porOla.length, 'las tres oleadas tienen dato').toBe(3)
+
+    const [primera, ...resto] = brecha.porOla
+    const ultima = resto[resto.length - 1]
+
+    // Las dos primeras, hacia Estados Unidos y por encima del ruido.
+    for (const o of brecha.porOla.slice(0, -1)) {
+      expect(o.diferencia, `${o.ola} favorece a Estados Unidos`).toBeLessThan(0)
+      expect(o.ic[1], `${o.ola}: el intervalo no cruza el cero`).toBeLessThan(0)
+      expect(o.p, `${o.ola} p=${o.p}`).toBeLessThan(0.05)
+    }
+
+    // La última, hacia China y también por encima del ruido: es el vuelco.
+    expect(ultima.diferencia, 'la última favorece a China').toBeGreaterThan(0)
+    expect(ultima.ic[0], 'la última: el intervalo no cruza el cero').toBeGreaterThan(0)
+    expect(ultima.p, `última p=${ultima.p}`).toBeLessThan(0.05)
+
+    // Y es un vuelco, no una oleada que sobresale: el signo cambia entre la primera y la última.
+    expect(Math.sign(primera.diferencia)).not.toBe(Math.sign(ultima.diferencia))
+  })
+
+  /**
+   * Lo que la escena **no** puede decir, y queda escrito para que nadie lo reponga: la caída del
+   * no alineamiento. Pasa en la serie completa pero **ninguna de sus dos categorías se mueve
+   * sola**, así que el hallazgo depende de sumarlas y de mirar solo las puntas. Ese era el guion
+   * viejo de la escena 5 y por eso salió.
+   */
+  it('ninguna categoría del no alineamiento se mueve por su cuenta', () => {
+    for (const id of ['no-alineamiento']) {
+      const m = calculado.medidas.find((x) => x.id === id)
+      expect(m, id).toBeTruthy()
+    }
+    const consecutivas = calculado.medidas
+      .find((x) => x.id === 'no-alineamiento').comparaciones
+      .filter((c) => c.hasta - c.desde === 1)
+    for (const c of consecutivas) {
+      expect(c.p, `no alineamiento ${c.desde}→${c.hasta} p=${c.p}`).toBeGreaterThan(0.05)
+    }
+  })
+
   it('el artefacto declara el alcance de estos números', () => {
     expect(calculado.metodo.alcance).toMatch(/no es probabilística/)
     expect(calculado.metodo.alcance).toMatch(/no son margen de error/i)
