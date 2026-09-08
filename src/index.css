@@ -232,6 +232,25 @@
 }
 
 /*
+ * **Con movimiento reducido no hay imán, y no es una concesión: es la única salida correcta.**
+ *
+ * Ahí la pista no se dibuja (ver `CapaRecorrido.tsx`), así que los puntos de cada escena
+ * desaparecen. El primer intento fue hacer punto a la sección entera, y **la medición lo tumbó**:
+ * una escena más alta que la pantalla deja su propia sección como un salto de 1.274 px contra una
+ * pantalla de 844, que es exactamente el caso que `mandatory` no tolera y que deja contenido
+ * inalcanzable.
+ *
+ * Apagarlo resuelve las dos cosas a la vez. Sin puntos que respetar no hay nada que quedar fuera
+ * de alcance, y además el imán **es** movimiento: mueve el scroll por su cuenta después del gesto,
+ * que es justo lo que el lector pidió que no pasara.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .capa-recorrido {
+    scroll-snap-type: none;
+  }
+}
+
+/*
  * **Un paso no se puede saltar.** `mandatory` lleva el scroll al punto más cercano, y con teclado
  * eso no alcanza: `PageDown` avanza el alto del contenedor, que no coincide con el alto del paso,
  * y el desfase acumulado se comía un paso entero (medido el 08-09-2026: del 4 se saltaba al 6).

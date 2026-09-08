@@ -48,6 +48,18 @@ interface EstadoEscena {
 
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
+/**
+ * Si un elemento puede recibir el foco de verdad, no solo hacer juego con el selector.
+ *
+ * `checkVisibility()` es lo correcto donde exista; el respaldo es contar cajas, que da cero con
+ * `display: none` y sigue dando cajas para lo que está fuera de la pantalla pero renderizado
+ * (que **sí** es enfocable, y tiene que seguir estando en la trampa).
+ */
+function visible (el: HTMLElement) {
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility()
+  return el.getClientRects().length > 0
+}
+
 interface Props {
   abierta: boolean
   alCerrar: () => void
@@ -157,9 +169,17 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
 
       if (e.key !== 'Tab' || !capa.current) return
       // Trampa de foco: sin esto el tabulador se va a la página de atrás, que está tapada.
-      const focos = capa.current.querySelectorAll<HTMLElement>(
+      //
+      // **Y hay que filtrar por visibilidad, no solo por selector.** `querySelectorAll` hace
+      // juego con lo que está `display: none`, que no puede recibir el foco: el enlace «Método»
+      // de la barra se oculta bajo 640 px (`hidden … sm:inline`) y era el primero de la lista.
+      // Como `document.activeElement` nunca podía ser ese nodo, la guarda de `Shift+Tab` no se
+      // disparaba jamás y en teléfono el foco se escapaba de la capa al encabezado del sitio
+      // (medido el 08-09-2026). Hacia adelante sí cerraba, porque el último foco está siempre
+      // visible: por eso el defecto era asimétrico y costó verlo.
+      const focos = [...capa.current.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
-      )
+      )].filter(visible)
       if (focos.length === 0) return
       const primero = focos[0]
       const ultimo = focos[focos.length - 1]
@@ -658,7 +678,15 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           que la banda de lectura del observador, que es el 10 % central del contenedor. Los altos
           van en píxeles cuando se conoce el alto de la capa, y en `svh` en el primer cuadro (ver
           `index.css`). El colchón de arriba es lo que empareja los pasos, y el de abajo lo que
-          permite que el último alcance a activarse. */}
+          permite que el último alcance a activarse.
+
+          **Con movimiento reducido no se dibuja.** La pista existe para medir el scroll que
+          enciende los pasos, y con `prefers-reduced-motion` no hay pasos que encender: la escena
+          se muestra entera desde el primer píxel. Dejarla igual le cobraba al lector el costo de
+          una animación que pidió no ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px
+          de scroll, con el imán obligando a parar en cada uno para no mostrar nada nuevo. Ahora
+          cada escena cuesta su propio alto y el punto del imán lo pone la sección. */}
+      {!reducido && (
       <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>
         <div
           className="colchon-recorrido"
@@ -683,6 +711,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           style={{ ...(colchonFinal ? { height: colchonFinal } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
         />
       </div>
+      )}
     </section>
   )
 }
