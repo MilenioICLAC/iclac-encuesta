@@ -221,7 +221,7 @@ export default function Puntos ({
                   <span
                     key={p.serie.clave}
                     className={`punto absolute top-1/2 rounded-full ring-2 ring-white transition-opacity duration-500 ${
-                      puntos.includes(p) ? 'opacity-100 dato-nuevo' : 'opacity-0'
+                      puntos.includes(p) ? 'opacity-100 dato-nuevo dato-emanata' : 'opacity-0'
                     }`}
                     style={{
                       left: `${x(p.valor)}%`,
@@ -230,8 +230,8 @@ export default function Puntos ({
                       marginLeft: `${-d / 2}px`,
                       marginTop: `${-d / 2}px`,
                       backgroundColor: p.serie.color,
-                      // El destello sale de `currentColor`: sin esto, el halo toma el color del
-                      // texto heredado y no el del dato.
+                      // Los rayos de la emanata salen de `currentColor`: sin esto, toman el color
+                      // del texto heredado y no el del dato.
                       color: p.serie.color,
                     }}
                     title={titulo

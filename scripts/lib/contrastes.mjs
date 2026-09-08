@@ -78,6 +78,22 @@ export const REGRESIONES = [
   },
 ]
 
+/**
+ * En cuántos grupos de cada corte se mueve una medida entre dos oleadas.
+ *
+ * Responde «¿el cambio viene de un sector o de todos?» sin pedirle al lector que mire veinte
+ * figuras. **No afirma que cada grupo por separado supere el ruido**: con cien casos por celda casi
+ * ninguno lo haría. Afirma algo más débil y verificable: en cuántos el promedio se movió en la
+ * misma dirección.
+ */
+export const TRANSVERSAL = [
+  { id: 'opinion-china', campo: 'p5_1_val', cortes: [
+    ['nse_rec', 'niveles socioeconómicos'],
+    ['region_macrozona', 'macrozonas'],
+    ['edad_rec', 'tramos de edad'],
+  ] },
+]
+
 const numero = (v) => (typeof v === 'number' && !Number.isNaN(v) ? v : null)
 
 function ajustar (xy) {
@@ -240,6 +256,14 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
         .filter(([x, y]) => x !== null && y !== null)
       if (xy.length < 60) return null
 
+      // El peso de cada punto **sobre la pendiente**, que es la parte del apalancamiento que
+      // depende de la posición: `n_k (x_k − x̄)² / Σ(x − x̄)²`. Los puntos del centro de la escala
+      // casi no la inclinan aunque tengan mucha gente, porque están donde la recta gira; los del
+      // borde mandan aunque sean pocos. Es lo que explica por qué el resultado es frágil, y va
+      // calculado acá para que la página no tenga que rehacerlo.
+      const mediaX = media(xy.map((q) => q[0]))
+      const sxx = xy.reduce((s, [x]) => s + (x - mediaX) ** 2, 0)
+
       const puntos = []
       for (let x = def.rango[0]; x <= def.rango[1]; x++) {
         const v = xy.filter((q) => q[0] === x).map((q) => q[1])
@@ -248,6 +272,7 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
           n: v.length,
           media: v.length >= def.minimoPorPunto ? media(v) : null,
           ic: v.length >= def.minimoPorPunto ? bootstrapMedia(v, opciones) : null,
+          peso: sxx > 0 ? (100 * v.length * (x - mediaX) ** 2) / sxx : 0,
         })
       }
 
@@ -270,6 +295,32 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     return { id: def.id, etiqueta: def.etiqueta, x: def.x, y: def.y, rango: def.rango, porOla }
   })
 
+  // De dónde viene el alza: en cuántos grupos de cada corte se mueve, entre las dos últimas oleadas.
+  const transversal = olas.length >= 2
+    ? TRANSVERSAL.map((def) => {
+      const [antes, despues] = [olas[olas.length - 2], olas[olas.length - 1]]
+      const cortes = def.cortes.map(([campo, etiqueta]) => {
+        const grupos = [...new Set(casos.map((c) => c[campo]).filter((v) => v != null))]
+        const medidos = grupos.map((g) => {
+          const de2 = (ola) => casos
+            .filter((c) => Number(c.ola) === ola && c[campo] === g)
+            .map((c) => numero(c[def.campo])).filter((v) => v !== null)
+          const a = de2(antes)
+          const b = de2(despues)
+          return a.length >= 30 && b.length >= 30 ? { grupo: String(g), diferencia: media(b) - media(a) } : null
+        }).filter(Boolean)
+        return {
+          campo,
+          etiqueta,
+          total: medidos.length,
+          suben: medidos.filter((g) => g.diferencia > 0).length,
+          grupos: medidos,
+        }
+      }).filter((c) => c.total > 0)
+      return { id: def.id, desde: antes, hasta: despues, cortes }
+    })
+    : []
+
   return {
     metodo: {
       prueba: 'permutación a dos colas',
@@ -284,5 +335,6 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     brechas,
     grupos,
     regresiones,
+    transversal,
   }
 }

@@ -6,6 +6,10 @@ sitio son cinco vistas con URL propia (portada del recorrido, tablero, explorado
 los datos), con el encabezado de iclac.cl. En español, inglés y chino: hoy el nav y el encabezado están
 traducidos, el contenido de las figuras todavía no.
 
+**El recorrido publica su método.** «Cómo se hizo el recorrido», dentro de «Sobre los datos», dice
+qué sostiene cada afirmación y qué tiene prohibido hacer la animación. Se llega desde la barra de la
+capa y desde su cierre.
+
 **Las diferencias entre oleadas van contrastadas.** El ETL calcula, para cada comparación que el
 producto muestra, una prueba de permutación, un intervalo bootstrap y la misma diferencia con la
 composición de edad y sexo fija. La muestra no es probabilística, así que **no son margen de error**:

@@ -156,7 +156,8 @@ export interface Regresion {
   rango: [number, number]
   porOla: {
     ola: number
-    puntos: { x: number, n: number, media: number | null, ic: [number, number] | null }[]
+    /** `peso` es cuánto aporta ese punto a la pendiente, en por ciento: los del borde mandan. */
+    puntos: { x: number, n: number, media: number | null, ic: [number, number] | null, peso: number }[]
     recta: Recta
     sostiene: { x: number, n: number, cambio: number, recta: Recta } | null
   }[]
@@ -172,12 +173,33 @@ export interface Recta {
   p: number
 }
 
+/**
+ * En cuántos grupos de cada corte se mueve una medida entre dos oleadas.
+ *
+ * **No afirma que cada grupo por separado supere el ruido**: con cien casos por celda casi ninguno
+ * lo haría. Afirma que el promedio se movió en la misma dirección, que es lo que responde «¿esto
+ * viene de un sector o de todos?».
+ */
+export interface Transversal {
+  id: string
+  desde: number
+  hasta: number
+  cortes: {
+    campo: string
+    etiqueta: string
+    total: number
+    suben: number
+    grupos: { grupo: string, diferencia: number }[]
+  }[]
+}
+
 export interface Contrastes {
   metodo: { prueba: string, rondas: number, semilla: number, intervalo: string, alcance: string }
   medidas: Medida[]
   brechas: Brecha[]
   grupos: Grupo[]
   regresiones: Regresion[]
+  transversal: Transversal[]
 }
 
 export interface Encuesta {

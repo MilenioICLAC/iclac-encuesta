@@ -41,6 +41,33 @@
   }
 }
 
+/*
+ * La emanata: las líneas radiales que salen del punto cuando se lo retira.
+ *
+ * Se llaman así en el léxico del cómic (Mort Walker, «The Lexicon of Comicana», 1980); en motion
+ * design son *burst lines*. Marcan que algo salió, que es exactamente lo que el paso está
+ * contando: esas treinta respuestas dejan de pesar en la recta.
+ *
+ * **El gesto es el trazo viajando por su propia línea**, no la línea creciendo: con `dasharray`
+ * igual al largo, el `dashoffset` va de +L a −L y el segmento visible recorre el camino y se va.
+ * Solo se animan `stroke-dashoffset` y `opacity`, que no obligan a recalcular la página.
+ */
+.emanata line {
+  animation: emanata 620ms ease-out both;
+}
+
+@keyframes emanata {
+  0% { stroke-dashoffset: var(--largo); opacity: 0; }
+  30% { opacity: 0.9; }
+  100% { stroke-dashoffset: calc(var(--largo) * -1); opacity: 0; }
+}
+
+/* Quien pide menos movimiento ve el estado final y no una versión recortada: el punto ya está
+   hueco, así que las líneas no tienen nada que anunciar. */
+@media (prefers-reduced-motion: reduce) {
+  .emanata { display: none; }
+}
+
 /* Los puntos apagados del recorrido son una capa de lectura, no un recorte de los datos: al
    imprimir se encienden todos. */
 @media print {
@@ -48,11 +75,17 @@
     opacity: 1 !important;
   }
 
-  /* El pulso de entrada no corre al imprimir, y con `both` el dato quedaría congelado en el
-     fotograma inicial, que es 2,4 veces su tamaño. */
+  /* Un gesto de animación impreso es tinta sin sentido, en las dos figuras que lo usan. */
+  .emanata,
+  .dato-emanata::after {
+    display: none;
+  }
+
+  /* El halo no corre al imprimir, y con `both` el dato quedaría congelado en su primer fotograma. */
   .dato-nuevo {
     animation: none;
   }
+
 }
 
 /* Una escena del recorrido ocupa la capa menos su barra.
@@ -90,6 +123,14 @@
    El color sale de `currentColor`, así que cada marca tiene que llevar su propio `color`; con el
    heredado, el halo sale del color del texto y no del dato. Probado en el laboratorio del
    recorrido antes de traerlo (06-09-2026). */
+/*
+ * El halo de entrada, para las figuras dibujadas en SVG (`Serie`).
+ *
+ * **Un pseudo-elemento no existe en un `<circle>` de SVG**, así que la emanata de abajo no las
+ * alcanza y estas figuras se quedan con el halo. Se descubrió sacándolo: al cambiar el efecto por
+ * el del pseudo-elemento, las escenas 2 a 4 se quedaron sin ningún gesto de entrada, y ninguna
+ * prueba lo vio.
+ */
 @keyframes destello-dato {
   0% { filter: drop-shadow(0 0 0 currentColor); }
   35% { filter: drop-shadow(0 0 7px currentColor); }
@@ -105,6 +146,55 @@
     animation: none;
   }
 }
+
+/*
+ * El dato que entra en el termómetro sale con emanata: las líneas radiales del cómic (ver
+ * `.emanata` arriba y la skill `recorrido`). Un halo dice «esto brilla»; las líneas dicen «esto
+ * acaba de llegar», que es lo que el paso está contando. Es el mismo gesto que marca la salida del
+ * punto en la regresión, y que sea el mismo es la gracia: el lector lo aprende una vez.
+ *
+ * **El punto del termómetro no es SVG**: es un `<span>` redondo, así que no hay dónde dibujar ocho
+ * líneas. Los rayos salen de un `conic-gradient` repetido en un pseudo-elemento, recortado a un
+ * anillo con `mask`, que se expande y se apaga. Solo se animan `transform` y `opacity`.
+ */
+.dato-emanata {
+  /* El halo del SVG no se suma: dos gestos a la vez en el mismo punto se leen como uno borroso. */
+  animation: none;
+}
+
+.dato-emanata::after {
+  content: '';
+  position: absolute;
+  /* Tres veces el punto y no más: con 4,4× los rayos entraban en la fila de arriba, y una fila
+     del recorrido mide 40 px. La máscara arranca justo fuera del punto, que ocupa un tercio. */
+  inset: -100%;
+  border-radius: 50%;
+  /* Ocho rayos de 5°, alternando largo por el grosor del anillo: iguales se leen como un
+     engranaje. El color sale de `currentColor`, que el componente fija al color de la oleada. */
+  background: repeating-conic-gradient(
+    from -2.5deg,
+    currentColor 0deg 5deg,
+    transparent 5deg 45deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 38%, #000 41% 100%);
+  mask: radial-gradient(circle, transparent 0 38%, #000 41% 100%);
+  animation: emanata-dato 620ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes emanata-dato {
+  0% { transform: scale(0.45); opacity: 0; }
+  25% { opacity: 0.85; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dato-emanata::after {
+    display: none;
+  }
+}
+
+
 
 /* Un paso de la pista invisible que mide el scroll. Va acá y no en el marcado para que el alto
    del paso y el de la escena se lean juntos: el paso tiene que ser más alto que la banda de
@@ -140,6 +230,19 @@
   scroll-snap-align: start;
 }
 
+/*
+ * **Un paso no se puede saltar.** `mandatory` lleva el scroll al punto más cercano, y con teclado
+ * eso no alcanza: `PageDown` avanza el alto del contenedor, que no coincide con el alto del paso,
+ * y el desfase acumulado se comía un paso entero (medido el 08-09-2026: del 4 se saltaba al 6).
+ * `always` obliga al navegador a detenerse en cada punto, venga el desplazamiento de donde venga.
+ *
+ * Solo en los pasos, no en los colchones: si no, pasar de una escena a la otra pediría tres
+ * detenciones donde no cambia nada.
+ */
+.paso-recorrido {
+  scroll-snap-stop: always;
+}
+
 /* Los colchones que emparejan el paso. El de arriba vale el 55 % de la pantalla, que es lo que
    hace que el paso i entre a la banda de lectura exactamente a `i × alto de paso`; el de abajo
    existe para que el último paso alcance a activarse. Los dos se recalculan en píxeles cuando se
@@ -167,6 +270,48 @@
 
 /* El relato (titular más frase) es un bloque solo en escritorio. En angosto no tiene que existir:
    con `display: contents` sus hijos siguen siendo elementos del flex de la escena. */
+/*
+ * El paso sin figura: la frase sola, centrada en los dos ejes.
+ *
+ * Es la pausa entre dos historias del recorrido. Centrada de verdad —no un bloque alineado a la
+ * izquierda en medio de la pantalla— porque lo que hace de pausa es que no haya nada más donde
+ * mirar. El ancho se acorta: una sola frase corriendo 42 rem se lee como un párrafo suelto.
+ */
+.escena.sin-figura .bloque-texto {
+  text-align: center;
+  max-width: 34rem;
+}
+
+.escena.sin-figura .bloque-encabezado {
+  display: none;
+}
+
+/* En escritorio vuelve a una columna: con dos, la mitad derecha queda vacía y el centrado deja de
+   ser centrado. */
+@media (min-width: 900px) {
+  .capa-recorrido .escena.en-columnas.sin-figura {
+    display: flex;
+    max-width: 46rem;
+  }
+}
+
+/*
+ * **En pantallas bajas, menos aire.**
+ *
+ * La escena reparte su alto entre encabezado, texto y figura, y en un teléfono de 664 px (iPhone
+ * 12) esa suma se pasaba por 16 px: el enlace al tablero quedaba bajo el borde. El aire es lo
+ * primero que cede, antes que el tamaño de la letra o el de la figura, que son lo que se lee.
+ *
+ * La consulta es por **alto** y no por ancho: lo que falta es alto, y hay teléfonos anchos y bajos.
+ */
+@media (max-height: 700px) {
+  .capa-recorrido .escena {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    gap: 1rem;
+  }
+}
+
 .columna-relato {
   display: contents;
 }

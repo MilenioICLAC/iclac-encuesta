@@ -59,6 +59,9 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
   if (!dato) return null
   const indiceOla = olas.indexOf(ola)
   const tono = tonos[indiceOla] ?? tonos[0]
+  // El aro oscuro sostiene el contraste del punto claro (1,86:1 contra el papel), pero **la recta
+  // va en el color del año**: en el último paso las tres rectas se pintan por oleada, y una recta
+  // oscura en los pasos anteriores hacía que la de 2023 cambiara de color a mitad de la escena.
   const aro = tonos[tonos.length - 1]
 
   const px = (x: number) => IZQ + ((x - datos.rango[0]) / (datos.rango[1] - datos.rango[0])) * (DER - IZQ)
@@ -68,6 +71,9 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
 
   const sostiene = dato.sostiene
   const retirado = paso >= 3 && sostiene ? sostiene.x : null
+  // Las líneas salen **en el paso del retiro**, no en los siguientes: es un gesto que marca el
+  // momento, no un adorno permanente.
+  const conEmanata = paso === 3 && sostiene !== null
   const recta: Recta | null = paso === 0 ? null
     : paso >= 3 && sostiene ? sostiene.recta
       : dato.recta
@@ -121,6 +127,35 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
           )
         })}
 
+        {/* **La recta va antes que los puntos**, para que ellos y sus rótulos queden encima: con
+            el orden inverso la línea cruzaba el rótulo del punto marcado y lo dejaba ilegible, y
+            el halo no servía de nada porque quedaba debajo de la línea. */}
+        {/* La recta de la oleada protagonista, con su abanico. */}
+        {recta && !todas && (
+          <g>
+            {abanico(recta, tono, 0.18)}
+            {retirado !== null && (
+              <line
+                x1={px(datos.rango[0])} y1={py(recta.centro[1])} x2={px(datos.rango[1])} y2={py(recta.centro[1])}
+                stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 4"
+              />
+            )}
+            <line
+              x1={px(datos.rango[0])} y1={py(enRecta(recta, datos.rango[0]))}
+              x2={px(datos.rango[1])} y2={py(enRecta(recta, datos.rango[1]))}
+              // Más gruesa que las del último paso porque va en el tono claro del año: a 2,5 px
+              // ese color se pierde contra el papel.
+              stroke={tono} strokeWidth={3.5}
+            />
+            <text x={IZQ + 4} y={ARRIBA - 6} fontSize={9} fill="#17211F">
+              pendiente {cifra(recta.b)} [{cifra(recta.ic[0])}; {cifra(recta.ic[1])}]
+            </text>
+            <text x={IZQ + 4} y={ARRIBA + 6} fontSize={8} fill="#6B7280">
+              R² {decimal(recta.r2, 1)} % · n {numero(recta.n)}{retirado !== null ? ` · sin el ${retirado}` : ''}
+            </text>
+          </g>
+        )}
+
         {/* La nube de la oleada protagonista. En el último paso queda de fondo. */}
         {dato.puntos.filter((q) => q.media !== null).map((q) => {
           const apagado = retirado === q.x
@@ -138,55 +173,60 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
                 className="transition-opacity duration-500"
               />
               {marcado && q.ic && (
-                <text x={px(q.x) - 10} y={py(q.ic[1]) - 6} textAnchor="end" fontSize={9} fill="#17211F">
+                <text
+                  x={px(q.x) - 10} y={py(q.ic[1]) - 6} textAnchor="end" fontSize={9} fill="#17211F"
+                  // Halo del color del papel: la recta pasa justo por acá y sin él el rótulo del
+                  // punto de la derecha quedaba cortado por la línea.
+                  stroke="#FFFFFF" strokeWidth={3.5} paintOrder="stroke"
+                >
                   {numero(q.n)} personas · {decimal(q.media as number, 1)}
                 </text>
+              )}
+              {conEmanata && apagado && (
+                // Ocho líneas radiales desde el perímetro del punto, no desde su centro: el gesto
+                // es «sale de acá», y arrancando del centro se leería como un pinchazo.
+                // El tono es el oscuro de la rampa: el claro del año da 1,86:1 contra el papel y a
+                // este grosor no se vería. Sigue siendo el color del punto, que lleva los dos.
+                <g className="emanata" aria-hidden>
+                  {Array.from({ length: 8 }, (_, i) => {
+                    const angulo = (i / 8) * Math.PI * 2 - Math.PI / 2
+                    // Largas y cortas alternadas, como se dibuja una emanata en el papel: ocho
+                    // líneas iguales se leen como un engranaje, no como algo que sale.
+                    const largo = i % 2 === 0 ? 13 : 8
+                    const desde = radio(q.n) + 4
+                    const hasta = desde + largo
+                    return (
+                      <line
+                        key={i}
+                        x1={px(q.x) + Math.cos(angulo) * desde}
+                        y1={py(q.media as number) + Math.sin(angulo) * desde}
+                        x2={px(q.x) + Math.cos(angulo) * hasta}
+                        y2={py(q.media as number) + Math.sin(angulo) * hasta}
+                        stroke={aro}
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeDasharray={largo}
+                        style={{ '--largo': `${largo}px`, animationDelay: `${i * 22}ms` } as React.CSSProperties}
+                      />
+                    )
+                  })}
+                </g>
               )}
             </g>
           )
         })}
 
-        {/* La recta de la oleada protagonista, con su abanico. */}
-        {recta && !todas && (
-          <g>
-            {abanico(recta, aro, 0.12)}
-            {retirado !== null && (
-              <line
-                x1={px(datos.rango[0])} y1={py(recta.centro[1])} x2={px(datos.rango[1])} y2={py(recta.centro[1])}
-                stroke="#9CA3AF" strokeWidth={1.5} strokeDasharray="4 4"
-              />
-            )}
-            <line
-              x1={px(datos.rango[0])} y1={py(enRecta(recta, datos.rango[0]))}
-              x2={px(datos.rango[1])} y2={py(enRecta(recta, datos.rango[1]))}
-              stroke={aro} strokeWidth={2.5}
-            />
-            <text x={IZQ + 4} y={ARRIBA - 6} fontSize={9} fill="#17211F">
-              pendiente {cifra(recta.b)} [{cifra(recta.ic[0])}; {cifra(recta.ic[1])}]
-            </text>
-            <text x={IZQ + 4} y={ARRIBA + 6} fontSize={8} fill="#6B7280">
-              R² {decimal(recta.r2, 1)} % · n {numero(recta.n)}{retirado !== null ? ` · sin el ${retirado}` : ''}
-            </text>
-          </g>
-        )}
-
-        {/* Los rótulos de las tres rectas, separados a la fuerza: dos que terminan a la misma
-            altura se escriben encima la una de la otra. */}
-        {todas && (() => {
-          const usados: number[] = []
-          return datos.porOla.map((o) => {
-            const nula = o.recta.ic[0] <= 0 && o.recta.ic[1] >= 0
-            let y = py(enRecta(o.recta, datos.rango[1])) + 3
-            while (usados.some((u) => Math.abs(u - y) < 11)) y += 11
-            usados.push(y)
-            return (
-              <text key={o.ola} x={DER + 2} y={y} textAnchor="end" fontSize={9} fill="#17211F"
-                stroke="#FFFFFF" strokeWidth={3} paintOrder="stroke">
-                {o.ola} {cifra(o.recta.b)}{nula ? ' ns' : ''}
-              </text>
-            )
-          })
-        })()}
+        {/*
+          * **Las tres rectas no se rotulan en la figura.**
+          *
+          * Se probaron dos maneras y las dos fallan por la misma razón: en el extremo derecho, dos
+          * de las tres rectas terminan a menos de un punto de distancia. Separar los rótulos a la
+          * fuerza los apila sin decir de quién es cada uno; atarlos con un conector obliga a
+          * cruzar la figura entera con una línea que compite con los datos.
+          *
+          * El color ya identifica el año, y la leyenda al pie lleva la pendiente de cada uno: es
+          * el mismo dato, en el único lugar donde tres etiquetas no pueden pisarse.
+          */}
       </svg>
     </figure>
   )

@@ -113,6 +113,42 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
 
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { alCerrarRef.current(); return }
+
+      /*
+       * **El teclado avanza de a un paso, no de a una pantalla.**
+       *
+       * `PageDown` mueve el alto del contenedor, que no coincide con el alto de un paso, y el
+       * desfase acumulado se comía uno entero (medido el 08-09-2026: del cuarto saltaba al sexto).
+       * `scroll-snap-stop: always` no lo arregla, porque el navegador no vuelve a encajar después
+       * de un desplazamiento por teclado.
+       *
+       * **Esto no es scroll-jacking:** no se toca la rueda ni el gesto táctil, que siguen libres.
+       * Es lo contrario, de hecho: quien navega con teclado pide «el siguiente» y recibe el
+       * siguiente, en vez de una cantidad de píxeles que a veces se salta el contenido.
+       */
+      const teclas: Record<string, number> = { PageDown: 1, PageUp: -1, ArrowDown: 1, ArrowUp: -1 }
+      const sentido = teclas[e.key]
+      if (sentido && capa.current) {
+        const activo = document.activeElement
+        // Un campo o un control se queda con sus flechas: ahí significan otra cosa.
+        const enControl = activo instanceof HTMLElement &&
+          ['INPUT', 'SELECT', 'TEXTAREA'].includes(activo.tagName)
+        if (!enControl) {
+          const paradas = [...capa.current.querySelectorAll<HTMLElement>(
+            '.portada-recorrido, .colchon-recorrido, .paso-recorrido, .cierre-recorrido',
+          )].map((el) => el.offsetTop).sort((a, b) => a - b)
+          const actual = capa.current.scrollTop
+          const siguiente = sentido > 0
+            ? paradas.find((y) => y > actual + 4)
+            : [...paradas].reverse().find((y) => y < actual - 4)
+          if (siguiente !== undefined) {
+            e.preventDefault()
+            capa.current.scrollTo({ top: siguiente, behavior: 'smooth' })
+          }
+          return
+        }
+      }
+
       if (e.key !== 'Tab' || !capa.current) return
       // Trampa de foco: sin esto el tabulador se va a la página de atrás, que está tapada.
       const focos = capa.current.querySelectorAll<HTMLElement>(
@@ -209,6 +245,16 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
             : titulo}
         </p>
 
+        {/* El método, a mano desde cualquier paso: el lector que duda de una cifra la está viendo
+            en ese momento, no al final. En teléfono no cabe junto a la salida y se queda solo el
+            enlace del cierre. */}
+        <Link
+          to="/datos?foco=metodo-recorrido"
+          className="hidden shrink-0 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark sm:inline"
+        >
+          Método
+        </Link>
+
         {/* El botón dice a dónde lleva. «Cerrar» no dice nada sobre qué pasa después, y salir de
             un relato para caer en la nada es peor que no poder salir. */}
         <button
@@ -236,6 +282,11 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
         >
           Ir al tablero
         </button>
+        {/* El método, al final y no antes: quien acaba de leer un relato que afirma cosas es
+            justamente quien puede querer saber qué las sostiene. */}
+        <Link to="/datos?foco=metodo-recorrido" className="text-sm text-gray-600 underline underline-offset-2 hover:text-brand-dark">
+          Cómo se hizo el recorrido
+        </Link>
       </div>
     </div>
   )
@@ -357,6 +408,15 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   const seccion = useRef<HTMLElement | null>(null)
   const informar = useContext(Registro)
 
+  // **Un paso puede no tener figura.** Cuando `figura` devuelve `null`, la escena se queda con la
+  // frase sola y centrada: es la pausa entre dos historias, y una figura de relleno ahí compite con
+  // el respiro en vez de aportarlo. Sin figura tampoco hay pie, ni leyenda, ni enlace al tablero:
+  // todos hablan de algo que no está.
+  const dibujo = figura(activo, reducido)
+  const sinFigura = dibujo === null || dibujo === undefined
+  const encabezado = typeof titulo === 'function' ? titulo(activo) : titulo
+
+
   // **Cuál escena está en vista se mide con la misma banda que los pasos.** Con la escena pegada,
   // su sección ocupa toda su tajada de scroll: la que cruza el centro del contenedor es la que el
   // lector tiene delante, y las de arriba y abajo no compiten.
@@ -373,8 +433,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   }, [raiz])
 
   useEffect(() => {
-    informar?.({ indice, titulo: typeof titulo === 'function' ? titulo(activo) : titulo, pasos: frases.length, activo, enVista })
-  }, [informar, indice, titulo, frases.length, activo, enVista])
+    informar?.({ indice, titulo: encabezado, pasos: frases.length, activo, enVista })
+  }, [informar, indice, encabezado, frases.length, activo, enVista])
   const alto = useAltoDe(raiz)
   // El alto de la escena **no** es el de la pantalla: con la figura grande y el texto a 19 px mide
   // bastante más, y esa diferencia era exactamente lo que le sobraba al primer paso.
@@ -434,7 +494,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           frase quedaba al pie de la pantalla, que es donde el pulgar la tapa. */}
       <div
         ref={escena}
-        className={`escena${dosColumnas ? ' en-columnas' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
+        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
         // El alto de la capa, en píxeles medidos. `.escena` lo usa para su `min-height`, que es lo
         // que le da a `justify-center` espacio que repartir (ver `index.css`).
         style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
@@ -444,9 +504,9 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
             cambia nada (ver `.columna-relato` en `index.css`). */}
         <div className="columna-relato">
           <div className="bloque-encabezado mx-auto w-full max-w-2xl">
-            <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">
-              {typeof titulo === 'function' ? titulo(activo) : titulo}
-            </h3>
+            {encabezado && (
+              <h3 className="font-display text-base font-semibold text-gray-900 sm:text-lg">{encabezado}</h3>
+            )}
             {/* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco, que es
                 el piso de lectura para texto chico. Más apagado se ve mejor y deja gente afuera. */}
             {bajada && <p className="bajada-escena mt-1 text-[13px] leading-snug text-gray-500">{bajada}</p>}
@@ -466,9 +526,10 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
             </p>
           </div>
         </div>
+        {!sinFigura && (
         <div className="bloque-figura mx-auto w-full max-w-2xl pt-3 sm:pt-4">
           {cabecera?.(activo)}
-          {figura(activo, reducido)}
+          {dibujo}
           {nota && <div className="mt-2">{typeof nota === 'function' ? nota(activo, reducido) : nota}</div>}
           {modulo && (
             <Link
@@ -480,6 +541,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
             </Link>
           )}
         </div>
+        )}
       </div>
 
       {/* La pista: no se ve y no se lee, solo mide el scroll. Cada tramo tiene que ser más alto

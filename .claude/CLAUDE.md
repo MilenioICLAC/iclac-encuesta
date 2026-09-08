@@ -306,6 +306,20 @@ afirma el recorrido son reales o son ruido. La maquinaria está en `scripts/lib/
 comparaciones publicadas en `scripts/lib/contrastes.mjs`, y las dos tienen prueba en
 `scripts/contrastes.test.mjs`.
 
+**El apalancamiento explica por qué un puñado de respuestas puede inclinar una recta, y tiene
+fórmula cerrada:** `h = 1/n + (x − x̄)² / Σ(x − x̄)²`, cuya suma sobre todas las observaciones da
+exactamente el número de parámetros (2 en una regresión simple, que es la verificación de que está
+bien aplicada). Lo que pesa sobre **la pendiente** es la parte de la derecha: `n·(x − x̄)² / Σ(x −
+x̄)²`. En la oleada 2023, treinta personas del punto 10 aportan el **28,9 %** de la inclinación y
+las 225 del punto 5 aportan el **1,6 %**: las del centro casi no la mueven porque están donde la
+recta gira. **La fragilidad es incertidumbre × peso**, y por eso pocos casos en el borde son un
+problema y pocos casos en el centro no.
+
+**El apalancamiento no entra en el cálculo de los intervalos.** Los intervalos son bootstrap; la
+fórmula clásica (`SE(b) = s/√Σ(x−x̄)²`) da [−2,57; −0,27] contra [−2,63; −0,21] del remuestreo, o
+sea que coinciden. Se usa el bootstrap porque la fórmula supone normalidad y varianza constante, y
+el termómetro no cumple ninguna de las dos: el 18 % de las respuestas son exactamente 100.
+
 **Nada de esto es margen de error, y la regla del hecho 2 no cambia.** La muestra no es
 probabilística: estos números comparan las oleadas **entre sí** y no estiman a la población.
 

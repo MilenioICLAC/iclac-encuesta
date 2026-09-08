@@ -143,6 +143,76 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
 - **Y la leyenda aparece cuando el color significa algo.** En los cuatro primeros pasos del
   experimento hay una sola oleada dibujada: una clave de tres años ofrecería dos colores que no
   están en la figura.
+- **El recorrido afirma, así que publica su método.** «Cómo se hizo el recorrido» vive en «Sobre
+  los datos» (`#/datos?foco=metodo-recorrido`), y se llega desde la barra de la capa y desde su
+  cierre. Tiene tres partes: lo que la animación **no** puede hacer, la prueba que sostiene cada
+  afirmación —armada con los contrastes del artefacto, así que una frase sin prueba ahí es una
+  frase que no debería estar en el recorrido— y por qué un puñado de respuestas puede inclinar una
+  recta. Una figura que cambia con el scroll es cómoda de leer y difícil de auditar: sin esa
+  sección, el lector no tiene dónde verificar nada.
+- **La emanata es el gesto del dato del termómetro, al entrar y al salir.** Que sea el mismo en los
+  dos lados es la gracia: el lector lo aprende una vez. Antes la entrada era un halo, y un halo dice
+  «esto brilla»; las líneas dicen «esto acaba de llegar».
+
+  **Y hay dos implementaciones porque hay dos tecnologías.** El punto del termómetro es un `<span>`
+  redondo, así que los rayos salen de un `conic-gradient` recortado a un anillo con `mask`
+  (`.dato-emanata`); el de la regresión es SVG y lleva ocho `<line>` (`.emanata`). **Un
+  pseudo-elemento no existe en un `<circle>` de SVG:** al cambiar el efecto compartido por el del
+  pseudo-elemento, las escenas 2 a 4 —que dibujan con `Serie`, en SVG— se quedaron sin ningún gesto
+  de entrada, y ninguna prueba lo vio. Por eso `.dato-nuevo` conserva el halo para SVG y
+  `.dato-emanata` lo apaga donde pone los rayos: dos gestos a la vez en el mismo punto se leen como
+  uno borroso.
+
+  **El tamaño se mide contra la fila, no contra el punto.** Con el pseudo-elemento a 4,4× los rayos
+  entraban en la fila de arriba, y una fila del recorrido mide 40 px; a 3× quedan dentro.
+- **El teclado avanza de a un paso, y eso hay que escribirlo.** `PageDown` mueve el alto del
+  contenedor, que no coincide con el alto de un paso: el desfase acumulado se comía uno entero
+  (medido el 08-09-2026, del cuarto al sexto). **`scroll-snap-stop: always` no lo arregla**, porque
+  el navegador no vuelve a encajar después de un desplazamiento por teclado. La capa maneja
+  `PageUp`/`PageDown` y las flechas llevando al punto de anclaje siguiente. **No es
+  scroll-jacking:** la rueda y el gesto táctil siguen intactos; lo que se corrige es que quien pide
+  «el siguiente» reciba el siguiente y no una cantidad de píxeles.
+- **El orden de dibujo es parte del diseño.** La recta de la regresión se dibujaba después de los
+  puntos y le pasaba por encima al rótulo del punto marcado; el halo no servía, porque quedaba
+  debajo de la línea. Va primero la recta, después los puntos y sus rótulos.
+- **Un color que identifica algo no cambia a mitad de escena.** La recta de una oleada lleva el
+  color de esa oleada desde el primer paso en que aparece. Estaba en el tono oscuro genérico y en
+  el último paso pasaba al color del año: el lector veía cambiar de color a la misma recta. El
+  precio es que el tono claro necesita más grosor (3,5 px contra 2,5) para no perderse en el papel.
+- **Tres rótulos que se pisan no se arreglan separándolos.** En el último paso, dos de las tres
+  rectas terminan a menos de un punto de distancia. Separar los rótulos a la fuerza los apila sin
+  decir de quién es cada uno; atarlos con un conector obliga a cruzar la figura con una línea que
+  compite con los datos. **La pendiente se fue a la leyenda del pie**, donde el color hace la
+  conexión y nada puede superponerse.
+- **En pantallas bajas, el aire es lo primero que cede.** La escena reparte su alto entre
+  encabezado, texto y figura, y en un iPhone 12 (664 px) la suma se pasaba por 16 px: el enlace al
+  tablero quedaba bajo el borde. La media query es por **alto** (`max-height: 700px`), no por
+  ancho: lo que falta es alto, y hay teléfonos anchos y bajos.
+- **Un gesto puede marcar lo que un cambio de estado no dice solo.** Al retirar el punto de la
+  regresión salen ocho líneas radiales desde su perímetro: son una **emanata** (Mort Walker, «The
+  Lexicon of Comicana», 1980; en motion design, *burst lines*). Marcan que algo salió, que es lo
+  que el paso cuenta. Tres reglas para que sea gesto y no adorno: sale **una sola vez**, en el paso
+  del retiro y no en los siguientes; **solo se animan `stroke-dashoffset` y `opacity`**, que no
+  obligan a recalcular la página; y **con `prefers-reduced-motion` no se dibuja**, porque el punto
+  ya está hueco y no hay nada que anunciar. El truco del trazo que viaja: `dasharray` igual al
+  largo y `dashoffset` de +L a −L. Y las líneas van **largas y cortas alternadas**: ocho iguales se
+  leen como un engranaje, no como algo que sale.
+- **Un puente entre dos historias es un paso sin figura: la frase sola, centrada en los dos ejes.**
+  La escena 1 pasa del termómetro a la ideología, y en medio hay una pausa. Costó tres intentos y
+  los dos primeros enseñan algo:
+
+  1. **Con la nube de ideología ya presente:** la frase hablaba de niveles socioeconómicos y
+     macrozonas mientras se veía otra cosa. Es el defecto del pie que miente, del lado de la figura.
+  2. **Con su propia figura** —un punto por grupo, una fila por corte, sobre el eje del cambio—:
+     catorce puntos en tres rieles, ninguno rotulado, imposible de leer en un paso que dura un
+     gesto de scroll.
+  3. **Sin figura.** Lo que hace de pausa es que no haya nada más donde mirar. El dato que respalda
+     la frase vive en «Sobre los datos», que es donde se audita.
+
+  **Un paso sin figura no lleva nada de la figura**: ni pie, ni leyenda, ni año grande, ni el enlace
+  al tablero. Todos hablarían de algo que no está. Y **el titular tampoco cambia todavía**: en el
+  puente sigue el del tramo anterior, porque el de la segunda mitad («la posición política no
+  ordena…») es la respuesta a la pregunta que el paso acaba de hacer.
 - **Contar el método es contar un hallazgo, cuando el método *es* el hallazgo.** Los cinco pasos
   del experimento muestran la recta que publica el monitor, marcan el punto de treinta personas que
   la sostiene, lo retiran y la recta se endereza. Una línea plana no tiene épica; verla enderezarse
@@ -433,7 +503,17 @@ de alto y **la figura arrancaba a 528 px del techo**, o sea a medias en un port�
 10. Midiendo, no mirando: que la figura no se mueva entre pasos (el borde superior del bloque de la
     figura tiene que dar el mismo número en todos), y que la escena no sea más alta que la capa.
 11. Con `prefers-reduced-motion` **y** el párrafo apilado: que las frases no queden una encima de
-    otra.
+    otra. Y con una escena que **cambia de figura**: que se muestren todas, no solo la del último
+    paso, o la mitad del texto habla de algo que no está dibujado.
+12. **Con teclado, no solo con scroll.** `PageDown` de punta a punta tiene que pasar por todos los
+    pasos, sin saltarse ninguno, y `PageUp` igual al revés. Es el defecto que ninguna captura
+    muestra: la figura se ve bien en cada paso, y el paso que falta no se ve por definición.
+13. **En dos teléfonos, no en uno.** Un iPhone 12 tiene 664 px de alto útil y un Galaxy S8, 740: lo
+    que entra en uno se sale del otro por veinte píxeles. Y el elemento que se sale suele ser el
+    último —el enlace al tablero—, así que la comprobación se hace sobre el **último hijo** de la
+    figura, no sobre la escena.
+14. **Mirando el orden de dibujo**, que es parte del diseño: un trazo dibujado después de un rótulo
+    lo tapa, y ningún halo lo salva porque el halo queda debajo del trazo.
 
 **`lint`, tipos y pruebas verdes no dicen nada sobre esto.** Los tres defectos que llegaron al
 cliente pasaban las 90 pruebas.

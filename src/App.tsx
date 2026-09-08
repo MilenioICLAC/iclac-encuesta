@@ -17,6 +17,7 @@ import Puntos from './componentes/Puntos'
 import CapaRecorrido, { Escena, Portada } from './componentes/CapaRecorrido'
 import Descargas from './componentes/Descargas'
 import Contrastes from './componentes/Contrastes'
+import MetodoRecorrido from './componentes/MetodoRecorrido'
 import Encabezado from './componentes/Encabezado'
 import { figuraTermometro } from './nucleo/termometro'
 import { escalaRedonda } from './nucleo/escala'
@@ -327,6 +328,8 @@ function lector (encuesta: Encuesta) {
     ideologia: c?.grupos.find((g) => g.id === 'ideologia-china') ?? null,
     /** La misma pregunta sobre la escala entera de 1 a 10, con la recta y el punto que la sostiene. */
     regresion: c?.regresiones.find((r) => r.id === 'ideologia-china') ?? null,
+    /** En cuántos grupos de cada corte sube la opinión sobre China, entre las dos últimas oleadas. */
+    transversal: c?.transversal.find((t) => t.id === 'opinion-china') ?? null,
   }
 }
 
@@ -453,7 +456,6 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
   const ultimaOla = encuesta.olas.at(-1) ?? 0
   const brechaPrimera = describir(contraste.brecha(primeraOla))
   const brechaPenultima = describir(contraste.brecha(penultima))
-  const brechaUltima = contraste.brecha(ultimaOla)
   const quietasEntreOlas = contraste.todosQuietos(primeraOla, penultima)
 
   // **Los cinco pasos del experimento**, que son la segunda mitad de la escena 1.
@@ -485,6 +487,12 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
     ? primeraDeLaSerie.puntos.reduce((mejor, q) => (q.n > mejor.n ? q : mejor), primeraDeLaSerie.puntos[0])
     : null
   const totalPrimera = primeraDeLaSerie ? primeraDeLaSerie.puntos.reduce((s, q) => s + q.n, 0) : 0
+
+  // El puente entre las dos mitades de la escena: el alza no viene de un sector. Se nombran los
+  // cortes donde **todos** los grupos se mueven en la misma dirección; el que tiene una excepción
+  // se calla, porque la frase no tiene figura que la respalde y no puede redondear a su favor.
+  const cortesEnteros = (contraste.transversal?.cortes ?? []).filter((c) => c.suben === c.total && c.total >= 3)
+  const conPuente = cortesEnteros.length >= 2
   // «Por primera vez» es una afirmación sobre toda la serie, así que se comprueba sobre toda la
   // serie: China arriba y por encima del ruido en la última oleada, y en ninguna anterior.
   const arriba = (ola: number) => {
@@ -576,7 +584,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               // El titular sigue al tema: la escena empieza comparando países y termina mostrando
               // que la posición política no ordena nada. Con un titular fijo, los cinco pasos del
               // experimento se leen bajo un hallazgo que no es el suyo.
-              titulo={(activo) => (activo >= 4 && conExperimento
+              titulo={(activo) => (activo >= 5 && conExperimento
                 ? 'La posición política no ordena la opinión sobre China.'
                 : `En ${encuesta.olas.at(-1)} las personas evalúan mejor a ${chinaSobreEeuu ? 'China que a Estados Unidos' : 'Estados Unidos que a China'}.`)}
               cabecera={(activo) => (
@@ -585,9 +593,11 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                   tonos={tonos}
                   // Hasta qué oleada llegó el relato: es la más nueva que el paso enciende.
                   hasta={activo >= 4 && conExperimento
-                    // El experimento trabaja sobre la primera oleada, y solo en su último paso
-                    // entran las tres: el año grande dice lo mismo que la figura.
-                    ? (activo >= 8 ? encuesta.olas.length - 1 : 0)
+                    // El año grande dice lo mismo que la figura: el puente compara las dos últimas
+                    // oleadas, el experimento trabaja sobre la primera, y su último paso muestra
+                    // las tres. Con un solo criterio, el rótulo decía 2023 sobre la figura del
+                    // puente, que habla de 2024 a 2025.
+                    ? (activo === 4 || activo >= 8 ? encuesta.olas.length - 1 : 0)
                     : Math.max(0, ...encuesta.olas.map((ola, i) => (
                       termometro.some((t) => pasosEncendidos[activo]?.(t.pais, ola)) ? i : 0
                     )))}
@@ -642,9 +652,17 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 // solas, y si el punto deja de darla vuelta, los cinco pasos desaparecen.
                 ...(conExperimento
                   ? [
+                    // **El puente entre las dos historias.** El paso donde la figura muta del
+                    // termómetro a la nube de ideología: el cambio de figura es el cambio visible
+                    // que el paso necesita, y la frase formula la pregunta que el lector se hace
+                    // solo después de «todo el cambio ocurre en 2025». El dato de dónde está la
+                    // gente en la escala bajó al pie, que es donde se consulta.
                     <>
-                      En {primeraOla}, <strong>{porcentaje(100 * (puntoMasPoblado?.n ?? 0) / (totalPrimera || 1), 0)} de
-                      la gente se ubica en el {puntoMasPoblado?.x}</strong> de la escala. Los extremos son puñados.
+                      {conPuente
+                        ? <>El alza aparece en {cardinal(cortesEnteros[0].total)} {cortesEnteros[0].etiqueta} y
+                          en {cardinal(cortesEnteros[1].total)} {cortesEnteros[1].etiqueta}. <strong>¿Y en el eje
+                          político?</strong></>
+                        : <>El alza no se concentra en un solo grupo. <strong>¿Y en el eje político?</strong></>}
                     </>,
                     <>
                       El monitor traza una recta y encuentra inclinación:{' '}
@@ -703,8 +721,17 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                     />
                   </div>
                   )
-                : activo >= 4 && conExperimento && regresion
-                  ? (
+                // **El puente va sin figura: la frase sola, centrada.**
+                //
+                // Primero mostraba la nube de ideología, y la frase hablaba de otra cosa. Después
+                // tuvo su propia figura —un punto por grupo y una fila por corte, sobre el eje del
+                // cambio— y tampoco: con catorce puntos en tres rieles, ninguno rotulado, no se
+                // leía. La pausa entre dos historias no necesita una figura; necesita que no haya
+                // nada más donde mirar. El dato que la respalda vive en «Sobre los datos».
+                : activo === 4 && conPuente
+                  ? null
+                  : activo >= 5 && conExperimento && regresion
+                    ? (
                   <Regresion
                     datos={regresion}
                     ola={primeraOla}
@@ -741,7 +768,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                   visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
                 />
               )}
-              nota={(activo, reducido) => ((activo >= 4 || reducido) && conExperimento
+              nota={(activo, reducido) => ((activo >= 5 || reducido) && conExperimento
                 ? (
                   // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que
                   // retira un punto seguiría declarando la muestra entera. La leyenda de oleadas
@@ -760,10 +787,33 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                           : activo === 6
                             ? <>Oleada {primeraOla}, {numero(totalPrimera)} personas. La barra vertical es el intervalo del 95 % del promedio de ese punto.</>
                             : activo === 5
-                              ? <>Oleada {primeraOla}, {numero(totalPrimera)} personas. La recta es una regresión lineal simple de la evaluación sobre la escala de ideología.</>
-                              : <>Oleada {primeraOla}: {numero(totalPrimera)} personas contestaron las dos preguntas.</>}
+                              ? <>Oleada {primeraOla}, {numero(totalPrimera)} personas, de las cuales{' '}
+                                {porcentaje(100 * (puntoMasPoblado?.n ?? 0) / (totalPrimera || 1), 0)} se ubica
+                                en el {puntoMasPoblado?.x}. La recta es una regresión lineal simple de la
+                                evaluación sobre la escala de ideología.</>
+                              : null}
                     </p>
-                    {(activo === 8 || reducido) && <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />}
+                    {/* La leyenda del último paso lleva la pendiente de cada oleada: en la figura,
+                        dos de las tres rectas terminan a menos de un punto y sus rótulos se pisan.
+                        Acá el color ata cada cifra a su recta y no hay nada que se superponga. */}
+                    {(activo === 8 || reducido) && (
+                      <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
+                        {encuesta.olas.map((ola, i) => {
+                          const r = regresion?.porOla.find((o) => o.ola === ola)?.recta
+                          const nula = r ? r.ic[0] <= 0 && r.ic[1] >= 0 : true
+                          return (
+                            <li key={ola} className="flex items-center gap-1.5 text-[11px] tabular-nums text-gray-500">
+                              <span
+                                className="inline-block h-0.5 w-4 shrink-0 rounded-full"
+                                style={{ backgroundColor: tonos[i] }}
+                              />
+                              {ola}
+                              {r && <> {r.b > 0 ? '+' : ''}{decimal(r.b, 2)}{nula && ' ns'}</>}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
                   </div>
                   )
                 : (
@@ -775,15 +825,14 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 // esquina de abajo a la derecha, ahora en su propia línea.
                 <div className="flex flex-col gap-1">
                   <p className="text-xs leading-snug text-gray-500">
+                    {/* **Corto porque el alto está contado.** En un iPhone 12 la escena tiene 621 px
+                        útiles y con el pie largo medía 697: el enlace al tablero quedaba bajo el
+                        borde. Lo que se fue es la explicación de «parejos» con su intervalo, que es
+                        material de método y vive completo en «Cómo se hizo el recorrido», a un
+                        toque desde la barra. */}
                     Un punto por oleada, promedio de quienes contestaron. Bases de{' '}
-                    {numero(baseMinima)} a {numero(baseMaxima)} según país y oleada.{' '}
-                    {/* Sin esta línea, «parejos» contradice a la vista lo que muestran los
-                        rótulos: en 2023 se lee 61,4 contra 64,2 y parece que uno está arriba.
-                        Lo que dice «parejos» es que esa diferencia no se distingue del azar. */}
-                    «Parejos» y «arriba» salen de comparar las dos notas dentro de cada persona:
-                    en {ultimaOla} la diferencia es de {decimal(Math.abs(brechaUltima?.diferencia ?? 0))} puntos
-                    {brechaUltima && <> (entre {decimal(brechaUltima.ic[0])} y {decimal(brechaUltima.ic[1])})</>}.
-                    Método en «Sobre los datos».
+                    {numero(baseMinima)} a {numero(baseMaxima)} según país y oleada. «Parejos» y
+                    «arriba» comparan las dos notas dentro de cada persona.
                   </p>
                   <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
                 </div>
@@ -1253,6 +1302,33 @@ function MultipleFigura ({
  * qué está parada.
  */
 function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
+  // Mismo patrón que el tablero: `#/datos?foco=metodo-recorrido` lleva la vista al bloque. Es lo
+  // que hace que el enlace desde el recorrido caiga en la sección y no al principio de la página.
+  const [parametros] = useSearchParams()
+  const foco = parametros.get('foco')
+  useEffect(() => {
+    if (!foco) return
+    const nodo = document.getElementById(foco)
+    if (!nodo) return
+    // **El alto del encabezado se mide, no se escribe.** `scroll-margin-top` en clase fija un
+    // número que ya cambió dos veces (79 px en teléfono, 88 en escritorio), y el encabezado
+    // publica el suyo en `--alto-encabezado`. Con `scroll-margin` a mano el título quedaba
+    // debajo de la barra: 72 px de posición contra 79 de encabezado.
+    const ir = (suave: boolean) => {
+      const alto = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--alto-encabezado'), 10) || 0
+      const destino = nodo.getBoundingClientRect().top + window.scrollY - alto - 16
+      window.scrollTo({ top: Math.max(0, destino), behavior: suave ? 'smooth' : 'auto' })
+    }
+    ir(true)
+    // **Y otra vez cuando las fuentes terminen de cargar.** Raleway llega después del primer
+    // dibujo y cambia el alto de todo lo que está encima: medido, el destino se corría 40 px y el
+    // título terminaba debajo del encabezado. El segundo salto no es suave para que no compita
+    // con el primero si el lector ya empezó a moverse.
+    let vivo = true
+    void document.fonts?.ready.then(() => { if (vivo) requestAnimationFrame(() => { ir(false) }) })
+    return () => { vivo = false }
+  }, [foco])
+
   return (
     <section className="mx-auto max-w-5xl px-4 py-10">
       <h2 className="font-display text-2xl font-semibold text-gray-900">Sobre los datos</h2>
@@ -1286,6 +1362,10 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
         </ul>
 
         {encuesta.contrastes && <Contrastes contrastes={encuesta.contrastes} olas={encuesta.olas} />}
+
+        <div id="metodo-recorrido">
+          <MetodoRecorrido encuesta={encuesta} />
+        </div>
 
         <h3 className="mt-8 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h3>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
