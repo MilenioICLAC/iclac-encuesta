@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { usePasoActivo } from '../nucleo/pasos'
 
@@ -134,9 +134,15 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
         const enControl = activo instanceof HTMLElement &&
           ['INPUT', 'SELECT', 'TEXTAREA'].includes(activo.tagName)
         if (!enControl) {
+          // **La posición se mide contra el contenedor, no con `offsetTop`.** `offsetTop` cuenta
+          // desde el ancestro posicionado, y cada escena es una `<section class="relative">`: los
+          // pasos de la escena 3 devolvían números chicos, la lista salía revuelta y el teclado se
+          // quedaba clavado en la primera parada (medido el 08-09-2026: el scroll no pasaba de
+          // 351 px por más flechas que se apretaran).
+          const arriba = capa.current.getBoundingClientRect().top - capa.current.scrollTop
           const paradas = [...capa.current.querySelectorAll<HTMLElement>(
-            '.portada-recorrido, .colchon-recorrido, .paso-recorrido, .cierre-recorrido',
-          )].map((el) => el.offsetTop).sort((a, b) => a - b)
+            '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido, .cierre-recorrido',
+          )].map((el) => Math.round(el.getBoundingClientRect().top - arriba)).sort((a, b) => a - b)
           const actual = capa.current.scrollTop
           const siguiente = sentido > 0
             ? paradas.find((y) => y > actual + 4)
@@ -212,7 +218,9 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
         {actual
           ? (
             <span className="shrink-0 font-display text-xs font-semibold tabular-nums text-gray-900">
-              {actual.indice === 0 ? 'Portada' : `Escena ${actual.indice} de ${numeradas}`}
+              {/* Índice 0 es la portada e índice negativo un respiro: ninguno de los dos es una
+                  escena, así que ninguno lleva número. */}
+              {actual.indice > 0 ? `Escena ${actual.indice} de ${numeradas}` : actual.indice === 0 ? 'Portada' : 'Pausa'}
             </span>
             )
           : <span className="truncate font-display text-sm font-semibold text-gray-900">{titulo}</span>}
@@ -239,9 +247,11 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
             avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
         <p aria-live="polite" className="sr-only">
           {actual
-            ? (actual.indice === 0
-                ? `Portada. ${actual.titulo}. El recorrido tiene ${numeradas} escenas.`
-                : `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`)
+            ? (actual.indice > 0
+                ? `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
+                : actual.indice === 0
+                  ? `Portada. ${actual.titulo}. El recorrido tiene ${numeradas} escenas.`
+                  : `Pausa. ${actual.titulo}`)
             : titulo}
         </p>
 
@@ -343,6 +353,70 @@ export function Portada ({ raiz, titulo, children }: {
 }
 
 /**
+ * Un respiro entre dos escenas: una frase sola, una pantalla, un gesto.
+ *
+ * **No es una escena y no se numera.** No afirma un hallazgo ni muestra una figura: cierra lo que
+ * se acaba de leer y abre la pregunta de lo que viene. Numerarlo diría que el recorrido tiene una
+ * escena más de las que tiene, y contarlo como paso de la escena anterior lo dejaría bajo un
+ * titular que ya no es el suyo.
+ *
+ * Es el mismo recurso que el puente de la escena 1 —la frase sola y centrada, sin nada más donde
+ * mirar—, pero entre escenas en vez de dentro de una. Ocupa una pantalla exacta y su sección es un
+ * punto del imán, así que se pasa con el mismo gesto que cualquier paso.
+ */
+export function Respiro ({ raiz, indice = -1, titulo, children }: {
+  raiz: HTMLElement | null
+  /**
+   * La clave con la que se registra en la barra. **Negativa**: la barra numera las escenas con los
+   * índices positivos, así que un respiro no entra en la cuenta. Va explícito para que dos
+   * respiros no se pisen entre sí.
+   */
+  indice?: number
+  /** La frase en texto plano, para el anuncio del lector de pantalla. */
+  titulo: string
+  children: React.ReactNode
+}) {
+  const seccion = useRef<HTMLElement | null>(null)
+  const alto = useAltoDe(raiz)
+  const informar = useContext(Registro)
+  const [enVista, setEnVista] = useState(false)
+
+  useEffect(() => {
+    const nodo = seccion.current
+    if (!nodo || typeof IntersectionObserver === 'undefined') return
+    const observador = new IntersectionObserver(
+      ([e]) => { setEnVista(e.isIntersecting) },
+      { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    )
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [raiz])
+
+  useEffect(() => {
+    informar?.({ indice, titulo, pasos: 1, activo: 0, enVista })
+  }, [informar, indice, titulo, enVista])
+
+  return (
+    // El alto de la capa va en la sección y no en la escena: el imán alinea la sección con el
+    // borde del contenedor, así que es ella la que tiene que medir la pantalla entera (ver
+    // `.respiro-recorrido` en `index.css`). La variable igual llega a la escena por herencia.
+    <section
+      ref={seccion}
+      className="respiro-recorrido relative"
+      style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+    >
+      <div className="escena sin-figura sticky flex flex-col items-center justify-center px-4 py-6 sm:px-6">
+        {/* El mismo cuerpo y el mismo gris que una frase de escena: es la misma voz, no un cartel.
+            El centrado y el ancho corto salen de `.escena.sin-figura` en `index.css`. */}
+        <p className="bloque-texto text-[19px] leading-[1.4] text-gray-800 sm:text-lg sm:leading-relaxed">
+          {children}
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/**
  * Una escena del recorrido: la figura arriba, el texto abajo, los dos quietos mientras el scroll
  * avanza sobre una pista invisible.
  *
@@ -414,6 +488,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   // todos hablan de algo que no está.
   const dibujo = figura(activo, reducido)
   const sinFigura = dibujo === null || dibujo === undefined
+  const bloqueFigura = useRef<HTMLDivElement | null>(null)
+  const [altoFigura, setAltoFigura] = useState(0)
   const encabezado = typeof titulo === 'function' ? titulo(activo) : titulo
 
 
@@ -435,6 +511,31 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   useEffect(() => {
     informar?.({ indice, titulo: encabezado, pasos: frases.length, activo, enVista })
   }, [informar, indice, encabezado, frases.length, activo, enVista])
+
+  // El alto mayor que la figura ya alcanzó. `useLayoutEffect` y no `useEffect`: se mide antes de
+  // pintar, así que el lector no llega a ver el bloque en su alto chico.
+  useLayoutEffect(() => {
+    const nodo = bloqueFigura.current
+    if (!nodo) return
+    const medido = Math.round(nodo.getBoundingClientRect().height)
+    setAltoFigura((previo) => (medido > previo ? medido : previo))
+  }, [activo, reducido, dibujo])
+
+  // Al cambiar el ancho, el máximo guardado deja de valer: la figura se reacomoda y el mínimo
+  // viejo abriría un hueco. Se mira el ancho y no el alto, que en el teléfono cambia solo por la
+  // barra del navegador yendo y viniendo.
+  useEffect(() => {
+    const nodo = escena.current
+    if (!nodo || typeof ResizeObserver === 'undefined') return
+    let previo = Math.round(nodo.getBoundingClientRect().width)
+    const observador = new ResizeObserver(() => {
+      const ahora = Math.round(nodo.getBoundingClientRect().width)
+      if (ahora !== previo) { previo = ahora; setAltoFigura(0) }
+    })
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [])
+
   const alto = useAltoDe(raiz)
   // El alto de la escena **no** es el de la pantalla: con la figura grande y el texto a 19 px mide
   // bastante más, y esa diferencia era exactamente lo que le sobraba al primer paso.
@@ -527,7 +628,16 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           </div>
         </div>
         {!sinFigura && (
-        <div className="bloque-figura mx-auto w-full max-w-2xl pt-3 sm:pt-4">
+        <div
+          ref={bloqueFigura}
+          className="bloque-figura mx-auto w-full max-w-2xl pt-3 sm:pt-4"
+          // **El bloque de la figura no se encoge entre pasos.** Con la escena centrada
+          // verticalmente, cualquier cambio de alto recoloca todo: el pie del experimento crece
+          // 21 px al aparecer la leyenda de pendientes, y eso movía el titular y la frase. El
+          // mínimo es el mayor alto que este bloque ya tuvo **en este ancho**, así que no hay
+          // ningún número escrito a mano y se rehace solo al rotar el teléfono.
+          style={altoFigura > 0 ? { minHeight: altoFigura } : undefined}
+        >
           {cabecera?.(activo)}
           {dibujo}
           {nota && <div className="mt-2">{typeof nota === 'function' ? nota(activo, reducido) : nota}</div>}

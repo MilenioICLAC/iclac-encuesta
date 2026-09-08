@@ -15,6 +15,39 @@ export const MEDIDAS = [
   { id: 'termometro-japon', etiqueta: 'Opinión sobre Japón', unidad: 'puntos', tipo: 'media', campo: 'p5_5_val' },
   { id: 'confianza-china', etiqueta: 'Mucha confianza en China', unidad: '%', tipo: 'proporcion', campo: 'p24', codigos: [1] },
   { id: 'confianza-eeuu', etiqueta: 'Mucha confianza en Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'p25', codigos: [1] },
+  // **La caja de arriba no es «confiar».** `p24` y `p25` tienen cuatro categorías ordenadas, y
+  // resumirlas en un número pide un corte. Con «mucha» sola, China pasa a Estados Unidos en 2025;
+  // con «mucha o algo», China venía arriba desde 2023. Las dos versiones se calculan y se
+  // publican, porque una afirmación cuyo signo depende de un umbral no declarado es exactamente
+  // el defecto que ya nos costó tres cifras de opinión circulando (hecho 6 del CLAUDE.md).
+  { id: 'confia-china', etiqueta: 'Confía en China (mucha o algo)', unidad: '%', tipo: 'proporcion', campo: 'p24', codigos: [1, 2] },
+  { id: 'confia-eeuu', etiqueta: 'Confía en Estados Unidos (mucha o algo)', unidad: '%', tipo: 'proporcion', campo: 'p25', codigos: [1, 2] },
+  // La comparación **dentro de la persona**: las dos preguntas las contesta el mismo encuestado,
+  // así que se puede decir a cuál de las dos potencias le tiene más confianza cada uno. No
+  // necesita umbral, que es lo que la hace la medida más firme de la escena.
+  {
+    id: 'mas-confianza-china',
+    etiqueta: 'Confía más en China que en Estados Unidos',
+    unidad: '%',
+    tipo: 'proporcion',
+    valor: (c) => { const d = brechaConfianza(c); return d === null ? null : (d > 0 ? 100 : 0) },
+  },
+  {
+    id: 'mas-confianza-eeuu',
+    etiqueta: 'Confía más en Estados Unidos que en China',
+    unidad: '%',
+    tipo: 'proporcion',
+    valor: (c) => { const d = brechaConfianza(c); return d === null ? null : (d < 0 ? 100 : 0) },
+  },
+  // El empate importa tanto como los dos lados: la escena afirma que la ventaja de China crece
+  // **sacándole gente al empate**, y sin medirlo esa frase sería una lectura a ojo de la figura.
+  {
+    id: 'empate-confianza',
+    etiqueta: 'Les tiene la misma confianza a las dos potencias',
+    unidad: '%',
+    tipo: 'proporcion',
+    valor: (c) => { const d = brechaConfianza(c); return d === null ? null : (d === 0 ? 100 : 0) },
+  },
   { id: 'no-alineamiento', etiqueta: 'No alineamiento', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3, 4] },
   { id: 'pro-china', etiqueta: 'Prefiere alinearse con China', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [1] },
   { id: 'pro-eeuu', etiqueta: 'Prefiere alinearse con Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [2] },
@@ -32,7 +65,28 @@ export const BRECHAS = [
   // La escena 1 afirma además que un tercer país encabeza la serie. Es la misma clase de
   // afirmación y se contrasta igual, en vez de quedar como la única del tramo sin prueba.
   { id: 'brecha-japon-china', etiqueta: 'Opinión sobre Japón menos opinión sobre China', unidad: 'puntos', campos: ['p5_5_val', 'p5_1_val'] },
+  // La misma idea sobre una escala ordinal de cuatro categorías: cuántos escalones de confianza
+  // separan a China de Estados Unidos **dentro de cada persona**. La unidad es «escalones» y no
+  // porcentaje: no se publica como cifra en el recorrido, sirve para probar que el balance de una
+  // oleada se inclina hacia un lado y no es el reparto que cabría esperar del azar.
+  { id: 'brecha-confianza', etiqueta: 'Confianza en China menos confianza en Estados Unidos', unidad: 'escalones', valor: brechaConfianza },
 ]
+
+/**
+ * La escala de `p24` y `p25`, de menos a más, con la distancia entre escalones dada por igual.
+ *
+ * **Los códigos no están ordenados**: 1 es «Mucha», 3 es «Poca» y 99 es «Ninguna», así que restar
+ * los códigos crudos daría cualquier cosa. Es el mismo cuidado del hecho 7: los centinelas se
+ * reconocen por la etiqueta y no por el número.
+ */
+const ESCALON = { 99: 0, 3: 1, 2: 2, 1: 3 }
+
+/** Cuántos escalones de confianza separan a China de Estados Unidos en una misma persona. */
+function brechaConfianza (c) {
+  const a = ESCALON[Number(c.p24)]
+  const b = ESCALON[Number(c.p25)]
+  return a === undefined || b === undefined ? null : a - b
+}
 
 /**
  * Comparaciones **entre grupos dentro de una misma oleada**, además de entre oleadas.
@@ -136,12 +190,28 @@ function pendiente (xy, { rondas, semilla }) {
   }
 }
 
+/**
+ * El valor de una medida en un caso, o `null` si esa persona no contesta.
+ *
+ * **La medida puede traer su propia función** (`valor`) en vez de una columna: hace falta cuando el
+ * número no está en la base y se arma con dos preguntas, como la confianza comparada entre las dos
+ * potencias. Con columna, `proporcion` cuenta 100 o 0 según si el código está en la lista.
+ */
+function valorDe (medida) {
+  if (typeof medida.valor === 'function') return medida.valor
+  return (c) => {
+    const v = numero(c[medida.campo])
+    if (v === null) return null
+    return medida.tipo === 'proporcion' ? (medida.codigos.includes(v) ? 100 : 0) : v
+  }
+}
+
 function valoresDe (casos, medida) {
   const salida = []
+  const valor = valorDe(medida)
   for (const c of casos) {
-    const v = numero(c[medida.campo])
-    if (v === null) continue
-    salida.push(medida.tipo === 'proporcion' ? (medida.codigos.includes(v) ? 100 : 0) : v)
+    const v = valor(c)
+    if (v !== null) salida.push(v)
   }
   return salida
 }
@@ -162,14 +232,7 @@ function comparar (casosA, casosB, medida, opciones) {
     ic: bootstrap(a, b, opciones),
     p: permutacion(a, b, opciones),
     // Con la composición de edad y sexo fija: dice si el cambio es de opinión o de quién contestó.
-    estandarizada: estandarizada(
-      casosA, casosB,
-      (c) => {
-        const v = numero(c[medida.campo])
-        return v === null ? null : (medida.tipo === 'proporcion' ? (medida.codigos.includes(v) ? 100 : 0) : v)
-      },
-      celda,
-    ),
+    estandarizada: estandarizada(casosA, casosB, valorDe(medida), celda),
   }
 }
 
@@ -205,9 +268,14 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     etiqueta: brecha.etiqueta,
     unidad: brecha.unidad,
     porOla: olas.map((ola) => {
-      const pares = de(ola)
-        .filter((c) => numero(c[brecha.campos[0]]) !== null && numero(c[brecha.campos[1]]) !== null)
-        .map((c) => c[brecha.campos[0]] - c[brecha.campos[1]])
+      // La resta puede venir de dos columnas numéricas o de una función, cuando la escala hay que
+      // recodificarla antes de restar (ver `brechaConfianza`).
+      const diferencia = typeof brecha.valor === 'function'
+        ? brecha.valor
+        : (c) => (numero(c[brecha.campos[0]]) === null || numero(c[brecha.campos[1]]) === null
+            ? null
+            : c[brecha.campos[0]] - c[brecha.campos[1]])
+      const pares = de(ola).map(diferencia).filter((v) => v !== null)
       if (pares.length < 30) return null
       return {
         ola,

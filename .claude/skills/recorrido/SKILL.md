@@ -172,6 +172,15 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   `PageUp`/`PageDown` y las flechas llevando al punto de anclaje siguiente. **No es
   scroll-jacking:** la rueda y el gesto táctil siguen intactos; lo que se corrige es que quien pide
   «el siguiente» reciba el siguiente y no una cantidad de píxeles.
+
+  **Y la lista de anclajes se mide contra el contenedor, no con `offsetTop`.** `offsetTop` cuenta
+  desde el ancestro posicionado, y cada escena es una `<section class="relative">`: los pasos de
+  cada escena devolvían su posición **dentro de su escena**, la lista salía revuelta y el teclado
+  se quedaba clavado en el primer anclaje (medido el 08-09-2026 con Playwright: el scroll no pasaba
+  de 351 px por más flechas que se apretaran). Va
+  `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`. **El defecto
+  era invisible mirando**, porque con rueda todo seguía funcionando: apareció al medir el scroll
+  después de cada tecla.
 - **El orden de dibujo es parte del diseño.** La recta de la regresión se dibujaba después de los
   puntos y le pasaba por encima al rótulo del punto marcado; el halo no servía, porque quedaba
   debajo de la línea. Va primero la recta, después los puntos y sus rótulos.
@@ -197,11 +206,25 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   ya está hueco y no hay nada que anunciar. El truco del trazo que viaja: `dasharray` igual al
   largo y `dashoffset` de +L a −L. Y las líneas van **largas y cortas alternadas**: ocho iguales se
   leen como un engranaje, no como algo que sale.
-- **Un puente entre dos historias es un paso sin figura: la frase sola, centrada en los dos ejes.**
-  La escena 1 pasa del termómetro a la ideología, y en medio hay una pausa. Costó tres intentos y
-  los dos primeros enseñan algo:
+- **Si la figura cambia, cambió la escena, y en medio va una pausa.** Es la regla que salió del
+  08-09-2026 y ordena todo el recorrido: seis escenas y tres pausas, en vez de dos escenas largas
+  que mutaban de figura a mitad de camino.
 
-  1. **Con la nube de ideología ya presente:** la frase hablaba de niveles socioeconómicos y
+  Antes había un paso sin figura dentro de la escena del termómetro, y funcionaba a medias: la
+  barra lo anunciaba como «paso 5 de 9», o sea el lector no estaba en una pausa sino a mitad de una
+  escena, y al entrar el bloque de texto brincaba 187 px porque la figura desaparecía. La escena de
+  confianza tenía el defecto opuesto y peor: cambiaba de figura **en el mismo paso** en que cambiaba
+  la frase, sin pausa ninguna, y el bloque se recolocaba de golpe (la figura pasaba de 412 px a 291
+  y el titular bajaba 60).
+
+  Un cambio de figura es un cambio de pregunta. Se cierra la escena, va una pantalla de pausa, y la
+  figura nueva ya está armada cuando empieza la que sigue. **Lo que hace que el cambio se sienta
+  ganado por el scroll es la pausa**, no una animación: atarlo al progreso del dedo pediría medir el
+  scroll en cada cuadro, que es justo lo que la mecánica de acá evita.
+
+  La forma de la pausa costó tres intentos, y los dos primeros enseñan algo:
+
+  1. **Con la figura que viene ya presente:** la frase hablaba de niveles socioeconómicos y
      macrozonas mientras se veía otra cosa. Es el defecto del pie que miente, del lado de la figura.
   2. **Con su propia figura** —un punto por grupo, una fila por corte, sobre el eje del cambio—:
      catorce puntos en tres rieles, ninguno rotulado, imposible de leer en un paso que dura un
@@ -209,10 +232,42 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   3. **Sin figura.** Lo que hace de pausa es que no haya nada más donde mirar. El dato que respalda
      la frase vive en «Sobre los datos», que es donde se audita.
 
-  **Un paso sin figura no lleva nada de la figura**: ni pie, ni leyenda, ni año grande, ni el enlace
-  al tablero. Todos hablarían de algo que no está. Y **el titular tampoco cambia todavía**: en el
-  puente sigue el del tramo anterior, porque el de la segunda mitad («la posición política no
-  ordena…») es la respuesta a la pregunta que el paso acaba de hacer.
+  Y una pausa **no lleva nada de la escena**: ni titular, ni pie, ni leyenda, ni año grande, ni el
+  enlace al tablero. Todos hablarían de algo que no está.
+- **El bloque de la figura no se encoge entre pasos.** La escena está centrada verticalmente, así
+  que cualquier cambio de alto recoloca el titular y la frase: el pie del experimento crece 21 px al
+  aparecer la leyenda de pendientes, y eso movía todo. `Escena` guarda el mayor alto que el bloque
+  ya tuvo **en ese ancho** y lo aplica como mínimo, medido con `useLayoutEffect` para que el lector
+  no alcance a ver el alto chico. Se reinicia cuando cambia el ancho, no el alto: en el teléfono el
+  alto cambia solo porque la barra del navegador va y viene. **Solo evita que se encoja**: la
+  primera vez que un paso agranda el bloque, ese paso todavía mueve las cosas una vez.
+- **Una escala con polaridad se dibuja divergente, y así no hay que elegir umbral.** Las cuatro
+  respuestas de confianza van a los dos lados de un cero común, en vez de una serie con la caja de
+  arriba: con «mucha» sola China pasa a Estados Unidos en 2025, con «mucha o algo» venía arriba
+  desde 2023 (ver `CLAUDE.md`, «Una escala ordinal no se resume sin declarar el corte»). Tres
+  detalles que costaron su medición:
+
+  1. **El número del segmento cambia de color según el relleno que tiene detrás.** Blanco sobre el
+     naranjo claro da 2:1, muy por debajo del piso de 4,5:1, y el número de «Poca» quedaba
+     ilegible mientras el de al lado se leía bien. Se decide con la luminancia del relleno, no a
+     ojo, así que un cambio de paleta no lo vuelve a romper.
+  2. **La categoría neutra va a caballo del cero**, mitad y mitad: es la convención de las escalas
+     con punto medio y evita inventarle un lado a quien no se inclina.
+  3. **El nombre de la fila no se apaga con la fila.** Con el nombre puesto y la barra vacía, la
+     figura dice «esto viene» antes de que el paso lo cuente, que es lo mismo que ya hacía el
+     panel vacío de `Serie`.
+- **Entre dos escenas va un respiro, y no es una escena.** Es el mismo recurso que el puente —una
+  frase sola, centrada, sin nada más donde mirar— pero entre escenas en vez de dentro de una:
+  cierra lo que se leyó y formula la pregunta de lo que viene («entonces la gente evalúa mejor a
+  China, ¿pero confía en ella?»). **No se numera**: contarlo como escena diría que el recorrido
+  tiene un hallazgo más de los que tiene, y meterlo como último paso de la escena anterior lo
+  dejaría bajo un titular que ya no es el suyo. La barra lo anuncia como «Pausa».
+
+  **Su sección mide la pantalla entera, barra incluida, y eso no es lo mismo que el alto de una
+  escena.** El imán alinea el borde de arriba de la sección con el borde del contenedor, y la barra
+  tapa los primeros 43 px: con el alto de una escena (pantalla menos barra), los últimos 43 px
+  mostraban el titular de la escena siguiente, que es exactamente lo que una pausa no puede dejar
+  ver. La escena de adentro sigue pegada bajo la barra y ocupa el hueco que queda.
 - **Contar el método es contar un hallazgo, cuando el método *es* el hallazgo.** Los cinco pasos
   del experimento muestran la recta que publica el monitor, marcan el punto de treinta personas que
   la sostiene, lo retiran y la recta se endereza. Una línea plana no tiene épica; verla enderezarse

@@ -157,6 +157,63 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
     expect(eeuu.diferencia).toBeGreaterThan(0)
   })
 
+  it('en China se corre la escala entera, no solo la caja de arriba', () => {
+    // La escena 2 muestra las cuatro categorías, así que lo que afirma no es «sube "mucha"» sino
+    // que el reparto se desplaza: el lado que confía crece más que la sola punta de la escala.
+    const arriba = entre('confianza-china', 2023, 2025)
+    const confia = entre('confia-china', 2023, 2025)
+    expect(confia.p).toBeLessThan(0.01)
+    expect(confia.ic[0]).toBeGreaterThan(0)
+    expect(confia.diferencia).toBeGreaterThan(arriba.diferencia)
+  })
+
+  it('Estados Unidos sube en 2024 y vuelve en 2025', () => {
+    // La frase de la escena decía «no pierde confianza». Con «mucha o algo» eso es falso en el
+    // último tramo: pierde 5,1 puntos por encima del ruido. Lo que sí se sostiene es que en el
+    // balance de la serie no se distingue de cero.
+    const sube = entre('confia-eeuu', 2023, 2024)
+    expect(sube.diferencia).toBeGreaterThan(0)
+    expect(sube.p).toBeLessThan(0.05)
+    const vuelve = entre('confia-eeuu', 2024, 2025)
+    expect(vuelve.diferencia).toBeLessThan(0)
+    expect(vuelve.p).toBeLessThan(0.05)
+    const serie = entre('confia-eeuu', 2023, 2025)
+    expect(serie.p).toBeGreaterThan(0.05)
+    expect(serie.ic[0]).toBeLessThan(0)
+    expect(serie.ic[1]).toBeGreaterThan(0)
+  })
+
+  it('persona a persona, la ventaja de China crece a costa del empate y no de Estados Unidos', () => {
+    const china = entre('mas-confianza-china', 2023, 2025)
+    expect(china.diferencia).toBeGreaterThan(0)
+    expect(china.p).toBeLessThan(0.01)
+    expect(china.ic[0]).toBeGreaterThan(0)
+
+    const empate = entre('empate-confianza', 2023, 2025)
+    expect(empate.diferencia).toBeLessThan(0)
+    expect(empate.p).toBeLessThan(0.01)
+    expect(empate.ic[1]).toBeLessThan(0)
+
+    // Y la caída del otro lado **no** pasa el contraste: por eso la frase dice que la ventaja sale
+    // del empate. El día que Estados Unidos sí pierda por encima del ruido, esta prueba falla y la
+    // frase se corrige en vez de quedar publicada.
+    const eeuu = entre('mas-confianza-eeuu', 2023, 2025)
+    expect(eeuu.p).toBeGreaterThan(0.05)
+    expect(eeuu.ic[1]).toBeGreaterThan(0)
+  })
+
+  it('en la última oleada el balance de confianza se inclina hacia China', () => {
+    // Dentro de la misma persona, igual que la brecha del termómetro: es lo que permite decir «le
+    // confía más a China» sin elegir un umbral en una escala de cuatro categorías.
+    const brecha = calculado.brechas.find((b) => b.id === 'brecha-confianza')
+    const en = (ola) => brecha.porOla.find((x) => x.ola === ola)
+    expect(en(2025).diferencia).toBeGreaterThan(0)
+    expect(en(2025).ic[0]).toBeGreaterThan(0)
+    expect(en(2025).p).toBeLessThan(0.01)
+    // En 2024 el balance no se distingue de cero: el vuelco es del último año.
+    expect(en(2024).p).toBeGreaterThan(0.05)
+  })
+
   it('el no alineamiento cae, y lo que pierde se va a China', () => {
     const noAlineado = entre('no-alineamiento', 2023, 2025)
     expect(noAlineado.diferencia).toBeLessThan(0)

@@ -299,6 +299,43 @@ grupos son treinta filas que nadie lee, así que se elige una lectura y se dice 
 
 ---
 
+## Una escala ordinal no se resume sin declarar el corte
+
+Decidido e implementado el 08-09-2026, sobre `p24` y `p25` (confianza en la capacidad de China y de
+Estados Unidos para lidiar con los problemas de América Latina). Vale para cualquier pregunta de
+categorías ordenadas, que en este instrumento son varias.
+
+La pregunta no da un número: da cuatro categorías ordenadas por persona (ninguna, poca, algo,
+mucha). Para dibujar una serie hay que cortarla, y **el corte cambia la conclusión**:
+
+| | China 2023 → 2025 | EE. UU. 2023 → 2025 | ¿China arriba? |
+|---|---|---|---|
+| Solo «mucha» | 10,8 → 22,7 | 13,3 → 17,1 | recién en 2025 |
+| «Mucha» + «algo» | 53,0 → 71,8 | 47,9 → 50,7 | ya en 2023 |
+
+**El recorrido publicaba «en 2025 la pasa por primera vez», que es cierto solo con la caja de
+arriba.** Es la misma clase de defecto que dejó tres cifras de opinión sobre China circulando
+(hecho 6): una afirmación cuyo signo depende de un umbral que la figura no declara.
+
+Tres reglas que salen de ahí:
+
+- **Si la figura resume, declara el corte en el pie.** Y si la conclusión cambia con el corte, lo
+  dice: el pie de la escena 2 nombra las dos versiones.
+- **Mejor que elegir es no elegir.** La escena muestra las cuatro categorías a los dos lados de un
+  cero común (`src/componentes/Divergente.tsx`), y los colores están amarrados a la etiqueta en
+  `SEMANTICOS`, así que el tablero pinta la misma pregunta igual sin que nadie repita un color.
+- **Y donde dos preguntas las contesta la misma persona, la comparación va dentro del caso.**
+  `p24` y `p25` se comparan por encuestado, en escalones de la escala: quienes confían más en China
+  pasan de 27,1 % a 39,7 % (p = 0,0001) mientras el empate cae 9,3 puntos (p = 0,0003) y Estados
+  Unidos no se mueve por encima del ruido (−3,2, p = 0,10). **No necesita umbral**, que es lo que la
+  hace la medida más firme de la escena. Y los códigos hay que recodificarlos antes de restar: 1 es
+  «Mucha», 3 es «Poca» y 99 es «Ninguna», así que restar los códigos crudos daría cualquier cosa.
+
+Lo que el corte **no** cambia acá: en las dos versiones la confianza en China sube por encima del
+ruido y la de Estados Unidos casi no se mueve en la serie. Con «mucha o algo» además se ve que
+Estados Unidos sube en 2024 y **vuelve** en 2025 (−5,1 puntos, p = 0,03), que con la caja de arriba
+no se veía.
+
 ## Cuándo un cambio entre oleadas es un cambio
 
 Decidido e implementado el 07-09-2026, después de que el cliente preguntara si las diferencias que

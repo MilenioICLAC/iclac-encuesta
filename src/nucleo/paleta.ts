@@ -83,6 +83,20 @@ export const SEMANTICOS: Record<string, string> = {
   'A favor de EE. UU.': '#2A6FD6',
   'Mantener distancia de ambos': '#8A8A85',
   'Relacionarse con ambos': '#00998C',
+  // Las cuatro de `p24` y `p25`, que son una escala con polaridad: dos tonos que se alejan del
+  // cero, cada uno oscureciéndose hacia su extremo. **No es la rampa de orden**, porque acá el
+  // color tiene que decir de qué lado está la respuesta y no solo en qué posición.
+  //
+  // Validado con el validador de `dataviz`: el par que se toca en el cero («Poca» contra «Algo»)
+  // separa ΔE 8,5 bajo protanopía y 20,2 con visión normal, y los extremos 26,9. La única
+  // objeción del validador es el piso de croma de `#00776E`, que es `brand-dark`, o sea la marca:
+  // el piso existe para que un color no se lea como gris **al lado de otros colores de
+  // identidad**, y acá está al lado de un óxido, que no se confunde con nada. El aviso de
+  // contraste contra el fondo se cubre con los rótulos, que la figura escribe siempre.
+  Mucha: '#00776E',
+  Algo: '#39B5A8',
+  Poca: '#E9A26A',
+  Ninguna: '#A8431A',
 }
 
 /** Gris de reserva, para lo que no calza en ningún conjunto. */

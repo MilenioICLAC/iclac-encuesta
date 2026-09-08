@@ -54,6 +54,25 @@ describe('la paleta', () => {
       'A favor de EE. UU.',
       'Mantener distancia de ambos',
       'Relacionarse con ambos',
+      'Mucha',
+      'Algo',
+      'Poca',
+      'Ninguna',
     ])
+  })
+
+  it('pinta la escala de confianza con dos tonos que se alejan del cero', () => {
+    // La polaridad tiene que verse en el color: «Poca» y «Ninguna» de un lado, «Algo» y «Mucha»
+    // del otro, y el extremo más oscuro que el interior. Con una sola rampa, el lector tiene que
+    // leer la leyenda para saber de qué lado está cada segmento.
+    const luz = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    expect(luz(SEMANTICOS.Mucha)).toBeLessThan(luz(SEMANTICOS.Algo))
+    expect(luz(SEMANTICOS.Ninguna)).toBeLessThan(luz(SEMANTICOS.Poca))
+    // Y los dos lados no comparten tono: el canal rojo separa el óxido del verde azulado.
+    const rojo = (hex: string) => parseInt(hex.slice(1, 3), 16)
+    expect(rojo(SEMANTICOS.Poca)).toBeGreaterThan(rojo(SEMANTICOS.Algo) + 80)
   })
 })
