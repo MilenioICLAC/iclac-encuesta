@@ -1,7 +1,12 @@
 <title>Laboratorio del recorrido</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700&display=swap">
+<!-- Los mismos dos pesos que carga la app (`@fontsource/raleway/latin-400` y `600` en
+     `src/index.css`). Pedir 500/600/700 dejaba a Raleway **sin el 400**, así que todo lo que
+     pidiera peso normal en `--display` caía a Trebuchet MS y el laboratorio se veía en otra
+     tipografía que la app. Es el mismo defecto que el `CLAUDE.md` ya tiene escrito: una
+     familia declarada no es una familia cargada, y acá era un peso declarado y no cargado. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
 <style>
   :root {
     --papel: #FBFAF7;
@@ -85,7 +90,7 @@
   header h1 {
     font-family: var(--display);
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: -0.01em;
     margin: 0;
     text-wrap: balance;
@@ -269,101 +274,125 @@
     #visor { height: 76svh; }
   }
 
+  /* ------------------------------------------------------------------------------------
+     La escena, con las medidas de la app y no con las suyas.
+
+     Todo lo de acá abajo sale del código (`src/index.css`, `CapaRecorrido.tsx`), medido, no
+     estimado. Antes eran parámetros y por eso el laboratorio podía verse distinto de la app sin
+     que nada avisara: arrancaba en una columna y con la figura arriba, dos cosas que la app no
+     hace en ninguna escena.
+     ------------------------------------------------------------------------------------ */
+
   .escena {
     position: sticky;
     top: 0;
     min-height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: var(--aire, 12px);
-    padding: 16px 14px 18px;
+    justify-content: center;   /* .escena { justify-center } */
+    gap: 24px;                 /* gap-6 */
+    padding: 24px 16px;        /* pt-6 pb-6 px-4 */
+    text-align: left;
   }
 
-  /* El encabezado y las frases son la misma voz, así que viajan juntos.
-     En una columna el envoltorio no tiene que existir: con `display: contents` sus hijos siguen
-     siendo elementos del flex de la escena y las reglas de `order` valen igual que antes. */
+  /* px-4 -> sm:px-6 en 640 px. El laboratorio marca los anchos con clases que pone JavaScript,
+     porque el visor es un contenedor y no la ventana: una media query mediría lo que no es. */
+  .escena.ancho-sm { padding-inline: 24px; }
+
+  /* En una columna cada bloque va centrado y acotado: `mx-auto w-full max-w-2xl`. Sin el tope,
+     en 1512 px la frase medía 1118 px de ancho y dejaba de leerse como una columna. */
+  .bloque-encabezado, .bloque-texto, .bloque-figura {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 672px;
+  }
+  .bloque-texto { padding-top: 8px; }
+  .escena.ancho-sm .bloque-texto { padding-top: 12px; }
+  .bloque-figura { padding-top: 12px; }
+  .escena.ancho-sm .bloque-figura { padding-top: 16px; }
+
   .columna-relato { display: contents; }
 
-  /* El tamaño viene de `--tipo-base`, que pone `pintarEscena`. Escrito en el atributo `style` le
-     ganaba a la escala de escritorio y la frase se quedaba en el tamaño del teléfono. */
-  .bloque-texto {
-    font-size: var(--tipo-base, 15px);
+  /* El orden del DOM es el de la app: titular, bajada, frase, figura. No hay `order` que lo
+     invierta porque la app no ofrece invertirlo. */
+  .bloque-encabezado { order: 1; }
+  .bloque-texto { order: 2; }
+  .bloque-figura { order: 3; }
+
+  .rotulo-escena {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 16px;           /* text-base */
     line-height: 1.5;
+    margin: 0;
+    text-wrap: balance;
+    color: #111827;            /* text-gray-900 */
+  }
+  .escena.ancho-sm .rotulo-escena { font-size: 18px; }  /* sm:text-lg */
+
+  .bajada-escena {
+    margin: 4px 0 0;           /* mt-1 */
+    font-size: 13px;
+    line-height: 1.375;        /* leading-snug */
+    color: #6b7280;            /* text-gray-500 */
   }
 
-  /* En escritorio, el relato a un lado y la figura al otro.
-     La clase la pone JavaScript midiendo el ancho del **visor**, no una media query: dentro del
-     tablero el visor mide media pantalla, así que la media query mentiría justo donde importa.
+  .bloque-texto {
+    font-size: 19px;
+    line-height: 1.4;
+    color: #1f2937;            /* text-gray-800 */
+  }
+  .escena.ancho-sm .bloque-texto { font-size: 18px; line-height: 1.625; }
 
-     Una sola fila, con las dos columnas centradas entre sí. Con el relato repartido en dos filas
-     y la figura ocupando las dos, la altura de la figura empujaba la segunda fila hacia abajo y
-     abría 200 px entre el titular y su propia frase. */
+  /* ---- Dos columnas, desde 900 px de visor -------------------------------------------
+     Misma geometría que `.escena.en-columnas` en la app. La clase la pone JavaScript midiendo
+     el **visor**: dentro de una página el visor no es la ventana y la media query mentiría. */
   .escena.dos-columnas {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
     align-content: center;
     align-items: center;
-    column-gap: var(--aire-columnas, 44px);
-    max-width: 1180px;
+    column-gap: 44px;          /* 2.75rem */
+    max-width: 1184px;         /* 74rem */
     margin-inline: auto;
-    padding: 24px 28px;
+    padding-inline: 32px;      /* 2rem */
     width: 100%;
   }
 
-  /* El relato ocupa el alto de la fila, que lo fija la figura. Dentro, el titular queda pegado
-     arriba y la frase se centra en lo que sobra: `margin-block: auto` reparte el hueco a los dos
-     lados de la frase sin mover el titular. */
+  /* El relato ocupa el alto de la fila, que la fija la figura. El titular queda pegado arriba y
+     la frase se centra en lo que sobra. Hacer que la figura ocupe dos filas parece equivalente y
+     no lo es: su altura empuja la segunda fila y abre 200 px entre el titular y su frase. */
   .escena.dos-columnas > .columna-relato {
     display: flex;
     flex-direction: column;
-    gap: var(--aire, 12px);
+    gap: 24px;
     grid-column: 1;
     align-self: stretch;
   }
+  .escena.dos-columnas > .columna-relato > .bloque-texto { margin-block: auto; padding-top: 0; }
+  .escena.dos-columnas > .bloque-figura { grid-column: 2; padding-top: 0; }
+  .escena.dos-columnas .bloque-encabezado,
+  .escena.dos-columnas .bloque-texto,
+  .escena.dos-columnas .bloque-figura { max-width: none; }
 
-  .escena.dos-columnas > .columna-relato > .bloque-texto { margin-block: auto; }
+  .escena.dos-columnas .rotulo-escena { font-size: 27px; line-height: 1.2; }
+  .escena.dos-columnas .bajada-escena { font-size: 22px; line-height: 1.35; }
+  .escena.dos-columnas .bloque-texto { font-size: 34px; line-height: 1.3; }
 
-  /* En escritorio hay ancho y alto de sobra, así que el texto crece. El factor es un parámetro:
-     una columna de 500 px aguanta bastante más que una pantalla de teléfono, pero pasado cierto
-     punto el titular se come tres líneas y deja de ser un titular. */
-  .escena.dos-columnas .rotulo-escena { font-size: calc(15px * var(--escala-escritorio, 1)); }
-  .escena.dos-columnas .bajada-escena { font-size: calc(12.5px * var(--escala-escritorio, 1)); }
-  .escena.dos-columnas .bloque-texto { font-size: calc(var(--tipo-base, 19px) * var(--escala-escritorio, 1)); }
+  /* Una escena sin figura (el respiro) centra su texto y se acota más. */
+  .escena.sin-figura .bloque-texto { text-align: center; max-width: 544px; }
+  .escena.sin-figura .bloque-encabezado { display: none; }
+  .escena.dos-columnas.sin-figura .bloque-texto { max-width: 736px; }
 
-  .escena.dos-columnas > .bloque-figura { grid-column: 2; }
-  .escena.dos-columnas > .bloque-texto { padding-top: 0; }
-
-  /* La figura se lleva la columna ancha esté de qué lado esté: si no, invertir el orden le quita
-     76 px de lienzo y las filas de países se aprietan. */
-  .escena.dos-columnas.figura-izquierda { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
-  .escena.dos-columnas.figura-izquierda > .columna-relato { grid-column: 2; }
-  .escena.dos-columnas.figura-izquierda > .bloque-figura { grid-column: 1; }
-
-  /* El orden se cambia con `order` y no invirtiendo el eje: con `column-reverse` el título de la
-     escena se iría al pie, y el título es lo primero que se lee en las dos disposiciones. */
-  .escena.figura-arriba { justify-content: flex-start; }
-  .bloque-figura { order: 1; }
-  .bloque-texto { order: 2; }
-  .escena.invertida .bloque-texto { order: 1; }
-  .escena.invertida .bloque-figura { order: 2; }
-
-  .rotulo-escena {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: 15px;
-    line-height: 1.25;
-    margin: 0;
-    text-wrap: balance;
-    order: -1;
+  /* La leyenda del reparto: 11 px y gris 600, las medidas que usa `Divergente` en la app. */
+  ul.leyenda-reparto {
+    list-style: none; margin: 8px 0 0; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 4px 12px;
+    font-size: 11px; color: #4b5563;
   }
-
-  .bajada-escena {
-    margin: 3px 0 0;
-    font-size: 12.5px;
-    line-height: 1.35;
-    color: color-mix(in srgb, var(--escena-tinta, #17211F) 72%, transparent);
-    order: -1;
+  ul.leyenda-reparto i {
+    display: inline-block; width: 14px; height: 10px; border-radius: 2px;
+    margin-right: 5px; vertical-align: -1px;
   }
 
   .bloque-figura, .bloque-texto { position: relative; }
@@ -413,7 +442,7 @@
   }
 
   .frase { transition: opacity var(--dur, 420ms) ease, color var(--dur, 420ms) ease; }
-  .frase b { font-weight: 700; }
+  .frase b { font-weight: 600; }
   .frase.apagada-flujo { color: color-mix(in srgb, var(--escena-tinta, #17211F) 26%, transparent); }
   .frase.fuera { position: absolute; inset-inline: 0; top: 0; opacity: 0; pointer-events: none; }
 
@@ -529,7 +558,7 @@
   .sello {
     margin-left: auto;
     font-family: var(--display);
-    font-weight: 700;
+    font-weight: 600;
     font-size: 34px;
     line-height: 0.85;
     letter-spacing: -0.02em;
@@ -743,7 +772,7 @@
     background: transparent;
     color: var(--tinta);
     border-color: var(--linea);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .aviso { font-size: 12.5px; color: var(--tinta-suave); }
@@ -890,6 +919,7 @@
   const ESCENAS = [
     {
       nombre: '1 · El termómetro',
+      id: 'termometro',
       tipo: 'filas',
       escala: { min: 55, max: 75, paso: 5 },
       escalaCero: { min: 0, max: 100, paso: 25 },
@@ -959,153 +989,8 @@
       }],
     },
     {
-      nombre: '2 · La confianza',
-      tipo: 'series',
-      escala: { min: 0, max: 25, paso: 5 },
-      escalaCero: { min: 0, max: 100, paso: 25 },
-      datos: [
-        { clave: 'China', etiqueta: 'Mucha confianza en China', v: [10.8, 13.5, 22.7], tono: 'china' },
-        { clave: 'EE. UU.', etiqueta: 'Mucha confianza en EE. UU.', v: [13.3, 16.8, 17.1], tono: 'eeuu' }
-      ],
-      encendido: [
-        (c) => c === 'China',
-        () => true
-      ],
-      // Las frases tal como están hoy en la app. Son de 183 y 227 caracteres contra los ~110 de
-      // la escena 1: es exactamente el guion largo que falta cortar.
-      textos: {
-        titulo: 'La confianza en China crece, y la brecha se abre por un lado solo',
-        bajada: '',
-        eje: 'Porcentaje de 0 a 100',
-        pie: 'Porcentaje que responde «mucha», sobre quienes contestaron: 664, 668 y 1.227 casos.',
-        frases: [
-          'Quienes dicen tener <b>mucha confianza</b> en la capacidad de China para manejar responsablemente los problemas de América Latina pasan de 10,8 % a 22,7 %.',
-          'La confianza en Estados Unidos también sube, de 13,3 % a 17,1 %, pero 3,9 puntos contra los 11,9 de China: <b>no es que Estados Unidos pierda confianza, es que China crece mucho más rápido</b>, y en 2025 la pasa por primera vez.'
-        ]
-      },
-      // Un corte para probar: el encabezado en dos niveles de la escena 1, la pregunta larga
-      // bajada al pie, y tres pasos de un dato cada uno en vez de dos párrafos.
-      alternativas: [{
-        rotulo: 'Probar el guion corto',
-        titulo: 'Cuánta gente dice tener «mucha» confianza en cada potencia',
-        bajada: 'Porcentaje por oleada, sobre quienes contestaron.',
-        eje: 'Porcentaje que responde «mucha»',
-        pie: 'Porcentaje que responde «mucha», sobre quienes contestaron: 664, 668 y 1.227 casos.',
-        frases: [
-          '<b>La confianza en China se duplica</b>: de 10,8 % a 22,7 %.',
-          'Estados Unidos <b>también sube, pero 3,9 puntos contra 11,9</b>.',
-          '<b>En 2025 China lo pasa por primera vez</b>: la brecha se abre por un lado solo.'
-        ]
-      }],
-      contrastes: [
-        'Confianza en China 2023→2024: +2,6 pp [−0,8; +6,1] · p = 0,15 · dentro del ruido',
-        'Confianza en China 2024→2025: +9,3 pp [+5,7; +12,7] · p < 0,001',
-        'Confianza en China 2023→2025: +11,9 pp [+8,6; +15,2] · p < 0,001',
-        'Confianza en EE. UU. 2023→2025: +3,9 pp [+0,4; +7,1] · p = 0,03 · sube, pero un tercio de lo de China',
-        'Ojo: el alza de China **no** es pareja entre oleadas. Casi toda ocurre en 2025.'
-      ]
-    },
-    {
-      nombre: '3 · El no alineamiento',
-      tipo: 'series',
-      escala: { min: 0, max: 80, paso: 20 },
-      escalaCero: { min: 0, max: 100, paso: 25 },
-      datos: [
-        { clave: 'No alineado', etiqueta: 'No alineamiento', v: [76.8, 75.1, 71.8], tono: 'neutro' },
-        { clave: 'Pro China', etiqueta: 'A favor de China', v: [8.3, 8.8, 16.3], tono: 'china' },
-        { clave: 'Pro EE. UU.', etiqueta: 'A favor de EE. UU.', v: [14.9, 16.0, 11.9], tono: 'eeuu' }
-      ],
-      encendido: [
-        (c) => c === 'No alineado',
-        () => true
-      ],
-      textos: {
-        titulo: 'La mayoría no alineada se erosiona, y lo que pierde se va a China',
-        bajada: '',
-        eje: 'Porcentaje de 0 a 100',
-        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos.',
-        frases: [
-          'Sumando a quienes quieren relacionarse con ambas potencias y a quienes prefieren mantener distancia de las dos, <b>el no alineamiento cae de 76,8 % a 71,8 %</b>. Sigue siendo una mayoría amplia, pero se desgasta.',
-          'Lo interesante es la composición de la minoría que sí quiere elegir: preferir a China pasa de 8,3 % a 16,3 %, mientras preferir a Estados Unidos baja de 14,9 % a 11,9 %. <b>En 2025, por primera vez, hay más chilenos que quieren alinearse con China que con Estados Unidos.</b>'
-        ]
-      },
-      // Además de cortar, esta versión corrige «hay más chilenos»: la muestra no es
-      // probabilística y no habla por el país (hecho 2 del CLAUDE.md).
-      alternativas: [{
-        rotulo: 'Probar el guion corto',
-        titulo: 'Con qué potencia quieren alinearse las personas encuestadas',
-        bajada: 'Porcentaje por oleada, sobre quienes contestaron.',
-        eje: 'Porcentaje de cada preferencia',
-        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos.',
-        frases: [
-          '<b>El no alineamiento cae de 76,8 % a 71,8 %.</b> Sigue siendo mayoría amplia, pero se desgasta.',
-          'De la minoría que sí elige, <b>China sube de 8,3 % a 16,3 %</b> y Estados Unidos baja de 14,9 % a 11,9 %.',
-          '<b>En 2025 se invierte:</b> por primera vez son más quienes prefieren a China.'
-        ]
-      }],
-      contrastes: [
-        'No alineamiento 2023→2025: −5,0 pp [−9,1; −0,9] · p = 0,02',
-        'No alineamiento 2023→2024 y 2024→2025: los dos tramos, por separado, dentro del ruido',
-        'A favor de China 2023→2025: +8,0 pp [+5,1; +11,0] · p < 0,001',
-        'A favor de EE. UU. 2023→2025: −3,0 pp [−6,3; +0,2] · p = 0,07 · dentro del ruido',
-        'O sea: que China suba está sostenido; que EE. UU. baje, no. La frase no puede afirmar las dos cosas con la misma fuerza.'
-      ]
-    },
-    {
-      nombre: '4 · Ideología',
-      tipo: 'ideologia',
-      // 55 a 70 con el parámetro «recortada»: los tramos van de 57,8 a 67,9 y con 40-80 el
-      // movimiento quedaba en un puñado de píxeles. «Desde cero» sigue disponible al lado.
-      escala: { min: 55, max: 70, paso: 5 },
-      escalaCero: { min: 0, max: 100, paso: 25 },
-      // Una fila por tramo, un valor por oleada. Los mismos números que el ETL calcula y que
-      // «Sobre los datos» publica; acá están escritos porque el laboratorio es una página suelta.
-      datos: [
-        { clave: 'Izquierda', v: [63.3, 57.8, 67.9], n: [129, 112, 248] },
-        { clave: 'Centro', v: [62.0, 61.2, 64.2], n: [288, 304, 498] },
-        { clave: 'Derecha', v: [58.2, 62.6, 66.7], n: [126, 141, 300] }
-      ],
-      // El cambio con su intervalo: es lo único que permite dibujar la incertidumbre.
-      cambios: [
-        { clave: 'Izquierda', de: 2024, a: 2025, dif: 10.1, ic: [3.9, 16.4], p: 0.001 },
-        { clave: 'Centro', de: 2024, a: 2025, dif: 3.0, ic: [-1.1, 7.0], p: 0.158 },
-        { clave: 'Derecha', de: 2024, a: 2025, dif: 4.1, ic: [-1.4, 9.9], p: 0.157 },
-        { clave: 'Izquierda', de: 2023, a: 2025, dif: 4.6, ic: [-0.6, 9.9], p: 0.100 },
-        { clave: 'Centro', de: 2023, a: 2025, dif: 2.1, ic: [-1.9, 6.3], p: 0.313 },
-        { clave: 'Derecha', de: 2023, a: 2025, dif: 8.6, ic: [2.6, 14.6], p: 0.005 }
-      ],
-      // La escala completa de 1 a 10, que es la figura que ya tiene el tablero. Los puntos con
-      // menos de quince casos van vacíos: en 2023 y 2024 el 1 tiene trece.
-      escalaIdeo: {
-        2023: [null, 62.7, 62.7, 63.8, 63.3, 57.4, 60.8, 68.0, 57.8, 43.0],
-        2024: [null, 56.4, 55.6, 59.2, 61.5, 59.9, 59.3, 66.3, null, 69.0],
-        2025: [67.6, 76.3, 66.8, 66.6, 64.3, 63.6, 68.5, 66.5, 62.3, 67.3]
-      },
-      encendido: [
-        (c, i) => i < 2,
-        () => true
-      ],
-      textos: {
-        titulo: 'El eje político no ordena la opinión sobre China',
-        bajada: '',
-        eje: 'Evaluación de 0 a 100',
-        pie: 'Promedio de quienes contestaron, por tramo de la escala de 1 a 10 en que la persona se ubica. Izquierda 1 a 4, centro 5 y 6, derecha 7 a 10. Bases de 112 a 498 casos por tramo y oleada.',
-        frases: [
-          'Y <b>el eje político no la ordena</b>: en ninguna oleada la izquierda y la derecha se distinguen entre sí.',
-          'Lo que sí se mueve son las dos puntas: <b>la izquierda sube 10,1 puntos en 2025</b> y la derecha 8,6 desde 2023.'
-        ]
-      },
-      contrastes: [
-        'Brecha izquierda − derecha, dentro de cada oleada: 2023 +5,2 (p = 0,11) · 2024 −4,8 (p = 0,20) · 2025 +1,2 (p = 0,61)',
-        '**Ninguna de las tres se distingue del ruido**, así que no hay gradiente que invertir.',
-        'Izquierda 2024→2025: +10,1 [+3,9; +16,4] · p = 0,001',
-        'Derecha 2023→2025: +8,6 [+2,6; +14,6] · p = 0,005',
-        'Centro: no se mueve en ningún tramo de años (p entre 0,16 y 0,73)',
-        'El cambio de la brecha entre 2023 y 2024 pasa raspando (−9,9 puntos, p = 0,046), pero afirmar una vuelta exige que antes hubiera gradiente.'
-      ]
-    },
-    {
-      nombre: '5 · El experimento',
+      nombre: '2 · El experimento',
+      id: 'experimento',
       tipo: 'experimento',
       // El eje va recortado y lo declara: con 0 a 100 los promedios quedan apretados en la franja
       // 40-80 y la caída del punto 10, que es de lo que trata la escena, no se ve.
@@ -1164,7 +1049,114 @@
         'El promedio del punto 10 en 2023 es 43,0 con intervalo [31,3; 54,7]: veintitrés puntos de ancho.',
         'La derecha (7 a 10) no cambia de proporción entre oleadas (23 %, 25 %, 29 %): lo que cambia es el número de casos, 126 contra 300.'
       ]
-    }
+    },
+    {
+      nombre: '5 · El posicionamiento',
+      id: 'posicionamiento',
+      tipo: 'series',
+      // El eje llega a 20 y no a 80: las dos series que se cruzan viven entre 8,3 y 16,3, y con
+      // el eje del no alineamiento (0 a 80) el cruce entero mide once píxeles. El no alineamiento
+      // **no entra en este eje**: es tres veces más grande y aplastaría lo que la escena cuenta.
+      // Va como franja de contexto arriba, en su propia escala de 100 %.
+      escala: { min: 0, max: 20, paso: 5 },
+      escalaCero: { min: 0, max: 100, paso: 25 },
+      datos: [
+        { clave: 'Pro China', etiqueta: 'A favor de China', v: [8.3, 8.8, 16.3], tono: 'china' },
+        { clave: 'Pro EE. UU.', etiqueta: 'A favor de EE. UU.', v: [14.9, 16.0, 11.9], tono: 'eeuu' }
+      ],
+      // El reparto completo de p26, para la franja de contexto y su leyenda. Suma 100 en cada
+      // oleada, así que es el que dice qué fracción de la muestra son las dos series que se
+      // cruzan: entre un quinto y un cuarto.
+      reparto: [
+        { clave: 'Pro EE. UU.', etiqueta: 'A favor de EE. UU.', lado: -1, v: [14.9, 16.0, 11.9], tono: 'eeuu' },
+        { clave: 'Distancia', etiqueta: 'Mantener distancia de ambos', lado: 0, v: [29.1, 31.4, 28.3], tono: 'distancia' },
+        { clave: 'Ambos', etiqueta: 'Relacionarse con ambos', lado: 0, v: [47.7, 43.7, 43.5], tono: 'ambos' },
+        { clave: 'Pro China', etiqueta: 'A favor de China', lado: 1, v: [8.3, 8.8, 16.3], tono: 'china' }
+      ],
+      // Dos pasos, no tres: el tercero que aprobamos cambia de figura, y un cambio de figura es un
+      // cambio de escena (ver la skill `recorrido`). El cierre vive en la escena 6.
+      encendido: [
+        (c, i) => i < 2,
+        () => true
+      ],
+      textos: {
+        titulo: 'En 2025, alinearse con China supera a alinearse con Estados Unidos',
+        bajada: 'Con qué potencia debería alinearse Chile, según las personas encuestadas.',
+        eje: 'Porcentaje de cada preferencia',
+        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos. La contestan todos, sin faltantes. El resto de cada oleada no quiere elegir bando.',
+        frases: [
+          'En 2023 y 2024 <b>ganaba Estados Unidos</b>, las dos veces con holgura.',
+          '<b>En 2025 se da vuelta:</b> China llega a 16,3 % y Estados Unidos baja a 11,9 %.'
+        ]
+      },
+      alternativas: [{
+        rotulo: 'Titular corto',
+        titulo: 'En 2025 se da vuelta con quién debería alinearse Chile',
+        bajada: 'Con qué potencia debería alinearse Chile, según las personas encuestadas.',
+        eje: 'Porcentaje de cada preferencia',
+        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos. La contestan todos, sin faltantes. El resto de cada oleada no quiere elegir bando.',
+        frases: [
+          'En 2023 y 2024 <b>ganaba Estados Unidos</b>, las dos veces con holgura.',
+          '<b>En 2025 se da vuelta:</b> China llega a 16,3 % y Estados Unidos baja a 11,9 %.'
+        ]
+      }, {
+        rotulo: 'El guion viejo (no alineamiento)',
+        titulo: 'La mayoría no alineada se erosiona, y lo que pierde se va a China',
+        bajada: '',
+        eje: 'Porcentaje de cada preferencia',
+        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos.',
+        frases: [
+          'Sumando a quienes quieren relacionarse con ambas potencias y a quienes prefieren mantener distancia de las dos, <b>el no alineamiento cae de 76,8 % a 71,8 %</b>. Sigue siendo una mayoría amplia, pero se desgasta.',
+          'Lo interesante es la composición de la minoría que sí quiere elegir: preferir a China pasa de 8,3 % a 16,3 %, mientras preferir a Estados Unidos baja de 14,9 % a 11,9 %. <b>En 2025, por primera vez, hay más chilenos que quieren alinearse con China que con Estados Unidos.</b>'
+        ]
+      }],
+      contrastes: [
+        'Ventaja de China (China − EE. UU., dentro de la persona): 2023 −6,6 [−10,2; −3,0] p = 0,0007 · 2024 −7,2 [−11,1; −3,4] p = 0,0003 · 2025 **+4,4** [+1,6; +7,4] p = 0,003',
+        'O sea: **las tres oleadas pasan el contraste**, dos hacia EE. UU. y la última hacia China. La línea base del vuelco no es una sola oleada.',
+        'A favor de China 2023→2025: +8,0 pp [+5,1; +11,0] · p < 0,001 · con edad y sexo fijos +8,5',
+        'A favor de EE. UU. 2023→2025: −3,0 pp [−6,3; +0,2] · p = 0,08 · **dentro del ruido**. Solo 2024→2025 pasa (−4,1, p = 0,015).',
+        'No alineamiento 2023→2025: −5,0 pp [−9,1; −0,9] · p = 0,02, pero **ninguna de sus dos categorías se mueve sola** en ningún par de oleadas (distancia −0,8 p = 0,75 · ambos −4,2 p = 0,08). Por eso el guion viejo sale.',
+        'p26 no tiene faltantes: 664, 668 y 1.227, el total de cada oleada.'
+      ]
+    },
+    {
+      nombre: '6 · El cierre',
+      id: 'cierre',
+      tipo: 'cierre',
+      escala: { min: 0, max: 20, paso: 5 },
+      escalaCero: { min: 0, max: 100, paso: 25 },
+      // Las tres medidas que comparan a China con Estados Unidos **dentro de la misma persona**,
+      // cada una en su unidad. Solo son comparables en el signo, así que lo que comparten es el
+      // cero y no la escala: cada panel se dibuja simétrico alrededor de su propio cero.
+      datos: [
+        { clave: 'Termómetro', etiqueta: 'Opinión de 0 a 100', unidad: 'puntos', v: [-2.1, -4.3, 6.5], cruza: true, ruido: [true, false, false] },
+        { clave: 'Confianza', etiqueta: 'Confianza en su capacidad', unidad: 'escalones', v: [0.09, 0.04, 0.37], cruza: false, ruido: [false, true, false], decimales: 2 },
+        { clave: 'Posición', etiqueta: 'Con quién alinearse', unidad: 'puntos porcentuales', v: [-6.6, -7.2, 4.4], cruza: true, ruido: [false, false, false] }
+      ],
+      encendido: [
+        (c) => c === 'Termómetro',
+        (c) => c === 'Termómetro' || c === 'Confianza',
+        () => true
+      ],
+      textos: {
+        titulo: 'Tres maneras de preguntarlo: una ya iba adelante, dos se dan vuelta en 2025.',
+        bajada: 'Ventaja de China sobre Estados Unidos, medida dentro de cada persona.',
+        eje: 'Cada panel en su unidad · el cero es lo que comparten',
+        pie: 'Las tres las contesta la misma persona, así que no son tres pruebas independientes: coinciden de signo entre el 85 % y el 94 % de las veces. Método en \'Sobre los datos\'.',
+        frases: [
+          'El <b>termómetro</b> cruza en 2025: de −2,1 a +6,5 puntos.',
+          'La <b>confianza</b> no cruza: <b>China ya iba adelante en 2023</b>, y se ensancha.',
+          'La <b>posición</b> cruza y con dos oleadas de piso: −6,6, −7,2 y +4,4.'
+        ]
+      },
+      contrastes: [
+        'Termómetro (China − EE. UU., por persona): 2023 −2,1 [−5,2; +0,9] parejos · 2024 −4,3 [−7,2; −1,5] · 2025 **+6,5** [+4,2; +8,8]',
+        'Confianza (escalones, por persona): 2023 +0,09 [+0,02; +0,17] p = 0,02 · 2024 +0,04 dentro del ruido · 2025 **+0,37** [+0,30; +0,44] p < 0,001',
+        'Posición (pp, por persona): 2023 −6,6 · 2024 −7,2 · 2025 **+4,4**, las tres pasan el contraste',
+        '**La confianza nunca cruzó**: China ya estaba arriba en 2023. Decir que las tres se dan vuelta sería falso.',
+        'Acuerdo de signo entre pares de medidas: termómetro–posición 84,8 % → 88,9 % · termómetro–confianza 78,0 % → 84,0 % · confianza–posición 89,9 % → 94,4 %. **Ninguno de los tres aumentos pasa el contraste**: ya estaban alineadas en 2023.'
+      ]
+    },
   ];
 
   let esc = 0;
@@ -1183,8 +1175,12 @@
   // mostrarlos: sin versionar, lo guardado en el navegador del 07-09 seguía pisando la versión
   // nueva y la comparación dejaba de ser comparación. Al subir la versión, lo editado antes queda
   // guardado bajo la clave vieja y no estorba.
-  const VERSION_TEXTOS = 2;
-  const claveTextos = (i) => 'lab-recorrido-textos-v' + VERSION_TEXTOS + '-' + i;
+  // **La clave es el identificador de la escena, nunca su posición.** Con el índice, insertar una
+  // escena corría todo lo guardado un lugar: el 08-09-2026 el cierre cargó las seis frases de
+  // Ideología, la pista dibujó seis pasos contra tres de `encendido` y la escena reventaba. El
+  // defecto es invisible en un navegador limpio, que es justo como se prueba.
+  const VERSION_TEXTOS = 3;
+  const claveTextos = (i) => 'lab-recorrido-textos-v' + VERSION_TEXTOS + '-' + (ESCENAS[i] ? ESCENAS[i].id : i);
   const ORIGINALES = JSON.parse(JSON.stringify(ESCENAS.map((e) => e.textos)));
   ESCENAS.forEach((e, i) => {
     try {
@@ -1195,124 +1191,10 @@
 
   // --- Parámetros ---------------------------------------------------------
 
+  // **Un solo parámetro.** Los otros veintiuno describían decisiones ya tomadas; viven en `BASE`
+  // y en el CSS, que es donde viven en la app. Si mañana se reabre una, vuelve acá y no antes.
   const OPCIONES = [
-    // Solo hace algo cuando el visor pasa de 900 px. En el teléfono no hay dos columnas que
-    // repartir, así que el parámetro queda a la vista pero sin efecto, y la barra de arriba dice
-    // el ancho para que se sepa por qué.
-    { clave: 'columnas', rotulo: 'Escritorio (visor ancho)', valores: [
-      ['una', 'Una columna'],
-      ['texto-izq', 'Texto izquierda, figura derecha'],
-      ['figura-izq', 'Figura izquierda, texto derecha']
-    ]},
-    { clave: 'escalaTexto', rotulo: 'Texto en escritorio', valores: [
-      ['1', 'Igual que en el teléfono'],
-      ['1.25', '25 % más'],
-      ['1.5', '50 % más'],
-      ['1.8', '80 % más']
-    ]},
-    { clave: 'orden', rotulo: 'Orden dentro de la escena', valores: [
-      ['figura-texto', 'Figura arriba'],
-      ['texto-figura', 'Texto arriba'],
-      ['superpuesto', 'Texto sobre la figura']
-    ]},
-    { clave: 'anclaje', rotulo: 'Dónde se apoya el bloque', valores: [
-      ['centro', 'Centrado'],
-      ['arriba', 'Pegado arriba']
-    ]},
-    { clave: 'texto', rotulo: 'Cuánto texto a la vez', valores: [
-      ['una-frase', 'Una frase'],
-      ['parrafo-gris', 'Párrafo, futuras en gris'],
-      ['parrafo-entero', 'Párrafo entero, sin gris']
-    ]},
-    { clave: 'tipografia', rotulo: 'Tamaño del texto', valores: [
-      ['13', '13 px'],
-      ['15', '15 px'],
-      ['17', '17 px'],
-      ['19', '19 px']
-    ]},
-    { clave: 'fondo', rotulo: 'Fondo de la escena', valores: [
-      ['papel', 'Papel'],
-      ['gris', 'Gris claro'],
-      ['marca-suave', 'Marca al 8 %'],
-      ['marca', 'Marca plena'],
-      ['tinta', 'Tinta oscura']
-    ]},
-    { clave: 'forma', rotulo: 'Forma de la figura', valores: [
-      ['puntos', 'Una fila por país'],
-      ['lineas', 'Una línea por país']
-    ]},
-    { clave: 'alto', rotulo: 'Alto de la figura', valores: [
-      ['chica', 'Chica'],
-      ['media', 'Media'],
-      ['grande', 'Grande']
-    ]},
-    // El eje recortado hace visible un movimiento chico, y el eje desde cero dice de qué tamaño
-    // es ese movimiento. No hay respuesta única: por eso es un parámetro y no una decisión.
-    { clave: 'escalaY', rotulo: 'Escala del eje', valores: [
-      ['ajustada', 'Recortada a los datos'],
-      ['cero', 'Desde cero']
-    ]},
-    { clave: 'entrada', rotulo: 'Cómo entra el dato', valores: [
-      ['opacidad', 'Solo opacidad'],
-      ['pulso', 'Pulso de tamaño'],
-      ['crece', 'Crece desde cero'],
-      ['destello', 'Destello'],
-      ['color', 'De gris a color']
-    ]},
-    { clave: 'apagado', rotulo: 'Opacidad de lo apagado', valores: [
-      ['0', 'Invisible'],
-      ['0.12', '12 %'],
-      ['0.28', '28 %']
-    ]},
-    { clave: 'duracion', rotulo: 'Duración', valores: [
-      ['200', '200 ms'],
-      ['420', '420 ms'],
-      ['700', '700 ms']
-    ]},
-    { clave: 'paso', rotulo: 'Scroll que cuesta un paso', valores: [
-      ['40', '40 % de pantalla'],
-      ['55', '55 %'],
-      ['75', '75 %']
-    ]},
-    { clave: 'colorOla', rotulo: 'Color de las oleadas', valores: [
-      ['categorico', 'Tres colores'],
-      ['secuencial', 'Un tono, claro a oscuro'],
-      ['ultimo', 'Gris el pasado, color 2025']
-    ]},
-    { clave: 'clave', rotulo: 'Cómo se sabe qué año es cuál', valores: [
-      ['leyenda', 'Leyenda de puntos, abajo'],
-      ['sello', 'El año, grande, arriba'],
-      ['ambas', 'Leyenda y año grande'],
-      ['ninguna', 'Nada']
-    ]},
-    { clave: 'tamano', rotulo: 'Tamaño del punto por oleada', valores: [
-      ['igual', 'Todos iguales'],
-      ['creciente', 'Crece con el año']
-    ]},
-    { clave: 'encabezado', rotulo: 'Qué dice el encabezado', valores: [
-      ['ambos', 'Hallazgo y qué se está viendo'],
-      ['hallazgo', 'Solo el hallazgo'],
-      ['que-es', 'Solo qué se está viendo']
-    ]},
-    { clave: 'ejeUnidad', rotulo: 'Unidad en el eje', valores: [
-      ['si', 'En el eje'],
-      ['no', 'Sin unidad']
-    ]},
-    { clave: 'avance', rotulo: 'Cómo se pasa de un paso al otro', valores: [
-      ['libre', 'Scroll libre'],
-      ['pausa', 'Con pausa (imán en cada paso)'],
-      ['gesto', 'Un gesto, un paso']
-    ]},
-    { clave: 'aire', rotulo: 'Aire entre figura y texto', valores: [
-      ['justo', 'Justo'],
-      ['medio', 'Medio'],
-      ['amplio', 'Amplio']
-    ]},
-    { clave: 'rotulos', rotulo: 'Números en la figura', valores: [
-      ['ultima', 'Solo la última oleada'],
-      ['todos', 'Todas las oleadas'],
-      ['ninguno', 'Ninguno']
-    ]}
+    { clave: 'forma', rotulo: 'Forma de la figura', valores: [['filas', 'La de la app']] }
   ];
 
   /**
@@ -1322,88 +1204,55 @@
    * leyenda de años y la rampa de color no aplican y se sacan del panel en vez de quedar ahí
    * sin efecto, que es peor que no estar.
    */
-  function opciones () {
-    const experimento = E().tipo === 'experimento';
-    const ideologia = E().tipo === 'ideologia';
-    const series = E().tipo === 'series';
-    // Con la figura de filas el color vuelve a ser la oleada, así que la clave y la rampa vuelven
-    // a significar algo y vuelven al panel. Con paneles o líneas el color son las variables.
-    const colorEsOla = !series || p.forma === 'filas';
-    return OPCIONES
-      // La escena del experimento tiene una sola figura posible: es un guion, no una alternativa
-      // de composición. Un parámetro sin efecto es peor que no tenerlo.
-      .filter((o) => !(experimento && ['forma', 'clave', 'colorOla', 'tamano', 'rotulos'].includes(o.clave)))
-      .filter((o) => colorEsOla || (o.clave !== 'clave' && o.clave !== 'colorOla'))
-      .map((o) => {
-        if (o.clave !== 'forma') return o;
-        if (ideologia) {
-          return { clave: 'forma', rotulo: 'Cómo se muestra el movimiento', valores: [
-            ['filas', 'Filas y puntos (lo de hoy)'],
-            ['pendiente', 'Pendiente 2023 → 2025'],
-            ['halterio', 'Halterio: de dónde a dónde'],
-            ['cambio', 'El cambio y su intervalo'],
-            ['lineas', 'Una línea por tramo'],
-            ['escala', 'La escala 1 a 10 (la del tablero)']
-          ] };
-        }
-        return series
-          ? { clave: 'forma', rotulo: 'Forma de la figura', valores: [['filas', 'Una fila por variable'], ['puntos', 'Paneles chicos'], ['lineas', 'Todo en una figura']] }
-          : o;
-      });
-  }
+  /**
+   * Qué se puede elegir en esta escena, que hoy es **una sola cosa y en una sola escena**.
+   *
+   * El termómetro, el experimento y el cierre tienen una figura y punto: es lo que la app hace,
+   * no una alternativa de composición. Un parámetro sin efecto es peor que no tenerlo, y un
+   * parámetro que ofrece cambiar algo ya decidido invita a volver a discutirlo.
+   */
+  /**
+   * Qué se puede elegir, que hoy es **nada**: la forma de p26 se decidió el 08-09-2026 (cruce con
+   * el reparto arriba) y las otras dos candidatas se fueron con la decisión. Un panel que ofrece
+   * volver sobre algo cerrado invita a volver sobre algo cerrado.
+   */
+  function opciones () { return []; }
 
-  const PRESETS = [
-    // La combinación elegida el 07-09-2026, tal cual vino en el JSON exportado. No se toca sin
-    // que Felipe lo pida: es la decisión, no un punto de partida.
-    ['La elegida', { orden: 'texto-figura', anclaje: 'centro', texto: 'una-frase', tipografia: '19', fondo: 'papel', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '700', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente', aire: 'amplio', avance: 'pausa', escalaY: 'ajustada', encabezado: 'ambos', ejeUnidad: 'si' }],
-    // La escena 2 y la 3 con la figura de la escena 1: una fila por variable, un punto por
-    // oleada, el color de la oleada. Es un preset y no el valor por omisión a propósito: cambiar
-    // en silencio la composición elegida es lo que ya molestó una vez.
-    ['Como la escena 1', { orden: 'texto-figura', anclaje: 'centro', texto: 'una-frase', tipografia: '19', fondo: 'papel', forma: 'filas', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '700', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente', aire: 'amplio', avance: 'pausa', escalaY: 'ajustada', encabezado: 'ambos', ejeUnidad: 'si' }],
-    ['Escritorio · texto izquierda', { orden: 'texto-figura', anclaje: 'centro', texto: 'una-frase', tipografia: '19', fondo: 'papel', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '700', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente', aire: 'amplio', avance: 'pausa', escalaY: 'ajustada', encabezado: 'ambos', ejeUnidad: 'si', columnas: 'texto-izq' }],
-    ['Escritorio · figura izquierda', { orden: 'texto-figura', anclaje: 'centro', texto: 'una-frase', tipografia: '19', fondo: 'papel', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '700', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente', aire: 'amplio', avance: 'pausa', escalaY: 'ajustada', encabezado: 'ambos', ejeUnidad: 'si', columnas: 'figura-izq' }],
-    // Lo que hoy está en el código, para poder ver la diferencia contra la elegida: la app pone
-    // la figura arriba y el bloque pegado al techo, y muestra el año grande además de la leyenda.
-    ['Como está la app', { orden: 'figura-texto', anclaje: 'arriba', texto: 'una-frase', tipografia: '19', fondo: 'papel', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '700', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente', aire: 'amplio', avance: 'pausa', encabezado: 'ambos', ejeUnidad: 'si', escalaY: 'ajustada' }],
-    ['La tuya + clave', { orden: 'figura-texto', anclaje: 'arriba', texto: 'una-frase', tipografia: '17', fondo: 'marca-suave', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0', duracion: '420', paso: '75', rotulos: 'ultima', colorOla: 'secuencial', clave: 'ambas', tamano: 'creciente' }],
-    ['La tuya', { orden: 'figura-texto', anclaje: 'arriba', texto: 'una-frase', tipografia: '17', fondo: 'marca', forma: 'puntos', alto: 'grande', entrada: 'destello', apagado: '0.28', duracion: '700', paso: '75', rotulos: 'ultima' }],
-    ['Como estaba', { orden: 'texto-figura', texto: 'parrafo-gris', fondo: 'papel', entrada: 'opacidad', apagado: '0', tipografia: '13', alto: 'media', anclaje: 'centro' }],
-    ['Lo de ayer', { orden: 'figura-texto', texto: 'una-frase', fondo: 'papel', entrada: 'pulso', apagado: '0', tipografia: '13', alto: 'media', anclaje: 'centro' }],
-    ['Dato primero', { orden: 'figura-texto', anclaje: 'arriba', texto: 'una-frase', alto: 'grande', entrada: 'crece', fondo: 'papel', tipografia: '13' }],
-    ['Pie de foto', { orden: 'figura-texto', anclaje: 'arriba', texto: 'una-frase', alto: 'grande', tipografia: '13', entrada: 'opacidad', apagado: '0.12', rotulos: 'todos' }],
-    ['Titular', { orden: 'figura-texto', texto: 'una-frase', tipografia: '17', alto: 'media', entrada: 'pulso', fondo: 'papel' }],
-    ['Fondo de marca', { fondo: 'marca', orden: 'figura-texto', texto: 'una-frase', entrada: 'pulso', alto: 'media', tipografia: '15' }],
-    ['Marca al 8 %', { fondo: 'marca-suave', orden: 'figura-texto', texto: 'una-frase', entrada: 'pulso', alto: 'media', tipografia: '15' }],
-    ['Tinta', { fondo: 'tinta', orden: 'figura-texto', texto: 'una-frase', entrada: 'destello', alto: 'grande', tipografia: '15' }],
-    ['Superpuesto', { orden: 'superpuesto', anclaje: 'arriba', texto: 'una-frase', alto: 'grande', fondo: 'papel', entrada: 'pulso' }],
-    ['Sin animación', { entrada: 'opacidad', duracion: '200', apagado: '0.28', orden: 'figura-texto', texto: 'una-frase' }],
-    ['Nada se esconde', { entrada: 'color', apagado: '0.28', orden: 'figura-texto', texto: 'una-frase', rotulos: 'todos' }],
-    ['Líneas', { forma: 'lineas', orden: 'figura-texto', texto: 'una-frase', entrada: 'pulso', alto: 'grande', rotulos: 'ultima' }],
-    ['Lento y suave', { duracion: '700', entrada: 'pulso', orden: 'figura-texto', texto: 'una-frase', paso: '75' }],
-    ['Paso corto', { paso: '40', orden: 'figura-texto', texto: 'una-frase', entrada: 'pulso' }]
-  ];
+  // **Sin presets.** Eran veinticuatro combinaciones de parámetros que ya no existen, más el
+  // historial de cómo se llegó a la composición actual. Ese historial vive en git y en la skill
+  // `recorrido`; acá solo estorbaba, y era además la única manera de ver la composición real,
+  // que ahora es lo que el laboratorio hace al abrirse.
+  const PRESETS = [];
 
+  /**
+   * **Lo que la app hace hoy, congelado.** Hasta el 08-09-2026 estos veintidós valores eran
+   * botones, y ya no lo son: la composición del recorrido se decidió el 07-09 y está en el
+   * código. Un panel que ofrece cambiar lo que ya se decidió no ayuda a decidir nada, y peor:
+   * el laboratorio arrancaba en `columnas: 'una'` y `orden: 'figura-texto'`, o sea que al abrirlo
+   * mostraba una composición **que la app no tiene**, y había que apretar un preset para verla.
+   *
+   * Los valores salen del inventario del código (`src/index.css`, `CapaRecorrido.tsx`), no de
+   * memoria. Lo único que queda como parámetro es `forma`, donde hay una decisión abierta.
+   */
   const BASE = {
-    orden: 'figura-texto',
-    anclaje: 'centro',
-    texto: 'una-frase',
-    tipografia: '13',
-    fondo: 'papel',
-    forma: 'puntos',
-    alto: 'media',
-    entrada: 'pulso',
-    apagado: '0',
-    duracion: '420',
-    paso: '55',
+    orden: 'texto-figura',   // titular, frase, figura (CapaRecorrido.tsx:606-654)
+    anclaje: 'centro',       // .escena { justify-content: center }
+    texto: 'una-frase',      // las inactivas en opacity-0, apiladas en una celda
+    fondo: 'papel',          // la capa es bg-white y no hay modo oscuro en el producto
+    forma: 'cruce',
+    alto: 'grande',
+    entrada: 'destello',     // .dato-nuevo, halo de 700 ms
+    apagado: '0',            // ocultar no es borrar: opacidad cero, sigue en el DOM
+    duracion: '500',         // transition-opacity duration-500
+    paso: '75',              // round(alto * 0.75)
     rotulos: 'ultima',
     colorOla: 'secuencial',
     clave: 'leyenda',
-    tamano: 'creciente',
-    aire: 'medio',
-    avance: 'libre',
+    tamano: 'creciente',     // solo `Puntos` (escena 1); `Serie` usa radio fijo
+    aire: 'amplio',          // gap: 1.5rem
+    avance: 'pausa',         // scroll-snap-type: y mandatory
     escalaY: 'ajustada',
-    columnas: 'una',
-    escalaTexto: '1.5',
+    columnas: 'texto-izq',   // relato 1fr / figura 1.15fr en >= 900 px
     encabezado: 'ambos',
     ejeUnidad: 'si'
   };
@@ -1419,24 +1268,10 @@
   // Sobre fondo de marca o tinta los tres colores de oleada pierden contraste, así que la escena
   // usa una versión aclarada. Es la misma decisión que en el visualizador: el color no puede ser
   // lo único que separa dos series, pero tampoco puede quedar ilegible.
-  const COLORES_OLA = {
-    categorico: {
-      claro: ['#00998C', '#E8632A', '#2A6FD6'],
-      oscuro: ['#4FD6C7', '#FF9161', '#7FACF5']
-    },
-    // El año es una variable ordenada, así que un solo tono de claro a oscuro dice la secuencia
-    // sin que haya que aprenderse tres colores. El extremo claro no baja del piso de contraste
-    // contra el fondo, que es lo que limita la rampa a tres pasos.
-    secuencial: {
-      claro: ['#7FC9C1', '#2A9084', '#00514B'],
-      oscuro: ['#0E6A62', '#3FB3A6', '#9CEDE2']
-    },
-    // El pasado es contexto y el presente es el dato: dos grises y un color.
-    ultimo: {
-      claro: ['#C2CCCA', '#8FA09C', '#00776E'],
-      oscuro: ['#4A5A57', '#8FA09C', '#4FD6C7']
-    }
-  };
+  // La rampa de oleadas de la app: `pasosDeOrden(3)` sobre `ORDEN` (`src/nucleo/paleta.ts`).
+  // Verificada ejecutando la fórmula. Más oscuro es más nuevo, y no hay alternativa categórica:
+  // el año es una variable ordenada.
+  const COLORES_OLA = { secuencial: { claro: ['#6ABDB4', '#006B62', '#002E29'], oscuro: ['#6ABDB4', '#006B62', '#002E29'] } };
 
   let p = Object.assign({}, BASE);
   let presetActivo = 'La elegida';
@@ -1489,10 +1324,18 @@
 
   // Los colores de las escenas 2 y 3 no son las oleadas: son las variables. Salen de los mismos
   // semánticos del visualizador, con una versión aclarada para fondo oscuro.
-  const TONOS_SERIE = {
-    claro: { china: '#C0392B', eeuu: '#2A6FD6', neutro: '#00776E' },
-    oscuro: { china: '#FF8A7A', eeuu: '#7FACF5', neutro: '#4FD6C7' }
+  // Los colores semánticos de la app, verbatim de `src/nucleo/paleta.ts`. **No se eligen acá.**
+  // Están amarrados a la etiqueta, así que el recorrido y el tablero pintan la misma pregunta
+  // igual sin que nadie repita un valor. El laboratorio tenía un rojo `#C0392B` para China que
+  // no existe en ninguna parte del producto.
+  const SEMANTICOS = {
+    china: '#E8632A',        // A favor de China
+    eeuu: '#2A6FD6',         // A favor de EE. UU.
+    distancia: '#8A8A85',    // Mantener distancia de ambos
+    ambos: '#00998C',        // Relacionarse con ambos
+    neutro: '#00998C'        // el color por defecto de `Serie`
   };
+  const TONOS_SERIE = { claro: SEMANTICOS, oscuro: SEMANTICOS };
 
   const esOscuro = () => p.fondo === 'marca' || p.fondo === 'tinta';
 
@@ -1554,42 +1397,6 @@
     return s + '</svg>';
   }
 
-  function svgLineas () {
-    const tema = FONDOS[p.fondo];
-    const col = colores();
-    const escala = escalaDe();
-    const alto = ALTOS[p.alto];
-    const ancho = 360;
-    const izq = 30, der = 92, arriba = 12, abajo = 22;
-    const x = (i) => izq + (i * (ancho - izq - der)) / (OLAS.length - 1);
-    const y = (v) => arriba + (1 - (v - escala.min) / (escala.max - escala.min)) * (alto - arriba - abajo);
-    const conUnidadL = p.ejeUnidad === 'si';
-    let s = '<svg viewBox="0 0 ' + ancho + ' ' + (alto + (conUnidadL ? 14 : 0)) + '" width="100%" role="img" aria-label="Evaluación de cinco países entre 2023 y 2025">';
-    if (conUnidadL) {
-      s += '<text class="eje" x="' + (izq - 24) + '" y="' + (alto + 10) + '" fill="' + tema.eje + '" font-size="9.5">' + T().eje + '</text>';
-    }
-
-    for (let m = escala.min; m <= escala.max; m += escala.paso) {
-      s += '<line x1="' + izq + '" y1="' + y(m) + '" x2="' + (ancho - der) + '" y2="' + y(m) + '" stroke="' + tema.reja + '" stroke-width="1"/>';
-      s += '<text class="eje" x="' + (izq - 6) + '" y="' + (y(m) + 3) + '" fill="' + tema.eje + '" font-size="9" text-anchor="end">' + m + '</text>';
-    }
-
-    OLAS.forEach((ola, i) => {
-      s += '<text class="eje" x="' + x(i) + '" y="' + (alto - 6) + '" fill="' + tema.eje + '" font-size="9" text-anchor="middle">' + ola + '</text>';
-    });
-
-    filas().forEach((fila) => {
-      const d = fila.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
-      const color = fila.clave === 'China' ? col[1] : fila.clave === 'Estados Unidos' ? col[2] : tema.eje;
-      s += '<path class="marca-dato tramo" data-pais="' + fila.clave + '" d="' + d + '" fill="none" stroke="' + color + '" style="color:' + color + '" stroke-width="2" stroke-linecap="round"/>';
-      fila.v.forEach((v, i) => {
-        s += '<circle class="marca-dato punto" data-pais="' + fila.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="' + radio(i, 4) + '" fill="' + color + '" style="color:' + color + '" stroke="' + tema.fondo + '" stroke-width="1.6"/>';
-      });
-      s += '<text class="marca-dato etiqueta-pais etiqueta-fila" data-pais="' + fila.clave + '" style="color:' + tema.tinta + '" x="' + (x(2) + 8) + '" y="' + (y(fila.v[2]) + 3.5) + '" fill="' + tema.tinta + '" font-size="10">' + fila.clave + (p.rotulos === 'ninguno' ? '' : ' ' + coma(fila.v[2])) + '</text>';
-    });
-
-    return s + '</svg>';
-  }
 
   /**
    * Escenas 2 y 3, en paneles chicos: una figura por variable, apiladas.
@@ -1599,45 +1406,6 @@
    * son tres ejes que el lector tiene que volver a leer, y el que quedó abajo casi nunca se ve
    * entero dentro de la escena.
    */
-  function svgPaneles () {
-    const tema = FONDOS[p.fondo];
-    const escala = escalaDe();
-    const lista = filas();
-    const altoPanel = Math.max(92, Math.round((ALTOS[p.alto] - 8 * lista.length) / lista.length));
-    const ancho = 360;
-    // El nombre del panel vive arriba del área de dibujo, no encima: con `arriba = 16` la
-    // primera marca del eje le pasaba por debajo de las letras.
-    const izq = 34, der = 58, arriba = 28, abajo = 16;
-    const x = (i) => izq + (i * (ancho - izq - der)) / (OLAS.length - 1);
-    // Un panel chico no aguanta cinco marcas: en 90 px de alto quedan a 18 px una de otra y el
-    // eje pesa más que la línea. Se salta de a dos hasta que queden tres o menos.
-    let pasoPanel = escala.paso;
-    while ((escala.max - escala.min) / pasoPanel > 3) pasoPanel *= 2;
-
-    return lista.map((fila) => {
-      const color = tonoSerie(fila);
-      const y = (v) => arriba + (1 - (v - escala.min) / (escala.max - escala.min)) * (altoPanel - arriba - abajo);
-      let s = '<svg class="panel-serie" viewBox="0 0 ' + ancho + ' ' + altoPanel + '" width="100%" role="img" aria-label="' + (fila.etiqueta || fila.clave) + '">';
-      s += '<text class="marca-dato etiqueta-pais" data-pais="' + fila.clave + '" x="' + (izq - 5) + '" y="11" fill="' + tema.tinta + '" style="color:' + tema.tinta + '" font-size="10" font-weight="600">' + (fila.etiqueta || fila.clave) + '</text>';
-      for (let m = escala.min; m <= escala.max + 0.001; m += pasoPanel) {
-        s += '<line x1="' + izq + '" y1="' + y(m) + '" x2="' + (ancho - der) + '" y2="' + y(m) + '" stroke="' + tema.reja + '" stroke-width="1"/>';
-        s += '<text class="eje" x="' + (izq - 5) + '" y="' + (y(m) + 3) + '" fill="' + tema.eje + '" font-size="8" text-anchor="end">' + m + '</text>';
-      }
-      OLAS.forEach((ola, i) => {
-        s += '<text class="eje" x="' + x(i) + '" y="' + (altoPanel - 4) + '" fill="' + tema.eje + '" font-size="8" text-anchor="middle">' + ola + '</text>';
-      });
-      const d = fila.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
-      s += '<path class="marca-dato tramo" data-pais="' + fila.clave + '" d="' + d + '" fill="none" stroke="' + color + '" style="color:' + color + '" stroke-width="2" stroke-linecap="round"/>';
-      fila.v.forEach((v, i) => {
-        s += '<circle class="marca-dato punto" data-pais="' + fila.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="' + radio(i, 4) + '" fill="' + color + '" style="color:' + color + '" stroke="' + tema.fondo + '" stroke-width="1.6"/>';
-        const rotular = p.rotulos === 'todos' || (p.rotulos === 'ultima' && i === 2);
-        if (rotular) {
-          s += '<text class="marca-dato valor-fila" data-pais="' + fila.clave + '" data-ola="' + i + '" x="' + (x(i) + (i === 2 ? 7 : 0)) + '" y="' + (y(v) - 7) + '" fill="' + tema.tinta + '" style="color:' + tema.tinta + '" font-size="9.5" font-weight="600" text-anchor="' + (i === 2 ? 'start' : 'middle') + '">' + coma(v) + ' %</text>';
-        }
-      });
-      return s + '</svg>';
-    }).join('');
-  }
 
   /**
    * Escenas 2 y 3, todo en una figura: una línea por variable, un solo eje.
@@ -1646,42 +1414,6 @@
    * afirmación sobre dos series a la vez, y en paneles separados esa afirmación no se ve: hay
    * que compararla de memoria entre dos ejes.
    */
-  function svgJuntas () {
-    const tema = FONDOS[p.fondo];
-    const escala = escalaDe();
-    const alto = ALTOS[p.alto];
-    const ancho = 360;
-    // `der` es el ancho reservado para el nombre de la serie más su valor, a la derecha del
-    // último punto. Con 104 el rótulo más largo («No alineado 71,8 %») se salía del lienzo y el
-    // navegador lo cortaba sin avisar.
-    const izq = 32, der = 132, arriba = 14, abajo = 22;
-    const x = (i) => izq + (i * (ancho - izq - der)) / (OLAS.length - 1);
-    const y = (v) => arriba + (1 - (v - escala.min) / (escala.max - escala.min)) * (alto - arriba - abajo);
-    const conUnidad = p.ejeUnidad === 'si';
-    let s = '<svg viewBox="0 0 ' + ancho + ' ' + (alto + (conUnidad ? 14 : 0)) + '" width="100%" role="img" aria-label="' + escapar(T().titulo) + '">';
-    if (conUnidad) {
-      s += '<text class="eje" x="' + (izq - 26) + '" y="' + (alto + 10) + '" fill="' + tema.eje + '" font-size="9.5">' + T().eje + '</text>';
-    }
-    for (let m = escala.min; m <= escala.max; m += escala.paso) {
-      s += '<line x1="' + izq + '" y1="' + y(m) + '" x2="' + (ancho - der) + '" y2="' + y(m) + '" stroke="' + tema.reja + '" stroke-width="1"/>';
-      s += '<text class="eje" x="' + (izq - 6) + '" y="' + (y(m) + 3) + '" fill="' + tema.eje + '" font-size="9" text-anchor="end">' + m + '</text>';
-    }
-    OLAS.forEach((ola, i) => {
-      s += '<text class="eje" x="' + x(i) + '" y="' + (alto - 6) + '" fill="' + tema.eje + '" font-size="9" text-anchor="middle">' + ola + '</text>';
-    });
-    filas().forEach((fila) => {
-      const color = tonoSerie(fila);
-      const d = fila.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
-      s += '<path class="marca-dato tramo" data-pais="' + fila.clave + '" d="' + d + '" fill="none" stroke="' + color + '" style="color:' + color + '" stroke-width="2" stroke-linecap="round"/>';
-      fila.v.forEach((v, i) => {
-        s += '<circle class="marca-dato punto" data-pais="' + fila.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="' + radio(i, 4) + '" fill="' + color + '" style="color:' + color + '" stroke="' + tema.fondo + '" stroke-width="1.6"/>';
-      });
-      // El nombre de la serie va pegado a su último punto, no en una leyenda aparte: así no hay
-      // que emparejar color con nombre en dos lugares distintos de la pantalla.
-      s += '<text class="marca-dato etiqueta-pais" data-pais="' + fila.clave + '" x="' + (x(2) + 7) + '" y="' + (y(fila.v[2]) + 3.5) + '" fill="' + color + '" style="color:' + color + '" font-size="9.5" font-weight="600">' + fila.clave + (p.rotulos === 'ninguno' ? '' : ' ' + coma(fila.v[2]) + ' %') + '</text>';
-    });
-    return s + '</svg>';
-  }
 
   /**
    * Las seis maneras de mostrar el movimiento por tramo ideológico.
@@ -1691,153 +1423,7 @@
    * **las dos puntas suben** (eso se ve comparando un tramo consigo mismo entre años). Cada forma
    * privilegia una de las dos lecturas, y esa es la decisión que hay que tomar mirándolas.
    */
-  const TONOS_TRAMO = {
-    claro: ['#7FC9C1', '#2A9084', '#00514B'],
-    oscuro: ['#0E6A62', '#3FB3A6', '#9CEDE2']
-  };
-  const tonosTramo = () => (esOscuro() ? TONOS_TRAMO.oscuro : TONOS_TRAMO.claro);
 
-  function svgIdeologia () {
-    const tema = FONDOS[p.fondo];
-    let escala = escalaDe();
-    const alto = ALTOS[p.alto];
-    const ancho = 360;
-    const forma = p.forma;
-    const filas = E().datos;
-    const tonos = tonosTramo();
-    const colOla = colores();
-    // 76 px a la izquierda: «Izquierda» mide 52 px a 9 px de tipografía y con 26 se salía del
-    // lienzo. Es el mismo error que ya había costado caro con «Estados Unidos».
-    const IZQ = 76;
-    const x = (v) => IZQ + ((v - escala.min) / (escala.max - escala.min)) * (ancho - IZQ - 46);
-    const marcas = [];
-    for (let v = escala.min; v <= escala.max + 0.001; v += escala.paso) marcas.push(v);
-
-    const ejeX = (y) => marcas.map((v) =>
-      '<line x1="' + x(v) + '" y1="14" x2="' + x(v) + '" y2="' + (y - 16) + '" stroke="' + tema.reja + '" stroke-width="1"/>' +
-      '<text x="' + x(v) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="8" fill="' + tema.tinta + '" opacity="0.55">' + v + '</text>'
-    ).join('');
-
-    // 1 · Una fila por tramo, un punto por oleada. Es lo que hay hoy en la app.
-    if (forma === 'filas') {
-      const filaAlto = Math.min(46, (alto - 40) / filas.length);
-      const cuerpo = filas.map((f, i) => {
-        const y = 22 + i * filaAlto + filaAlto / 2;
-        const puntos = f.v.map((v, j) => {
-          if (!E().encendido[paso](f.clave, j)) return '';
-          const r = p.tamano === 'creciente' ? 4 + j : 5;
-          return '<circle cx="' + x(v) + '" cy="' + y + '" r="' + r + '" fill="' + colOla[j] + '"/>';
-        }).join('');
-        // **Se rotula la última oleada encendida, no la última que existe.** Con el rótulo fijo en
-        // 2025, el primer paso mostraba dos puntos de 2023 y 2024 y al lado el número de 2025:
-        // un valor que la figura no está dibujando.
-        let ultimoVisible = -1;
-        f.v.forEach((_, j) => { if (E().encendido[paso](f.clave, j)) ultimoVisible = j; });
-        const rotulo = ultimoVisible < 0 ? '' :
-          '<text x="' + (x(f.v[ultimoVisible]) + 10) + '" y="' + (y + 3) + '" font-size="9" fill="' + tema.tinta + '" opacity="0.75">' + fmt(f.v[ultimoVisible]) + '</text>';
-        return '<text x="' + (IZQ - 8) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="' + tema.tinta + '">' + f.clave + '</text>' +
-          puntos + rotulo;
-      }).join('');
-      return lienzo(ancho, alto, tema, ejeX(alto) + cuerpo);
-    }
-
-    // 2 · Pendiente: dos columnas y una línea por tramo. La inclinación **es** el cambio.
-    if (forma === 'pendiente' || forma === 'lineas') {
-      const olas = forma === 'pendiente' ? [0, 2] : [0, 1, 2];
-      const izq = 44, der = ancho - 60;
-      const px = (j) => izq + (olas.indexOf(j) / (olas.length - 1)) * (der - izq);
-      const py = (v) => alto - 26 - ((v - escala.min) / (escala.max - escala.min)) * (alto - 46);
-      const reja = marcas.map((v) =>
-        '<line x1="' + izq + '" y1="' + py(v) + '" x2="' + der + '" y2="' + py(v) + '" stroke="' + tema.reja + '" stroke-width="1"/>' +
-        '<text x="' + (izq - 6) + '" y="' + (py(v) + 3) + '" text-anchor="end" font-size="8" fill="' + tema.tinta + '" opacity="0.55">' + v + '</text>').join('');
-      const anios = olas.map((j) => '<text x="' + px(j) + '" y="' + (alto - 8) + '" text-anchor="middle" font-size="9" fill="' + tema.tinta + '" opacity="0.7">' + OLAS[j] + '</text>').join('');
-      const cuerpo = filas.map((f, i) => {
-        // La pendiente son dos momentos: en el primer paso está el de partida y en el segundo
-        // entra el de llegada, que es el gesto que la forma sabe hacer. Con la tabla de encendidos
-        // de tres oleadas, el primer paso dejaba la figura sin línea.
-        const visible = olas.filter((j) => (forma === 'pendiente' ? (j === olas[0] || paso >= 1) : E().encendido[paso](f.clave, j)));
-        if (visible.length === 0) return '';
-        const d = visible.map((j, k) => (k === 0 ? 'M' : 'L') + px(j) + ' ' + py(f.v[j])).join(' ');
-        const puntos = visible.map((j) => '<circle cx="' + px(j) + '" cy="' + py(f.v[j]) + '" r="4.5" fill="' + tonos[i] + '" stroke="' + tema.fondo + '" stroke-width="1.5"/>').join('');
-        const ultimo = visible[visible.length - 1];
-        return '<path d="' + d + '" fill="none" stroke="' + tonos[i] + '" stroke-width="2" stroke-linecap="round"/>' + puntos +
-          '<text x="' + (px(ultimo) + 8) + '" y="' + (py(f.v[ultimo]) + 3) + '" font-size="9" fill="' + tema.tinta + '">' + f.clave + ' ' + fmt(f.v[ultimo]) + '</text>';
-      }).join('');
-      return lienzo(ancho, alto, tema, reja + anios + cuerpo);
-    }
-
-    // 3 · Halterio: un segmento por tramo, de la primera oleada a la última.
-    if (forma === 'halterio') {
-      const filaAlto = Math.min(52, (alto - 40) / filas.length);
-      const cuerpo = filas.map((f, i) => {
-        const y = 24 + i * filaAlto + filaAlto / 2;
-        const hasta = E().encendido[paso](f.clave, 2) ? 2 : 1;
-        const a = x(f.v[0]), b = x(f.v[hasta]);
-        // Un solo valor rotulado, el de llegada: el de partida lo dice el extremo hueco del
-        // segmento, y los dos juntos se pisaban cuando el cambio era chico.
-        return '<text x="' + (IZQ - 8) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="' + tema.tinta + '">' + f.clave + '</text>' +
-          '<line x1="' + a + '" y1="' + y + '" x2="' + b + '" y2="' + y + '" stroke="' + tonos[i] + '" stroke-width="3" opacity="0.45" stroke-linecap="round"/>' +
-          '<circle cx="' + a + '" cy="' + y + '" r="4" fill="' + tema.fondo + '" stroke="' + tonos[i] + '" stroke-width="2"/>' +
-          '<circle cx="' + b + '" cy="' + y + '" r="6" fill="' + tonos[i] + '"/>' +
-          '<text x="' + (b + 10) + '" y="' + (y + 3) + '" font-size="9" fill="' + tema.tinta + '">' + fmt(f.v[hasta]) + '</text>';
-      }).join('');
-      return lienzo(ancho, alto, tema, ejeX(alto) + cuerpo);
-    }
-
-    // 4 · El cambio con su intervalo. **Es la única forma que dibuja la incertidumbre**, que es
-    // justo lo que el hallazgo necesita: la mitad de los cambios no se distingue de cero.
-    if (forma === 'cambio') {
-      const cambios = E().cambios.filter((c) => c.de === (paso === 0 ? 2023 : 2024));
-      const rango = 20;
-      const cx = (v) => ancho / 2 + (v / rango) * (ancho / 2 - 56);
-      const filaAlto = Math.min(48, (alto - 44) / cambios.length);
-      const cuerpo = cambios.map((c, i) => {
-        const y = 26 + i * filaAlto + filaAlto / 2;
-        const i2 = filas.findIndex((f) => f.clave === c.clave);
-        const pasa = c.p < 0.05;
-        return '<text x="8" y="' + (y - 10) + '" font-size="9" fill="' + tema.tinta + '">' + c.clave + '</text>' +
-          '<line x1="' + cx(c.ic[0]) + '" y1="' + y + '" x2="' + cx(c.ic[1]) + '" y2="' + y + '" stroke="' + tema.tinta + '" stroke-width="1.5" opacity="0.3"/>' +
-          '<line x1="' + cx(c.ic[0]) + '" y1="' + (y - 4) + '" x2="' + cx(c.ic[0]) + '" y2="' + (y + 4) + '" stroke="' + tema.tinta + '" stroke-width="1.5" opacity="0.3"/>' +
-          '<line x1="' + cx(c.ic[1]) + '" y1="' + (y - 4) + '" x2="' + cx(c.ic[1]) + '" y2="' + (y + 4) + '" stroke="' + tema.tinta + '" stroke-width="1.5" opacity="0.3"/>' +
-          '<circle cx="' + cx(c.dif) + '" cy="' + y + '" r="6" fill="' + (pasa ? tonos[i2] : tema.fondo) + '" stroke="' + tonos[i2] + '" stroke-width="2"/>' +
-          '<text x="' + (cx(c.ic[1]) + 8) + '" y="' + (y + 3) + '" font-size="9" fill="' + tema.tinta + '" opacity="' + (pasa ? '0.9' : '0.55') + '">' +
-          (c.dif > 0 ? '+' : '') + fmt(c.dif) + (pasa ? '' : ' ns') + '</text>';
-      }).join('');
-      const cero = '<line x1="' + cx(0) + '" y1="14" x2="' + cx(0) + '" y2="' + (alto - 22) + '" stroke="' + tema.eje + '" stroke-width="1.5"/>' +
-        '<text x="' + cx(0) + '" y="' + (alto - 8) + '" text-anchor="middle" font-size="8" fill="' + tema.tinta + '" opacity="0.55">sin cambio</text>';
-      return lienzo(ancho, alto, tema, cero + cuerpo);
-    }
-
-    // 5 · La escala entera de 1 a 10, una línea por oleada: es la figura que ya tiene el tablero.
-    //
-    // **Esta forma se calcula su propia escala**, y no es un capricho: los extremos del espectro
-    // tienen entre 13 y 39 casos, así que se van hasta 43,0 y 76,3. Con el recorte de los tramos
-    // (55 a 70) la línea de 2023 se dibujaba fuera del lienzo. Es, además, el argumento contra
-    // esta forma: lo que se ve en los bordes es ruido de celdas chicas.
-    const serie = E().escalaIdeo;
-    if (p.escalaY !== 'cero') {
-      const todos = OLAS.flatMap((o) => serie[o]).filter((v) => v !== null);
-      escala = { min: Math.floor(Math.min(...todos) / 5) * 5, max: Math.ceil(Math.max(...todos) / 5) * 5, paso: 10 };
-      marcas.length = 0;
-      for (let v = escala.min; v <= escala.max + 0.001; v += escala.paso) marcas.push(v);
-    }
-    const izq = 30, der = ancho - 12;
-    const py = (v) => alto - 26 - ((v - escala.min) / (escala.max - escala.min)) * (alto - 46);
-    const px = (i) => izq + (i / 9) * (der - izq);
-    const reja = marcas.map((v) =>
-      '<line x1="' + izq + '" y1="' + py(v) + '" x2="' + der + '" y2="' + py(v) + '" stroke="' + tema.reja + '" stroke-width="1"/>' +
-      '<text x="' + (izq - 4) + '" y="' + (py(v) + 3) + '" text-anchor="end" font-size="8" fill="' + tema.tinta + '" opacity="0.55">' + v + '</text>').join('');
-    const ejes = [1, 5, 10].map((k) => '<text x="' + px(k - 1) + '" y="' + (alto - 8) + '" text-anchor="middle" font-size="8" fill="' + tema.tinta + '" opacity="0.6">' +
-      (k === 1 ? '1 · izquierda' : k === 10 ? 'derecha · 10' : '5') + '</text>').join('');
-    const lineas = OLAS.map((ola, j) => {
-      if (!E().encendido[paso]('', j)) return '';
-      const pts = serie[ola].map((v, i) => (v === null ? null : [px(i), py(v)])).filter(Boolean);
-      const d = pts.map((q, k) => (k === 0 ? 'M' : 'L') + q[0] + ' ' + q[1]).join(' ');
-      return '<path d="' + d + '" fill="none" stroke="' + colOla[j] + '" stroke-width="2" opacity="0.9"/>' +
-        pts.map((q) => '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3" fill="' + colOla[j] + '"/>').join('');
-    }).join('');
-    return lienzo(ancho, alto, tema, reja + ejes + lineas);
-  }
 
   function lienzo (ancho, alto, tema, cuerpo) {
     return '<svg viewBox="0 0 ' + ancho + ' ' + alto + '" class="lienzo" role="img" style="background:' + tema.fondo + '">' + cuerpo + '</svg>';
@@ -1983,16 +1569,158 @@
     return porPaso ? (base ? base + ' ' + porPaso : porPaso) : base;
   }
 
+  // --- La escena del posicionamiento (p26) ---------------------------------
+
+  /**
+   * Las dos series que se cruzan, sobre un eje de 0 a 20.
+   *
+   * **El no alineamiento no entra en este eje y no es un descuido.** Es tres veces más grande que
+   * las dos series juntas: con un eje de 0 a 80 el cruce entero mide once píxeles y la escena deja
+   * de contar lo que dice contar. Lo que sí hace falta es que el lector sepa qué fracción de la
+   * muestra son estas dos líneas, y eso lo da la franja de contexto, que va en su propia escala de
+   * 100 % y sin eje: es contexto, no una segunda figura para leer con precisión.
+   */
+  /**
+   * La figura aprobada para p26: las dos series que se cruzan, con el reparto completo arriba.
+   *
+   * **El no alineamiento no entra en el eje de las líneas y no es un descuido.** Es tres veces
+   * más grande que las dos series juntas: con un eje que lo incluyera, el cruce entero mide once
+   * píxeles. Lo que sí hace falta es que se vea qué fracción de la muestra son estas dos líneas,
+   * y eso lo da la franja de arriba, en su propia escala de 100 %.
+   *
+   * **Sin marca de intersección.** Estuvo dibujada como línea vertical y círculo, y se sacó: no
+   * sabemos en qué momento entre 2024 y 2025 se cruzaron las dos series, así que poner el cruce
+   * en un punto del eje afirma una fecha que los datos no tienen. Tres oleadas no son una curva.
+   */
+  function svgCruce () {
+    const tema = FONDOS[p.fondo];
+    const escala = escalaDe();
+    const altoTotal = ALTOS[p.alto];
+    const ancho = 360;
+    const franja = 62;
+    const alto = altoTotal - franja;
+    const izq = 32, der = 118, arriba = 14, abajo = 22;
+    const x = (i) => izq + (i * (ancho - izq - der)) / (OLAS.length - 1);
+    const y = (v) => franja + arriba + (1 - (v - escala.min) / (escala.max - escala.min)) * (alto - arriba - abajo);
+    let s = '<svg viewBox="0 0 ' + ancho + ' ' + altoTotal + '" width="100%" role="img" aria-label="' + escapar(T().titulo) + '">';
+
+    // El reparto completo, una tira por oleada, apilada al 100 %. Sin números: dice «estas dos
+    // líneas son este pedazo del total» y nada más. Quién es cada color lo dice la leyenda.
+    const rep = E().reparto || [];
+    const xTira = izq, anchoTira = ancho - izq - der;
+    OLAS.forEach((ola, i) => {
+      const yTira = 8 + i * 14;
+      let acumulado = 0;
+      rep.forEach((cat) => {
+        const w = (cat.v[i] / 100) * anchoTira;
+        const color = tonoSerie(cat);
+        s += '<rect class="marca-dato" data-pais="' + cat.clave + '" data-ola="' + i + '" x="' + (xTira + acumulado) +
+          '" y="' + yTira + '" width="' + w + '" height="10" fill="' + color + '"/>';
+        acumulado += w;
+      });
+      s += '<text class="eje" x="' + (izq - 6) + '" y="' + (yTira + 8) + '" fill="#6b7280" font-size="9" text-anchor="end">' + ola + '</text>';
+    });
+
+    OLAS.forEach((ola, i) => {
+      s += '<text class="eje" x="' + x(i) + '" y="' + (franja + alto - 6) + '" fill="#6b7280" font-size="8" text-anchor="middle">' + ola + '</text>';
+    });
+
+    filas().forEach((fila) => {
+      const color = tonoSerie(fila);
+      const d = fila.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
+      s += '<path class="marca-dato tramo" data-pais="' + fila.clave + '" d="' + d + '" fill="none" stroke="' + color + '" style="color:' + color + '" stroke-width="1.6" stroke-linecap="round"/>';
+      fila.v.forEach((v, i) => {
+        s += '<circle class="marca-dato punto" data-pais="' + fila.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="3.4" fill="#FFFFFF" style="color:' + color + '" stroke="' + color + '" stroke-width="1.6"/>';
+        if (i < 2) {
+          s += '<text class="marca-dato valor-fila" data-pais="' + fila.clave + '" data-ola="' + i + '" x="' + x(i) + '" y="' + (y(v) - 8) +
+            '" fill="#111827" font-size="9" font-weight="500" text-anchor="' + (i === 0 ? 'start' : 'middle') + '">' + coma(v) + '</text>';
+        }
+      });
+      // **El nombre sigue al último punto encendido, no al último.** Anclado siempre al final,
+      // en el primer paso los dos nombres salen ya en el orden del desenlace y la figura cuenta
+      // el final antes que el relato. El valor sí espera al último punto.
+      const hasta = encendidoDe(paso)(fila.clave, 2) ? 2 : encendidoDe(paso)(fila.clave, 1) ? 1 : 0;
+      s += '<text class="etiqueta-pais" x="' + (x(hasta) + 7) + '" y="' + (y(fila.v[hasta]) + 3.5) + '" fill="' + color + '" style="color:' + color + '" font-size="9.5" font-weight="600">' + fila.clave + (hasta === 2 ? ' ' + coma(fila.v[2]) + ' %' : '') + '</text>';
+    });
+    s += '</svg>';
+
+    // **La leyenda nombra las cuatro, y las dos del medio no son «el resto».** «Mantener
+    // distancia de ambos» y «relacionarse con ambos» son dos posiciones distintas de política
+    // exterior: dejarlas sin nombre las convierte en un bloque gris sin significado.
+    s += '<ul class="leyenda-reparto">' + rep.map((cat) =>
+      '<li><i style="background:' + tonoSerie(cat) + '"></i>' + cat.etiqueta + '</li>').join('') + '</ul>';
+    return s;
+  }
+
+
+  /**
+   * El cierre: las tres medidas de la ventaja de China, cada una en su unidad y todas contra su
+   * propio cero.
+   *
+   * **Lo único comparable entre puntos de termómetro, escalones y puntos porcentuales es el
+   * signo**, así que cada panel se dibuja simétrico alrededor de su cero y el cero queda a la
+   * misma altura en los tres. Una escala común mentiría: diría que 0,37 escalones es menos que
+   * 4,4 puntos porcentuales.
+   */
+  function svgCierre () {
+    const tema = FONDOS[p.fondo];
+    const alto = ALTOS[p.alto];
+    const paneles = filas();
+    // **Tres SVG, no uno ancho.** Un solo lienzo de 360 con `width: 100%` crece de alto con el
+    // ancho de la ventana: en 1512 daba 932 px contra una escena de 737. Cada panel en su propia
+    // columna de la grilla queda acotado por la columna, que es lo que hace la app con `Serie`.
+    const ancho = 116, altoP = Math.min(alto, 210);
+    const arriba = 30, abajo = 34;
+    const medioY = arriba + (altoP - arriba - abajo) / 2;
+
+    // **Y con tope de ancho.** Tres paneles chicos repartidos en 1512 px dan 490 px cada uno, y un
+    // lienzo de 116 escalado 4,2 veces vuelve a pasarse de alto (856 contra una escena de 737).
+    // El tope es del bloque, no del lienzo: la figura es la misma, deja de estirarse y se centra.
+    return '<div class="paneles-cierre" style="display:grid;grid-template-columns:repeat(' + paneles.length +
+      ',1fr);gap:14px;align-items:start;max-width:620px;margin:0 auto">' + paneles.map((panel) => {
+      const tope = Math.max.apply(null, panel.v.map(Math.abs)) * 1.3;
+      const y = (v) => medioY - (v / tope) * ((altoP - arriba - abajo) / 2);
+      const x = (i) => 10 + (i * (ancho - 24)) / (OLAS.length - 1);
+      let g = '<svg viewBox="0 0 ' + ancho + ' ' + altoP + '" width="100%" role="img" aria-label="' +
+        escapar(panel.clave + ': ' + panel.etiqueta) + '">';
+      g += '<text class="marca-dato" data-pais="' + panel.clave + '" x="0" y="9" fill="' + tema.tinta + '" font-size="9" font-weight="600">' + panel.clave + '</text>';
+      g += '<text class="marca-dato" data-pais="' + panel.clave + '" x="0" y="19" fill="' + tema.eje + '" font-size="7.5">' + panel.unidad + '</text>';
+      // El cero es lo único que los tres paneles comparten, así que va más marcado que cualquier
+      // otra regla y a la misma altura en los tres.
+      g += '<line class="marca-dato" data-pais="' + panel.clave + '" x1="0" y1="' + medioY + '" x2="' + ancho + '" y2="' + medioY + '" stroke="' + tema.tinta + '" stroke-width="1"/>';
+      g += '<text class="marca-dato eje" data-pais="' + panel.clave + '" x="' + ancho + '" y="' + (medioY - 3) + '" fill="' + tema.eje + '" font-size="7" text-anchor="end">0</text>';
+      const d = panel.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
+      g += '<path class="marca-dato tramo" data-pais="' + panel.clave + '" d="' + d + '" fill="none" stroke="#8A8A85" stroke-width="1.6" stroke-linecap="round"/>';
+      panel.v.forEach((v, i) => {
+        // Punto hueco donde el intervalo cruza el cero: ahí no hay ventaja que anunciar, y
+        // dibujarlo lleno diría que sí. Es la regla de «parejos» de la escena 1.
+        const enRuido = panel.ruido[i];
+        const color = v >= 0 ? tonoSerie({ tono: 'china' }) : tonoSerie({ tono: 'eeuu' });
+        g += '<circle class="marca-dato punto" data-pais="' + panel.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) +
+          '" r="3.4" fill="' + (enRuido ? '#FFFFFF' : color) + '" stroke="' + color + '" stroke-width="1.6"/>';
+      });
+      if (p.rotulos !== 'ninguno') {
+        const v = panel.v[2];
+        const dec = panel.decimales || 1;
+        g += '<text class="marca-dato" data-pais="' + panel.clave + '" data-ola="2" x="' + x(2) + '" y="' + (y(v) + (v >= 0 ? -7 : 13)) +
+          '" fill="' + tema.tinta + '" font-size="8.5" font-weight="600" text-anchor="middle">' + (v > 0 ? '+' : '\u2212') +
+          Math.abs(v).toFixed(dec).replace('.', ',') + '</text>';
+      }
+      OLAS.forEach((ola, i) => {
+        g += '<text class="eje marca-dato" data-pais="' + panel.clave + '" x="' + x(i) + '" y="' + (altoP - 14) + '" fill="' + tema.eje + '" font-size="7" text-anchor="middle">' + String(ola).slice(2) + '</text>';
+      });
+      g += '<text class="eje marca-dato" data-pais="' + panel.clave + '" x="0" y="' + (altoP - 3) + '" fill="' + tema.eje + '" font-size="7.5">' + (panel.cruza ? 'cruza en 2025' : 'nunca cruz\u00f3') + '</text>';
+      return g + '</svg>';
+    }).join('') + '</div>';
+  }
+
+  /** Qué dibuja cada escena. Una figura por escena, salvo p26, que es la decisión abierta. */
+  /** Qué dibuja cada escena. Una figura por escena: ya no hay decisiones abiertas de forma. */
   function figuraHTML () {
     if (E().tipo === 'experimento') return svgExperimento();
-    if (E().tipo === 'ideologia') return svgIdeologia();
-    if (E().tipo === 'filas') return p.forma === 'puntos' ? svgPuntos() : svgLineas();
-    // `filas` es la figura de la escena 1 aplicada a una escena de varias variables: una fila por
-    // variable y un punto por oleada, con el color de la oleada. Es lo que pidió el cliente el
-    // 07-09-2026: «una sola figura fuerte en vez de dos, con el texto apareciendo a medida que la
-    // figura se modifica».
-    if (p.forma === 'filas') return svgPuntos();
-    return p.forma === 'puntos' ? svgPaneles() : svgJuntas();
+    if (E().tipo === 'cierre') return svgCierre();
+    if (E().tipo === 'filas') return svgPuntos();
+    return svgCruce();
   }
 
   function leyendaHTML () {
@@ -2005,6 +1733,7 @@
     if (E().tipo === 'experimento') {
       if (paso < 4) return '';
     } else if (E().tipo !== 'filas') return '';
+    if (E().tipo === 'cierre') return '';
     if (p.clave === 'ninguna' || p.clave === 'sello') return '';
     const col = colores();
     // El mismo tamaño creciente que en la figura: si el punto de 2025 es el más grande ahí, acá
@@ -2025,49 +1754,44 @@
   // El umbral: por debajo, dos columnas dejan la figura en 380 px y las filas de países se
   // superponen. Medido sobre el visor, que es el contenedor real de la escena.
   const ANCHO_DOS_COLUMNAS = 900;
-  const dosColumnas = () => p.columnas !== 'una' && visor.clientWidth >= ANCHO_DOS_COLUMNAS;
+  // El cierre son tres paneles en paralelo: en media pantalla quedan en 192 px cada uno y los
+  // números a 6 px. Dos columnas solo donde la figura es una sola figura (regla de la skill).
+  const dosColumnas = () => p.columnas !== 'una' && E().tipo !== 'cierre' && visor.clientWidth >= ANCHO_DOS_COLUMNAS;
 
 
   function pintarEscena () {
     const tema = FONDOS[p.fondo];
+    // **Las clases describen el ancho, no una preferencia.** Antes había `invertida`,
+    // `figura-arriba`, `superpuesta` y `figura-izquierda`, que eran cuatro composiciones que la
+    // app no tiene. Quedan los dos escalones que la app sí tiene: `sm` en 640 y columnas en 900.
     const clases = ['escena'];
-    if (p.orden === 'texto-figura') clases.push('invertida');
-    if (p.orden === 'superpuesto') clases.push('superpuesta');
-    if (p.anclaje === 'arriba') clases.push('figura-arriba');
-    if (dosColumnas()) {
-      clases.push('dos-columnas');
-      if (p.columnas === 'figura-izq') clases.push('figura-izquierda');
-    }
+    if (visor.clientWidth >= 640) clases.push('ancho-sm');
+    if (dosColumnas()) clases.push('dos-columnas');
 
     const figura = figuraHTML();
-
     const frases = T().frases.map((f, i) => '<span class="frase" data-frase="' + i + '">' + f + ' </span>').join('');
 
     visor.style.setProperty('--escena-fondo', tema.fondo);
     visor.style.setProperty('--escena-tinta', tema.tinta);
-    visor.style.setProperty('--dur', p.duracion + 'ms');
-    visor.style.setProperty('--apagado', p.apagado);
-    visor.style.setProperty('--aire', { justo: '12px', medio: '24px', amplio: '38px' }[p.aire] || '24px');
-    visor.style.setProperty('--apagado-texto', String(Math.max(Number(p.apagado), 0.45)));
-    visor.style.setProperty('--tipo-base', p.tipografia + 'px');
-    visor.style.setProperty('--escala-escritorio', p.escalaTexto);
+    visor.style.setProperty('--dur', '500ms');
+    visor.style.setProperty('--apagado', '0');
+    visor.style.setProperty('--apagado-texto', '0.45');
 
     visor.innerHTML =
       '<div class="' + clases.join(' ') + '">' +
         // El relato va envuelto y la figura afuera. En una columna el envoltorio es
-        // `display: contents`, así que el orden lo siguen decidiendo las reglas de `order` como
-        // hasta ahora; en dos columnas el envoltorio se vuelve la columna del relato.
+        // `display: contents`; en dos se vuelve la columna del relato.
         '<div class="columna-relato">' +
           '<div class="bloque-encabezado">' +
-            (p.encabezado === 'que-es' || !T().titulo.trim() ? '' : '<h3 class="rotulo-escena">' + T().titulo + '</h3>') +
-            (p.encabezado === 'hallazgo' || !T().bajada.trim() ? '' : '<p class="bajada-escena">' + T().bajada + '</p>') +
+            (T().titulo.trim() ? '<h3 class="rotulo-escena">' + T().titulo + '</h3>' : '') +
+            (T().bajada.trim() ? '<p class="bajada-escena">' + T().bajada + '</p>' : '') +
           '</div>' +
-          '<div class="bloque-texto' + (p.texto === 'una-frase' ? ' apiladas' : '') + '">' + frases + '</div>' +
+          '<div class="bloque-texto apiladas">' + frases + '</div>' +
         '</div>' +
         '<div class="bloque-figura">' +
           (selloHTML() ? '<div class="cabecera-figura">' + selloHTML() + '</div>' : '') +
           figura +
-          (p.orden === 'superpuesto' ? '' : '<div class="pie-fila"><p class="pie">' + pieHTML() + '</p>' + leyendaHTML() + '</div>') +
+          '<div class="pie-fila"><p class="pie">' + pieHTML() + '</p>' + leyendaHTML() + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="pista" aria-hidden="true">' +
@@ -2076,7 +1800,7 @@
         '<div class="colchon-fin"></div>' +
       '</div>';
 
-    visor.classList.toggle('con-pausa', p.avance === 'pausa');
+    visor.classList.add('con-pausa');
     medirPista();
     observar();
     aplicarPaso(0, true);
@@ -2131,9 +1855,22 @@
     visor.querySelectorAll('.pista div').forEach((d) => observador.observe(d));
   }
 
+  /**
+   * El encendido de un paso, **acotado al último declarado**.
+   *
+   * Una alternativa de guion puede traer más frases que pasos (el guion corto de la confianza
+   * tiene tres contra dos), y un texto guardado en el navegador también. Pedirle a `encendido` un
+   * paso que no existe devolvía `undefined` y la escena reventaba al llamarlo. El último paso es
+   * el que muestra todo, así que repetirlo es además la respuesta correcta.
+   */
+  function encendidoDe (i) {
+    const lista = E().encendido;
+    return lista[Math.min(i, lista.length - 1)];
+  }
+
   function aplicarPaso (nuevo, forzar) {
     if (!forzar && nuevo === paso) return;
-    const anterior = forzar ? () => false : E().encendido[paso];
+    const anterior = forzar ? () => false : encendidoDe(paso);
     const antes = paso;
     paso = nuevo;
 
@@ -2168,7 +1905,7 @@
     }
     medidor.textContent = costos.length ? costos.slice(-3).join(' · ') + ' px' : '—';
 
-    const enciende = E().encendido[paso];
+    const enciende = encendidoDe(paso);
     // Qué países reciben un dato nuevo en este paso. El nombre del país destella con ellos, no
     // solo cuando el país entra entero: en el paso donde China suma su oleada 2025 el nombre
     // también avisa, que es lo que hace que la mirada llegue a la fila correcta.
@@ -2340,8 +2077,8 @@
     paso = 0;
     // Un parámetro que la escena nueva no admite quedaría marcado en el JSON exportado sin
     // afectar a nada, y ese es justo el tipo de dato que después se lee mal.
-    if (E().tipo === 'series' && !['filas', 'puntos', 'lineas'].includes(p.forma)) p.forma = 'filas';
-    if (E().tipo === 'ideologia' && !['filas', 'pendiente', 'halterio', 'cambio', 'lineas', 'escala'].includes(p.forma)) p.forma = 'filas';
+    // Un parámetro que la escena nueva no admite quedaría marcado en el JSON exportado sin
+    // afectar a nada, y ese es justo el tipo de dato que después se lee mal.
     guardarParametros();
     pintarEscenas();
     pintarControles();
@@ -2690,7 +2427,10 @@
 
   // --- Arranque -------------------------------------------------------------
 
-  if (!recordarParametros()) p = Object.assign({}, BASE, PRESETS.find((x) => x[0] === presetActivo)[1]);
+  // Sin presets, el arranque es `BASE`, que es lo que la app hace. Antes buscaba el preset activo
+  // por nombre y le pedía su segundo elemento: con la lista vacía, `undefined[1]` y la página en
+  // blanco, sin una sola línea en la consola que dijera dónde.
+  if (!recordarParametros()) p = Object.assign({}, BASE);
   pintarEscenas();
   pintarPresets();
   pintarControles();

@@ -97,6 +97,34 @@ Siete cosas lo hacen funcionar, y sin ellas no sirve:
    abre desde el servidor de desarrollo por la red local, que en el teléfono es una página normal.
    Está en `.gitignore`: es herramienta, no producto.
 
+**El laboratorio se poda cuando la decisión se cierra** (08-09-2026). Llegó a tener 22 controles
+y 24 presets, y casi todos describían decisiones ya tomadas el 07-09. Un panel que ofrece cambiar
+lo que ya se decidió no ayuda a decidir nada, y hace algo peor: **el laboratorio arrancaba en
+`columnas: 'una'` y `orden: 'figura-texto'`, o sea mostrando una composición que la app no tiene
+en ninguna escena**, y había que apretar un preset para ver la real. Quedó un control, el de la
+decisión abierta, y el resto congelado en los valores del código, cada uno con la referencia al
+archivo de donde sale. Lo mismo con las escenas: las que dibujaban una versión que la app ya
+cambió se borran, no se dejan mintiendo.
+
+**Y hay dos maneras de que el laboratorio se vea distinto de la app sin que nada avise:**
+
+- **Un peso declarado no es un peso cargado.** El laboratorio pedía Raleway en `500;600;700` y la
+  app carga `400` y `600`: sin el 400, todo lo que pidiera peso normal caía a Trebuchet MS. Es la
+  variante del defecto que el `CLAUDE.md` ya tenía escrito para la familia.
+- **Los colores y las medidas se copian del código, no de memoria.** Se habían colado un rojo
+  `#C0392B` para China que no existe en el producto (es `#E8632A`), una rampa de oleadas
+  equivocada, y un punto que crecía con la oleada cuando `Serie` lo tiene fijo. Antes de dar por
+  fiel el laboratorio, se inventaría el contrato visual leyendo `index.css`, `CapaRecorrido.tsx`,
+  `paleta.ts` y los componentes de figura.
+
+**Lo que el navegador guarda se indexa por identificador, nunca por posición.** La clave de los
+textos era `…-v2-<índice de escena>`: al insertar una escena en el medio, todo lo guardado se
+corrió un lugar, el cierre cargó las seis frases de otra escena, la pista dibujó seis pasos contra
+tres declarados y `encendido[3]` reventó. **El defecto es invisible en un navegador limpio, que es
+justo como se prueba**: la comprobación tiene que *ensuciar* el almacenamiento, no limpiarlo. Y de
+paso, `encendido` se lee acotado al último paso declarado, porque una alternativa de guion puede
+traer más frases que pasos.
+
 Tres reglas más del laboratorio, todas de esta segunda vuelta:
 
 - **Los rótulos de los parámetros tienen que decir lo que hacen.** «Leyenda arriba» siguió diciendo
@@ -519,7 +547,32 @@ de alto y **la figura arrancaba a 528 px del techo**, o sea a medias en un port�
   `Escape`, y barra de avance que diga cuánto falta. Sin la barra, «salir cuando quieras» es una
   promesa que el lector no puede evaluar.
 - **Trampa de foco en la capa**, foco al abrir y devuelto al cerrar.
+
+  **Y los focos se filtran por visibilidad, no por selector.** `querySelectorAll` hace juego con
+  lo que está en `display: none`, que no puede recibir el foco. El enlace «Método» de la barra se
+  oculta bajo 640 px (`hidden … sm:inline`) y era el primero de la lista: como `activeElement`
+  nunca podía ser ese nodo, la guarda de `Shift+Tab` no se disparaba jamás y **en teléfono el foco
+  se escapaba de la capa al encabezado del sitio**. Va `checkVisibility()`, con
+  `getClientRects().length > 0` de respaldo; lo que está fuera de pantalla pero renderizado sigue
+  contando, porque es enfocable.
+
+  **El defecto era asimétrico y por eso costó verlo:** hacia adelante la trampa sí cerraba, porque
+  el último foco está siempre visible. Y no se arregla cambiándole la clase a «Método»: eso tapa
+  este caso y deja el defecto esperando al próximo elemento condicional.
 - **`prefers-reduced-motion` salta al paso completo**, no a una versión recortada.
+
+  **Y no dibuja la pista, ni deja el imán puesto.** La pista existe para medir el scroll que
+  enciende los pasos, y con movimiento reducido no hay pasos que encender: la escena se muestra
+  entera desde el primer píxel. Dejarla igual le cobraba al lector el costo de una animación que
+  pidió no ver: medido el 08-09-2026, **diecisiete tramos y 18.183 px**, con el imán obligando a
+  parar en cada uno para no mostrar nada nuevo. Sin pista son 9.070 px, la mitad.
+
+  **El primer arreglo estuvo mal y lo tumbó la medición**, que es la lección que vale: hacer punto
+  de imán a la sección de cada escena, para conservar `mandatory`, dejó un salto de **1.274 px
+  contra una pantalla de 844**, porque una escena más alta que la pantalla se convierte ella misma
+  en el hueco. Es justo la condición que `index.css` ya tenía escrita. Lo correcto es **apagar el
+  imán** con una media query: sin puntos no hay nada inalcanzable, y el imán además *es*
+  movimiento, que es lo que el lector pidió no tener.
 - Toda figura lleva su texto equivalente (`sr-only` o `aria-label`) y su nota con el N.
 
 ## Lo que no se hace
