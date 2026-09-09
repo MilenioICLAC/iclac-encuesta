@@ -384,16 +384,87 @@
   .escena.sin-figura .bloque-encabezado { display: none; }
   .escena.dos-columnas.sin-figura .bloque-texto { max-width: 736px; }
 
-  /* La leyenda del reparto: 11 px y gris 600, las medidas que usa `Divergente` en la app. */
-  ul.leyenda-reparto {
-    list-style: none; margin: 8px 0 0; padding: 0;
-    display: flex; flex-wrap: wrap; gap: 4px 12px;
-    font-size: 11px; color: #4b5563;
+  /* **El reset que la app trae de Tailwind y el laboratorio no.**
+     `figure` viene con `margin: 15px 40px` del navegador y `ul` con `padding-left: 40px`: sin
+     esto la figura se corría 56 px a la derecha y se salía 24 por el borde. En la app no pasa
+     porque el preflight de Tailwind lo resetea, y esa es justo la clase de divergencia que el
+     laboratorio existe para no tener. */
+  .barras-posicionamiento, .barras-posicionamiento figure,
+  .barras-posicionamiento p, .barras-posicionamiento ul {
+    margin: 0;
+    padding: 0;
   }
-  ul.leyenda-reparto i {
-    display: inline-block; width: 14px; height: 10px; border-radius: 2px;
-    margin-right: 5px; vertical-align: -1px;
+  .barras-posicionamiento ul { list-style: none; }
+  .barras-posicionamiento > p { font-size: 12px; color: #6b7280; }
+
+  /* ---- p26: copia verbatim de dos hojas del componente --------------------------------
+     `src/componentes/BarrasPosicionamiento.css` y `src/componentes/Enfasis.css`.
+
+     **Se copian, no se reescriben.** El laboratorio existe para ver lo que la app hace, así que
+     una versión propia de estas reglas sería otra figura parecida y no la misma. Si alguno de los
+     dos componentes cambia, esto se vuelve a copiar entero. */
+  .barras-posicionamiento { width: 100%; }
+  .p26-filas { display: grid; gap: 14px; margin-top: 12px; }
+  .p26-fila { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 5px 8px; }
+  .p26-ola { grid-row: 1 / 3; padding-top: 4px; font-size: 12px; color: #4b5563; font-variant-numeric: tabular-nums; }
+  .p26-barra { display: flex; height: 24px; }
+  .p26-segmento { position: relative; display: block; flex-shrink: 0; }
+  .p26-valores { grid-column: 2; display: flex; justify-content: space-between; gap: 8px; color: #374151; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .p26-oculta { opacity: 0; }
+  .p26-cambio { margin-top: 12px; font-size: 12px; line-height: 1.5; color: #374151; }
+  .p26-leyenda { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; font-size: 11px; color: #4b5563; }
+  .p26-leyenda li { display: flex; align-items: center; gap: 6px; }
+  .p26-leyenda li > span { width: 14px; height: 10px; flex-shrink: 0; border-radius: 2px; }
+  @media (min-width: 900px) {
+    .p26-filas { gap: 24px; }
+    .p26-barra { height: 32px; }
+    .p26-valores, .p26-ola, .p26-cambio { font-size: 14px; }
+    .p26-leyenda { font-size: 12px; }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .p26-oculta { opacity: 1; }
+  }
+  @media print { .p26-oculta { opacity: 1; } }
+
+  /* Énfasis de un segmento dentro de una barra apilada.
+   *
+   * **Estático, y esa es toda la decisión.** Antes esto era una emanata de 700 ms sobre el borde
+   * superior, y medida en el navegador se pierde: el paso dura lo que el lector tarda en leer la
+   * frase, así que un gesto que se apaga en menos de un segundo ya terminó cuando la vista llega a
+   * la figura. La marca dura todo el paso y se va al siguiente, que es cuando deja de ser cierta.
+   *
+   * **Y va dentro del segmento, no encima.** Encima fue el primer intento y no cabe: con filas de
+   * 26 px separadas por 3, una marca sobre la barra aterriza en la fila de arriba y se lee como si
+   * fuera de ella. Un anillo por dentro no necesita lugar y no depende del alto de la fila.
+   *
+   * No toca el área del dato: ni el ancho del segmento ni la escala cambian. El anillo se dibuja
+   * hacia adentro, así que tampoco se sale del recorte de la barra ni pisa a los vecinos. */
+
+  .enfasis-barra {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    border-radius: 1px;
+    /* Blanco por dentro y tinta por fuera: así se lee sobre cualquiera de los rellenos, que van del
+       óxido claro al verde de marca. Un solo color fallaría contra alguno de los dos extremos. */
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+      inset 0 0 0 3.5px rgba(23, 33, 31, 0.65);
+  }
+
+  /* Segmentos angostos: con menos de 12 px el anillo doble se cierra sobre sí mismo y el relleno
+     desaparece. Ahí queda solo la línea blanca, que sigue diciendo cuál es sin taparlo. */
+  @media (max-width: 480px) {
+    .enfasis-barra {
+      box-shadow:
+        inset 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+        inset 0 0 0 2.5px rgba(23, 33, 31, 0.6);
+    }
+  }
+
+  /* Sin animación que desactivar: la marca aparece con el paso y se va con él. Al imprimir se
+     queda, porque señala de qué habla el texto que está al lado. */
 
   .bloque-figura, .bloque-texto { position: relative; }
 
@@ -916,6 +987,19 @@
    * `encendido[i](clave, ola)` es la tabla de qué muestra cada paso, la misma idea que
    * `encendidos()` en `App.tsx`: el último paso enciende todo.
    */
+  // Los colores semánticos de la app, verbatim de `src/nucleo/paleta.ts`. **No se eligen acá.**
+  // Están amarrados a la etiqueta, así que el recorrido y el tablero pintan la misma pregunta
+  // igual sin que nadie repita un valor. El laboratorio tenía un rojo `#C0392B` para China que
+  // no existe en ninguna parte del producto.
+  const SEMANTICOS = {
+    china: '#E8632A',        // A favor de China
+    eeuu: '#2A6FD6',         // A favor de EE. UU.
+    distancia: '#8A8A85',    // Mantener distancia de ambos
+    ambos: '#00998C',        // Relacionarse con ambos
+    neutro: '#00998C'        // el color por defecto de `Serie`
+  };
+  const TONOS_SERIE = { claro: SEMANTICOS, oscuro: SEMANTICOS };
+
   const ESCENAS = [
     {
       nombre: '1 · El termómetro',
@@ -1064,28 +1148,31 @@
         { clave: 'Pro China', etiqueta: 'A favor de China', v: [8.3, 8.8, 16.3], tono: 'china' },
         { clave: 'Pro EE. UU.', etiqueta: 'A favor de EE. UU.', v: [14.9, 16.0, 11.9], tono: 'eeuu' }
       ],
-      // El reparto completo de p26, para la franja de contexto y su leyenda. Suma 100 en cada
-      // oleada, así que es el que dice qué fracción de la muestra son las dos series que se
-      // cruzan: entre un quinto y un cuarto.
+      // El reparto completo de p26 con la **misma forma** que la app le pasa al componente:
+      // `clave` es el código del libro de códigos (lo que distingue a los dos extremos), `color`
+      // sale de `SEMANTICOS` por etiqueta y `valores` va en el orden de las oleadas. En la app
+      // esto se deriva del artefacto; acá está escrito porque el laboratorio no lee el ETL.
+      // El orden es el visual: los dos que se comparan a los extremos, los que no eligen al medio.
       reparto: [
-        { clave: 'Pro EE. UU.', etiqueta: 'A favor de EE. UU.', lado: -1, v: [14.9, 16.0, 11.9], tono: 'eeuu' },
-        { clave: 'Distancia', etiqueta: 'Mantener distancia de ambos', lado: 0, v: [29.1, 31.4, 28.3], tono: 'distancia' },
-        { clave: 'Ambos', etiqueta: 'Relacionarse con ambos', lado: 0, v: [47.7, 43.7, 43.5], tono: 'ambos' },
-        { clave: 'Pro China', etiqueta: 'A favor de China', lado: 1, v: [8.3, 8.8, 16.3], tono: 'china' }
+        { clave: '2', etiqueta: 'A favor de EE. UU.', color: SEMANTICOS.eeuu, valores: [14.9, 16.0, 11.9] },
+        { clave: '3', etiqueta: 'Mantener distancia de ambos', color: SEMANTICOS.distancia, valores: [29.1, 31.4, 28.3] },
+        { clave: '4', etiqueta: 'Relacionarse con ambos', color: SEMANTICOS.ambos, valores: [47.7, 43.7, 43.5] },
+        { clave: '1', etiqueta: 'A favor de China', color: SEMANTICOS.china, valores: [8.3, 8.8, 16.3] },
       ],
-      // Dos pasos, no tres: el tercero que aprobamos cambia de figura, y un cambio de figura es un
-      // cambio de escena (ver la skill `recorrido`). El cierre vive en la escena 6.
+      // Dos pasos: el primero muestra 2023 y 2024, el segundo revela 2025. El cierre que en su
+      // momento iba a ser un tercer paso terminó siendo escena aparte, y después se quitó del
+      // recorrido entero.
       encendido: [
         (c, i) => i < 2,
         () => true
       ],
       textos: {
         titulo: 'En 2025, alinearse con China supera a alinearse con Estados Unidos',
-        bajada: 'Con qué potencia debería alinearse Chile, según las personas encuestadas.',
-        eje: 'Porcentaje de cada preferencia',
-        pie: 'Porcentaje sobre quienes contestaron: 664, 668 y 1.227 casos. La contestan todos, sin faltantes. El resto de cada oleada no quiere elegir bando.',
+        bajada: '',
+        eje: '',
+        pie: 'Porcentaje de respuestas a cómo debería posicionarse Chile. Bases por oleada: 664, 668 y 1.227 personas; sin respuestas faltantes.',
         frases: [
-          'En 2023 y 2024 <b>ganaba Estados Unidos</b>, las dos veces con holgura.',
+          'En 2023 y 2024 <b>ganaba Estados Unidos</b>: 14,9 % y 16,0 % contra 8,3 % y 8,8 %.',
           '<b>En 2025 se da vuelta:</b> China llega a 16,3 % y Estados Unidos baja a 11,9 %.'
         ]
       },
@@ -1117,44 +1204,6 @@
         'A favor de EE. UU. 2023→2025: −3,0 pp [−6,3; +0,2] · p = 0,08 · **dentro del ruido**. Solo 2024→2025 pasa (−4,1, p = 0,015).',
         'No alineamiento 2023→2025: −5,0 pp [−9,1; −0,9] · p = 0,02, pero **ninguna de sus dos categorías se mueve sola** en ningún par de oleadas (distancia −0,8 p = 0,75 · ambos −4,2 p = 0,08). Por eso el guion viejo sale.',
         'p26 no tiene faltantes: 664, 668 y 1.227, el total de cada oleada.'
-      ]
-    },
-    {
-      nombre: '6 · El cierre',
-      id: 'cierre',
-      tipo: 'cierre',
-      escala: { min: 0, max: 20, paso: 5 },
-      escalaCero: { min: 0, max: 100, paso: 25 },
-      // Las tres medidas que comparan a China con Estados Unidos **dentro de la misma persona**,
-      // cada una en su unidad. Solo son comparables en el signo, así que lo que comparten es el
-      // cero y no la escala: cada panel se dibuja simétrico alrededor de su propio cero.
-      datos: [
-        { clave: 'Termómetro', etiqueta: 'Opinión de 0 a 100', unidad: 'puntos', v: [-2.1, -4.3, 6.5], cruza: true, ruido: [true, false, false] },
-        { clave: 'Confianza', etiqueta: 'Confianza en su capacidad', unidad: 'escalones', v: [0.09, 0.04, 0.37], cruza: false, ruido: [false, true, false], decimales: 2 },
-        { clave: 'Posición', etiqueta: 'Con quién alinearse', unidad: 'puntos porcentuales', v: [-6.6, -7.2, 4.4], cruza: true, ruido: [false, false, false] }
-      ],
-      encendido: [
-        (c) => c === 'Termómetro',
-        (c) => c === 'Termómetro' || c === 'Confianza',
-        () => true
-      ],
-      textos: {
-        titulo: 'Tres maneras de preguntarlo: una ya iba adelante, dos se dan vuelta en 2025.',
-        bajada: 'Ventaja de China sobre Estados Unidos, medida dentro de cada persona.',
-        eje: 'Cada panel en su unidad · el cero es lo que comparten',
-        pie: 'Las tres las contesta la misma persona, así que no son tres pruebas independientes: coinciden de signo entre el 85 % y el 94 % de las veces. Método en \'Sobre los datos\'.',
-        frases: [
-          'El <b>termómetro</b> cruza en 2025: de −2,1 a +6,5 puntos.',
-          'La <b>confianza</b> no cruza: <b>China ya iba adelante en 2023</b>, y se ensancha.',
-          'La <b>posición</b> cruza y con dos oleadas de piso: −6,6, −7,2 y +4,4.'
-        ]
-      },
-      contrastes: [
-        'Termómetro (China − EE. UU., por persona): 2023 −2,1 [−5,2; +0,9] parejos · 2024 −4,3 [−7,2; −1,5] · 2025 **+6,5** [+4,2; +8,8]',
-        'Confianza (escalones, por persona): 2023 +0,09 [+0,02; +0,17] p = 0,02 · 2024 +0,04 dentro del ruido · 2025 **+0,37** [+0,30; +0,44] p < 0,001',
-        'Posición (pp, por persona): 2023 −6,6 · 2024 −7,2 · 2025 **+4,4**, las tres pasan el contraste',
-        '**La confianza nunca cruzó**: China ya estaba arriba en 2023. Decir que las tres se dan vuelta sería falso.',
-        'Acuerdo de signo entre pares de medidas: termómetro–posición 84,8 % → 88,9 % · termómetro–confianza 78,0 % → 84,0 % · confianza–posición 89,9 % → 94,4 %. **Ninguno de los tres aumentos pasa el contraste**: ya estaban alineadas en 2023.'
       ]
     },
   ];
@@ -1212,9 +1261,10 @@
    * parámetro que ofrece cambiar algo ya decidido invita a volver a discutirlo.
    */
   /**
-   * Qué se puede elegir, que hoy es **nada**: la forma de p26 se decidió el 08-09-2026 (cruce con
-   * el reparto arriba) y las otras dos candidatas se fueron con la decisión. Un panel que ofrece
-   * volver sobre algo cerrado invita a volver sobre algo cerrado.
+   * Qué se puede elegir, que hoy es **nada**. La forma de p26 se cerró: barras al 100 % por
+   * oleada con énfasis estático, y las candidatas anteriores (el cruce de dos series con el
+   * reparto arriba, entre ellas) se fueron con la decisión. Un panel que ofrece volver sobre algo
+   * cerrado invita a volver sobre algo cerrado.
    */
   function opciones () { return []; }
 
@@ -1239,7 +1289,7 @@
     anclaje: 'centro',       // .escena { justify-content: center }
     texto: 'una-frase',      // las inactivas en opacity-0, apiladas en una celda
     fondo: 'papel',          // la capa es bg-white y no hay modo oscuro en el producto
-    forma: 'cruce',
+    forma: 'barras',   // p26: barras al 100 % con énfasis estático
     alto: 'grande',
     entrada: 'destello',     // .dato-nuevo, halo de 700 ms
     apagado: '0',            // ocultar no es borrar: opacidad cero, sigue en el DOM
@@ -1324,18 +1374,6 @@
 
   // Los colores de las escenas 2 y 3 no son las oleadas: son las variables. Salen de los mismos
   // semánticos del visualizador, con una versión aclarada para fondo oscuro.
-  // Los colores semánticos de la app, verbatim de `src/nucleo/paleta.ts`. **No se eligen acá.**
-  // Están amarrados a la etiqueta, así que el recorrido y el tablero pintan la misma pregunta
-  // igual sin que nadie repita un valor. El laboratorio tenía un rojo `#C0392B` para China que
-  // no existe en ninguna parte del producto.
-  const SEMANTICOS = {
-    china: '#E8632A',        // A favor de China
-    eeuu: '#2A6FD6',         // A favor de EE. UU.
-    distancia: '#8A8A85',    // Mantener distancia de ambos
-    ambos: '#00998C',        // Relacionarse con ambos
-    neutro: '#00998C'        // el color por defecto de `Serie`
-  };
-  const TONOS_SERIE = { claro: SEMANTICOS, oscuro: SEMANTICOS };
 
   const esOscuro = () => p.fondo === 'marca' || p.fondo === 'tinta';
 
@@ -1572,155 +1610,74 @@
   // --- La escena del posicionamiento (p26) ---------------------------------
 
   /**
-   * Las dos series que se cruzan, sobre un eje de 0 a 20.
+   * p26: una fila por oleada, el reparto completo al 100 %, con los extremos rotulados debajo.
    *
-   * **El no alineamiento no entra en este eje y no es un descuido.** Es tres veces más grande que
-   * las dos series juntas: con un eje de 0 a 80 el cruce entero mide once píxeles y la escena deja
-   * de contar lo que dice contar. Lo que sí hace falta es que el lector sepa qué fracción de la
-   * muestra son estas dos líneas, y eso lo da la franja de contexto, que va en su propia escala de
-   * 100 % y sin eje: es contexto, no una segunda figura para leer con precisión.
+   * **Es el marcado de `BarrasPosicionamiento.tsx`, no una versión parecida.** Mismas clases y
+   * mismo CSS copiado arriba: si acá se ve distinto de la app, es que uno de los dos cambió y hay
+   * que volver a copiar, que es exactamente lo que el laboratorio tiene que dejar ver.
+   *
+   * El último paso revela la fila de 2025 **sin traslación**, y el énfasis lo pone un anillo
+   * estático dentro de cada extremo, que dura todo el paso. **Ni los anchos ni la escala se
+   * animan**: mover un porcentaje mientras el relato avanza es contar otra cosa, y una fila que se
+   * desplaza al entrar mueve todo lo que tiene debajo.
    */
-  /**
-   * La figura aprobada para p26: las dos series que se cruzan, con el reparto completo arriba.
-   *
-   * **El no alineamiento no entra en el eje de las líneas y no es un descuido.** Es tres veces
-   * más grande que las dos series juntas: con un eje que lo incluyera, el cruce entero mide once
-   * píxeles. Lo que sí hace falta es que se vea qué fracción de la muestra son estas dos líneas,
-   * y eso lo da la franja de arriba, en su propia escala de 100 %.
-   *
-   * **Sin marca de intersección.** Estuvo dibujada como línea vertical y círculo, y se sacó: no
-   * sabemos en qué momento entre 2024 y 2025 se cruzaron las dos series, así que poner el cruce
-   * en un punto del eje afirma una fecha que los datos no tienen. Tres oleadas no son una curva.
-   */
-  function svgCruce () {
-    const tema = FONDOS[p.fondo];
-    const escala = escalaDe();
-    const altoTotal = ALTOS[p.alto];
-    const ancho = 360;
-    const franja = 62;
-    const alto = altoTotal - franja;
-    const izq = 32, der = 118, arriba = 14, abajo = 22;
-    const x = (i) => izq + (i * (ancho - izq - der)) / (OLAS.length - 1);
-    const y = (v) => franja + arriba + (1 - (v - escala.min) / (escala.max - escala.min)) * (alto - arriba - abajo);
-    let s = '<svg viewBox="0 0 ' + ancho + ' ' + altoTotal + '" width="100%" role="img" aria-label="' + escapar(T().titulo) + '">';
-
-    // El reparto completo, una tira por oleada, apilada al 100 %. Sin números: dice «estas dos
-    // líneas son este pedazo del total» y nada más. Quién es cada color lo dice la leyenda.
+  function barrasP26 () {
     const rep = E().reparto || [];
-    const xTira = izq, anchoTira = ancho - izq - der;
+    const ultima = OLAS.length - 1;
+    const nombre = (c) => c.etiqueta.replace(/^A favor de\s+/i, '');
+    const muestraUltima = paso >= 1;
+    // La app recibe `reducido` y con él **no** marca la fila como entrando. Acá se consulta al
+    // navegador: sin esto la clase quedaba puesta y solo el CSS la desactivaba, que es parecido
+    // pero no es lo mismo, y el laboratorio está para ver lo mismo.
+    const reducido = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const extremos = rep.filter((c) => c.clave === '1' || c.clave === '2');
+    const pct = (v) => coma(v) + ' %';
+
+    let s = '<figure class="barras-posicionamiento">';
+    s += '<p>Cada barra representa el 100 % de las respuestas.</p>';
+    s += '<div class="p26-filas">';
     OLAS.forEach((ola, i) => {
-      const yTira = 8 + i * 14;
-      let acumulado = 0;
-      rep.forEach((cat) => {
-        const w = (cat.v[i] / 100) * anchoTira;
-        const color = tonoSerie(cat);
-        s += '<rect class="marca-dato" data-pais="' + cat.clave + '" data-ola="' + i + '" x="' + (xTira + acumulado) +
-          '" y="' + yTira + '" width="' + w + '" height="10" fill="' + color + '"/>';
-        acumulado += w;
+      const final = i === ultima;
+      const visible = !final || muestraUltima || reducido;
+      const animar = final && muestraUltima;
+      s += '<div class="p26-fila' + (visible ? '' : ' p26-oculta') + '">';
+      s += '<span class="p26-ola">' + ola + '</span>';
+      s += '<div class="p26-barra">';
+      rep.forEach((c) => {
+        const extremo = c.clave === '1' || c.clave === '2';
+        // **El énfasis va dentro del segmento y dura todo el paso.** Antes era una emanata de
+        // 700 ms sobre el borde de arriba, y medida en el navegador se pierde mientras uno lee.
+        // No toca el área del dato: el anillo se dibuja hacia adentro.
+        const marca = (animar && extremo) ? '<span class="enfasis-barra"></span>' : '';
+        s += '<span class="p26-segmento' + (extremo ? ' p26-extremo' : '') +
+          '" style="width:' + c.valores[i] + '%;background-color:' + c.color + '">' + marca + '</span>';
       });
-      s += '<text class="eje" x="' + (izq - 6) + '" y="' + (yTira + 8) + '" fill="#6b7280" font-size="9" text-anchor="end">' + ola + '</text>';
+      s += '</div><div class="p26-valores">';
+      extremos.forEach((c) => { s += '<span>' + nombre(c) + ' <strong>' + pct(c.valores[i]) + '</strong></span>'; });
+      s += '</div></div>';
     });
-
-    OLAS.forEach((ola, i) => {
-      s += '<text class="eje" x="' + x(i) + '" y="' + (franja + alto - 6) + '" fill="#6b7280" font-size="8" text-anchor="middle">' + ola + '</text>';
-    });
-
-    filas().forEach((fila) => {
-      const color = tonoSerie(fila);
-      const d = fila.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
-      s += '<path class="marca-dato tramo" data-pais="' + fila.clave + '" d="' + d + '" fill="none" stroke="' + color + '" style="color:' + color + '" stroke-width="1.6" stroke-linecap="round"/>';
-      fila.v.forEach((v, i) => {
-        s += '<circle class="marca-dato punto" data-pais="' + fila.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="3.4" fill="#FFFFFF" style="color:' + color + '" stroke="' + color + '" stroke-width="1.6"/>';
-        if (i < 2) {
-          s += '<text class="marca-dato valor-fila" data-pais="' + fila.clave + '" data-ola="' + i + '" x="' + x(i) + '" y="' + (y(v) - 8) +
-            '" fill="#111827" font-size="9" font-weight="500" text-anchor="' + (i === 0 ? 'start' : 'middle') + '">' + coma(v) + '</text>';
-        }
-      });
-      // **El nombre sigue al último punto encendido, no al último.** Anclado siempre al final,
-      // en el primer paso los dos nombres salen ya en el orden del desenlace y la figura cuenta
-      // el final antes que el relato. El valor sí espera al último punto.
-      const hasta = encendidoDe(paso)(fila.clave, 2) ? 2 : encendidoDe(paso)(fila.clave, 1) ? 1 : 0;
-      s += '<text class="etiqueta-pais" x="' + (x(hasta) + 7) + '" y="' + (y(fila.v[hasta]) + 3.5) + '" fill="' + color + '" style="color:' + color + '" font-size="9.5" font-weight="600">' + fila.clave + (hasta === 2 ? ' ' + coma(fila.v[2]) + ' %' : '') + '</text>';
-    });
-    s += '</svg>';
-
-    // **La leyenda nombra las cuatro, y las dos del medio no son «el resto».** «Mantener
-    // distancia de ambos» y «relacionarse con ambos» son dos posiciones distintas de política
-    // exterior: dejarlas sin nombre las convierte en un bloque gris sin significado.
-    s += '<ul class="leyenda-reparto">' + rep.map((cat) =>
-      '<li><i style="background:' + tonoSerie(cat) + '"></i>' + cat.etiqueta + '</li>').join('') + '</ul>';
-    return s;
+    s += '</div>';
+    // **El espacio de esta línea se reserva desde el primer paso**: si apareciera al entrar la
+    // última fila, empujaría todo lo de abajo y el bloque cambiaría de alto a mitad de escena.
+    s += '<div class="p26-cambio' + (muestraUltima || reducido ? '' : ' p26-oculta') + '">';
+    s += '<span style="color:#6b7280">' + OLAS[ultima] + ' frente a ' + OLAS[ultima - 1] + ':</span> ';
+    s += extremos.map((c) => {
+      const d = c.valores[ultima] - c.valores[ultima - 1];
+      return nombre(c) + ' <strong>' + (d > 0 ? '+' : '\u2212') + coma(Math.abs(d)) + ' pp</strong>';
+    }).join(' \u00b7 ');
+    s += '</div>';
+    s += '<ul class="p26-leyenda">' + rep.map((c) =>
+      '<li><span style="background-color:' + c.color + '"></span>' + c.etiqueta + '</li>').join('') + '</ul>';
+    return s + '</figure>';
   }
 
 
-  /**
-   * El cierre: las tres medidas de la ventaja de China, cada una en su unidad y todas contra su
-   * propio cero.
-   *
-   * **Lo único comparable entre puntos de termómetro, escalones y puntos porcentuales es el
-   * signo**, así que cada panel se dibuja simétrico alrededor de su cero y el cero queda a la
-   * misma altura en los tres. Una escala común mentiría: diría que 0,37 escalones es menos que
-   * 4,4 puntos porcentuales.
-   */
-  function svgCierre () {
-    const tema = FONDOS[p.fondo];
-    const alto = ALTOS[p.alto];
-    const paneles = filas();
-    // **Tres SVG, no uno ancho.** Un solo lienzo de 360 con `width: 100%` crece de alto con el
-    // ancho de la ventana: en 1512 daba 932 px contra una escena de 737. Cada panel en su propia
-    // columna de la grilla queda acotado por la columna, que es lo que hace la app con `Serie`.
-    const ancho = 116, altoP = Math.min(alto, 210);
-    const arriba = 30, abajo = 34;
-    const medioY = arriba + (altoP - arriba - abajo) / 2;
 
-    // **Y con tope de ancho.** Tres paneles chicos repartidos en 1512 px dan 490 px cada uno, y un
-    // lienzo de 116 escalado 4,2 veces vuelve a pasarse de alto (856 contra una escena de 737).
-    // El tope es del bloque, no del lienzo: la figura es la misma, deja de estirarse y se centra.
-    return '<div class="paneles-cierre" style="display:grid;grid-template-columns:repeat(' + paneles.length +
-      ',1fr);gap:14px;align-items:start;max-width:620px;margin:0 auto">' + paneles.map((panel) => {
-      const tope = Math.max.apply(null, panel.v.map(Math.abs)) * 1.3;
-      const y = (v) => medioY - (v / tope) * ((altoP - arriba - abajo) / 2);
-      const x = (i) => 10 + (i * (ancho - 24)) / (OLAS.length - 1);
-      let g = '<svg viewBox="0 0 ' + ancho + ' ' + altoP + '" width="100%" role="img" aria-label="' +
-        escapar(panel.clave + ': ' + panel.etiqueta) + '">';
-      g += '<text class="marca-dato" data-pais="' + panel.clave + '" x="0" y="9" fill="' + tema.tinta + '" font-size="9" font-weight="600">' + panel.clave + '</text>';
-      g += '<text class="marca-dato" data-pais="' + panel.clave + '" x="0" y="19" fill="' + tema.eje + '" font-size="7.5">' + panel.unidad + '</text>';
-      // El cero es lo único que los tres paneles comparten, así que va más marcado que cualquier
-      // otra regla y a la misma altura en los tres.
-      g += '<line class="marca-dato" data-pais="' + panel.clave + '" x1="0" y1="' + medioY + '" x2="' + ancho + '" y2="' + medioY + '" stroke="' + tema.tinta + '" stroke-width="1"/>';
-      g += '<text class="marca-dato eje" data-pais="' + panel.clave + '" x="' + ancho + '" y="' + (medioY - 3) + '" fill="' + tema.eje + '" font-size="7" text-anchor="end">0</text>';
-      const d = panel.v.map((v, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(v)).join(' ');
-      g += '<path class="marca-dato tramo" data-pais="' + panel.clave + '" d="' + d + '" fill="none" stroke="#8A8A85" stroke-width="1.6" stroke-linecap="round"/>';
-      panel.v.forEach((v, i) => {
-        // Punto hueco donde el intervalo cruza el cero: ahí no hay ventaja que anunciar, y
-        // dibujarlo lleno diría que sí. Es la regla de «parejos» de la escena 1.
-        const enRuido = panel.ruido[i];
-        const color = v >= 0 ? tonoSerie({ tono: 'china' }) : tonoSerie({ tono: 'eeuu' });
-        g += '<circle class="marca-dato punto" data-pais="' + panel.clave + '" data-ola="' + i + '" cx="' + x(i) + '" cy="' + y(v) +
-          '" r="3.4" fill="' + (enRuido ? '#FFFFFF' : color) + '" stroke="' + color + '" stroke-width="1.6"/>';
-      });
-      if (p.rotulos !== 'ninguno') {
-        const v = panel.v[2];
-        const dec = panel.decimales || 1;
-        g += '<text class="marca-dato" data-pais="' + panel.clave + '" data-ola="2" x="' + x(2) + '" y="' + (y(v) + (v >= 0 ? -7 : 13)) +
-          '" fill="' + tema.tinta + '" font-size="8.5" font-weight="600" text-anchor="middle">' + (v > 0 ? '+' : '\u2212') +
-          Math.abs(v).toFixed(dec).replace('.', ',') + '</text>';
-      }
-      OLAS.forEach((ola, i) => {
-        g += '<text class="eje marca-dato" data-pais="' + panel.clave + '" x="' + x(i) + '" y="' + (altoP - 14) + '" fill="' + tema.eje + '" font-size="7" text-anchor="middle">' + String(ola).slice(2) + '</text>';
-      });
-      g += '<text class="eje marca-dato" data-pais="' + panel.clave + '" x="0" y="' + (altoP - 3) + '" fill="' + tema.eje + '" font-size="7.5">' + (panel.cruza ? 'cruza en 2025' : 'nunca cruz\u00f3') + '</text>';
-      return g + '</svg>';
-    }).join('') + '</div>';
-  }
-
-  /** Qué dibuja cada escena. Una figura por escena, salvo p26, que es la decisión abierta. */
   /** Qué dibuja cada escena. Una figura por escena: ya no hay decisiones abiertas de forma. */
   function figuraHTML () {
     if (E().tipo === 'experimento') return svgExperimento();
-    if (E().tipo === 'cierre') return svgCierre();
     if (E().tipo === 'filas') return svgPuntos();
-    return svgCruce();
+    return barrasP26();
   }
 
   function leyendaHTML () {
@@ -1754,9 +1711,7 @@
   // El umbral: por debajo, dos columnas dejan la figura en 380 px y las filas de países se
   // superponen. Medido sobre el visor, que es el contenedor real de la escena.
   const ANCHO_DOS_COLUMNAS = 900;
-  // El cierre son tres paneles en paralelo: en media pantalla quedan en 192 px cada uno y los
-  // números a 6 px. Dos columnas solo donde la figura es una sola figura (regla de la skill).
-  const dosColumnas = () => p.columnas !== 'una' && E().tipo !== 'cierre' && visor.clientWidth >= ANCHO_DOS_COLUMNAS;
+  const dosColumnas = () => p.columnas !== 'una' && visor.clientWidth >= ANCHO_DOS_COLUMNAS;
 
 
   function pintarEscena () {
@@ -1878,10 +1833,14 @@
     // el avance sea barato. La escena del experimento no puede: cada paso cambia la figura entera
     // (entra la recta, se marca un punto, se saca ese punto y la recta se endereza), así que ahí
     // se repinta. Es la excepción y por eso se declara acá y no dentro del renderizador.
-    if (E().tipo === 'experimento' && antes !== nuevo) {
+    // **Dos escenas repintan su figura en cada paso**, y por la misma razón: su marcado depende
+    // del paso, no solo qué clases lleva. El experimento cambia la recta entera; p26 revela la
+    // fila de la última oleada y su línea de diferencias. Se reemplaza **solo el lienzo**, no la
+    // escena: repintar todo recrearía la pista y el observador en pleno scroll.
+    if ((E().tipo === 'experimento' || E().tipo === 'series') && antes !== nuevo) {
       // Se reemplaza **solo el lienzo**, no la escena entera: repintar todo recrearía la pista y
       // el observador en pleno scroll, que es la manera de que el contenido salte bajo el dedo.
-      const viejo = visor.querySelector('.bloque-figura svg');
+      const viejo = visor.querySelector('.bloque-figura svg, .bloque-figura figure');
       if (viejo) viejo.outerHTML = figuraHTML();
       const pie = visor.querySelector('.bloque-figura .pie');
       if (pie) pie.innerHTML = pieHTML();
