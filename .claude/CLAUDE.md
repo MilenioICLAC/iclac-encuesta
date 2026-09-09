@@ -364,13 +364,22 @@ se va a China». Salió por tres razones medidas:
 
 - **La aritmética no da.** El no alineamiento pierde 5,0 puntos y China gana 8,0. No puede venir
   todo de ahí; el alza se arma de pedazos que ninguno se prueba solo.
-- **Ninguna de las dos categorías del no alineamiento se mueve por su cuenta** en ningún par de
-  oleadas: «mantener distancia» −0,8 (p = 0,75) y «relacionarse con ambos» −4,2 (p = 0,08) entre
-  2023 y 2025. El hallazgo dependía de sumarlas **y** de mirar solo las puntas.
+- **Ninguna de las dos categorías del no alineamiento se mueve por su cuenta**, en **ninguna** de
+  sus seis comparaciones. La más cercana al ruido es «relacionarse con ambos» entre 2023 y 2025
+  (−4,2, p = 0,08); «mantener distancia» ni siquiera se acerca (−0,8, p = 0,75). El agregado sí
+  cae en la serie completa (−5,0, p = 0,02) pero **no en ninguno de sus dos tramos consecutivos**,
+  así que el hallazgo dependía de sumar las categorías **y** de mirar solo las puntas.
+
+  Las dos categorías viven como medidas propias (`distancia-ambos`, `relacionarse-ambos`) desde el
+  09-09-2026, y no es un detalle de contabilidad: **la prueba que afirmaba esto consultaba solo el
+  agregado**, o sea que su nombre decía más de lo que medía. Lo encontró Codex revisando. Una
+  medida que no existe no se puede probar, y una prueba que no puede fallar no sostiene nada.
 - **No cabía.** Tres paneles de `Serie` en una grilla de tres columnas colapsan bajo 640 px: 1.088
   px de escena contra 857 de pantalla, con el tercer panel y la nota entera bajo el borde.
 
-Las dos primeras están fijadas como prueba en `scripts/contrastes.test.mjs`.
+Las dos primeras están fijadas como prueba en `scripts/contrastes.test.mjs`, en dos pruebas
+que se sostienen mutuamente: una falla si alguna mitad empieza a moverse sola, la otra si el
+agregado deja de caer. La afirmación son las dos juntas.
 
 **Y hay una tentación que ya se probó y no se sostiene:** decir que el alza de China sale de un
 grupo concreto. Se midió con cuatro cortes distintos del termómetro y **cuál estrato la lleva

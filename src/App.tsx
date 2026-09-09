@@ -1050,15 +1050,16 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                   // está calculada sobre todos los puntos, así que nada se mueve de lugar al
                   // entrar 2025 (ver `nucleo/pasos.ts`).
                   visible={(ola) => reducido || activo >= 1 || ola !== ultimaOla}
-                  unidadEje={`Porcentaje sobre quienes contestaron. La franja de arriba es el reparto completo de cada oleada: las dos líneas son la parte que sí elige bando.`}
+                  // Una línea, y solo lo que la figura no dice sola: qué es la franja. El
+                  // denominador vive en el pie, junto a las bases, en vez de estar en los dos.
+                  unidadEje="La franja de arriba es el reparto completo de cada oleada."
                 />
               )}
               nota={(
                 <p className="text-xs leading-snug text-gray-500">
-                  Bases: {proChina.map((p) => numero(p.base)).join(', ')} personas. La pregunta la
-                  contestan todas, sin faltantes. «Supera» compara las dos preferencias{' '}
-                  <strong>dentro de cada persona</strong>, que es lo que corresponde en una
-                  elección única, y pasa el contraste en las tres oleadas.
+                  Sobre las {proChina.map((p) => numero(p.base)).join(', ')} personas que
+                  contestaron, sin faltantes. «Supera» compara las dos preferencias{' '}
+                  <strong>dentro de cada persona</strong> y pasa el contraste en las tres oleadas.
                 </p>
               )}
             />

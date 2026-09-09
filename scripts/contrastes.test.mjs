@@ -308,19 +308,43 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
 
   /**
    * Lo que la escena **no** puede decir, y queda escrito para que nadie lo reponga: la caída del
-   * no alineamiento. Pasa en la serie completa pero **ninguna de sus dos categorías se mueve
-   * sola**, así que el hallazgo depende de sumarlas y de mirar solo las puntas. Ese era el guion
-   * viejo de la escena 5 y por eso salió.
+   * no alineamiento. El agregado sí se mueve en la serie completa, pero **ninguna de sus dos
+   * categorías se mueve sola en ninguna comparación**, así que el hallazgo dependía de sumarlas.
+   * Ese era el guion viejo de la escena 5 y por eso salió.
+   *
+   * **Esta prueba consultaba solo el agregado** hasta el 09-09-2026, o sea que afirmaba en su
+   * nombre algo más fuerte de lo que medía (lo encontró Codex revisando). Ahora `distancia-ambos`
+   * y `relacionarse-ambos` existen como medidas propias y se comprueban las seis comparaciones.
    */
-  it('ninguna categoría del no alineamiento se mueve por su cuenta', () => {
-    for (const id of ['no-alineamiento']) {
+  it('ninguna de las dos categorías del no alineamiento se mueve por su cuenta', () => {
+    const mitades = ['distancia-ambos', 'relacionarse-ambos']
+    for (const id of mitades) {
       const m = calculado.medidas.find((x) => x.id === id)
-      expect(m, id).toBeTruthy()
+      expect(m, `la medida ${id} existe`).toBeTruthy()
+      expect(m.comparaciones.length, `${id}: las tres comparaciones`).toBe(3)
+      for (const c of m.comparaciones) {
+        expect(c.p, `${id} ${c.desde}→${c.hasta} p=${c.p}`).toBeGreaterThan(0.05)
+        // El intervalo cruzando el cero es la otra cara de lo mismo, y es la que la figura usa.
+        expect(c.ic[0] * c.ic[1], `${id} ${c.desde}→${c.hasta}: el intervalo cruza el cero`)
+          .toBeLessThanOrEqual(0)
+      }
     }
-    const consecutivas = calculado.medidas
-      .find((x) => x.id === 'no-alineamiento').comparaciones
-      .filter((c) => c.hasta - c.desde === 1)
-    for (const c of consecutivas) {
+  })
+
+  /**
+   * Y el contraste que hace de esto un hallazgo y no una curiosidad: **la suma sí se mueve donde
+   * las partes no**. Si una oleada nueva hiciera que alguna mitad se moviera sola, la de arriba
+   * falla; si el agregado dejara de moverse, falla esta. Las dos juntas son la afirmación.
+   */
+  it('el no alineamiento sí cae en la serie completa, que es lo que las partes no explican', () => {
+    const total = calculado.medidas.find((x) => x.id === 'no-alineamiento')
+    const [primera] = total.comparaciones.filter((c) => c.hasta - c.desde > 1)
+    expect(primera, 'la comparación de punta a punta existe').toBeTruthy()
+    expect(primera.diferencia, 'cae').toBeLessThan(0)
+    expect(primera.p, `serie completa p=${primera.p}`).toBeLessThan(0.05)
+    // Y los tramos consecutivos, por separado, no se distinguen del ruido: la caída solo aparece
+    // mirando las puntas, que es la otra mitad de por qué el guion viejo no se sostenía.
+    for (const c of total.comparaciones.filter((x) => x.hasta - x.desde === 1)) {
       expect(c.p, `no alineamiento ${c.desde}→${c.hasta} p=${c.p}`).toBeGreaterThan(0.05)
     }
   })

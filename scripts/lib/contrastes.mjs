@@ -51,6 +51,13 @@ export const MEDIDAS = [
   { id: 'no-alineamiento', etiqueta: 'No alineamiento', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3, 4] },
   { id: 'pro-china', etiqueta: 'Prefiere alinearse con China', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [1] },
   { id: 'pro-eeuu', etiqueta: 'Prefiere alinearse con Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [2] },
+  // **Las dos mitades del no alineamiento, cada una por su cuenta.** Estaban solo sumadas, y con
+  // el agregado no se puede afirmar nada sobre ellas: el guion viejo de la escena 5 decía que el
+  // no alineamiento se erosiona, y lo que hay que poder probar es que **ninguna de las dos se
+  // mueve sola**, o sea que el hallazgo dependía de sumarlas. Sin estas dos, la prueba que dice
+  // eso estaría midiendo otra cosa.
+  { id: 'distancia-ambos', etiqueta: 'Prefiere mantener distancia de ambas potencias', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3] },
+  { id: 'relacionarse-ambos', etiqueta: 'Prefiere relacionarse con ambas potencias', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [4] },
 ]
 
 /**
