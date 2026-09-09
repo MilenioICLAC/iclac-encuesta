@@ -225,6 +225,25 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   encabezado, texto y figura, y en un iPhone 12 (664 px) la suma se pasaba por 16 px: el enlace al
   tablero quedaba bajo el borde. La media query es por **alto** (`max-height: 700px`), no por
   ancho: lo que falta es alto, y hay teléfonos anchos y bajos.
+- **Un énfasis que dura menos que la lectura no existe.** La emanata de las barras duraba 700 ms y
+  medida en el navegador se pierde: el paso dura lo que el lector tarda en leer la frase, así que
+  el gesto ya terminó cuando la vista llega a la figura. Lo que señala **de qué habla el paso** va
+  estático, dura todo el paso y se apaga en el siguiente. La emanata se queda donde sí es un gesto
+  de entrada o de salida (el punto del termómetro, el de la regresión), que es otra cosa.
+
+  **Y un énfasis estático no se apaga con `prefers-reduced-motion`.** Con la emanata correspondía,
+  porque era movimiento; un anillo quieto es información sobre qué está contando el paso, y quien
+  pidió menos movimiento no pidió menos información.
+
+  **Va dentro del segmento, no encima.** Encima fue el primer intento: con filas de 26 px separadas
+  por 3, una marca sobre la barra aterriza en la fila de arriba y se lee como si fuera de ella. Un
+  anillo por dentro no necesita lugar, no depende del alto de la fila y no pelea con el recorte.
+  Doble, blanco por dentro y tinta por fuera, porque un solo color falla contra alguno de los
+  rellenos de la escala.
+
+  **Y uno solo por paso.** Si la frase nombra un sumando de dos categorías a lo largo de tres
+  oleadas, eso no es un segmento: marcarlos todos llena la figura y marcar uno contradice la frase.
+  Ahí no va marca, y es mejor que inventarle un foco.
 - **Un gesto puede marcar lo que un cambio de estado no dice solo.** Al retirar el punto de la
   regresión salen ocho líneas radiales desde su perímetro: son una **emanata** (Mort Walker, «The
   Lexicon of Comicana», 1980; en motion design, *burst lines*). Marcan que algo salió, que es lo

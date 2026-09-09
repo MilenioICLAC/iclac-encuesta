@@ -399,29 +399,51 @@ vuelta» es falso.
 
 ---
 
-## La figura de una minoría que se cruza dentro de un total grande
+## P26: una sola figura de barras
 
-`src/componentes/Cruce.tsx`, decidido con el laboratorio el 08-09-2026. Dos escalas en una figura,
-y cada una resuelve lo que la otra rompe:
+Decisión de Felipe del 09-09-2026: quitar C16 del recorrido y eliminar la escena 6.
+El recorrido queda en cinco escenas. C16 deja de ser una tarea editorial pendiente;
+esta decisión no modifica los datos ni sus validaciones.
 
-- **Un solo eje con las cuatro categorías aplasta el cruce.** El no alineamiento es tres veces más
-  grande que las dos series juntas: con un eje que lo contenga, el cruce entero mide once píxeles.
-- **Solo las dos líneas miente por omisión.** 16 % parece mucho hasta que uno sabe que el 72 % no
-  eligió.
+`src/componentes/BarrasPosicionamiento.tsx` reemplaza a `Cruce.tsx`. Cada oleada
+es una barra apilada al 100 %, con las cuatro categorías nombradas en la leyenda.
+EE. UU. y China ocupan los extremos y sus porcentajes aparecen debajo de cada fila.
 
-La salida es la franja de arriba: el reparto completo al 100 %, sin números y sin eje, que dice
-«estas dos líneas son este pedazo del total» y nada más. **Con leyenda que nombra las cuatro:**
-«mantener distancia de ambos» y «relacionarse con ambos» son dos posiciones distintas de política
-exterior, y dejarlas sin nombre las convierte en un bloque gris sin significado.
+El primer paso muestra 2023 y 2024; el segundo revela 2025 con emanata sobre los extremos y muestra el cambio frente a 2024
+en puntos porcentuales. El espacio de 2025 está reservado desde el inicio.
+No se interpolan anchos ni se atribuye una fecha al cruce entre mediciones.
+Con movimiento reducido se muestran las tres oleadas sin animación.
+La emanata también destaca el segmento de más confianza en China de 2025 en la escena 4.
+El pie de p26 describe la pregunta y las bases, sin la antigua explicación del contraste.
 
-Dos reglas más que salieron de mirarla avanzar:
+---
 
-- **No se marca la intersección.** Estuvo dibujada como línea vertical con un círculo, y se sacó:
-  no sabemos en qué momento entre dos oleadas se cruzaron las series, y marcar un punto del eje
-  afirma una fecha que los datos no tienen. Tres oleadas son tres mediciones, no una curva.
-- **El nombre de la serie sigue al último punto *encendido*, no al último.** Anclado al final, en
-  el primer paso los dos nombres aparecen ya en el orden del desenlace y la figura cuenta el final
-  antes que el relato. El valor sí espera al último punto: es lo que el paso está por contar.
+## Una partición no explica de dónde sale lo que sube
+
+Verificado el 09-09-2026 sobre la balanza de `p24`/`p25`, y vale para cualquier figura cuyas
+categorías sumen 100.
+
+Entre 2024 y 2025, quienes confían más en China suben 13,79 puntos, el empate cae 7,69 y quienes
+confían más en Estados Unidos caen 6,11. **Las dos caídas suman 13,79 exacto**, y no puede ser de
+otra manera: son tres partes de un total fijo, así que lo que gana una es por definición lo que
+pierden las otras dos.
+
+**Consecuencia: la descomposición no es un hallazgo, es aritmética.** «La ventaja de China se la
+saca al empate» presentaba como resultado empírico algo que se cumple siempre, y encima elegía una
+de las dos fuentes. Y como no es panel (hecho 1), **tampoco se puede saber si alguien se movió de
+una casilla a otra**: son tres reclutamientos distintos del mismo panel en línea.
+
+Lo que sí es un hallazgo, y hay que decir de qué tramo sale: las tres se mueven por encima del
+ruido entre 2024 y 2025 (p = 0,0001, 0,0010 y 0,0025), y **en la serie completa Estados Unidos no**
+(−3,24, p = 0,102). La escena 4 afirmaba «Estados Unidos no se mueve», que era cierto de la serie y
+**falso del tramo que su propia figura mostraba**. Es la misma clase de defecto que el corte de la
+escala ordinal: una afirmación verdadera bajo un recorte, publicada sin decir cuál.
+
+**El mismo día apareció otra vez, en la escena 3:** el titular decía que la confianza en Estados
+Unidos «vuelve a donde estaba», cierto solo sumando «mucha» y «algo» (47,9 → 55,8 → 50,7), mientras
+las frases citaban «mucha» sola, donde sube y se queda (13,3 → 17,1, p = 0,029). Dos cortes en una
+escena, sin decir cuál en cada cifra. **Cuando una escena usa más de un recorte, cada número tiene
+que nombrar el suyo.**
 
 ---
 
