@@ -1,4 +1,5 @@
 import type React from 'react'
+import Enfasis from './Enfasis'
 
 /**
  * Barras apiladas **divergentes**: una fila por entidad, los segmentos repartidos a los dos lados
@@ -56,6 +57,7 @@ interface Props {
   /** Qué filas están encendidas, para el recorrido. Las apagadas siguen en el documento con
    *  opacidad cero: están al imprimir y para un lector de pantalla. */
   visible?: (fila: string) => boolean
+  enfatizar?: (fila: FilaDivergente, categoria: CategoriaDivergente) => boolean
   altoFila?: number
   anchoEtiqueta?: string
   /** Unidad del eje. Se escribe una vez acá y no en cada frase del relato. */
@@ -84,7 +86,7 @@ function tinta (fondo: string): string {
 
 export default function Divergente ({
   categorias, filas, extremo, formato, visible, altoFila = 30, anchoEtiqueta = '3.5rem',
-  unidadEje, leyenda = true, titulo,
+  unidadEje, leyenda = true, titulo, enfatizar,
 }: Props) {
   // Un punto porcentual, en porcentaje del ancho del lienzo. El lienzo va de −extremo a +extremo.
   const unidad = 50 / extremo
@@ -129,10 +131,17 @@ export default function Divergente ({
                 >
                   {fila.etiqueta}
                 </span>
+                {/* **Dos capas, y la de arriba no recorta.** La emanata tiene que salirse por el
+                    borde de arriba, pero `overflow-hidden` es también lo que recorta los segmentos
+                    contra las esquinas redondeadas: quitarlo para dejar salir las rayitas dejaba
+                    el primer y el último segmento con la esquina cuadrada. Así que el recorte se
+                    queda donde estaba, en la caja de los segmentos, y las rayitas cuelgan de una
+                    capa hermana sin recorte, posicionada sobre el centro del segmento que enfatiza. */}
                 <div
-                  className="relative grow overflow-hidden rounded-[3px]"
+                  className="relative grow"
                   style={{ height: 'var(--alto-fila-divergente-ancho, var(--alto-fila-divergente))' }}
                 >
+                  <div className="absolute inset-0 overflow-hidden rounded-[3px]">
                   <div
                     className="flex h-full w-full transition-opacity duration-500"
                     style={{ opacity: encendida ? 1 : 0 }}
@@ -144,7 +153,7 @@ export default function Divergente ({
                       return (
                         <div
                           key={cat.clave}
-                          className="segmento-divergente flex items-center justify-center overflow-hidden font-medium tabular-nums"
+                          className="segmento-divergente relative flex items-center justify-center overflow-hidden font-medium tabular-nums"
                           // 1 px de fondo entre segmentos: sin la separación, dos tonos vecinos
                           // se leen como uno solo.
                           style={{ width: `${ancho}%`, backgroundColor: cat.color, color: tinta(cat.color), boxShadow: '1px 0 0 0 #fff inset' }}
@@ -153,6 +162,7 @@ export default function Divergente ({
                           {/* Por encima de la marca del cero: en la categoría neutra, que va a
                               caballo del cero, la línea partía el número al medio. */}
                           <span className="relative z-10">{ancho >= MINIMO_ROTULO && formato(v)}</span>
+                          {encendida && enfatizar?.(fila, cat) && <Enfasis />}
                         </div>
                       )
                     })}
@@ -160,6 +170,7 @@ export default function Divergente ({
                   {/* El cero, encima de las barras: es la referencia que hace divergente a la
                       figura, y por debajo desaparece bajo los segmentos. */}
                   <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/80" />
+                  </div>
                 </div>
               </div>
             </div>

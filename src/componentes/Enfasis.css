@@ -1,0 +1,39 @@
+/* Énfasis de un segmento dentro de una barra apilada.
+ *
+ * **Estático, y esa es toda la decisión.** Antes esto era una emanata de 700 ms sobre el borde
+ * superior, y medida en el navegador se pierde: el paso dura lo que el lector tarda en leer la
+ * frase, así que un gesto que se apaga en menos de un segundo ya terminó cuando la vista llega a
+ * la figura. La marca dura todo el paso y se va al siguiente, que es cuando deja de ser cierta.
+ *
+ * **Y va dentro del segmento, no encima.** Encima fue el primer intento y no cabe: con filas de
+ * 26 px separadas por 3, una marca sobre la barra aterriza en la fila de arriba y se lee como si
+ * fuera de ella. Un anillo por dentro no necesita lugar y no depende del alto de la fila.
+ *
+ * No toca el área del dato: ni el ancho del segmento ni la escala cambian. El anillo se dibuja
+ * hacia adentro, así que tampoco se sale del recorte de la barra ni pisa a los vecinos. */
+
+.enfasis-barra {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  border-radius: 1px;
+  /* Blanco por dentro y tinta por fuera: así se lee sobre cualquiera de los rellenos, que van del
+     óxido claro al verde de marca. Un solo color fallaría contra alguno de los dos extremos. */
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 3.5px rgba(23, 33, 31, 0.65);
+}
+
+/* Segmentos angostos: con menos de 12 px el anillo doble se cierra sobre sí mismo y el relleno
+   desaparece. Ahí queda solo la línea blanca, que sigue diciendo cuál es sin taparlo. */
+@media (max-width: 480px) {
+  .enfasis-barra {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(255, 255, 255, 0.95),
+      inset 0 0 0 2.5px rgba(23, 33, 31, 0.6);
+  }
+}
+
+/* Sin animación que desactivar: la marca aparece con el paso y se va con él. Al imprimir se
+   queda, porque señala de qué habla el texto que está al lado. */

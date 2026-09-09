@@ -8,8 +8,8 @@ import Modulo from './componentes/Modulo'
 import Distribucion from './componentes/Distribucion'
 import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
+import BarrasPosicionamiento from './componentes/BarrasPosicionamiento'
 import Serie from './componentes/Serie'
-import Cruce from './componentes/Cruce'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
@@ -435,9 +435,6 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
     ? figuraConfianza([{ grupo: 'China', variable: p24 }, { grupo: 'Estados Unidos', variable: p25 }], encuesta.olas, todos)
     : null
   const balanza = p24 && p25 ? figuraBalanza(encuesta.olas, todos) : null
-  /** Poca o ninguna confianza: el lado que se achica, y el que la primera frase afirma. */
-  const desconfia = (variable: typeof p24, ola: number) =>
-    (variable ? proporcion(todos(ola), variable, [3, 99]).porcentaje : 0)
   /**
    * `p26` para la escena 5, armado desde el libro de códigos del artefacto.
    *
@@ -469,53 +466,34 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
       color: SEMANTICOS[c.etiqueta] ?? NEUTRO,
       valores: encuesta.olas.map((ola) => cuota(c.codigo, ola).porcentaje),
     }))
-  /** Las dos series que se cruzan. El nombre corto es para el rótulo pegado al último punto: la
-   *  etiqueta entera vive en la leyenda, y repetida en la línea no entra en 360 px. */
-  const seriesP26 = [
-    { codigo: 2, puntos: proEeuu },
-    { codigo: 1, puntos: proChina },
-  ]
-    .map(({ codigo, puntos }) => {
-      const cat = catP26.find((c) => c.codigo === codigo)
-      return cat && puntos.length > 0
-        ? {
-            clave: String(codigo),
-            etiqueta: cat.etiqueta.replace(/^A favor de\s+/i, ''),
-            color: SEMANTICOS[cat.etiqueta] ?? NEUTRO,
-            puntos,
-          }
-        : null
-    })
-    .filter((s): s is NonNullable<typeof s> => Boolean(s))
-
-  // La escena de cierre repite las tres medidas del recorrido, una por panel, en la unidad de cada
-  // una. `opinionChina` es el termómetro en el formato que `Serie` espera.
-  const opinionChina = chinaT.map((v, i) => ({ ola: encuesta.olas[i], valor: v.media, base: v.base }))
-  const sube = (serie: { valor: number }[]) => (serie.at(-1)?.valor ?? 0) > (serie.at(0)?.valor ?? 0)
-  // El titular del cierre afirma que las tres medidas van al mismo lado, así que se comprueba
-  // sobre las tres antes de escribirlo: con una oleada nueva que rompa el patrón, el título cambia
-  // solo en vez de quedar contradiciendo a su propia figura.
-  const mismaDireccion = sube(opinionChina) && sube(confianza) && sube(proChina)
-
   const navegar = useNavigate()
 
   // Lo que dicen las pruebas del ETL sobre las tres oleadas. Las frases de la escena 1 se arman
   // con esto y no con la diferencia cruda.
   const contraste = lector(encuesta)
   const primeraOla = encuesta.olas.at(0) ?? 0
-  const penultima = encuesta.olas.at(-2) ?? 0
+  const penultimaOla = encuesta.olas.at(-2) ?? 0
   const ultimaOla = encuesta.olas.at(-1) ?? 0
   const brechaPrimera = describir(contraste.brecha(primeraOla))
-  const brechaPenultima = describir(contraste.brecha(penultima))
-  const quietasEntreOlas = contraste.todosQuietos(primeraOla, penultima)
+  const brechaPenultima = describir(contraste.brecha(penultimaOla))
+  const quietasEntreOlas = contraste.todosQuietos(primeraOla, penultimaOla)
   // Estados Unidos en la escena 2, con «mucha o algo»: sube en la oleada del medio, baja en la
   // última, y en la serie completa no se distingue del ruido. Las tres cosas salen de la prueba y
   // no de mirar la figura.
-  const vuelveEeuu = contraste.entre('confia-eeuu', penultima, ultimaOla)
+  const vuelveEeuu = contraste.entre('confia-eeuu', penultimaOla, ultimaOla)
   const serieEeuu = contraste.entre('confia-eeuu', primeraOla, ultimaOla)
   // La caída del empate es lo que sostiene el titular de la escena 4: la ventaja de China sale de
   // ahí y no de Estados Unidos, cuya baja no pasa el contraste.
-  const caeElEmpate = contraste.entre('empate-confianza', primeraOla, ultimaOla)
+  /**
+   * Las dos caídas del **último tramo**, que es del que habla la escena 4.
+   *
+   * **Antes se leía la serie completa y la frase decía «Estados Unidos no se mueve».** Eso es
+   * cierto de 2023→2025 (−3,2, p = 0,10) y **falso** de 2024→2025 (−6,1, p = 0,002), que es el
+   * tramo que la figura está mostrando. Las dos cifras salen del contraste del tramo, así que una
+   * oleada nueva las mueve sola.
+   */
+  const caeElEmpate = contraste.entre('empate-confianza', penultimaOla, ultimaOla)
+  const caeEeuu = contraste.entre('mas-confianza-eeuu', penultimaOla, ultimaOla)
 
   // **Los cinco pasos del experimento**, que son la segunda mitad de la escena 1.
   //
@@ -597,16 +575,17 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                   Qué se movió entre {encuesta.olas.at(0)} y {encuesta.olas.at(-1)}
                 </h2>
                 <p className="mt-3 text-base text-gray-600">
-                  Cuatro escenas que se avanzan con el scroll, en unos dos minutos. Se sale cuando
+                  Cinco escenas que se avanzan con el scroll, en unos dos minutos. Se sale cuando
                   quieras: el tablero queda del otro lado, con las tres oleadas completas.
                 </p>
 
                 <ol className="mt-5 divide-y divide-gray-200 border-y border-gray-200 text-sm text-gray-700">
                   {[
                     'China pasa a Estados Unidos, y el cambio entero ocurre en 2025.',
+                    'La posición política no ordena la opinión sobre China.',
                     'La confianza en China crece, y la brecha se abre por un lado solo.',
-                    'La mayoría no alineada se erosiona, y lo que pierde se va a China.',
-                    'Las tres medidas, juntas.',
+                    'La ventaja de China se la saca al empate.',
+                    'Cómo cambia la preferencia por alinearse con China o Estados Unidos.',
                   ].map((linea, i) => (
                     <li key={linea} className="flex gap-3 py-2">
                       <span className="w-4 shrink-0 text-right font-display text-xs font-semibold tabular-nums text-gray-400">
@@ -671,8 +650,8 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                     ? <>En {primeraOla} los dos estaban <strong>parejos</strong></>
                     : <>En {primeraOla} <strong>{brechaPrimera?.estado === 'china' ? 'China' : 'Estados Unidos'} estaba arriba</strong></>}
                   {brechaPenultima && (brechaPenultima.estado === 'parejos'
-                    ? <>, y en {penultima} seguían parejos.</>
-                    : <>, y en {penultima} <strong>{brechaPenultima.estado === 'china' ? 'China' : 'Estados Unidos'}</strong> quedó
+                    ? <>, y en {penultimaOla} seguían parejos.</>
+                    : <>, y en {penultimaOla} <strong>{brechaPenultima.estado === 'china' ? 'China' : 'Estados Unidos'}</strong> quedó
                       arriba por {decimal(brechaPenultima.puntos)} puntos.</>)}
                 </>,
                 <>
@@ -698,7 +677,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                       sin número arbitrario. El hecho, en cambio, es el que sostiene el titular:
                       sin él no se distingue un quiebre de una tendencia que ya venía. */}
                   <strong>Todo el cambio de la serie ocurre en {ultimaOla}</strong>: entre{' '}
-                  {primeraOla} y {penultima}{' '}
+                  {primeraOla} y {penultimaOla}{' '}
                   {quietasEntreOlas
                     ? <>ninguno de los {cardinal(contraste.paises)} países se distingue del ruido de la muestra</>
                     : <>ningún país se movió más de {decimal(quietas)} {quietasRedondo === 1 ? 'punto' : 'puntos'}</>}.
@@ -782,7 +761,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 modulo="ideologia"
                 raiz={raiz}
                 dosColumnas
-                titulo="La posición política no ordena la opinión sobre China."
+                titulo="La posición política no ordena la opinión sobre China"
                 cabecera={(activo) => (
                   <AnioDelPaso
                     olas={encuesta.olas}
@@ -798,16 +777,18 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                     <strong>{decimal(Math.abs(primeraDeLaSerie?.recta.b ?? 0))} puntos menos por cada paso
                     hacia la derecha</strong>.
                   </>,
+                  // **El intervalo tiene que decir de qué es.** Antes decía «cuyo promedio podría
+                  // estar entre 31 y 55» sin nombrar qué promedio, y la frase siguiente repetía la
+                  // cifra de personas que esta acababa de dar.
                   <>
-                    Toda esa inclinación la sostiene <strong>un punto de {numero(sostiene?.n ?? 0)} personas</strong>,
-                    cuyo promedio podría estar entre{' '}
+                    Toda esa inclinación la sostiene <strong>un solo punto</strong>: las{' '}
+                    {numero(sostiene?.n ?? 0)} personas del {sostiene?.x}, que evalúan a China entre{' '}
                     {decimal(primeraDeLaSerie?.puntos.find((q) => q.x === sostiene?.x)?.ic?.[0] ?? 0, 0)} y{' '}
                     {decimal(primeraDeLaSerie?.puntos.find((q) => q.x === sostiene?.x)?.ic?.[1] ?? 0, 0)}.
                   </>,
                   <>
-                    <strong>Sin esas {numero(sostiene?.n ?? 0)} personas la recta se endereza</strong>:{' '}
-                    {decimal(sostiene?.recta.b ?? 0)} puntos, y el rango de pendientes compatibles
-                    incluye la horizontal.
+                    <strong>Sin ellas la recta se endereza</strong>: {decimal(sostiene?.recta.b ?? 0)}{' '}
+                    puntos, y la horizontal entra en el rango.
                   </>,
                   <>
                     Las otras oleadas dicen lo mismo: <strong>la posición política no ordena la
@@ -891,12 +872,14 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               // Una sola figura por paso, así que en escritorio va el relato a un lado y la figura
               // al otro, igual que la escena 1.
               dosColumnas
-              titulo="La confianza en China crece, y en Estados Unidos vuelve a donde estaba"
+              titulo="La confianza en China crece; la de Estados Unidos va y vuelve"
               frases={[
+                // **Un extremo, no los dos.** Antes esta frase pedía cuatro cifras y dos cortes
+                // distintos en una sola oración, sobre una figura que ya tiene seis filas y cuatro
+                // categorías. El movimiento de «poca o ninguna» se ve en la figura sin narrarlo.
                 <>
-                  En China se corre el reparto entero: <strong>poca o ninguna</strong> cae de{' '}
-                  {porcentaje(desconfia(p24, primeraOla), 1)} a {porcentaje(desconfia(p24, ultimaOla), 1)}, y
-                  «mucha» pasa de {porcentaje(confianza.at(0)?.valor ?? 0, 1)} a{' '}
+                  En China <strong>se corre el reparto entero</strong>: «mucha» se duplica, de{' '}
+                  {porcentaje(confianza.at(0)?.valor ?? 0, 1)} a{' '}
                   {porcentaje(confianza.at(-1)?.valor ?? 0, 1)}.
                 </>,
                 // **La frase anterior decía «no es que Estados Unidos pierda confianza».** Con la
@@ -904,7 +887,12 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 // pierde por encima del ruido. Lo que sí se sostiene, y es lo que dice ahora, es
                 // que en la serie completa vuelve a donde estaba.
                 <>
-                  Estados Unidos sube en {encuesta.olas[1]} y <strong>vuelve</strong> en {ultimaOla}
+                  {/* **La frase nombra su corte.** El titular dice que Estados Unidos va y vuelve,
+                      que solo es cierto sumando «mucha» y «algo»: con «mucha» sola sube y se queda
+                      (13,3 → 17,1, p = 0,029). La frase anterior habla de «mucha», así que sin
+                      nombrarlo acá el lector cree que sigue leyendo la misma vara. */}
+                  Sumando <strong>«mucha» y «algo»</strong>, Estados Unidos sube en {encuesta.olas[1]} y{' '}
+                  <strong>vuelve</strong> en {ultimaOla}
                   {vuelveEeuu && vuelveEeuu.p < 0.05 && <> ({decimal(vuelveEeuu.diferencia)} puntos)</>}:{' '}
                   {serieEeuu && serieEeuu.p >= 0.05
                     ? <>en la serie completa no se distingue del ruido</>
@@ -923,6 +911,13 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                   // documento con opacidad cero, y la escala ya está calculada sobre las seis, así
                   // que ningún segmento cambia de largo al encenderse.
                   visible={(clave) => reducido || activo >= 1 || clave.startsWith('p24-')}
+                  // **Un solo foco, y solo donde la frase señala un segmento.** El paso 1 dice que
+                  // «mucha» se duplica en China, así que se marca esa categoría en la última
+                  // oleada, que es donde termina la cifra. El paso 2 habla de «mucha» **más**
+                  // «algo» a lo largo de la serie: eso no es un segmento, son dos categorías por
+                  // tres oleadas, y marcarlas todas llenaría la figura. Ahí no va marca.
+                  enfatizar={(fila, categoria) =>
+                    activo === 0 && fila.clave === `p24-${ultimaOla}` && categoria.etiqueta === 'Mucha'}
                   unidadEje="Porcentaje de quienes contestaron. El 0 del eje es el borde entre los dos lados, y cada fila suma 100."
                   titulo={(fila, categoria, valor) =>
                     `${fila.grupo ?? ''} ${fila.etiqueta} · ${categoria.etiqueta}: ${decimal(valor, 1)} % (n = ${numero(fila.base)})`}
@@ -958,18 +953,19 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 modulo="confianza-eeuu"
                 raiz={raiz}
                 dosColumnas
-                titulo="La ventaja de China se la saca al empate, no a Estados Unidos"
+                titulo="La ventaja de China crece, y caen tanto el empate como Estados Unidos"
                 frases={[
                   <>
                     Cada persona contesta por las dos potencias, así que se puede restar dentro del
-                    caso. En {primeraOla} y {penultima} <strong>manda el empate</strong>:{' '}
+                    caso. En {primeraOla} y {penultimaOla} <strong>manda el empate</strong>:{' '}
                     {porcentaje(balanza.filas[0].valores[1], 1)} y{' '}
                     {porcentaje(balanza.filas[1].valores[1], 1)} les tienen la misma confianza a las dos.
                   </>,
                   <>
                     En {ultimaOla} quienes <strong>confían más en China</strong> saltan a{' '}
-                    {porcentaje(balanza.filas[balanza.filas.length - 1].valores[2], 1)}, y el empate cae{' '}
-                    {decimal(Math.abs(caeElEmpate?.diferencia ?? 0))} puntos. Estados Unidos no se mueve.
+                    {porcentaje(balanza.filas[balanza.filas.length - 1].valores[2], 1)}. El empate cae{' '}
+                    {decimal(Math.abs(caeElEmpate?.diferencia ?? 0))} puntos y Estados Unidos{' '}
+                    {decimal(Math.abs(caeEeuu?.diferencia ?? 0))}: los dos pasan el contraste.
                   </>,
                 ]}
                 figura={(activo, reducido) => (
@@ -983,6 +979,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                     // La última oleada entra en el segundo paso: es donde ocurre el salto, y verlo
                     // aparecer es el cambio visible que ese paso se gana.
                     visible={(clave) => reducido || activo >= 1 || clave !== `balanza-${ultimaOla}`}
+                    enfatizar={(fila, cat) => !reducido && activo >= 1 && fila.clave === `balanza-${ultimaOla}` && cat.lado === 1}
                     unidadEje="Cada persona contesta por las dos potencias, así que la comparación va dentro del caso. «La misma» queda a caballo del cero."
                     titulo={(fila, categoria, valor) =>
                       `${fila.etiqueta} · ${categoria.etiqueta}: ${decimal(valor, 1)} % (n = ${numero(fila.base)})`}
@@ -991,11 +988,31 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 nota={(
                   <p className="text-xs leading-snug text-gray-500">
                     Sobre quienes contestaron las dos preguntas: {balanza.filas.map((f) => numero(f.base)).join(', ')} personas.
-                    La caída del empate pasa el contraste; la de Estados Unidos no.
+                    Las tres categorías suman 100, así que lo que gana una es lo que pierden las otras
+                    dos: la figura no dice que las mismas personas hayan cambiado de lado. Entre{' '}
+                    {primeraOla} y {ultimaOla}, la caída de Estados Unidos no se distingue del ruido.
                   </p>
                 )}
               />
             )}
+
+            {/* **La tercera pausa.** Acá el recorrido cambia de pregunta, no solo de figura: hasta
+                la escena 4 mide opiniones (cuánto te gusta un país, cuánto confías en él) y la 5
+                pregunta qué debería hacer Chile. Es el salto más grande del relato y no puede
+                ocurrir en el mismo gesto en que cambia la frase.
+
+                La primera mitad cierra lo que quedó establecido y la segunda abre lo que viene,
+                que es el patrón de los otros tres respiros. **Y cierra por el método, no por el
+                resultado**: «confiar más en un país» describe la comparación dentro de la persona
+                que acaba de hacer la escena 4, sin repetir ninguna de sus cifras, que es lo que
+                evita arrastrar una afirmación de un tramo al otro. */}
+            <Respiro
+              raiz={raiz}
+              indice={-4}
+              titulo="Una cosa es confiar más en un país. ¿Con cuál debería alinearse Chile?"
+            >
+              Una cosa es confiar más en un país. <strong>¿Con cuál debería alinearse Chile?</strong>
+            </Respiro>
 
             {/*
               * **La escena 5, rehecha el 08-09-2026.** Antes afirmaba que el no alineamiento se
@@ -1026,10 +1043,9 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               titulo={vuelcoP26
                 ? `En ${ultimaOla}, alinearse con China supera a alinearse con Estados Unidos`
                 : 'Con qué potencia debería alinearse Chile'}
-              bajada="Con qué potencia debería alinearse Chile, según las personas encuestadas."
               frases={[
                 <>
-                  En {primeraOla} y {penultima} <strong>ganaba Estados Unidos</strong>:{' '}
+                  En {primeraOla} y {penultimaOla} <strong>ganaba Estados Unidos</strong>:{' '}
                   {porcentaje(proEeuu.at(0)?.valor ?? 0, 1)} y{' '}
                   {porcentaje(proEeuu.at(1)?.valor ?? 0, 1)} contra{' '}
                   {porcentaje(proChina.at(0)?.valor ?? 0, 1)} y{' '}
@@ -1042,89 +1058,21 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                 </>,
               ]}
               figura={(activo, reducido) => (
-                <Cruce
+                <BarrasPosicionamiento
                   olas={encuesta.olas}
-                  series={seriesP26}
                   reparto={repartoP26}
-                  // El paso 1 muestra las dos primeras oleadas y el 2 suma la última: la escala
-                  // está calculada sobre todos los puntos, así que nada se mueve de lugar al
-                  // entrar 2025 (ver `nucleo/pasos.ts`).
-                  visible={(ola) => reducido || activo >= 1 || ola !== ultimaOla}
-                  // Una línea, y solo lo que la figura no dice sola: qué es la franja. El
-                  // denominador vive en el pie, junto a las bases, en vez de estar en los dos.
-                  unidadEje="La franja de arriba es el reparto completo de cada oleada."
+                  mostrarUltima={activo >= 1}
+                  reducido={reducido}
                 />
               )}
               nota={(
                 <p className="text-xs leading-snug text-gray-500">
-                  Sobre las {proChina.map((p) => numero(p.base)).join(', ')} personas que
-                  contestaron, sin faltantes. «Supera» compara las dos preferencias{' '}
-                  <strong>dentro de cada persona</strong> y pasa el contraste en las tres oleadas.
+                  Porcentaje de respuestas a cómo debería posicionarse Chile. Bases por oleada:{' '}
+                  {proChina.map((p) => numero(p.base)).join(', ')} personas; sin respuestas faltantes.
                 </p>
               )}
             />
 
-            {/*
-              * La escena de cierre. **Es borrador**: repite las tres medidas en la unidad de cada
-              * una y despide al tablero, pero su guion no está acordado con ICLAC, igual que el de
-              * las escenas 2 y 3 (ver `estado.md`).
-              *
-              * No suma un hallazgo nuevo: junta los tres que el lector ya vio. Sin ella el
-              * recorrido terminaba de golpe, en la última frase de la escena 3.
-              */}
-            <Escena
-              indice={6}
-              raiz={raiz}
-              titulo={mismaDireccion
-                ? 'Las tres medidas se mueven en la misma dirección'
-                : 'Las tres medidas, juntas'}
-              // **Frases de una línea, y es una restricción medida, no una preferencia.** En 360 px
-              // la escena tiene 737 px de alto útil (la capa menos su barra) y los tres paneles se
-              // llevan 544: con frases de dos líneas la escena mide 776 y la nota queda bajo el
-              // borde. El cierre además no necesita explicar, que es lo que hicieron las tres
-              // escenas anteriores: repite las tres cifras en la unidad de cada una.
-              frases={[
-                <>China sube a {decimal(chinaT.at(-1)?.media ?? 0)} puntos.</>,
-                <>
-                  Confianza: de {porcentaje(confianza.at(0)?.valor ?? 0, 1)} a{' '}
-                  {porcentaje(confianza.at(-1)?.valor ?? 0, 1)}.
-                </>,
-                <>
-                  Preferirla: de {porcentaje(proChina.at(0)?.valor ?? 0, 1)} a{' '}
-                  {porcentaje(proChina.at(-1)?.valor ?? 0, 1)}.
-                </>,
-              ]}
-              figura={(activo) => (
-                <div className="grid gap-x-6 sm:grid-cols-3">
-                  <Serie
-                    anchoLienzo={300}
-                    puntos={opinionChina} unidad="media" etiqueta="Opinión sobre China"
-                    color={SEMANTICOS['A favor de China']}
-                  />
-                  <Serie
-                    anchoLienzo={300}
-                    puntos={confianza} unidad="porcentaje" etiqueta="Mucha confianza en China"
-                    color={SEMANTICOS['A favor de China']}
-                    visible={() => activo >= 1}
-                  />
-                  <Serie
-                    anchoLienzo={300}
-                    puntos={proChina} unidad="porcentaje" etiqueta="A favor de China"
-                    color={SEMANTICOS['A favor de China']}
-                    visible={() => activo >= 2}
-                  />
-                </div>
-              )}
-              nota={(
-                // Una línea, y no dos: en 360 px la escena mide 825 px contra una pantalla de
-                // 780, y la nota es lo que sobra. Lo que la nota decía de la muestra ya está en
-                // «Sobre los datos», que es donde se consulta; lo que no está en ninguna otra
-                // parte es que estos tres ejes no se comparan entre sí.
-                <p className="text-xs leading-snug text-gray-500">
-                  Tres ejes distintos: las pendientes no se comparan.
-                </p>
-              )}
-            />
           </>
         )}
       </CapaRecorrido>

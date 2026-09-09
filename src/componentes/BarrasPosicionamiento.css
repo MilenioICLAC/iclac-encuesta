@@ -1,0 +1,22 @@
+.barras-posicionamiento { width: 100%; }
+.p26-filas { display: grid; gap: 14px; margin-top: 12px; }
+.p26-fila { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 5px 8px; }
+.p26-ola { grid-row: 1 / 3; padding-top: 4px; font-size: 12px; color: #4b5563; font-variant-numeric: tabular-nums; }
+.p26-barra { display: flex; height: 24px; }
+.p26-segmento { position: relative; display: block; flex-shrink: 0; }
+.p26-valores { grid-column: 2; display: flex; justify-content: space-between; gap: 8px; color: #374151; font-size: 12px; font-variant-numeric: tabular-nums; }
+.p26-oculta { opacity: 0; }
+.p26-cambio { margin-top: 12px; font-size: 12px; line-height: 1.5; color: #374151; }
+.p26-leyenda { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 12px; font-size: 11px; color: #4b5563; }
+.p26-leyenda li { display: flex; align-items: center; gap: 6px; }
+.p26-leyenda li > span { width: 14px; height: 10px; flex-shrink: 0; border-radius: 2px; }
+@media (min-width: 900px) {
+  .p26-filas { gap: 24px; }
+  .p26-barra { height: 32px; }
+  .p26-valores, .p26-ola, .p26-cambio { font-size: 14px; }
+  .p26-leyenda { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .p26-oculta { opacity: 1; }
+}
+@media print { .p26-oculta { opacity: 1; } }
