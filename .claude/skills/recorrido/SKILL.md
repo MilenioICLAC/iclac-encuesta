@@ -254,8 +254,10 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   largo y `dashoffset` de +L a −L. Y las líneas van **largas y cortas alternadas**: ocho iguales se
   leen como un engranaje, no como algo que sale.
 - **Si la figura cambia, cambió la escena, y en medio va una pausa.** Es la regla que salió del
-  08-09-2026 y ordena todo el recorrido: seis escenas y tres pausas, en vez de dos escenas largas
-  que mutaban de figura a mitad de camino.
+  08-09-2026 y ordena todo el recorrido. Tras los cambios del 09-09-2026, son cinco escenas y
+  cuatro pausas, en vez de dos escenas largas que mutaban de figura a mitad de camino.
+  La pausa entre las escenas 4 y 5 distingue confianza de alineamiento: «Una cosa es confiar más
+  en un país. ¿Con cuál debería alinearse Chile?».
 
   Antes había un paso sin figura dentro de la escena del termómetro, y funcionaba a medias: la
   barra lo anunciaba como «paso 5 de 9», o sea el lector no estaba en una pausa sino a mitad de una

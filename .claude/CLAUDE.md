@@ -409,11 +409,13 @@ esta decisión no modifica los datos ni sus validaciones.
 es una barra apilada al 100 %, con las cuatro categorías nombradas en la leyenda.
 EE. UU. y China ocupan los extremos y sus porcentajes aparecen debajo de cada fila.
 
-El primer paso muestra 2023 y 2024; el segundo revela 2025 con emanata sobre los extremos y muestra el cambio frente a 2024
-en puntos porcentuales. El espacio de 2025 está reservado desde el inicio.
+El primer paso muestra 2023 y 2024; el segundo revela 2025 con énfasis estático dentro de los
+segmentos de los extremos y muestra el cambio frente a 2024 en puntos porcentuales.
+El énfasis permanece durante el paso. El espacio de 2025 está reservado desde el inicio.
 No se interpolan anchos ni se atribuye una fecha al cruce entre mediciones.
-Con movimiento reducido se muestran las tres oleadas sin animación.
-La emanata también destaca el segmento de más confianza en China de 2025 en la escena 4.
+Con movimiento reducido se muestran las tres oleadas sin animación; el énfasis estático no se
+desactiva por esa preferencia.
+El mismo énfasis destaca el segmento de más confianza en China de 2025 en la escena 4.
 El pie de p26 describe la pregunta y las bases, sin la antigua explicación del contraste.
 
 ---
