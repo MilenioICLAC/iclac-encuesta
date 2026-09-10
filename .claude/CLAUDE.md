@@ -266,6 +266,16 @@ Salieron de problemas concretos del repositorio de inversiones y aplican igual a
   `var(--algo-ancho, var(--algo))`. Está usado en `Puntos` para el alto de fila y el ancho de la
   columna de nombres.
 
+- **Subir un texto con `z-index` no lo tapa: un texto no tiene fondo.** En `Divergente` la marca
+  del cero seguía viéndose **entre** los dígitos del segmento neutro («50,9» se leía «50|9»)
+  aunque el rótulo ya estaba en `z-10`, porque lo único que el `z-index` pone encima son los
+  trazos de las letras. Lo que tapa es un relleno: el rótulo lleva el color de su propio segmento.
+- **Un número que aparece en la frase y en la figura se redondea igual en las dos.** La escena 4
+  decía «39,7 %» sobre una barra rotulada «40»: dos cifras del mismo dato en la misma pantalla.
+  Y el mínimo para rotular adentro depende del largo del texto, no solo del segmento: es la prop
+  `minimoRotulo`, porque el segmento recorta con `overflow-hidden` y quedarse corto no desborda,
+  parte el número en silencio.
+
 **La paleta de ocho sectores de `mapa_FDI` no se copia:** se generó para esas ocho categorías de FDI.
 Si hacen falta categóricos acá, se genera su propia paleta con el validador de la skill `dataviz`.
 

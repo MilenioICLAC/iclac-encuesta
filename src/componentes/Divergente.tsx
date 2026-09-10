@@ -63,10 +63,18 @@ interface Props {
   /** Unidad del eje. Se escribe una vez acá y no en cada frase del relato. */
   unidadEje?: string
   leyenda?: boolean
+  /** Ancho mínimo del segmento, en porcentaje del lienzo, para escribirle el número adentro. */
+  minimoRotulo?: number
   titulo?: (fila: FilaDivergente, categoria: CategoriaDivergente, valor: number) => string
 }
 
-/** Bajo este ancho, en porcentaje del lienzo, el número no cabe dentro del segmento. */
+/**
+ * Bajo este ancho, en porcentaje del lienzo, el número no cabe dentro del segmento.
+ *
+ * **Depende del largo del texto, así que es una prop.** El default sirve para enteros de dos
+ * dígitos; un formato con decimal («39,7») necesita más, y el segmento recorta con
+ * `overflow-hidden`, así que quedarse corto no desborda: parte el número en silencio.
+ */
 const MINIMO_ROTULO = 11
 
 /**
@@ -86,7 +94,7 @@ function tinta (fondo: string): string {
 
 export default function Divergente ({
   categorias, filas, extremo, formato, visible, altoFila = 30, anchoEtiqueta = '3.5rem',
-  unidadEje, leyenda = true, titulo, enfatizar,
+  unidadEje, leyenda = true, titulo, enfatizar, minimoRotulo = MINIMO_ROTULO,
 }: Props) {
   // Un punto porcentual, en porcentaje del ancho del lienzo. El lienzo va de −extremo a +extremo.
   const unidad = 50 / extremo
@@ -159,9 +167,18 @@ export default function Divergente ({
                           style={{ width: `${ancho}%`, backgroundColor: cat.color, color: tinta(cat.color), boxShadow: '1px 0 0 0 #fff inset' }}
                           title={titulo?.(fila, cat, v)}
                         >
-                          {/* Por encima de la marca del cero: en la categoría neutra, que va a
-                              caballo del cero, la línea partía el número al medio. */}
-                          <span className="relative z-10">{ancho >= MINIMO_ROTULO && formato(v)}</span>
+                          {/* **Por encima de la marca del cero, y con relleno propio.** En la
+                              categoría neutra el segmento va a caballo del cero, así que la línea
+                              cae justo donde se centra el número. Ponerlo `z-10` no bastaba:
+                              un texto sin fondo no tapa nada, y la línea blanca seguía viéndose
+                              **entre** los dígitos («51» se leía «5|1»). El fondo es el mismo
+                              color del segmento, así que no se ve como recuadro. */}
+                          <span
+                            className="relative z-10 px-0.5"
+                            style={{ backgroundColor: cat.color }}
+                          >
+                            {ancho >= minimoRotulo && formato(v)}
+                          </span>
                           {encendida && enfatizar?.(fila, cat) && <Enfasis />}
                         </div>
                       )

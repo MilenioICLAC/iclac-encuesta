@@ -973,7 +973,11 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
                     categorias={balanza.categorias}
                     filas={balanza.filas}
                     extremo={balanza.extremo}
-                    formato={(v) => decimal(v, 0)}
+                    // **El mismo redondeo que la frase.** La frase cita 39,7 % y la barra decía
+                    // 40: dos números para el mismo dato en la misma pantalla. Con el decimal
+                    // puesto, el número que se lee arriba es el que está en la figura.
+                    formato={(v) => decimal(v, 1)}
+                    minimoRotulo={14}
                     altoFila={30}
                     anchoEtiqueta="2.6rem"
                     // La última oleada entra en el segundo paso: es donde ocurre el salto, y verlo
