@@ -1,0 +1,41 @@
+# Despliegue en Netlify.
+#
+# **El build tiene dos mitades y la primera no es opcional.** `public/data/encuesta.json` y
+# `public/descargas/` están en `.gitignore` a propósito (son derivados de `data/sources/`), así
+# que un `vite build` solo publica el sitio sin sus datos: la app compila, carga y se queda
+# esperando un JSON que no existe. `npm run datos` los regenera desde las fuentes, que sí están
+# versionadas.
+
+[build]
+  command = "npm run datos && npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Los scripts del ETL usan Node moderno; el default de Netlify se mueve solo con el tiempo.
+  NODE_VERSION = "22"
+
+# **Las rutas van por hash (`#/tablero`), así que hoy esto no hace falta.** Queda puesto porque
+# el día que `HashRouter` pase a `BrowserRouter` (ver CLAUDE.md) el sitio se rompería en cada
+# recarga de una ruta interna, y el síntoma no se parece a la causa.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# El JS y el CSS llevan hash en el nombre y se pueden cachear para siempre. `encuesta.json` no:
+# con el mismo nombre en cada despliegue, un caché largo deja a un lector mirando los datos de
+# la publicación anterior sin que nada lo diga.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+[[headers]]
+  for = "/descargas/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"

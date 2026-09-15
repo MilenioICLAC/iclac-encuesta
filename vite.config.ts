@@ -15,7 +15,7 @@ export default defineConfig({
     // que Vite salte de puerto en silencio y uno termine mirando la app equivocada.
     port: 5180,
     strictPort: true,
-    host: true
+    host: true,
   },
   test: {
     environment: 'node',
