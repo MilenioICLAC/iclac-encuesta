@@ -10,8 +10,9 @@ import { media, proporcion } from './agregar'
  * una secuencia, es lo que evita afirmar un orden argumental que nadie escribió.
  *
  * `ancho` decide cuánto ocupa el módulo en la rejilla, y responde al contenido y no a la
- * pantalla: `p8` desagrega por región y necesita ancho completo, mientras `p12` y `p13` son
- * dos preguntas de sí/no que caben en un tercio.
+ * pantalla: `p8` desagrega por región y necesita ancho completo, mientras las series por oleada
+ * (`serie-porcentaje`) van todas a medio ancho, dos por fila. En un tercio la tarjeta no ganaba
+ * nada: el enunciado se partía en más líneas y la barra quedaba corta.
  */
 
 export type Ancho = 'tercio' | 'medio' | 'completo'
@@ -165,7 +166,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Poder limitar inversiones en sectores estratégicos',
     bajada: 'Tres cuartos lo piden desde 2023, sin moverse entre oleadas ni entre gobiernos.',
     variable: 'p19',
-    ancho: 'completo',
+    ancho: 'medio',
     forma: 'serie-porcentaje',
     codigos: [1],
     advertencia: 'En 2025 esta pregunta se respondió después del bloque experimental. La posición en un cuestionario largo importa.',
@@ -209,7 +210,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Vive cerca de un mall chino',
     bajada: 'A menos de diez cuadras.',
     variable: 'p12',
-    ancho: 'tercio',
+    ancho: 'medio',
     forma: 'serie-porcentaje',
     codigos: [1],
   },
@@ -219,7 +220,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Vive cerca de un restaurante chino',
     bajada: 'A menos de diez cuadras.',
     variable: 'p13',
-    ancho: 'tercio',
+    ancho: 'medio',
     forma: 'serie-porcentaje',
     codigos: [1],
   },
@@ -229,7 +230,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Conoce a alguien de China',
     bajada: 'Personalmente, de China o de ascendencia china.',
     variable: 'p14',
-    ancho: 'tercio',
+    ancho: 'medio',
     forma: 'serie-porcentaje',
     codigos: [1],
   },
@@ -260,8 +261,12 @@ export const MODULOS: Modulo[] = [
     bloque: 'cotidiana',
     titulo: 'Puede nombrar tres marcas chinas',
     bajada: 'Conocimiento espontáneo de empresas chinas.',
-    variable: 'p6a_1',
-    ancho: 'tercio',
+    // `p6a_2`, la casilla «Sí». Hasta el 15-09-2026 decía `p6a_1`, que es la casilla «No», y el
+    // módulo mostraba a quienes **no** pueden nombrar tres marcas (58,5 y 57,0 en vez de 41,5 y
+    // 43,0). Nada lo delataba: las dos son 0/1, las dos tienen dato en 2024 y 2025, y sus
+    // conteos son complementarios exactos. Solo se ve leyendo la etiqueta del diccionario.
+    variable: 'p6a_2',
+    ancho: 'medio',
     forma: 'serie-porcentaje',
     codigos: [1],
   },

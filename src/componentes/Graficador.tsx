@@ -4,7 +4,7 @@ import { distribucion, media, multirespuesta, porGrupo, serie } from '../nucleo/
 import { CORTES } from '../nucleo/modulos'
 import Distribucion from './Distribucion'
 import Menciones from './Menciones'
-import Serie from './Serie'
+import BarrasPorOla from './BarrasPorOla'
 import { numero } from '../locale'
 
 /**
@@ -28,6 +28,8 @@ interface Props {
   casos: Caso[]
   corte: string | null
   soloIndependientes: boolean
+  /** Las oleadas activas de la barra de estado: la vista entre oleadas pinta las otras en gris. */
+  olasActivas: number[]
 }
 
 /** Las de caracterización no se grafican: son los cortes, no las preguntas. */
@@ -37,7 +39,7 @@ const CARACTERIZACION = new Set([
   'olas_panelista', 'ola',
 ])
 
-export default function Graficador ({ encuesta, casos, corte, soloIndependientes }: Props) {
+export default function Graficador ({ encuesta, casos, corte, soloIndependientes, olasActivas }: Props) {
   const opciones = useMemo(() => {
     const categoricas = encuesta.variables
       .filter((v) => !CARACTERIZACION.has(v.nombre))
@@ -128,6 +130,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
           variable={variable}
           grupo={grupo}
           esNumerica={elegida.tipo === 'numerica'}
+          olasActivas={olasActivas}
         />
 
         <footer className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 pt-2 text-xs text-gray-500">
@@ -156,7 +159,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
 }
 
 function Figura ({
-  encuesta, casos, corte, soloIndependientes, vista, variable, grupo, esNumerica,
+  encuesta, casos, corte, soloIndependientes, vista, variable, grupo, esNumerica, olasActivas,
 }: {
   encuesta: Encuesta
   casos: Caso[]
@@ -166,6 +169,7 @@ function Figura ({
   variable?: Variable
   grupo?: Encuesta['multiples'][number]
   esNumerica: boolean
+  olasActivas: number[]
 }) {
   if (grupo) {
     const datos = multirespuesta(casos, grupo)
@@ -182,7 +186,7 @@ function Figura ({
   if (esNumerica) {
     // Una media no tiene distribución de categorías, así que la única vista útil es la serie.
     const puntos = serie(encuesta, variable, (c) => media(c, variable.nombre).media, { soloIndependientes })
-    return <Serie puntos={puntos} unidad="media" etiqueta="Promedio de 0 a 100" />
+    return <BarrasPorOla puntos={puntos} unidad="media" activas={olasActivas} etiqueta="Promedio de 0 a 100" />
   }
 
   if (vista === 'serie') {
@@ -196,7 +200,7 @@ function Figura ({
       (c) => distribucion(c, variable).segmentos.find((s) => s.codigo === primera.codigo)?.porcentaje ?? 0,
       { soloIndependientes },
     )
-    return <Serie puntos={puntos} unidad="porcentaje" etiqueta={primera.etiqueta} />
+    return <BarrasPorOla puntos={puntos} unidad="porcentaje" activas={olasActivas} etiqueta={primera.etiqueta} />
   }
 
   const agregado = distribucion(casos, variable)

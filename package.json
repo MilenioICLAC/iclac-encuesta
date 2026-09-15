@@ -17,7 +17,8 @@
     "etl:combinada": "node scripts/etl_combinada.mjs",
     "descargas": "node scripts/descargas.mjs",
     "datos": "npm run etl:combinada && npm run descargas",
-    "lab": "node scripts/laboratorio.mjs laboratorio/recorrido.html"
+    "lab": "node scripts/laboratorio.mjs laboratorio/recorrido.html",
+    "lab:series": "node scripts/laboratorio.mjs laboratorio/tablero-series.html public/laboratorio-series.html"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

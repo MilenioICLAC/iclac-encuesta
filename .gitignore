@@ -26,6 +26,9 @@ public/descargas/
 # del producto** y no se publica con el sitio: es una copia que `npm run lab` genera a partir de
 # `laboratorio/recorrido.html`, que sí se versiona.
 public/laboratorio.html
+# Lo mismo para el de las series del tablero: `npm run lab:series` a partir de
+# `laboratorio/tablero-series.html`.
+public/laboratorio-series.html
 
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,

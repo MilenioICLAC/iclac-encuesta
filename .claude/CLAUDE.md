@@ -293,9 +293,12 @@ si alguien deja de llamarlo.
 Tres trampas concretas, las tres medidas:
 
 - **Un lienzo pensado para una columna angosta, estirado a una tarjeta de ancho completo.** El
-  `viewBox` de `Serie` es de 110×132: en una tarjeta de 992 px daba un SVG de 1.150 px de alto con
+  `viewBox` de `Serie` era de 110×132: en una tarjeta de 992 px daba un SVG de 1.150 px de alto con
   los números a 91 px. Es la misma regla que ya estaba escrita para el recorrido, y aplica igual en
-  el tablero.
+  el tablero. **Y no se arregló achicando el lienzo:** el 15-09-2026 la línea de tres puntos salió
+  del tablero y del explorador, reemplazada por una barra por oleada (`BarrasPorOla`), que mide
+  unos 280 px a cualquier ancho y deja las series a medio ancho, dos por fila. Tres puntos unidos
+  no son una tendencia, y la barra de 0 a 100 muestra un cambio de dos puntos como lo que es.
 - **A una variable continua nunca se le pide una distribución por categoría.** El termómetro es de
   0 a 100: con un corte activo, la rama de distribución le armaba una categoría por valor y la
   tarjeta medía 4.247 px. Lo que corresponde con un corte es la **media por grupo**, que es otra

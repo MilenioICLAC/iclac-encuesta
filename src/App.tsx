@@ -9,7 +9,7 @@ import Distribucion from './componentes/Distribucion'
 import Menciones from './componentes/Menciones'
 import PorRegion from './componentes/PorRegion'
 import BarrasPosicionamiento from './componentes/BarrasPosicionamiento'
-import Serie from './componentes/Serie'
+import BarrasPorOla from './componentes/BarrasPorOla'
 import Graficador from './componentes/Graficador'
 import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
@@ -148,6 +148,7 @@ export default function App () {
                   casos={casos}
                   corte={corte}
                   soloIndependientes={soloIndependientes}
+                  olasActivas={olas}
                 />
               </>
             )}
@@ -1255,7 +1256,7 @@ function Figura ({
 
   return (
     <Modulo destacado={destacado} definicion={definicion} variable={variable} base={base}>
-      <Serie puntos={puntos} unidad={definicion.forma === 'serie-media' ? 'media' : 'porcentaje'} />
+      <BarrasPorOla puntos={puntos} unidad={definicion.forma === 'serie-media' ? 'media' : 'porcentaje'} activas={olas} />
     </Modulo>
   )
 }

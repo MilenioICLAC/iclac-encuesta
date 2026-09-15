@@ -358,7 +358,7 @@ Las tres reglas que gobiernan qué puede hacer una figura mientras avanza el scr
 2. **Ocultar no es borrar.** Lo apagado queda en el DOM con opacidad cero: está al imprimir y para
    un lector de pantalla. La animación es una capa de lectura sobre una figura ya completa. Lo que
    sí se calcula sobre lo encendido son el trazo y los rótulos, que anunciarían un rango todavía no
-   mostrado (ver `Puntos.tsx` y `Serie.tsx`).
+   mostrado (ver `Puntos.tsx`).
 3. **El último paso enciende todo.** Es la garantía de que el recorrido no termina escondiendo nada,
    y es además el estado con `prefers-reduced-motion` o sin JavaScript.
 
@@ -395,10 +395,10 @@ Salió de probar catorce combinaciones en el laboratorio, con el cliente mirando
   del que habla el paso. Los extremos se rotulan únicamente mientras la destacada no entró, para que
   ninguna fila quede sin un número que leer.
 - **Una figura hecha para una columna angosta no se pone a pantalla completa sin revisar su
-  lienzo.** El `viewBox` de `Serie` es casi cuadrado (100 × 132) porque en el tablero vive en una
-  columna: a 360 px de ancho se escala 3,6 veces y los números salen a 32 px. En el recorrido va con
-  `anchoLienzo={300}`, que da una figura ancha y baja. Lo mismo vale para cualquier figura que se
-  mude del tablero al recorrido.
+  lienzo.** El `viewBox` de `Serie`, la línea que el tablero usó hasta el 15-09-2026, era casi
+  cuadrado (100 × 132) porque estaba pensado para una columna: a 360 px de ancho se escalaba 3,6
+  veces y los números salían a 32 px. Lo mismo vale para cualquier figura que se mude del tablero al
+  recorrido.
 - **El rótulo de la unidad necesita su propio aire.** Pegado al eje se lee como una marca más, y en
   360 px una frase larga se parte en tres líneas encima de las marcas.
 - **El contexto va más apagado que el relato, con piso.** Bajada y nota en gris 500: es el último

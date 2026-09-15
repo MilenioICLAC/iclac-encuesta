@@ -1,0 +1,744 @@
+<title>Laboratorio de las series del tablero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Los mismos dos pesos que carga la app (`src/index.css`). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo del laboratorio va en claro, a propósito: la app no tiene modo oscuro y la tarjeta
+     tiene que verse sobre lo mismo que en el tablero. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca-oscura: #00776E;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--cuerpo);
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  .envoltorio {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 72ch; }
+
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: #4B5563; max-width: 90ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  /* ---- Controles ------------------------------------------------------ */
+
+  .controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    padding: 12px 14px;
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    background: var(--superficie);
+  }
+
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .seg button {
+    border: 1px solid var(--linea);
+    background: var(--superficie);
+    color: var(--tinta);
+    border-radius: 999px;
+    padding: 5px 11px;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .seg button[aria-pressed="true"] {
+    border-color: var(--marca-oscura);
+    background: var(--marca-oscura);
+    color: #fff;
+  }
+
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, input:focus-visible {
+    outline: 2px solid var(--marca-oscura);
+    outline-offset: 2px;
+  }
+
+  /* Sin envolver: partida en dos líneas en las tarjetas de un tercio, la tira las bajaba y
+     desalineaba la fila contra sus vecinas de ancho medio. */
+  .seg.chico { gap: 4px; flex-wrap: nowrap; }
+  .seg.chico button { padding: 2px 8px; font-size: 11px; }
+
+  .personalizada { font-size: 12px; color: var(--tinta-suave); align-self: center; }
+
+  /* ---- Visor ---------------------------------------------------------- */
+
+  /* A sangre, sin borde lateral: con «Todo» el visor mide lo mismo que la ventana. Dentro del
+     margen del envoltorio medía 34 px menos, y en una ventana de 768 la rejilla quedaba en una
+     columna donde la app ya pasa a seis. */
+  .marco {
+    margin-inline: -16px;
+    border-block: 1px solid var(--linea);
+    background: var(--superficie);
+    overflow: hidden;
+  }
+
+  .barra-visor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--linea);
+    font-size: 12px;
+    color: var(--tinta-suave);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Un ancho simulado mayor que la ventana se desplaza dentro del visor, no arrastra la página. */
+  #visor { overflow-x: auto; background: #EEF1F0; }
+
+  /* ------------------------------------------------------------------------------------
+     La página del tablero, con las medidas de la app y no con las suyas.
+
+     Todo sale del código: `App.tsx` (sección `max-w-5xl px-4`, rejilla `gap-3 md:grid-cols-6`,
+     encabezado de bloque), `Modulo.tsx` (tarjeta), `Serie.tsx` (la línea), `Distribucion.tsx`
+     (la fila de barra) y `BarrasPosicionamiento.css` (la apilada).
+
+     La rejilla responde a una consulta de contenedor y no a una media query, porque el visor es
+     un contenedor y no la ventana. `md:` es 768 px de ventana, que con los 16 px de cada lado son
+     736 px de contenido: ese es el umbral.
+     ------------------------------------------------------------------------------------ */
+
+  .pagina {
+    margin-inline: auto;
+    background: #fff;
+    color: #111827;
+    font-family: var(--cuerpo);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .contenido {
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+    container-type: inline-size;
+  }
+
+  .pagina :where(p, h3, h4, ul, figure) { margin: 0; padding: 0; }
+  .pagina ul { list-style: none; }
+  .pagina svg { display: block; }
+
+  .bloque + .bloque { margin-top: 32px; }
+
+  .bloque-titulo {
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #E5E7EB;
+    font-family: var(--display);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: #6B7280;
+  }
+
+  .rejilla { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+
+  @container (min-width: 736px) {
+    .rejilla { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .span-tercio { grid-column: span 2; }
+    .span-medio { grid-column: span 3; }
+    .span-completo { grid-column: span 6; }
+  }
+
+  .celda { display: flex; flex-direction: column; min-width: 0; }
+
+  /* La tira es del laboratorio, no de la app: mide lo mismo en todas las celdas para que no
+     desalinee las tarjetas de una fila. */
+  .tira {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 2px 6px;
+    font-size: 11px;
+    color: var(--tinta-suave);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .alto { flex: 0 0 auto; }
+
+  .tarjeta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background: #fff;
+    padding: 16px;
+  }
+
+  .tarjeta.vecino { border-style: dashed; background: #FAFAFA; }
+  .vecino-nota { margin-top: 4px; font-size: 12px; color: #9CA3AF; }
+
+  .t-titulo { font-family: var(--display); font-size: 16px; line-height: 24px; font-weight: 600; color: #111827; }
+  .t-bajada { margin-top: 2px !important; font-size: 14px; line-height: 20px; color: #4B5563; }
+  .t-enunciado { margin-top: 8px !important; font-size: 12px; line-height: 1.375; font-style: italic; color: #6B7280; }
+  .t-figura { margin-top: 12px; flex-grow: 1; }
+  .t-adv {
+    margin-top: 12px !important;
+    border-left: 2px solid #FBBF24;
+    background: #FFFBEB;
+    padding: 8px 12px !important;
+    font-size: 12px;
+    line-height: 1.375;
+    color: #374151;
+  }
+  .t-pie {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    border-top: 1px solid #F3F4F6;
+    padding-top: 8px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #6B7280;
+  }
+  .t-pie .n { font-variant-numeric: tabular-nums; }
+  .ambar { color: #B45309; }
+
+  /* ---- La línea de hoy (`Serie.tsx`) ----------------------------------- */
+
+  .f-linea { margin-top: 4px; }
+  .f-linea svg { width: 100%; }
+  .f-linea-nota { margin-top: 4px !important; font-size: 12px; color: #6B7280; }
+
+  /* ---- Opción 1: una barra por oleada (la fila de `Distribucion.tsx`) --- */
+
+  .f-barras { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+  .fb-fila { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) 3.5rem; align-items: center; column-gap: 12px; }
+  .f-barras.con-n .fb-fila { grid-template-columns: 2.25rem minmax(0, 1fr) 3.5rem 4.5rem; }
+  .fb-ola { font-size: 12px; line-height: 16px; color: #4B5563; font-variant-numeric: tabular-nums; }
+  .fb-pista { height: 16px; border-radius: 2px; background: #F3F4F6; }
+  .fb-relleno { height: 16px; border-radius: 2px; }
+  .fb-valor { text-align: right; font-size: 12px; line-height: 16px; color: #111827; font-variant-numeric: tabular-nums; }
+  .fb-n { text-align: right; font-size: 11px; color: #9CA3AF; font-variant-numeric: tabular-nums; }
+  /* Ocupa la barra, el valor y el n: en la columna de la barra sola se partía en dos líneas. */
+  .fb-hueco { grid-column: 2 / -1; font-size: 12px; line-height: 16px; font-style: italic; color: #9CA3AF; white-space: nowrap; }
+  .apagado { color: #9CA3AF !important; }
+
+  /* ---- Opción 4: apilada al 100 % (la fila de `BarrasPosicionamiento`) -- */
+
+  .f-apilada { margin-top: 8px; }
+  .fa-fila { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); column-gap: 8px; row-gap: 3px; }
+  .fa-fila + .fa-fila { margin-top: 8px; }
+  .fa-ola { grid-column: 1; grid-row: 1; padding-top: 4px; font-size: 12px; line-height: 16px; color: #4B5563; font-variant-numeric: tabular-nums; }
+  .fa-barra, .fa-valores, .fa-n, .fa-hueco { grid-column: 2; }
+  .fa-barra { display: flex; height: 24px; }
+  .fa-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fa-valores { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 12px; line-height: 16px; color: #374151; font-variant-numeric: tabular-nums; }
+  .fa-n { font-size: 11px; line-height: 14px; color: #9CA3AF; font-variant-numeric: tabular-nums; }
+  .fa-hueco { height: 24px; display: flex; align-items: center; padding-left: 8px; border: 1px dashed #D1D5DB; font-size: 12px; font-style: italic; color: #9CA3AF; }
+  .fa-apagada .fa-barra { filter: grayscale(1); opacity: 0.45; }
+  .fa-apagada .fa-ola, .fa-apagada .fa-valores { color: #9CA3AF; }
+  .fa-leyenda { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 10px !important; font-size: 11px; line-height: 1.35; color: #4B5563; }
+  .fa-leyenda li { display: flex; align-items: center; gap: 6px; }
+  .fa-leyenda li > span { width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ---- Exportar ------------------------------------------------------- */
+
+  .exportar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    background: var(--superficie);
+  }
+  .exportar h2 { font-family: var(--display); font-size: 16px; margin: 0; }
+  .exportar label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--tinta-suave); }
+  .notas-modulos { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+  .exportar input, .exportar textarea {
+    font: inherit;
+    font-size: 13px;
+    color: var(--tinta);
+    border: 1px solid var(--linea);
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    width: 100%;
+  }
+  #json { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; min-height: 140px; }
+  .fila-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .accion {
+    border: 1px solid var(--marca-oscura);
+    background: var(--marca-oscura);
+    color: #fff;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .accion.secundaria { background: #fff; color: var(--marca-oscura); }
+  #copiado { font-size: 12px; color: var(--tinta-suave); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio de las series del tablero</h1>
+    <p>
+      Los siete módulos que hoy dibujan una línea de tres puntos, en la rejilla y con los anchos del
+      tablero. Cada tarjeta se pasa a la opción 1 (una barra por oleada) o a la 4 (barra apilada al
+      100 %). <span id="procedencia"></span>
+    </p>
+  </header>
+
+  <ul class="avisos">
+    <li><strong>Marcas sigue <code>p6a_2</code> («Sí»).</strong> La app hoy sigue <code>p6a_1</code>, que es la
+      casilla «No», y muestra 58,5 y 57,0 donde corresponde 41,5 y 43,0. En la app no está corregido.</li>
+    <li>En la apilada de Sinovac, «No recuerdo» entra al denominador y la advertencia va reescrita para esa
+      forma. Con la línea y con las barras sigue fuera, como en la app.</li>
+    <li>La línea no responde al selector de oleadas: la app la dibuja siempre con las tres, aunque el
+      n del pie cuente solo las activas.</li>
+    <li>Las tarjetas punteadas son módulos vecinos con otra forma, que no se dibujan. En la app su
+      fila puede quedar más alta.</li>
+  </ul>
+
+  <section class="controles" aria-label="Parámetros">
+    <div class="grupo"><span>Combinación</span><div class="seg" id="c-presets"></div></div>
+    <div class="grupo"><span>Oleadas activas (barra del tablero)</span><div class="seg" id="c-olas"></div></div>
+    <div class="grupo"><span>Oleadas no activas, en 1 y 4</span><div class="seg" id="c-inactivas"></div></div>
+    <div class="grupo"><span>n por fila, en 1 y 4</span><div class="seg" id="c-nfila"></div></div>
+    <div class="grupo"><span>Rótulos de la apilada</span><div class="seg" id="c-rotulos"></div></div>
+    <div class="grupo"><span>Ventana simulada</span><div class="seg" id="c-anchos"></div></div>
+  </section>
+
+  <div class="marco">
+    <div class="barra-visor" id="medidor"></div>
+    <div id="visor"><div class="pagina" id="pagina"><div class="contenido" id="contenido"></div></div></div>
+  </div>
+
+  <section class="exportar">
+    <h2>Exportar para comentar</h2>
+    <label>Nota general<textarea id="nota-general" rows="3"></textarea></label>
+    <div class="notas-modulos" id="notas-modulos"></div>
+    <div class="fila-acciones">
+      <button type="button" class="accion" id="copiar">Copiar JSON</button>
+      <button type="button" class="accion secundaria" id="reiniciar">Volver al arranque</button>
+      <span id="copiado" aria-live="polite"></span>
+    </div>
+    <textarea id="json" readonly></textarea>
+  </section>
+</div>
+
+<!-- Lo escribe `laboratorio/datos-series.ts` con las funciones de la app. No se edita a mano:
+     `npx vite-node laboratorio/datos-series.ts && npm run lab:series`. -->
+<script type="application/json" id="datos">{"generado":"2026-09-09T07:58:23.146Z","bloques":[{"id":"inversion","titulo":"Inversión, sectores estratégicos y capacidad del Estado"},{"id":"cotidiana","titulo":"La China cotidiana"},{"id":"vacunas","titulo":"Vacunas y memoria de la pandemia"}],"rejilla":[{"id":"screening","bloque":"inversion","titulo":"Poder limitar inversiones en sectores estratégicos","ancho":"completo","forma":"serie-porcentaje"},{"id":"sectores","bloque":"inversion","titulo":"En qué sectores limitar","ancho":"medio","forma":"multiple"},{"id":"efectos","bloque":"inversion","titulo":"Efectos de la inversión china en su comuna","ancho":"medio","forma":"multiple"},{"id":"inversion-extranjera","bloque":"inversion","titulo":"Opinión sobre recibir más inversión","ancho":"medio","forma":"distribucion"},{"id":"mall","bloque":"cotidiana","titulo":"Vive cerca de un mall chino","ancho":"tercio","forma":"serie-porcentaje"},{"id":"restaurante","bloque":"cotidiana","titulo":"Vive cerca de un restaurante chino","ancho":"tercio","forma":"serie-porcentaje"},{"id":"conoce","bloque":"cotidiana","titulo":"Conoce a alguien de China","ancho":"tercio","forma":"serie-porcentaje"},{"id":"racismo","bloque":"cotidiana","titulo":"Vio contenido racista","ancho":"medio","forma":"serie-porcentaje"},{"id":"medios","bloque":"cotidiana","titulo":"Cómo se informa de asuntos internacionales","ancho":"medio","forma":"multiple"},{"id":"marcas","bloque":"cotidiana","titulo":"Puede nombrar tres marcas chinas","ancho":"tercio","forma":"serie-porcentaje"},{"id":"paises","bloque":"cotidiana","titulo":"Países que ha visitado","ancho":"medio","forma":"multiple"},{"id":"buses","bloque":"cotidiana","titulo":"Sabía que los buses eléctricos son chinos","ancho":"tercio","forma":"distribucion"},{"id":"electrificacion","bloque":"cotidiana","titulo":"Evaluación de la electrificación de la flota","ancho":"tercio","forma":"distribucion"},{"id":"sinovac","bloque":"vacunas","titulo":"Recibió vacunas Sinovac","ancho":"medio","forma":"serie-porcentaje"},{"id":"opinion-sinovac","bloque":"vacunas","titulo":"Opinión de las vacunas Sinovac","ancho":"medio","forma":"distribucion"},{"id":"preferencia-vacuna","bloque":"vacunas","titulo":"Hubiese preferido Pfizer o Moderna","ancho":"medio","forma":"distribucion"}],"modulos":[{"id":"screening","variable":"p19","titulo":"Poder limitar inversiones en sectores estratégicos","bajada":"Tres cuartos lo piden desde 2023, sin moverse entre oleadas ni entre gobiernos.","ancho":"completo","bloque":"inversion","advertencia":"En 2025 esta pregunta se respondió después del bloque experimental. La posición en un cuestionario largo importa.","enunciado":"¿Cree usted que el estado chileno debería contar con una institución que pueda bloquear inversiones si estas afectaran el control del estado chileno sobre sectores estratégicos o cree que debe permitirse a las empresas extranjeras invertir libremente?","olasPregunta":[2023,2024,2025],"serie":true,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":73.94578313253012,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Debería poder limitarse inversiones en ciertos sectores estratégicos","n":491,"porcentaje":73.94578313253012},{"codigo":2,"etiqueta":"Debe permitirse a las empresas extranjeras invertir libremente","n":173,"porcentaje":26.05421686746988}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":73.05389221556887,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Debería poder limitarse inversiones en ciertos sectores estratégicos","n":488,"porcentaje":73.05389221556887},{"codigo":2,"etiqueta":"Debe permitirse a las empresas extranjeras invertir libremente","n":180,"porcentaje":26.94610778443114}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":75.55012224938875,"base":1227},"segmentos":[{"codigo":1,"etiqueta":"Debería poder limitarse inversiones en ciertos sectores estratégicos","n":927,"porcentaje":75.55012224938875},{"codigo":2,"etiqueta":"Debe permitirse a las empresas extranjeras invertir libremente","n":300,"porcentaje":24.449877750611247}],"base":1227}}]},{"id":"mall","variable":"p12","titulo":"Vive cerca de un mall chino","bajada":"A menos de diez cuadras.","ancho":"tercio","bloque":"cotidiana","advertencia":null,"enunciado":"¿Vive a menos de diez cuadras de algún Mall chino?","olasPregunta":[2023,2024,2025],"serie":true,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":54.81927710843374,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":364,"porcentaje":54.81927710843374},{"codigo":2,"etiqueta":"No","n":300,"porcentaje":45.18072289156626}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":57.48502994011976,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":384,"porcentaje":57.48502994011976},{"codigo":2,"etiqueta":"No","n":284,"porcentaje":42.51497005988024}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":60.79869600651997,"base":1227},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":746,"porcentaje":60.79869600651997},{"codigo":2,"etiqueta":"No","n":481,"porcentaje":39.20130399348003}],"base":1227}}]},{"id":"restaurante","variable":"p13","titulo":"Vive cerca de un restaurante chino","bajada":"A menos de diez cuadras.","ancho":"tercio","bloque":"cotidiana","advertencia":null,"enunciado":"¿Vive a menos de diez cuadras de algún restaurante chino?","olasPregunta":[2023,2024,2025],"serie":true,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":46.234939759036145,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":307,"porcentaje":46.234939759036145},{"codigo":2,"etiqueta":"No","n":357,"porcentaje":53.765060240963855}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":51.34730538922156,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":343,"porcentaje":51.34730538922156},{"codigo":2,"etiqueta":"No","n":325,"porcentaje":48.65269461077844}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":49.71475142624287,"base":1227},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":610,"porcentaje":49.71475142624287},{"codigo":2,"etiqueta":"No","n":617,"porcentaje":50.28524857375713}],"base":1227}}]},{"id":"conoce","variable":"p14","titulo":"Conoce a alguien de China","bajada":"Personalmente, de China o de ascendencia china.","ancho":"tercio","bloque":"cotidiana","advertencia":null,"enunciado":"¿Conoces personalmente alguna persona de China o de ascendencia china?","olasPregunta":[2023,2024,2025],"serie":true,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":36.144578313253014,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":240,"porcentaje":36.144578313253014},{"codigo":2,"etiqueta":"No","n":424,"porcentaje":63.855421686746986}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":35.02994011976048,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":234,"porcentaje":35.02994011976048},{"codigo":2,"etiqueta":"No","n":434,"porcentaje":64.97005988023952}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":34.96332518337408,"base":1227},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":429,"porcentaje":34.96332518337408},{"codigo":2,"etiqueta":"No","n":798,"porcentaje":65.03667481662592}],"base":1227}}]},{"id":"racismo","variable":"p18","titulo":"Vio contenido racista","bajada":"Noticia, meme o interacción contra personas chinas o asiáticas.","ancho":"medio","bloque":"cotidiana","advertencia":"Que baje puede ser una mejora del clima o una caída de la saliencia del tema. No se lee de un lado solo.","enunciado":"¿Has visto recientemente alguna noticia o meme o has sido testigo a una interacción o instancia que consideras que fue racista (anti-chino/asiático)?","olasPregunta":[2023,2024,2025],"serie":true,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":16.566265060240966,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":110,"porcentaje":16.566265060240966},{"codigo":2,"etiqueta":"No","n":554,"porcentaje":83.43373493975903}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":13.47305389221557,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":90,"porcentaje":13.47305389221557},{"codigo":2,"etiqueta":"No","n":578,"porcentaje":86.52694610778443}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":11.409942950285249,"base":1227},"segmentos":[{"codigo":1,"etiqueta":"Sí","n":140,"porcentaje":11.409942950285249},{"codigo":2,"etiqueta":"No","n":1087,"porcentaje":88.59005704971476}],"base":1227}}]},{"id":"marcas","variable":"p6a_2","titulo":"Puede nombrar tres marcas chinas","bajada":"Conocimiento espontáneo de empresas chinas.","ancho":"tercio","bloque":"cotidiana","advertencia":null,"enunciado":"Si, ¿Cuáles? - ¿Puedes mencionar al menos tres empresas o marcas chinas?","olasPregunta":[2024,2025],"serie":true,"olas":[{"ola":2023,"dato":null},{"ola":2024,"dato":{"app":{"porcentaje":41.467065868263475,"base":668},"segmentos":[{"codigo":0,"etiqueta":"0","n":391,"porcentaje":58.532934131736525},{"codigo":1,"etiqueta":"1","n":277,"porcentaje":41.467065868263475}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":43.0317848410758,"base":1227},"segmentos":[{"codigo":0,"etiqueta":"0","n":699,"porcentaje":56.9682151589242},{"codigo":1,"etiqueta":"1","n":528,"porcentaje":43.0317848410758}],"base":1227}}]},{"id":"sinovac","variable":"p9","titulo":"Recibió vacunas Sinovac","bajada":"Al menos una dosis durante la pandemia.","ancho":"medio","bloque":"vacunas","advertencia":"En 2025 se agregó «No recuerdo» y se llevó al 17 % de la muestra. Acá esa categoría sale del denominador: sobre todas las respuestas la cifra baja a 62,1 %. El olvido es en sí mismo un hallazgo.","enunciado":"¿Recibió alguna vacuna de Sinovac durante la pandemia COVID-19?","olasPregunta":[2023,2024,2025],"serie":false,"olas":[{"ola":2023,"dato":{"app":{"porcentaje":76.355421686747,"base":664},"segmentos":[{"codigo":1,"etiqueta":"Sí (dos)","n":385,"porcentaje":57.98192771084337},{"codigo":2,"etiqueta":"Sí (solo una)","n":122,"porcentaje":18.373493975903614},{"codigo":3,"etiqueta":"No, ninguna","n":157,"porcentaje":23.64457831325301}],"base":664}},{"ola":2024,"dato":{"app":{"porcentaje":77.09580838323353,"base":668},"segmentos":[{"codigo":1,"etiqueta":"Sí (dos)","n":386,"porcentaje":57.78443113772455},{"codigo":2,"etiqueta":"Sí (solo una)","n":129,"porcentaje":19.311377245508982},{"codigo":3,"etiqueta":"No, ninguna","n":153,"porcentaje":22.904191616766468}],"base":668}},{"ola":2025,"dato":{"app":{"porcentaje":74.85265225933202,"base":1018},"segmentos":[{"codigo":1,"etiqueta":"Sí (dos)","n":499,"porcentaje":40.66829665851671},{"codigo":2,"etiqueta":"Sí (solo una)","n":263,"porcentaje":21.43439282803586},{"codigo":3,"etiqueta":"No, ninguna","n":256,"porcentaje":20.863895680521598},{"codigo":4,"etiqueta":"No recuerdo","n":209,"porcentaje":17.033414832925835}],"base":1227}}]}]}</script>
+
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById('datos').textContent)
+
+  // Copia de `IDIOMAS.es` en `src/locale.ts`, que es el único lugar donde la app nombra un locale.
+  const LOCALE = 'es-CL'
+  const fPct = (v, d = 0) => new Intl.NumberFormat(LOCALE, { style: 'percent', minimumFractionDigits: d, maximumFractionDigits: d }).format(v / 100)
+  const fNum = (v) => new Intl.NumberFormat(LOCALE).format(v)
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+  const OLAS = D.modulos[0].olas.map((o) => o.ola)
+  const MOD = Object.fromEntries(D.modulos.map((m) => [m.id, m]))
+  const IDS = D.modulos.map((m) => m.id)
+
+  // `IDENTIDAD[0]` de `paleta.ts`: el color de una serie sola en `Serie` y en `Distribucion`.
+  const SERIE = '#00998C'
+  const GRIS_APAGADO = '#D1D5DB'
+
+  /* Colores de la apilada. Validados con `validate_palette.js` de la skill `dataviz`:
+     - Sinovac y screening reusan `Mucha`, `Algo` y `Poca` de `SEMANTICOS`, más `NEUTRO` para
+       «No recuerdo». Pasan separación bajo daltonismo (peor par ΔE 8,5) y visión normal (17,4).
+       El piso de croma lo fallan `#00776E`, que es `brand-dark` y ya está exceptuado en
+       `paleta.ts`, y el gris, que es gris a propósito.
+     - El contraste de `#39B5A8` y `#E9A26A` contra el fondo queda bajo 3:1, así que la figura
+       escribe siempre los valores (dentro o debajo) y la leyenda.
+     - En las de sí/no, el «No» es el resto: gris, para que el color quede en la respuesta que
+       el título nombra. */
+  const COLORES = {
+    screening: { 1: '#00776E', 2: '#E9A26A' },
+    sinovac: { 1: '#00776E', 2: '#39B5A8', 3: '#E9A26A', 4: '#8A8A85' },
+    marcas: { 1: SERIE, 0: GRIS_APAGADO },
+    _binaria: { 1: SERIE, 2: GRIS_APAGADO },
+  }
+  const ETIQUETAS = { marcas: { 1: 'Puede nombrar tres', 0: 'No puede' } }
+  const CORTOS = { screening: { 1: 'Limitar', 2: 'Invertir libremente' } }
+  const ORDEN = { marcas: [1, 0] }
+  // Blanco solo sobre `brand-dark` (5,4:1). Sobre el resto, tinta: `text-white` sobre la marca da 2,96:1.
+  const tintaSobre = (color) => (color === '#00776E' ? '#FFFFFF' : '#111827')
+
+  const ADVERTENCIA_APILADA = {
+    sinovac: 'En 2025 se agregó «No recuerdo» y se llevó el 17 % de la muestra. Acá cuenta como una respuesta más, en gris: la barra de 2025 reparte el 100 % entre cuatro respuestas y las anteriores entre tres.',
+  }
+
+  // Cortas a propósito: en 768 una tarjeta de un tercio mide 237 px y la tira no envuelve.
+  const FORMAS = [['linea', 'Línea'], ['barras', 'Op. 1'], ['apilada', 'Op. 4']]
+  const PRESETS = {
+    app: { nombre: 'Como está la app', forma: () => 'linea' },
+    uno: { nombre: 'Todo en 1', forma: () => 'barras' },
+    cuatro: { nombre: 'Todo en 4', forma: () => 'apilada' },
+    recomendada: { nombre: 'Recomendada: 1, y 4 en screening y Sinovac', forma: (id) => (id === 'screening' || id === 'sinovac' ? 'apilada' : 'barras') },
+  }
+  const ANCHOS = [['360', '360'], ['768', '768'], ['1024', '1024'], ['1512', '1512'], ['todo', 'Todo']]
+
+  const CLAVE = 'lab-tablero-series-v1'
+  const arranque = () => ({
+    preset: 'recomendada',
+    formas: Object.fromEntries(IDS.map((id) => [id, PRESETS.recomendada.forma(id)])),
+    olas: [...OLAS],
+    inactivas: 'gris',
+    nFila: 'no',
+    rotulos: 'dentro',
+    ancho: 'todo',
+    notas: { general: '' },
+  })
+
+  let E = arranque()
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null')
+    // Las formas se leen por identificador de módulo, nunca por posición.
+    if (g) E = { ...E, ...g, formas: { ...E.formas, ...(g.formas || {}) }, notas: { ...E.notas, ...(g.notas || {}) } }
+  } catch (e) { /* modo privado */ }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(E)) } catch (e) { /* modo privado */ } }
+
+  const ALTOS = {}
+
+  // ---- Controles ----------------------------------------------------------
+
+  function seg (id, opciones, activo, elegir) {
+    const cont = document.getElementById(id)
+    cont.innerHTML = opciones.map(([v, r]) =>
+      `<button type="button" data-v="${esc(v)}" aria-pressed="${activo(v)}">${esc(r)}</button>`).join('')
+    cont.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { elegir(b.dataset.v); guardar(); todo() }))
+  }
+
+  function controles () {
+    seg('c-presets', Object.entries(PRESETS).map(([k, p]) => [k, p.nombre]), (v) => E.preset === v, (v) => {
+      E.preset = v
+      E.formas = Object.fromEntries(IDS.map((id) => [id, PRESETS[v].forma(id)]))
+    })
+    if (!E.preset) {
+      document.getElementById('c-presets').insertAdjacentHTML('beforeend', '<span class="personalizada">Personalizada</span>')
+    }
+    seg('c-olas', OLAS.map((o) => [String(o), String(o)]), (v) => E.olas.includes(Number(v)), (v) => {
+      const ola = Number(v)
+      const siguiente = E.olas.includes(ola) ? E.olas.filter((o) => o !== ola) : [...E.olas, ola].sort()
+      // Como `BarraEstado`: sin oleadas no hay nada que mostrar, así que vuelve a todas.
+      E.olas = siguiente.length === 0 ? [...OLAS] : siguiente
+    })
+    seg('c-inactivas', [['gris', 'En gris'], ['ocultas', 'Ocultas'], ['color', 'Todas en color']], (v) => E.inactivas === v, (v) => { E.inactivas = v })
+    seg('c-nfila', [['no', 'No'], ['si', 'Sí']], (v) => E.nFila === v, (v) => { E.nFila = v })
+    seg('c-rotulos', [['dentro', 'Dentro del segmento'], ['debajo', 'Debajo, como p26']], (v) => E.rotulos === v, (v) => { E.rotulos = v })
+    seg('c-anchos', ANCHOS, (v) => E.ancho === v, (v) => { E.ancho = v })
+  }
+
+  // ---- Figuras ------------------------------------------------------------
+
+  const activa = (ola) => E.olas.includes(ola) || E.inactivas === 'color'
+  const filas = (m) => m.olas.filter((o) => E.inactivas !== 'ocultas' || E.olas.includes(o.ola))
+
+  /* La línea, copiada de `Serie.tsx` con sus mismas medidas: `viewBox` de 110 × 132, escala de
+     0 a 100, tramos cortados donde falta una oleada. Dibuja siempre las tres oleadas. */
+  function figLinea (m) {
+    const pts = m.olas.map((o) => ({ ola: o.ola, valor: o.dato ? o.dato.app.porcentaje : null }))
+    const ALTO = 132, PAD = 18, ancho = 100, n = pts.length
+    const max = Math.max(100, ...pts.filter((p) => p.valor !== null).map((p) => p.valor))
+    const x = (i) => (n === 1 ? ancho / 2 : (i * ancho) / (n - 1))
+    const y = (v) => ALTO - PAD - (v / max) * (ALTO - PAD * 2)
+    const ancla = (i) => (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle')
+
+    const tramos = []
+    let actual = []
+    pts.forEach((p, i) => {
+      if (p.valor === null) { if (actual.length) tramos.push(actual); actual = [] } else actual.push(`${x(i)},${y(p.valor)}`)
+    })
+    if (actual.length) tramos.push(actual)
+
+    const conDato = pts.filter((p) => p.valor !== null)
+    let s = `<figure class="f-linea"><svg viewBox="-5 0 ${ancho + 10} ${ALTO}" role="img" aria-label="${esc(conDato.map((p) => `${p.ola} ${fPct(p.valor, 0)}`).join(', '))}">`
+    s += tramos.map((t) => `<polyline points="${t.join(' ')}" fill="none" stroke="${SERIE}" stroke-width="1.6" stroke-linecap="round"/>`).join('')
+    pts.forEach((p, i) => {
+      if (p.valor === null) return
+      s += `<circle cx="${x(i)}" cy="${y(p.valor)}" r="3.4" fill="white" stroke="${SERIE}" stroke-width="1.6"/>`
+      s += `<text x="${x(i)}" y="${y(p.valor) - 8}" text-anchor="${ancla(i)}" font-size="9" font-weight="500" fill="#111827" style="font-variant-numeric:tabular-nums">${fPct(p.valor, 0)}</text>`
+    })
+    pts.forEach((p, i) => {
+      s += `<text x="${x(i)}" y="${ALTO - 3}" text-anchor="${ancla(i)}" font-size="8" fill="#6B7280" style="font-variant-numeric:tabular-nums">${p.ola}</text>`
+    })
+    s += '</svg>'
+    const faltan = pts.filter((p) => p.valor === null).map((p) => p.ola)
+    if (faltan.length) s += `<p class="f-linea-nota">Sin dato en ${faltan.join(' y ')}: la pregunta no se hizo esa oleada.</p>`
+    return s + '</figure>'
+  }
+
+  /* Opción 1. La fila de `Distribucion`, con la oleada en el lugar de la categoría: escala de 0 a
+     100 en todas, así que dos puntos de diferencia se ven como dos puntos. */
+  function figBarras (m) {
+    const conN = E.nFila === 'si'
+    let s = `<div class="f-barras${conN ? ' con-n' : ''}">`
+    for (const o of filas(m)) {
+      const a = activa(o.ola)
+      if (!o.dato) {
+        s += `<div class="fb-fila"><span class="fb-ola apagado">${o.ola}</span><span class="fb-hueco">No se preguntó</span></div>`
+        continue
+      }
+      const v = o.dato.app.porcentaje
+      s += `<div class="fb-fila" title="${esc(`${o.ola}: ${fPct(v, 1)} de ${fNum(o.dato.app.base)} respuestas`)}">` +
+        `<span class="fb-ola${a ? '' : ' apagado'}">${o.ola}</span>` +
+        `<div class="fb-pista"><div class="fb-relleno" style="width:${Math.max(v, 0.6)}%;background:${a ? SERIE : GRIS_APAGADO}"></div></div>` +
+        `<span class="fb-valor${a ? '' : ' apagado'}">${fPct(v, 0)}</span>` +
+        (conN ? `<span class="fb-n">n = ${fNum(o.dato.app.base)}</span>` : '') +
+        '</div>'
+    }
+    return s + '</div>'
+  }
+
+  function categorias (m) {
+    const vistas = new Map()
+    for (const o of m.olas) for (const sg of (o.dato ? o.dato.segmentos : [])) if (!vistas.has(sg.codigo)) vistas.set(sg.codigo, sg.etiqueta)
+    const codigos = ORDEN[m.id] || [...vistas.keys()].sort((a, b) => a - b)
+    const colores = COLORES[m.id] || COLORES._binaria
+    return codigos.filter((c) => vistas.has(c)).map((c) => {
+      const etiqueta = (ETIQUETAS[m.id] && ETIQUETAS[m.id][c]) || vistas.get(c)
+      return { codigo: c, etiqueta, corto: (CORTOS[m.id] && CORTOS[m.id][c]) || etiqueta, color: colores[c] || '#8A8A85' }
+    })
+  }
+
+  /* Opción 4. La fila de `BarrasPosicionamiento`: cada oleada es el 100 % de sus respuestas,
+     con todas las categorías y sin exclusiones. */
+  function figApilada (m) {
+    const cats = categorias(m)
+    let s = '<div class="f-apilada">'
+    for (const o of filas(m)) {
+      const a = activa(o.ola)
+      s += `<div class="fa-fila${a ? '' : ' fa-apagada'}"><span class="fa-ola">${o.ola}</span>`
+      if (!o.dato) { s += '<div class="fa-hueco">No se preguntó</div></div>'; continue }
+      const pares = cats.map((c) => ({ c, sg: o.dato.segmentos.find((q) => q.codigo === c.codigo) })).filter((p) => p.sg && p.sg.porcentaje > 0)
+      s += `<div class="fa-barra" role="img" aria-label="${esc(`${o.ola}: ${pares.map((p) => `${p.c.etiqueta} ${fPct(p.sg.porcentaje, 1)}`).join(', ')}`)}">`
+      for (const { c, sg } of pares) {
+        s += `<span class="fa-seg" style="width:${sg.porcentaje}%;background:${c.color};color:${tintaSobre(c.color)}" title="${esc(`${c.etiqueta}: ${fPct(sg.porcentaje, 1)} (${fNum(sg.n)} de ${fNum(o.dato.base)})`)}">` +
+          (E.rotulos === 'dentro' ? `<span class="fa-rotulo">${fPct(sg.porcentaje, 0)}</span>` : '') + '</span>'
+      }
+      s += '</div>'
+      if (E.rotulos === 'debajo') {
+        s += `<div class="fa-valores" aria-hidden="true">${pares.map((p) => `<span>${esc(p.c.corto)} <strong>${fPct(p.sg.porcentaje, 0)}</strong></span>`).join('')}</div>`
+      }
+      if (E.nFila === 'si') s += `<div class="fa-n">n = ${fNum(o.dato.base)}</div>`
+      s += '</div>'
+    }
+    s += `<ul class="fa-leyenda">${cats.map((c) => `<li><span aria-hidden="true" style="background:${c.color}"></span>${esc(c.etiqueta)}</li>`).join('')}</ul>`
+    return s + '</div>'
+  }
+
+  // ---- Tarjetas -----------------------------------------------------------
+
+  function pie (m, forma) {
+    const base = m.olas
+      .filter((o) => o.dato && E.olas.includes(o.ola))
+      .reduce((s, o) => s + (forma === 'apilada' ? o.dato.base : o.dato.app.base), 0)
+    const olas = m.olasPregunta
+    const parcial = olas.length < OLAS.length
+    let s = `<footer class="t-pie"><span class="n">n = ${fNum(base)}</span><span aria-hidden="true">·</span>`
+    s += `<span class="${parcial ? 'ambar' : ''}">${olas.length === 1 ? `Solo ${olas[0]}` : parcial ? `Solo ${olas.join(' y ')}` : 'Las tres oleadas'}</span>`
+    if (olas.length > 1) {
+      s += `<span aria-hidden="true">·</span><span class="${m.serie ? '' : 'ambar'}">${m.serie ? 'Comparable entre oleadas' : 'No comparable entre oleadas'}</span>`
+    }
+    return s + '</footer>'
+  }
+
+  function celda (m) {
+    const forma = E.formas[m.id]
+    const figura = forma === 'linea' ? figLinea(m) : forma === 'barras' ? figBarras(m) : figApilada(m)
+    const adv = (forma === 'apilada' && ADVERTENCIA_APILADA[m.id]) || m.advertencia
+    return `<div class="celda span-${m.ancho}">` +
+      `<div class="tira"><div class="seg chico" data-forma="${m.id}">${FORMAS.map(([v, r]) => `<button type="button" data-v="${v}" aria-pressed="${forma === v}">${r}</button>`).join('')}</div><span class="alto" data-alto="${m.id}"></span></div>` +
+      `<article class="tarjeta" data-tarjeta="${m.id}">` +
+      `<h4 class="t-titulo">${esc(m.titulo)}</h4>` +
+      `<p class="t-bajada">${esc(m.bajada)}</p>` +
+      (m.enunciado ? `<p class="t-enunciado">${esc(m.enunciado)}</p>` : '') +
+      `<div class="t-figura">${figura}</div>` +
+      (adv ? `<p class="t-adv">${esc(adv)}</p>` : '') +
+      pie(m, forma) +
+      '</article></div>'
+  }
+
+  function vecino (r) {
+    return `<div class="celda span-${r.ancho}"><div class="tira"><span>Vecino, sin cambios</span></div>` +
+      `<article class="tarjeta vecino"><h4 class="t-titulo">${esc(r.titulo)}</h4><p class="vecino-nota">Forma «${esc(r.forma)}», no se dibuja acá.</p></article></div>`
+  }
+
+  // ---- Página -------------------------------------------------------------
+
+  let observador = null
+
+  function pagina () {
+    const cont = document.getElementById('contenido')
+    cont.innerHTML = D.bloques.map((b) =>
+      `<section class="bloque"><h3 class="bloque-titulo">${esc(b.titulo)}</h3><div class="rejilla">` +
+      D.rejilla.filter((r) => r.bloque === b.id).map((r) => (MOD[r.id] ? celda(MOD[r.id]) : vecino(r))).join('') +
+      '</div></section>').join('')
+
+    const pag = document.getElementById('pagina')
+    pag.style.width = E.ancho === 'todo' ? '100%' : `${E.ancho}px`
+
+    if (observador) observador.disconnect()
+    observador = new ResizeObserver(() => { rotulos(); medir() })
+    cont.querySelectorAll('[data-tarjeta]').forEach((t) => observador.observe(t))
+    observador.observe(cont)
+  }
+
+  /* El segmento recorta con `overflow: hidden`: un rótulo que no cabe no desborda, se parte en
+     silencio. Se mide el rótulo contra su segmento y se esconde si no cabe entero. */
+  function rotulos () {
+    document.querySelectorAll('.fa-rotulo').forEach((r) => {
+      r.style.visibility = r.offsetWidth + 6 > r.parentElement.clientWidth ? 'hidden' : 'visible'
+    })
+  }
+
+  function medir () {
+    document.querySelectorAll('[data-tarjeta]').forEach((t) => {
+      const h = Math.round(t.getBoundingClientRect().height)
+      ALTOS[t.dataset.tarjeta] = h
+      const rot = document.querySelector(`[data-alto="${t.dataset.tarjeta}"]`)
+      if (rot) rot.textContent = `${fNum(h)} px`
+    })
+    const pag = document.getElementById('pagina')
+    const cont = document.getElementById('contenido')
+    const seis = getComputedStyle(cont.querySelector('.rejilla')).gridTemplateColumns.split(' ').length === 6
+    document.getElementById('medidor').innerHTML =
+      `<span>Ventana simulada ${fNum(Math.round(pag.getBoundingClientRect().width))} px</span>` +
+      `<span>Rejilla de ${seis ? 'seis columnas' : 'una columna'}</span>` +
+      `<span>Alto de los tres bloques ${fNum(Math.round(cont.getBoundingClientRect().height))} px</span>`
+    json()
+  }
+
+  // ---- Exportar -----------------------------------------------------------
+
+  function notas () {
+    document.getElementById('nota-general').value = E.notas.general || ''
+    document.getElementById('notas-modulos').innerHTML = IDS.map((id) =>
+      `<label>${esc(MOD[id].titulo)}<input type="text" data-nota="${id}" value="${esc(E.notas[id] || '')}"></label>`).join('')
+  }
+
+  function json () {
+    const pag = document.getElementById('pagina')
+    document.getElementById('json').value = JSON.stringify({
+      laboratorio: 'tablero-series',
+      exportado: new Date().toISOString(),
+      datosGenerados: D.generado,
+      combinacion: E.preset || 'personalizada',
+      formas: E.formas,
+      olasActivas: E.olas,
+      oleadasNoActivas: E.inactivas,
+      nPorFila: E.nFila,
+      rotulosApilada: E.rotulos,
+      ventanaSimulada: E.ancho,
+      anchoMedido: Math.round(pag.getBoundingClientRect().width),
+      altosDeTarjeta: ALTOS,
+      notas: E.notas,
+    }, null, 2)
+  }
+
+  function todo () { controles(); pagina(); rotulos(); medir() }
+
+  document.getElementById('pagina').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-forma] button')
+    if (!b) return
+    E.formas[b.parentElement.dataset.forma] = b.dataset.v
+    E.preset = Object.keys(PRESETS).find((k) => IDS.every((id) => PRESETS[k].forma(id) === E.formas[id])) || null
+    guardar()
+    todo()
+  })
+
+  document.getElementById('nota-general').addEventListener('input', (e) => { E.notas.general = e.target.value; guardar(); json() })
+  document.getElementById('notas-modulos').addEventListener('input', (e) => {
+    const id = e.target.dataset.nota
+    if (!id) return
+    E.notas[id] = e.target.value
+    guardar()
+    json()
+  })
+
+  document.getElementById('copiar').addEventListener('click', async () => {
+    json()
+    const area = document.getElementById('json')
+    const aviso = document.getElementById('copiado')
+    try {
+      await navigator.clipboard.writeText(area.value)
+      aviso.textContent = 'Copiado.'
+    } catch (e) {
+      area.focus(); area.select()
+      aviso.textContent = document.execCommand && document.execCommand('copy') ? 'Copiado.' : 'Selecciónalo y cópialo a mano.'
+    }
+  })
+
+  document.getElementById('reiniciar').addEventListener('click', () => {
+    const notasGuardadas = E.notas
+    E = { ...arranque(), notas: notasGuardadas }
+    guardar()
+    todo()
+  })
+
+  const fecha = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'long' }).format(new Date(D.generado))
+  document.getElementById('procedencia').textContent =
+    `Cifras de encuesta.json del ${fecha}, calculadas con distribucion y proporcion de la app.`
+
+  notas()
+  todo()
+  window.addEventListener('load', () => { rotulos(); medir() })
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { rotulos(); medir() })
+})()
+</script>
