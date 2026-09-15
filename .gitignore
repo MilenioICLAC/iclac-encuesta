@@ -29,6 +29,10 @@ public/laboratorio.html
 # Lo mismo para el de las series del tablero: `npm run lab:series` a partir de
 # `laboratorio/tablero-series.html`.
 public/laboratorio-series.html
+# Y el del cierre del recorrido: `npm run lab:cierre` a partir de `laboratorio/cierre-recorrido.html`.
+public/laboratorio-cierre.html
+# Y el de la portada: `npm run lab:portada` a partir de `laboratorio/portada-recorrido.html`.
+public/laboratorio-portada.html
 
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,

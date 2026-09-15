@@ -41,6 +41,11 @@ interface EstadoEscena {
    * lector lee un hallazgo sobre una figura que ya no está.
    */
   titulo: string | ((activo: number) => string)
+  /**
+   * Lo que dice la barra en vez de «Escena N de M». Solo el cierre lo usa: no es una escena, pero
+   * sí tiene pasos, así que a diferencia de la portada y los respiros lleva sus puntos.
+   */
+  rotulo?: string
   pasos: number
   activo: number
   enVista: boolean
@@ -56,7 +61,10 @@ const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
  * (que **sí** es enfocable, y tiene que seguir estando en la trampa).
  */
 function visible (el: HTMLElement) {
-  if (typeof el.checkVisibility === 'function') return el.checkVisibility()
+  // `visibilityProperty`: la salida del cierre se esconde con `visibility: hidden` hasta su paso, y
+  // sin la opción `checkVisibility()` la da por visible. Sería otra vez el defecto de «Método»: un
+  // último foco que nunca puede estar activo y un `Tab` que se escapa de la capa.
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility({ visibilityProperty: true })
   return el.getClientRects().length > 0
 }
 
@@ -153,7 +161,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
           // 351 px por más flechas que se apretaran).
           const arriba = capa.current.getBoundingClientRect().top - capa.current.scrollTop
           const paradas = [...capa.current.querySelectorAll<HTMLElement>(
-            '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido, .cierre-recorrido',
+            '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido',
           )].map((el) => Math.round(el.getBoundingClientRect().top - arriba)).sort((a, b) => a - b)
           const actual = capa.current.scrollTop
           const siguiente = sentido > 0
@@ -240,12 +248,12 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
             <span className="shrink-0 font-display text-xs font-semibold tabular-nums text-gray-900">
               {/* Índice 0 es la portada e índice negativo un respiro: ninguno de los dos es una
                   escena, así que ninguno lleva número. */}
-              {actual.indice > 0 ? `Escena ${actual.indice} de ${numeradas}` : actual.indice === 0 ? 'Portada' : 'Pausa'}
+              {actual.rotulo ?? (actual.indice > 0 ? `Escena ${actual.indice} de ${numeradas}` : actual.indice === 0 ? 'Portada' : 'Pausa')}
             </span>
             )
           : <span className="truncate font-display text-sm font-semibold text-gray-900">{titulo}</span>}
 
-        {actual && actual.indice > 0 && actual.pasos > 1 && (
+        {actual && (actual.indice > 0 || actual.rotulo) && actual.pasos > 1 && (
           <ol aria-hidden className="flex shrink-0 items-center gap-1 sm:gap-1.5">
             {Array.from({ length: actual.pasos }, (_, i) => (
               <li
@@ -267,7 +275,9 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
             avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
         <p aria-live="polite" className="sr-only">
           {actual
-            ? (actual.indice > 0
+            ? (actual.rotulo
+                ? `${actual.rotulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
+                : actual.indice > 0
                 ? `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
                 : actual.indice === 0
                   ? `Portada. ${actual.titulo}. El recorrido tiene ${numeradas} escenas.`
@@ -301,23 +311,8 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
         </button>
       </div>
 
+      {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
       <Registro.Provider value={informar}>{children(raiz)}</Registro.Provider>
-
-      <div className="cierre-recorrido flex flex-col items-center gap-3 px-4 py-16">
-        <p className="text-sm text-gray-600">Hasta acá el recorrido. El tablero queda abajo, para consultar.</p>
-        <button
-          type="button"
-          onClick={alCerrar}
-          className="rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand"
-        >
-          Ir al tablero
-        </button>
-        {/* El método, al final y no antes: quien acaba de leer un relato que afirma cosas es
-            justamente quien puede querer saber qué las sostiene. */}
-        <Link to="/datos?foco=metodo-recorrido" className="text-sm text-gray-600 underline underline-offset-2 hover:text-brand-dark">
-          Cómo se hizo el recorrido
-        </Link>
-      </div>
     </div>
   )
 }
@@ -333,6 +328,10 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
  * No es una escena: no tiene pasos, no cuenta un hallazgo y no se numera. Ocupa una pantalla
  * exacta —el mismo alto que una escena— y su sección es un punto del imán, así que el primer
  * gesto la deja atrás entera.
+ *
+ * **Lo de arriba lo pone la página; la invitación a avanzar la pone la portada**, porque es la que
+ * sabe cuánto mide. La invitación es un botón y hace lo mismo que el gesto: con rueda o teclado el
+ * scroll no es tan obvio como en el teléfono. Salió del laboratorio de la portada (15-09-2026).
  */
 export function Portada ({ raiz, titulo, children }: {
   raiz: HTMLElement | null
@@ -360,15 +359,90 @@ export function Portada ({ raiz, titulo, children }: {
     informar?.({ indice: 0, titulo, pasos: 1, activo: 0, enVista })
   }, [informar, titulo, enVista])
 
+  const avanzar = () => {
+    const nodo = seccion.current
+    if (!raiz || !nodo) return
+    const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    raiz.scrollTo({ top: nodo.offsetHeight, behavior: quieto ? 'auto' : 'smooth' })
+  }
+
   return (
-    <section ref={seccion} className="portada-recorrido relative">
-      <div
-        className="escena sticky flex flex-col justify-center gap-6 px-4 py-6 sm:px-6"
-        style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
-      >
+    // El alto de la capa va en la sección, igual que en el respiro: el imán alinea la sección con el
+    // borde del contenedor, bajo la barra, así que es ella la que tiene que medir la pantalla entera.
+    <section
+      ref={seccion}
+      className="portada-recorrido relative"
+      style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+    >
+      <div className="escena sticky flex flex-col items-center gap-6 px-4 py-6 text-center sm:px-6">
         {children}
+        <button
+          type="button"
+          onClick={avanzar}
+          className="invitar-portada mb-6 flex flex-col items-center gap-2.5 rounded-lg px-4 py-2 text-gray-500 hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark"
+        >
+          {/* El texto va según el puntero y no según el ancho: hay tablets anchas que se deslizan
+              y portátiles angostos con mouse. Los dos van en el marcado y el CSS esconde uno. */}
+          <span className="texto-invitar leading-snug">
+            <span className="texto-mouse">Haz scroll para desplazarte</span>
+            <span className="texto-tactil">Desliza para desplazarte</span>
+          </span>
+          <ArcosPortada />
+        </button>
       </div>
     </section>
+  )
+}
+
+/**
+ * Tres arcos que apuntan hacia abajo, cada uno más angosto y más claro que el de arriba.
+ *
+ * Flotan en cascada: los tres bajan y vuelven con un desfase, y cada uno se aclara un poco al
+ * bajar. El movimiento es solo `transform` y `opacity`, y con movimiento reducido se detiene
+ * (`index.css`). Las medidas son las del laboratorio: 64 px de ancho, trazo de 3 y arcos a media
+ * altura de un semicírculo.
+ */
+const ARCOS = (() => {
+  const ancho = 64
+  const trazo = 3
+  const separacion = ancho * 0.12
+  let y = trazo
+  const arcos = [1, 0.7, 0.45].map((escala, i) => {
+    const r = (ancho / 2 - trazo) * escala
+    const ry = r / 2
+    // De izquierda a derecha con barrido 0 la curva pasa por abajo: el arco apunta hacia abajo.
+    const d = `M ${(ancho / 2 - r).toFixed(2)} ${y.toFixed(2)} A ${r.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(ancho / 2 + r).toFixed(2)} ${y.toFixed(2)}`
+    y += ry + separacion
+    return { d, opacidad: escala, retraso: i * 0.18 }
+  })
+  return { ancho, trazo, alto: Math.ceil(y - separacion + trazo), arcos }
+})()
+
+function ArcosPortada () {
+  return (
+    <svg
+      aria-hidden
+      width={ARCOS.ancho}
+      height={ARCOS.alto}
+      viewBox={`0 0 ${ARCOS.ancho} ${ARCOS.alto}`}
+      className="arcos-portada overflow-visible text-brand-dark"
+    >
+      {ARCOS.arcos.map((a) => (
+        <path
+          key={a.d}
+          d={a.d}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={ARCOS.trazo}
+          strokeLinecap="round"
+          style={{
+            '--opacidad': a.opacidad,
+            '--opacidad-alta': Math.min(1, a.opacidad + 0.3),
+            '--retraso': `${a.retraso}s`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </svg>
   )
 }
 
@@ -561,38 +635,6 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   // bastante más, y esa diferencia era exactamente lo que le sobraba al primer paso.
   const altoEscena = useAltoDe(escena.current, alto)
 
-  /*
-   * Los pasos tienen que costar todos lo mismo, y no salen parejos solos: la escena pegada ocupa
-   * una pantalla de flujo antes de que empiece la pista, así que el primer cambio llegaba una
-   * pantalla más tarde que los demás.
-   *
-   * **La corrección va en la pista, no en la escena.** Anular el alto de la escena (margen
-   * inferior negativo) emparejaba los pasos pero rompía la separación entre escenas: sin altura
-   * propia, la escena queda pegada hasta el último píxel de su sección y la escena siguiente
-   * entra encima, superpuesta. Subir la pista consigue lo mismo y deja el alto de la escena
-   * intacto, que es lo que separa una escena de la que viene.
-   *
-   * Con la pista subida `alto − colchón`, el paso i entra a la banda de lectura exactamente a
-   * `i × alto de paso`. En píxeles medidos y no en porcentaje: un margen en porcentaje se
-   * resuelve contra el **ancho**.
-   */
-  const altoPaso = alto ? Math.round(alto * 0.75) : undefined
-  const colchon = alto ? Math.round(alto * 0.55) : undefined
-  // La pista sube **el alto de la escena entero**, y nada más.
-  //
-  // Dos errores medidos con Playwright el 06-09-2026, los dos en esta línea: subir el alto de la
-  // pantalla en vez del de la escena (la escena mide más: figura grande y texto de 19 px), y
-  // restarle además el colchón, que ya está dentro de la pista y quedaba contado dos veces. Con
-  // los dos, el primer paso empezaba en 858 px en vez de 429 y duraba el doble que los demás.
-  //
-  // Con la pista arriba de todo, el paso i entra a la banda de lectura en `colchón + i × paso`
-  // menos el propio colchón: exactamente `i × alto de paso`.
-  const subirPista = altoEscena ? -altoEscena : undefined
-  // El colchón de salida solo tiene que alcanzar para que el último paso entre a la banda. Al 55 %
-  // sumaba media pantalla de scroll muerto a cada escena, encima del alto de la escena que ya hay
-  // que recorrer para que salga.
-  const colchonFinal = alto ? Math.round(alto * 0.2) : undefined
-
   // Una frase por paso, en todos los anchos. La regla vive acá y no en el CSS porque depende del
   // paso activo, que es estado de React.
   //
@@ -607,7 +649,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   }
 
   return (
-    <section ref={seccion} className="relative">
+    // El `id` es el destino de las frases del cierre, que llevan de vuelta a su escena.
+    <section ref={seccion} id={`escena-${indice}`} className="relative">
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
           arriba es padding real y no compensación de la barra, así que no se pierde al pegarse. */}
       {/* El orden es titular, frase, figura, y el bloque va centrado en la escena. Salió del
@@ -674,44 +717,226 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         )}
       </div>
 
-      {/* La pista: no se ve y no se lee, solo mide el scroll. Cada tramo tiene que ser más alto
-          que la banda de lectura del observador, que es el 10 % central del contenedor. Los altos
-          van en píxeles cuando se conoce el alto de la capa, y en `svh` en el primer cuadro (ver
-          `index.css`). El colchón de arriba es lo que empareja los pasos, y el de abajo lo que
-          permite que el último alcance a activarse.
+      {!reducido && <Pista cantidad={frases.length} refs={refs} alto={alto} altoEscena={altoEscena} />}
+    </section>
+  )
+}
 
-          **Con movimiento reducido no se dibuja.** La pista existe para medir el scroll que
-          enciende los pasos, y con `prefers-reduced-motion` no hay pasos que encender: la escena
-          se muestra entera desde el primer píxel. Dejarla igual le cobraba al lector el costo de
-          una animación que pidió no ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px
-          de scroll, con el imán obligando a parar en cada uno para no mostrar nada nuevo. Ahora
-          cada escena cuesta su propio alto y el punto del imán lo pone la sección. */}
-      {!reducido && (
-      <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>
+/**
+ * La pista: no se ve y no se lee, solo mide el scroll. Cada tramo tiene que ser más alto que la
+ * banda de lectura del observador, que es el 10 % central del contenedor. Los altos van en píxeles
+ * cuando se conoce el alto de la capa, y en `svh` en el primer cuadro (ver `index.css`). El colchón
+ * de arriba es lo que empareja los pasos, y el de abajo lo que permite que el último alcance a
+ * activarse.
+ *
+ * **La comparten la escena y el cierre**, y por eso es un componente: la geometría de abajo costó
+ * dos errores medidos, y dos copias se desincronizan a la primera corrección.
+ *
+ * **Con movimiento reducido no se dibuja.** La pista existe para medir el scroll que enciende los
+ * pasos, y con `prefers-reduced-motion` no hay pasos que encender: la escena se muestra entera
+ * desde el primer píxel. Dejarla igual le cobraba al lector el costo de una animación que pidió no
+ * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll, con el imán obligando a
+ * parar en cada uno para no mostrar nada nuevo. Ahora cada escena cuesta su propio alto y el punto
+ * del imán lo pone la sección.
+ */
+function Pista ({ cantidad, refs, alto, altoEscena }: {
+  cantidad: number
+  refs: React.MutableRefObject<(HTMLElement | null)[]>
+  /** El alto de la capa. */
+  alto: number
+  /** El alto del bloque pegado que la pista acompaña. */
+  altoEscena: number
+}) {
+  /*
+   * Los pasos tienen que costar todos lo mismo, y no salen parejos solos: la escena pegada ocupa
+   * una pantalla de flujo antes de que empiece la pista, así que el primer cambio llegaba una
+   * pantalla más tarde que los demás.
+   *
+   * **La corrección va en la pista, no en la escena.** Anular el alto de la escena (margen
+   * inferior negativo) emparejaba los pasos pero rompía la separación entre escenas: sin altura
+   * propia, la escena queda pegada hasta el último píxel de su sección y la escena siguiente
+   * entra encima, superpuesta. Subir la pista consigue lo mismo y deja el alto de la escena
+   * intacto, que es lo que separa una escena de la que viene.
+   *
+   * Con la pista subida `alto − colchón`, el paso i entra a la banda de lectura exactamente a
+   * `i × alto de paso`. En píxeles medidos y no en porcentaje: un margen en porcentaje se
+   * resuelve contra el **ancho**.
+   */
+  const altoPaso = alto ? Math.round(alto * 0.75) : undefined
+  const colchon = alto ? Math.round(alto * 0.55) : undefined
+  // La pista sube **el alto de la escena entero**, y nada más.
+  //
+  // Dos errores medidos con Playwright el 06-09-2026, los dos en esta línea: subir el alto de la
+  // pantalla en vez del de la escena (la escena mide más: figura grande y texto de 19 px), y
+  // restarle además el colchón, que ya está dentro de la pista y quedaba contado dos veces. Con
+  // los dos, el primer paso empezaba en 858 px en vez de 429 y duraba el doble que los demás.
+  //
+  // Con la pista arriba de todo, el paso i entra a la banda de lectura en `colchón + i × paso`
+  // menos el propio colchón: exactamente `i × alto de paso`.
+  const subirPista = altoEscena ? -altoEscena : undefined
+  // El colchón de salida solo tiene que alcanzar para que el último paso entre a la banda. Al 55 %
+  // sumaba media pantalla de scroll muerto a cada escena, encima del alto de la escena que ya hay
+  // que recorrer para que salga.
+  const colchonFinal = alto ? Math.round(alto * 0.2) : undefined
+
+  return (
+    <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>
+      <div
+        className="colchon-recorrido"
+        style={{ ...(colchon ? { height: colchon } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
+      />
+      {Array.from({ length: cantidad }, (_, i) => (
         <div
-          className="colchon-recorrido"
-          style={{ ...(colchon ? { height: colchon } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
+          key={i}
+          ref={(el) => { refs.current[i] = el }}
+          data-paso={i}
+          className="paso-recorrido"
+          // El imán cae donde cambia la figura, no donde empieza el tramo: sin el margen de
+          // scroll, la pausa queda medio paso corrida respecto de lo que se está mirando.
+          style={{
+            ...(altoPaso ? { height: altoPaso } : {}),
+            ...(colchon ? { scrollMarginTop: colchon } : {}),
+          }}
         />
-        {frases.map((_, i) => (
-          <div
-            key={i}
-            ref={(el) => { refs.current[i] = el }}
-            data-paso={i}
-            className="paso-recorrido"
-            // El imán cae donde cambia la figura, no donde empieza el tramo: sin el margen de
-            // scroll, la pausa queda medio paso corrida respecto de lo que se está mirando.
-            style={{
-              ...(altoPaso ? { height: altoPaso } : {}),
-              ...(colchon ? { scrollMarginTop: colchon } : {}),
-            }}
-          />
-        ))}
-        <div
-          className="colchon-recorrido"
-          style={{ ...(colchonFinal ? { height: colchonFinal } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
-        />
+      ))}
+      <div
+        className="colchon-recorrido"
+        style={{ ...(colchonFinal ? { height: colchonFinal } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
+      />
+    </div>
+  )
+}
+
+/**
+ * El cierre del recorrido: una frase por conclusión, que se encienden con el scroll, y después la
+ * salida.
+ *
+ * Decidido el 15-09-2026 en `laboratorio/cierre-recorrido.html` (combinación «propuesta»), en
+ * reemplazo de «Hasta acá el recorrido». **No es una escena y no se numera**, igual que la portada
+ * y los respiros; a diferencia de ellos tiene pasos, así que la barra dice «Cierre» y lleva sus
+ * puntos.
+ *
+ * - **Las frases leídas quedan en gris 500, no se esconden.** El cierre es un resumen: al final se
+ *   leen todas juntas. Gris 500 y no más claro, que es el último tono con 4,5:1 sobre blanco.
+ * - **Cada frase lleva de vuelta a su escena.** Es la manera de verificar una conclusión sin
+ *   rehacer el recorrido entero.
+ * - **La salida tiene su propio paso.** Con la última frase compartía el gesto, y se leía antes
+ *   de que la frase terminara de encenderse.
+ */
+export function Cierre ({ raiz, titulo, frases, invitacion }: {
+  raiz: HTMLElement | null
+  titulo: string
+  /** El titular de cada escena que el cierre repite, con la escena a la que lleva. */
+  frases: { escena: number, texto: string }[]
+  invitacion: React.ReactNode
+}) {
+  // Una frase por paso, y uno más para la salida.
+  const pasos = frases.length + 1
+  const { activo, refs, reducido } = usePasoActivo(pasos, raiz)
+  const seccion = useRef<HTMLElement | null>(null)
+  const escena = useRef<HTMLDivElement | null>(null)
+  const informar = useContext(Registro)
+  const [enVista, setEnVista] = useState(false)
+
+  useEffect(() => {
+    const nodo = seccion.current
+    if (!nodo || typeof IntersectionObserver === 'undefined') return
+    const observador = new IntersectionObserver(
+      ([e]) => { setEnVista(e.isIntersecting) },
+      { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    )
+    observador.observe(nodo)
+    return () => { observador.disconnect() }
+  }, [raiz])
+
+  // Índice negativo para que no entre en la cuenta de escenas, y lejos de los de los respiros.
+  useEffect(() => {
+    informar?.({ indice: -99, rotulo: 'Cierre', titulo, pasos, activo, enVista })
+  }, [informar, titulo, pasos, activo, enVista])
+
+  const alto = useAltoDe(raiz)
+  const altoEscena = useAltoDe(escena.current, alto)
+
+  // Mismo cálculo que el teclado de la capa: contra el contenedor, nunca con `offsetTop`.
+  const irA = (destino: Element | null | undefined) => {
+    if (!raiz || !destino) return
+    const arriba = raiz.getBoundingClientRect().top - raiz.scrollTop
+    raiz.scrollTo({ top: destino.getBoundingClientRect().top - arriba, behavior: reducido ? 'auto' : 'smooth' })
+  }
+
+  // Los titulares se escriben sin punto final porque van de encabezado; acá son oraciones.
+  const cerrada = (texto: string) => (/[.!?]$/.test(texto) ? texto : `${texto}.`)
+  const salidaVisible = reducido || activo >= frases.length
+
+  return (
+    <section ref={seccion} className="cierre-recorrido relative">
+      <div
+        ref={escena}
+        className="escena sticky flex flex-col justify-center px-4 py-6 sm:px-6"
+        style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+      >
+        {/* Las medidas de escritorio viven en `index.css` (`.cierre-recorrido`). */}
+        <div className="bloque-cierre mx-auto w-full max-w-2xl">
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">Recorrido</p>
+          <h2 className="mt-1.5 font-display text-2xl font-semibold leading-tight text-gray-900">{titulo}</h2>
+
+          <ol className="frases-cierre mt-5 flex flex-col gap-3">
+            {frases.map((f, i) => {
+              const futura = !reducido && i > activo
+              const tono = reducido ? 'text-gray-700' : i === activo ? 'text-gray-800' : futura ? 'opacity-0' : 'text-gray-500'
+              return (
+                <li key={f.escena} className={`flex items-baseline gap-3 text-[19px] leading-[1.4] transition-[opacity,color] duration-500 ${tono}`}>
+                  <span
+                    aria-hidden
+                    className={`w-4 shrink-0 text-right font-display text-[0.6em] font-semibold tabular-nums transition-colors duration-500 ${!reducido && i === activo ? 'text-brand-dark' : 'text-gray-400'}`}
+                  >
+                    {i + 1}
+                  </span>
+                  {/* Un botón y no un enlace: las rutas van por hash, y un `href="#escena-3"`
+                      navegaría a una ruta que no existe. La frase futura sigue en el documento,
+                      pero fuera del tabulador: con opacidad cero no se ve dónde está el foco. */}
+                  <button
+                    type="button"
+                    tabIndex={futura ? -1 : undefined}
+                    onClick={() => { irA(raiz?.querySelector(`#escena-${f.escena}`)) }}
+                    className="text-left underline decoration-gray-300 decoration-1 underline-offset-[3px] hover:decoration-brand-dark"
+                  >
+                    {cerrada(f.texto)}
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+
+          {/* `invisible` además de la opacidad: son controles, y un botón transparente se puede
+              tabular y apretar sin verlo. */}
+          <div className={`salida-cierre mt-7 border-t border-gray-200 pt-5 transition-[opacity,visibility] duration-500 ${salidaVisible ? '' : 'invisible opacity-0'}`}>
+            <p className="text-base leading-snug text-gray-700">{invitacion}</p>
+            <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2.5">
+              <Link
+                to="/tablero"
+                className="inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
+              >
+                Preguntas destacadas <span aria-hidden>→</span>
+              </Link>
+              <Link
+                to="/explorar"
+                className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              >
+                Explorar las preguntas <span aria-hidden>→</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
+                className="text-sm text-gray-600 underline underline-offset-2 hover:text-brand-dark"
+              >
+                Volver al inicio <span aria-hidden>↑</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      )}
+      {!reducido && <Pista cantidad={pasos} refs={refs} alto={alto} altoEscena={altoEscena} />}
     </section>
   )
 }

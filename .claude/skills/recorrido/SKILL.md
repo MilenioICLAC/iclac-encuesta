@@ -172,8 +172,8 @@ dice qué se midió, y lo que no se sabe se dice que no se sabe.
   experimento hay una sola oleada dibujada: una clave de tres años ofrecería dos colores que no
   están en la figura.
 - **El recorrido afirma, así que publica su método.** «Cómo se hizo el recorrido» vive en «Sobre
-  los datos» (`#/datos?foco=metodo-recorrido`), y se llega desde la barra de la capa y desde su
-  cierre. Tiene tres partes: lo que la animación **no** puede hacer, la prueba que sostiene cada
+  los datos» (`#/datos?foco=metodo-recorrido`), y se llega desde la barra de la capa. Desde el
+  15-09-2026 ya no desde el cierre, y bajo 640 px la barra no lo muestra. Tiene tres partes: lo que la animación **no** puede hacer, la prueba que sostiene cada
   afirmación —armada con los contrastes del artefacto, así que una frase sin prueba ahí es una
   frase que no debería estar en el recorrido— y por qué un puñado de respuestas puede inclinar una
   recta. Una figura que cambia con el scroll es cómoda de leer y difícil de auditar: sin esa
@@ -418,6 +418,10 @@ Decidido con el cliente el 07-09-2026, y lo que sostiene el resto de esta secci�
   mitad de la escena 1 sin saber qué era esto ni cuánto duraba. Adentro, ocupa **una pantalla
   exacta**, es punto del imán, no se numera y no cuenta como escena en la barra («Portada», no
   «escena 1 de 5»). Lleva un botón que hace lo mismo que el gesto, para rueda y teclado.
+  Desde el 15-09-2026 la portada es el logo de ICLAC y la pregunta «¿Qué opina la gente sobre
+  China?», sin lista de escenas ni bajada. El botón son tres arcos que flotan en cascada con
+  «Haz scroll para desplazarte» encima («Desliza» en pantallas táctiles, por puntero y no por
+  ancho). Con movimiento reducido los arcos quedan quietos.
 - **La capa es una ruta, no un estado suelto.** De ahí salen gratis el gesto de atrás del teléfono
   y el enlace. **No se le suma `pushState` propio:** con la ruta encima, la entrada quedaba
   duplicada y el botón de atrás pedía dos toques. En la raíz no hay nada detrás, así que ahí el
@@ -425,6 +429,13 @@ Decidido con el cliente el 07-09-2026, y lo que sostiene el resto de esta secci�
   tablero, vuelve al tablero.
 - **Salir lleva al tablero, y el botón lo dice.** Salir de un relato es ir a consultar; «Cerrar» no
   dice qué pasa después.
+- **El cierre repite conclusiones, no escenas** (15-09-2026, `laboratorio/cierre-recorrido.html`).
+  Es una sección sin número (`Cierre`) con los titulares de las escenas 1, 3 y 5, que se encienden
+  con el scroll y quedan en gris 500 al pasar, cada uno llevando de vuelta a su escena. En un paso
+  propio vienen la invitación y tres salidas: preguntas destacadas (el tablero), el explorador y
+  volver al inicio. **Las frases son los titulares**, escritos una vez en `App.tsx`: si una oleada
+  cambia uno, cambia en la escena y en el cierre. Y la de la escena 5 entra solo con el vuelco
+  comprobado, porque sin él su titular describe la pregunta y no concluye nada.
 - **La posición se muestra en dos niveles:** «Escena N de M» y un punto por paso de esa escena,
   además de la barra de avance. La barra sola dice cuánto falta pero no dice de qué. Va también en
   texto (`sr-only` con `aria-live="polite"`) para quien no ve ninguno de los dos.
@@ -674,9 +685,9 @@ cliente pasaban las 90 pruebas.
 
 ## Lo que quedó pendiente (07-09-2026)
 
-- **La escena 4 y la portada son borrador.** La escena de cierre repite las tres medidas, una por
-  panel, con frases de una línea; la portada dice qué es el recorrido, cuánto dura y por dónde va.
-  Ninguna de las dos tiene guion acordado con ICLAC, igual que las escenas 2 y 3.
+- **La escena 4 es borrador.** La escena de cierre repite las tres medidas, una por panel, con
+  frases de una línea, y no tiene guion acordado con ICLAC, igual que las escenas 2 y 3. La
+  portada ya no lo es: la decidió Felipe en el laboratorio el 15-09-2026.
 
 - **Las escenas 2 y 3 siguen con el guion viejo.** Tienen la composición nueva de una columna, pero
   frases de 183, 227 y 270 caracteres contra las ~110 de la escena 1. **Ya están cargadas en el

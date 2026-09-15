@@ -1,0 +1,686 @@
+<title>Laboratorio del cierre del recorrido</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Los mismos dos pesos que carga la app (`src/index.css`). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo del laboratorio va en claro: la app no tiene modo oscuro y la capa del recorrido es
+     blanca. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca: #00A89C;
+    --marca-oscura: #00776E;
+    /* Grises de Tailwind, los que usa `CapaRecorrido.tsx`. */
+    --g200: #E5E7EB; --g300: #D1D5DB; --g400: #9CA3AF; --g500: #6B7280;
+    --g600: #4B5563; --g700: #374151; --g800: #1F2937; --g900: #111827;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--cuerpo);
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  .envoltorio {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 72ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 90ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  /* ---- Controles ------------------------------------------------------ */
+
+  .controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    padding: 12px 14px;
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    background: var(--superficie);
+  }
+
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .seg button, .accion {
+    border: 1px solid var(--linea);
+    background: var(--superficie);
+    color: var(--tinta);
+    border-radius: 999px;
+    padding: 5px 11px;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, input:focus-visible {
+    outline: 2px solid var(--marca-oscura);
+    outline-offset: 2px;
+  }
+
+  .textos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 10px 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--linea);
+    border-radius: 12px;
+    background: var(--superficie);
+  }
+
+  .textos label { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tinta-suave); }
+  .textos label .cuenta { font-variant-numeric: tabular-nums; }
+  .textos label .cuenta.largo { color: #A8431A; font-weight: 600; }
+  .textos input, .textos textarea, .nota textarea {
+    font: inherit; font-size: 13.5px; color: var(--tinta);
+    border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%;
+  }
+  .textos textarea { resize: vertical; min-height: 2.6em; }
+
+  /* ---- Visor ---------------------------------------------------------- */
+
+  /* A sangre: con «Todo» el visor mide lo mismo que la ventana. */
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+
+  .barra-visor {
+    display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 12px;
+    border-bottom: 1px solid var(--linea); background: var(--superficie);
+    font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums;
+  }
+  .barra-visor .mal { color: #A8431A; font-weight: 600; }
+
+  /* Un ancho simulado mayor que la ventana se desplaza dentro del marco, no arrastra la página. */
+  .deslizable { overflow-x: auto; padding-block: 16px; }
+
+  /* ------------------------------------------------------------------------------------
+     La capa del recorrido, con las medidas de la app (`CapaRecorrido.tsx`, `index.css`).
+     El umbral de escritorio va por consulta de contenedor y no por media query: el visor simula
+     un ancho que no es el de la ventana. En la app la capa es `fixed inset-0` y ahí sí es la
+     media query de 900 px.
+     ------------------------------------------------------------------------------------ */
+
+  #visor {
+    position: relative;
+    margin-inline: auto;
+    background: #fff;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: y mandatory;
+    container-type: inline-size;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    color: var(--g900);
+  }
+
+  .barra {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--g200);
+    background: rgba(255,255,255,.95);
+  }
+  .barra .donde { flex-shrink: 0; font-family: var(--display); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .barra ol { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; flex-shrink: 0; }
+  .barra ol li { width: 6px; height: 6px; border-radius: 50%; background: var(--g300); transition: background-color .2s; }
+  .barra ol li.si { background: var(--marca-oscura); }
+  .barra .avance { flex-grow: 1; height: 4px; border-radius: 999px; background: var(--g200); }
+  .barra .avance div { height: 4px; border-radius: 999px; background: var(--marca-oscura); width: 0; }
+  .barra .salir {
+    flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+    border: 1px solid var(--g300); border-radius: 6px; padding: 4px 10px;
+    font: inherit; font-size: 12px; color: var(--g700); background: #fff;
+  }
+
+  .snap { scroll-snap-align: start; }
+  .paso { scroll-snap-align: start; scroll-snap-stop: always; }
+
+  /* La escena 5, reducida a lo que se ve al final de su último paso: sirve para sentir la
+     transición, no para evaluarla. */
+  .escena5 { position: relative; }
+  .escena5 .dentro {
+    position: sticky;
+    display: flex; flex-direction: column; justify-content: center; gap: 24px;
+    padding: 24px 16px; max-width: 42rem; margin-inline: auto;
+  }
+  .escena5 h3 { margin: 0; font-family: var(--display); font-size: 15px; font-weight: 600; }
+  .escena5 p { margin: 8px 0 0; font-size: 19px; line-height: 1.4; color: var(--g800); }
+  .escena5 .figura {
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px; color: var(--g500);
+  }
+  .escena5 .figura .hueco { height: 120px; border: 1px dashed var(--g300); border-radius: 6px; background: #F9FAFB; }
+  .escena5 .figura a { margin-top: 8px; color: var(--marca-oscura); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ---- El cierre ---- */
+
+  .cierre { position: relative; }
+
+  .cierre .dentro {
+    position: sticky;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .cierre .bloque { width: 100%; max-width: 42rem; margin-inline: auto; }
+
+  .cierre .ceja {
+    margin: 0; font-family: var(--display); font-size: 12px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--marca-oscura);
+  }
+  .cierre h2 { margin: 6px 0 0; font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1.2; text-wrap: balance; }
+
+  .cierre ol.frases { margin: 18px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .cierre ol.frases.una { display: grid; }
+  .cierre ol.frases.una > li { grid-area: 1 / 1; }
+
+  .cierre ol.frases li {
+    display: flex; gap: 12px; align-items: baseline;
+    font-size: 19px; line-height: 1.4; color: var(--g800);
+    transition: opacity .5s, color .5s;
+  }
+  .cierre ol.frases li .marca {
+    flex-shrink: 0; width: 1rem; text-align: right;
+    font-family: var(--display); font-size: .6em; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: var(--g400); transition: color .5s;
+  }
+  .cierre ol.frases li .marca.punto { width: .6em; text-align: center; font-size: .55em; transform: translateY(-.15em); }
+  .cierre ol.frases li.activa .marca { color: var(--marca-oscura); }
+  /* Gris 500 y no más claro: es el último tono que mantiene 4,5:1 sobre blanco (la misma regla
+     que la bajada de la escena). Más apagado se ve mejor y deja gente afuera. */
+  .cierre ol.frases li.apagada { color: var(--g500); }
+  .cierre ol.frases li.futura { opacity: 0; }
+
+  .cierre ol.frases a { color: inherit; text-decoration: underline; text-decoration-color: var(--g300); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .cierre ol.frases a:hover { text-decoration-color: var(--marca-oscura); }
+
+  .cierre .salida { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--g200); transition: opacity .5s; }
+  .cierre .salida.futura { opacity: 0; }
+  .cierre .salida p { margin: 0; font-size: 16px; line-height: 1.45; color: var(--g700); }
+  .cierre .salida p strong { color: var(--g900); font-weight: 600; }
+  .cierre .botones { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+  .cierre .botones .primario, .cierre .botones .secundario {
+    display: inline-flex; align-items: center; gap: 8px;
+    border-radius: 6px; padding: 9px 16px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  /* `brand-dark` aguanta blanco (5,4:1); `brand` no (2,96:1). */
+  .cierre .botones .primario { background: var(--marca-oscura); color: #fff; border: 1px solid var(--marca-oscura); }
+  .cierre .botones .secundario { background: #fff; color: var(--g800); border: 1px solid var(--g300); }
+  .cierre .botones .enlace {
+    border: 0; background: none; padding: 0; font: inherit; font-size: 14px; cursor: pointer;
+    color: var(--g600); text-decoration: underline; text-underline-offset: 2px;
+  }
+
+  /* La versión de hoy, tal como está en `CapaRecorrido.tsx:306`. */
+  .cierre-app { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 64px 16px; }
+  .cierre-app p { margin: 0; font-size: 14px; color: var(--g600); }
+  .cierre-app button { border: 0; border-radius: 6px; padding: 8px 16px; background: var(--marca-oscura); color: #fff; font: inherit; font-size: 14px; font-weight: 500; }
+  .cierre-app a { font-size: 14px; color: var(--g600); text-decoration: underline; }
+
+  .aviso-clic {
+    position: absolute; left: 50%; transform: translateX(-50%); z-index: 30;
+    background: var(--g900); color: #fff; font-size: 12.5px; padding: 6px 12px; border-radius: 6px;
+    pointer-events: none; transition: opacity .3s; white-space: nowrap;
+  }
+
+  @container (min-width: 900px) {
+    .barra { padding-inline: 24px; }
+    .escena5 .dentro { max-width: 46rem; }
+    .escena5 h3 { font-size: 27px; line-height: 1.2; }
+    .escena5 p { font-size: 34px; line-height: 1.3; }
+    .cierre .bloque { max-width: 46rem; }
+    .cierre h2 { font-size: 34px; }
+    .cierre .ceja { font-size: 13px; }
+    .cierre ol.frases { margin-top: 28px; gap: 16px; }
+    .cierre ol.frases li { font-size: var(--tam-escritorio, 27px); line-height: 1.3; }
+    .cierre .salida { margin-top: 36px; }
+    .cierre .salida p { font-size: 20px; }
+    .cierre .botones .primario, .cierre .botones .secundario, .cierre .botones .enlace { font-size: 15px; }
+  }
+
+  /* ---- Nota y exportación ---- */
+
+  .nota { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .nota textarea { min-height: 4.5em; resize: vertical; }
+  .nota .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; color: var(--tinta-suave); }
+  #json { font-family: ui-monospace, monospace; font-size: 12px; min-height: 8em; }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio del cierre del recorrido</h1>
+    <p>
+      El paso final que reemplaza a «Hasta acá el recorrido». Una sección sin número, con una frase por
+      escena que aparece con el scroll, la invitación a seguir en el tablero y el explorador, y los
+      botones. Haz scroll dentro del visor: arranca en el final de la escena 5.
+    </p>
+  </header>
+
+  <ul class="avisos">
+    <li>Ya está decidido: sección sin número, las frases son los titulares de cada escena y los botones van al tablero, al explorador y al inicio. Lo que queda abierto está en los controles.</li>
+    <li>Las frases son los titulares que la app mostraba el 15-09-2026. En la app saldrán de la misma función que arma cada titular, así que si una oleada nueva cambia uno, cambia en los dos lugares. Editarlas acá es proponer otro titular para esa escena.</li>
+    <li>La portada tiene su propia lista de cinco líneas y ya no coincide con los titulares. La cuarta todavía dice «La ventaja de China se la saca al empate», que el <code>CLAUDE.md</code> descarta porque es aritmética y no un hallazgo.</li>
+    <li>Revísalo en el aparato donde se va a leer: con el teléfono, abre esta página directo y elige «Todo».</li>
+  </ul>
+
+  <div class="controles">
+    <div class="grupo"><span>Combinación</span><div class="seg" id="c-preset"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Frases ya leídas</span><div class="seg" id="c-anteriores"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Marca de cada frase</span><div class="seg" id="c-marca"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Invitación y botones</span><div class="seg" id="c-salida"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Frase enlaza a su escena</span><div class="seg" id="c-enlaces"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Puntos de paso en la barra</span><div class="seg" id="c-puntos"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Enlace «Cómo se hizo»</span><div class="seg" id="c-metodo"></div></div>
+    <div class="grupo" data-solo-nuevo><span>Letra de las frases en escritorio</span><div class="seg" id="c-tam"></div></div>
+    <div class="grupo"><span>Ventana simulada</span><div class="seg" id="c-ancho"></div></div>
+  </div>
+
+  <div class="textos" id="textos" data-solo-nuevo></div>
+
+  <div class="marco">
+    <div class="barra-visor" id="info"></div>
+    <div class="deslizable"><div id="visor"></div></div>
+  </div>
+
+  <div class="nota">
+    <div class="fila"><strong style="color:var(--tinta)">Tu nota sobre esta combinación</strong></div>
+    <textarea id="nota" placeholder="Qué funciona, qué no, y por qué."></textarea>
+    <div class="fila">
+      <button class="accion" id="exportar">Copiar JSON</button>
+      <span id="copiado"></span>
+    </div>
+    <textarea id="json" readonly hidden></textarea>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Los titulares tal como los muestra la app (leídos del navegador el 15-09-2026). La 1 y la 5 se
+  // arman con el dato en `App.tsx`; en la app el cierre llama a la misma función.
+  const TEXTOS_BASE = {
+    ceja: 'Recorrido',
+    titulo: 'Lo que se movió entre 2023 y 2025',
+    e1: 'En 2025 las personas evalúan mejor a China que a Estados Unidos.',
+    e2: 'La posición política no ordena la opinión sobre China.',
+    e3: 'La confianza en China crece; la de Estados Unidos va y vuelve.',
+    e4: 'La ventaja de China crece, y caen tanto el empate como Estados Unidos.',
+    e5: 'En 2025, alinearse con China supera a alinearse con Estados Unidos.',
+    invitacion: '¿Qué más nos puede contar la encuesta? Verifícalo tú en el tablero de nuestras preguntas destacadas y en el explorador de preguntas.',
+    bTablero: 'Preguntas destacadas',
+    bExplorador: 'Explorar las preguntas',
+    bInicio: 'Volver al inicio',
+    bMetodo: 'Cómo se hizo el recorrido',
+  };
+  const ROTULOS = {
+    ceja: 'Ceja (vacía, no va)', titulo: 'Título del cierre (vacío, no va)',
+    e1: 'Escena 1', e2: 'Escena 2', e3: 'Escena 3', e4: 'Escena 4', e5: 'Escena 5',
+    invitacion: 'Invitación', bTablero: 'Botón al tablero', bExplorador: 'Botón al explorador',
+    bInicio: 'Volver al inicio', bMetodo: 'Enlace al método',
+  };
+  const ESCENAS = ['e1', 'e2', 'e3', 'e4', 'e5'];
+
+  const P_BASE = {
+    modo: 'nuevo', anteriores: 'apagadas', marca: 'numero', salida: 'paso-propio',
+    enlaces: 'si', puntos: 'si', metodo: 'no', tam: '27', ancho: '390',
+  };
+  const PRESETS = {
+    propuesta: Object.assign({}, P_BASE),
+    app: Object.assign({}, P_BASE, { modo: 'app' }),
+  };
+  const NOMBRES_PRESET = { propuesta: 'Propuesta', app: 'Como está la app' };
+
+  // Alto de cada ventana simulada. «Todo» toma la ventana real.
+  const ANCHOS = { '390': [390, 780], '768': [768, 1024], '899': [899, 800], '1512': [1512, 900], todo: null };
+  const NOMBRES_ANCHO = { '390': '390', '768': '768', '899': '899', '1512': '1512', todo: 'Todo' };
+
+  const CLAVE = 'lab-cierre-recorrido-v1';
+  let E = Object.assign({}, P_BASE);
+  let T = Object.assign({}, TEXTOS_BASE);
+  let nota = '';
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    if (g) {
+      // Por identificador, nunca por posición: una clave nueva toma su valor de base.
+      Object.keys(P_BASE).forEach((k) => { if (g.p && typeof g.p[k] === 'string') E[k] = g.p[k]; });
+      Object.keys(TEXTOS_BASE).forEach((k) => { if (g.t && typeof g.t[k] === 'string') T[k] = g.t[k]; });
+      if (typeof g.nota === 'string') nota = g.nota;
+    }
+  } catch (e) { /* modo privado */ }
+
+  function guardar () {
+    try { localStorage.setItem(CLAVE, JSON.stringify({ p: E, t: T, nota: nota })); } catch (e) { /* modo privado */ }
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---- Controles ----
+
+  function seg (id, opciones, activo, alElegir) {
+    const nodo = $(id);
+    nodo.innerHTML = '';
+    Object.keys(opciones).forEach((v) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opciones[v];
+      b.setAttribute('aria-pressed', activo(v) ? 'true' : 'false');
+      b.addEventListener('click', () => { alElegir(v); guardar(); pintarTodo(); });
+      nodo.appendChild(b);
+    });
+  }
+
+  function presetActivo () {
+    return Object.keys(PRESETS).find((k) => Object.keys(P_BASE).every((c) => c === 'ancho' || PRESETS[k][c] === E[c]));
+  }
+
+  function pintarControles () {
+    seg('c-preset', NOMBRES_PRESET, (v) => presetActivo() === v, (v) => { const a = E.ancho; E = Object.assign({}, PRESETS[v], { ancho: a }); });
+    seg('c-anteriores', { apagadas: 'Quedan en gris', encendidas: 'Quedan encendidas', una: 'Una a la vez' }, (v) => E.anteriores === v, (v) => { E.anteriores = v; });
+    seg('c-marca', { numero: 'Número', punto: 'Punto', nada: 'Nada' }, (v) => E.marca === v, (v) => { E.marca = v; });
+    seg('c-salida', { 'paso-propio': 'Paso propio al final', 'con-ultima': 'Con la última frase', siempre: 'Siempre a la vista' }, (v) => E.salida === v, (v) => { E.salida = v; });
+    seg('c-enlaces', { si: 'Sí', no: 'No' }, (v) => E.enlaces === v, (v) => { E.enlaces = v; });
+    seg('c-puntos', { si: 'Sí', no: 'No' }, (v) => E.puntos === v, (v) => { E.puntos = v; });
+    seg('c-metodo', { no: 'No', si: 'Sí' }, (v) => E.metodo === v, (v) => { E.metodo = v; });
+    seg('c-tam', { '34': '34 px (respiro)', '27': '27 px (titular)', '22': '22 px' }, (v) => E.tam === v, (v) => { E.tam = v; });
+    seg('c-ancho', NOMBRES_ANCHO, (v) => E.ancho === v, (v) => { E.ancho = v; });
+    // Un parámetro que no significa nada en la versión de hoy se saca del panel.
+    document.querySelectorAll('[data-solo-nuevo]').forEach((n) => { n.hidden = E.modo === 'app'; });
+  }
+
+  function pintarTextos () {
+    const nodo = $('textos');
+    if (nodo.childElementCount) return;
+    Object.keys(TEXTOS_BASE).forEach((k) => {
+      if (k === 'bMetodo' && E.metodo !== 'si') { /* se muestra igual: editar no cuesta */ }
+      const l = document.createElement('label');
+      const largo = k === 'invitacion' || ESCENAS.includes(k);
+      l.innerHTML = `<span>${esc(ROTULOS[k])} · <span class="cuenta"></span></span>`;
+      const campo = document.createElement(largo ? 'textarea' : 'input');
+      campo.value = T[k];
+      const cuenta = l.querySelector('.cuenta');
+      const contar = () => {
+        cuenta.textContent = `${campo.value.length} caracteres`;
+        // El umbral del laboratorio del recorrido: pasados los 130, la frase cansa.
+        cuenta.classList.toggle('largo', ESCENAS.includes(k) && campo.value.length > 130);
+      };
+      contar();
+      campo.addEventListener('input', () => { T[k] = campo.value; contar(); guardar(); pintarVisor(true); });
+      l.appendChild(campo);
+      nodo.appendChild(l);
+    });
+  }
+
+  // ---- Visor ----
+
+  let observador = null;
+  let observadorCierre = null;
+  let activo = 0;
+  let enCierre = false;
+  let geo = { H: 0, barra: 0, bloque: 0 };
+
+  function totalPasos () { return ESCENAS.length + (E.salida === 'paso-propio' ? 1 : 0); }
+
+  function htmlCierre () {
+    const frases = ESCENAS.map((k, i) => {
+      const texto = esc(T[k]);
+      const marca = E.marca === 'numero'
+        ? `<span class="marca" aria-hidden="true">${i + 1}</span>`
+        : E.marca === 'punto' ? '<span class="marca punto" aria-hidden="true">●</span>' : '';
+      const cuerpo = E.enlaces === 'si' ? `<a href="#" data-escena="${i + 1}">${texto}</a>` : `<span>${texto}</span>`;
+      return `<li data-i="${i}">${marca}${cuerpo}</li>`;
+    }).join('');
+    const metodo = E.metodo === 'si' ? `<button type="button" class="enlace" data-accion="metodo">${esc(T.bMetodo)}</button>` : '';
+    return `
+      <div class="dentro">
+        <div class="bloque">
+          ${T.ceja ? `<p class="ceja">${esc(T.ceja)}</p>` : ''}
+          ${T.titulo ? `<h2>${esc(T.titulo)}</h2>` : ''}
+          <ol class="frases${E.anteriores === 'una' ? ' una' : ''}">${frases}</ol>
+          <div class="salida">
+            <p>${esc(T.invitacion)}</p>
+            <div class="botones">
+              <button type="button" class="primario" data-accion="tablero">${esc(T.bTablero)} <span aria-hidden="true">→</span></button>
+              <button type="button" class="secundario" data-accion="explorador">${esc(T.bExplorador)} <span aria-hidden="true">→</span></button>
+              <button type="button" class="enlace" data-accion="inicio">${esc(T.bInicio)} <span aria-hidden="true">↑</span></button>
+              ${metodo}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pista" aria-hidden="true"></div>`;
+  }
+
+  function pintarVisor (conservar) {
+    const visor = $('visor');
+    const antes = conservar ? visor.scrollTop : 0;
+    const medidas = ANCHOS[E.ancho];
+    const w = medidas ? medidas[0] : Math.min(window.innerWidth, 1600);
+    // «Todo» mide la ventana entera, como la capa de la app (`fixed inset-0`). Al 85 % el bloque no
+    // cabía a 390 en el visor y sí cabía en la app: el visor tiene que dar la misma respuesta.
+    const h = medidas ? medidas[1] : window.innerHeight;
+    visor.style.width = `${w}px`;
+    visor.style.height = `${h}px`;
+    visor.style.setProperty('--tam-escritorio', `${E.tam}px`);
+
+    visor.innerHTML = `
+      <div class="barra" id="barra">
+        <span class="donde" id="donde">Escena 5 de 5</span>
+        <ol id="puntos"></ol>
+        <div class="avance"><div id="avance"></div></div>
+        <button type="button" class="salir">Salir al tablero ✕</button>
+      </div>
+      <section class="escena5 snap" id="escena5">
+        <div class="dentro">
+          <div>
+            <h3>${esc(T.e5.replace(/\.$/, ''))}</h3>
+            <!-- Texto leído de la app el 15-09-2026. -->
+            <p><strong>En 2025 se da vuelta:</strong> China llega a 16,3% y Estados Unidos baja a 11,9%.</p>
+          </div>
+          <div class="figura" aria-hidden="true">
+            <div class="hueco"></div>
+            <span>Acá va la figura de la escena 5 (barras de p26). No se dibuja: solo sirve para sentir la transición.</span>
+            <a>Ver esta pregunta en el tablero →</a>
+          </div>
+        </div>
+      </section>
+      ${E.modo === 'app'
+        ? `<div class="cierre-app snap">
+             <p>Hasta acá el recorrido. El tablero queda abajo, para consultar.</p>
+             <button type="button">Ir al tablero</button>
+             <a>Cómo se hizo el recorrido</a>
+           </div>`
+        : `<section class="cierre" id="cierre">${htmlCierre()}</section>`}
+      <div class="aviso-clic" id="aviso" style="opacity:0"></div>`;
+
+    visor.onscroll = () => {
+      const r = visor.scrollHeight - visor.clientHeight;
+      $('avance').style.width = `${Math.round((r > 0 ? visor.scrollTop / r : 1) * 100)}%`;
+      $('aviso').style.top = `${visor.scrollTop + 56}px`;
+    };
+
+    visor.onclick = (ev) => {
+      const a = ev.target.closest('[data-escena], [data-accion]');
+      if (!a) return;
+      ev.preventDefault();
+      if (a.dataset.accion === 'inicio') { visor.scrollTo({ top: 0, behavior: 'smooth' }); avisar('En la app vuelve a la portada del recorrido'); return; }
+      const destinos = {
+        tablero: 'En la app lleva a #/tablero',
+        explorador: 'En la app lleva a #/explorar',
+        metodo: 'En la app lleva a #/datos?foco=metodo-recorrido',
+      };
+      avisar(a.dataset.escena ? `En la app vuelve a la escena ${a.dataset.escena}` : destinos[a.dataset.accion]);
+    };
+
+    // La geometría se mide después de pintar, igual que en `Escena`: el alto de la pantalla y el
+    // de la barra, y con ellos el bloque pegado y la pista.
+    requestAnimationFrame(() => {
+      const H = visor.clientHeight;
+      const barra = $('barra').getBoundingClientRect().height;
+      const e5 = $('escena5');
+      e5.style.minHeight = `${H}px`;
+      const dentro5 = e5.querySelector('.dentro');
+      dentro5.style.top = `${barra}px`;
+      dentro5.style.minHeight = `${H - barra}px`;
+
+      if (E.modo === 'app') {
+        geo = { H: H, barra: barra, bloque: 0 };
+        activo = 0; enCierre = false;
+        if (observador) observador.disconnect();
+        if (observadorCierre) observadorCierre.disconnect();
+        visor.scrollTop = antes;
+        visor.onscroll();
+        pintarEstado();
+        return;
+      }
+
+      const cierre = $('cierre');
+      const dentro = cierre.querySelector('.dentro');
+      dentro.style.top = `${barra}px`;
+      dentro.style.minHeight = `${H - barra}px`;
+      // El bloque mide lo que mide con todo encendido: las futuras reservan su lugar con opacidad.
+      const bloque = Math.round(dentro.getBoundingClientRect().height);
+      geo = { H: H, barra: barra, bloque: dentro.querySelector('.bloque').getBoundingClientRect().height };
+
+      const colchon = Math.round(H * 0.55);
+      const paso = Math.round(H * 0.75);
+      const final = Math.round(H * 0.2);
+      const pista = cierre.querySelector('.pista');
+      pista.style.marginTop = `${-bloque}px`;
+      let html = `<div class="snap" style="height:${colchon}px;scroll-margin-top:${colchon}px"></div>`;
+      for (let i = 0; i < totalPasos(); i++) {
+        html += `<div class="paso" data-paso="${i}" style="height:${paso}px;scroll-margin-top:${colchon}px"></div>`;
+      }
+      html += `<div class="snap" style="height:${final}px;scroll-margin-top:${colchon}px"></div>`;
+      pista.innerHTML = html;
+
+      if (observador) observador.disconnect();
+      observador = new IntersectionObserver((entradas) => {
+        entradas.forEach((en) => { if (en.isIntersecting) activo = Number(en.target.dataset.paso); });
+        pintarEstado();
+      }, { root: visor, rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      pista.querySelectorAll('.paso').forEach((n) => observador.observe(n));
+
+      if (observadorCierre) observadorCierre.disconnect();
+      observadorCierre = new IntersectionObserver(([en]) => { enCierre = en.isIntersecting; pintarEstado(); },
+        { root: visor, rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      observadorCierre.observe(cierre);
+
+      activo = Math.min(activo, totalPasos() - 1);
+      visor.scrollTop = antes;
+      visor.onscroll();
+      pintarEstado();
+    });
+  }
+
+  let temporizador = null;
+  function avisar (texto) {
+    const n = $('aviso');
+    if (!n) return;
+    n.textContent = texto;
+    n.style.top = `${$('visor').scrollTop + 56}px`;
+    n.style.opacity = '1';
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => { n.style.opacity = '0'; }, 1600);
+  }
+
+  function pintarEstado () {
+    const N = totalPasos();
+    const cierre = $('cierre');
+    if (cierre) {
+      const ultimaFrase = ESCENAS.length - 1;
+      cierre.querySelectorAll('ol.frases li').forEach((li) => {
+        const i = Number(li.dataset.i);
+        li.classList.remove('activa', 'apagada', 'futura');
+        if (i > activo) li.classList.add('futura');
+        else if (i === activo) li.classList.add('activa');
+        else if (E.anteriores === 'una') li.classList.add('futura');
+        else if (E.anteriores === 'apagadas') li.classList.add('apagada');
+      });
+      // En el paso de salida no hay frase activa: en «una a la vez» se queda la última a la vista.
+      if (activo > ultimaFrase && E.anteriores === 'una') {
+        cierre.querySelector(`ol.frases li[data-i="${ultimaFrase}"]`).classList.remove('futura');
+      }
+      const salidaVisible = E.salida === 'siempre' ||
+        (E.salida === 'con-ultima' && activo >= ultimaFrase) ||
+        (E.salida === 'paso-propio' && activo > ultimaFrase);
+      cierre.querySelector('.salida').classList.toggle('futura', !salidaVisible);
+    }
+
+    $('donde').textContent = enCierre ? 'Cierre' : 'Escena 5 de 5';
+    const puntos = $('puntos');
+    puntos.innerHTML = enCierre && E.puntos === 'si' && E.modo !== 'app'
+      ? Array.from({ length: N }, (_, i) => `<li class="${i <= activo ? 'si' : ''}"></li>`).join('')
+      : (!enCierre ? '<li class="si"></li><li class="si"></li>' : '');
+
+    const disponible = Math.round(geo.H - geo.barra);
+    const bloque = Math.round(geo.bloque);
+    const cabe = bloque + 48 <= disponible;
+    $('info').innerHTML = [
+      `Ventana ${$('visor').clientWidth}×${geo.H}`,
+      E.modo === 'app' ? 'Versión de hoy' : `Paso ${Math.min(activo + 1, N)} de ${N}`,
+      E.modo === 'app' ? '' : `<span class="${cabe ? '' : 'mal'}">Bloque ${bloque} px de ${disponible} disponibles${cabe ? '' : ': no cabe'}</span>`,
+    ].filter(Boolean).join(' · ');
+  }
+
+  // ---- Exportación ----
+
+  $('nota').value = nota;
+  $('nota').addEventListener('input', (e) => { nota = e.target.value; guardar(); });
+  $('exportar').addEventListener('click', () => {
+    const datos = {
+      laboratorio: 'cierre-recorrido',
+      fecha: new Date().toISOString(),
+      combinacion: presetActivo() || 'personalizada',
+      parametros: E,
+      textos: T,
+      medida: { ventana: [$('visor').clientWidth, geo.H], bloque: Math.round(geo.bloque), disponible: Math.round(geo.H - geo.barra) },
+      nota: nota,
+    };
+    const texto = JSON.stringify(datos, null, 2);
+    const caja = $('json');
+    caja.hidden = false;
+    caja.value = texto;
+    const listo = () => { $('copiado').textContent = 'Copiado. Pégalo en el chat.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(listo, () => { caja.select(); $('copiado').textContent = 'Selecciónalo y cópialo a mano.'; });
+    else { caja.select(); $('copiado').textContent = 'Selecciónalo y cópialo a mano.'; }
+  });
+
+  function pintarTodo () {
+    pintarControles();
+    pintarTextos();
+    pintarVisor(true);
+  }
+
+  let anchoVentana = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === anchoVentana) return;
+    anchoVentana = window.innerWidth;
+    if (E.ancho === 'todo') pintarVisor(true);
+  });
+
+  pintarTodo();
+})();
+</script>

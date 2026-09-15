@@ -116,6 +116,70 @@
   min-height: calc(var(--alto-capa, 100svh) - var(--barra-capa, 2.5rem));
 }
 
+/* La portada: el logo arriba, la pregunta centrada en el hueco (`my-auto`) y abajo los tres arcos
+   con la invitación. Salió del laboratorio de la portada el 15-09-2026. */
+.portada-recorrido .texto-invitar {
+  font-size: 14px;
+}
+
+/* El texto sigue al puntero, no al ancho. `hover: none` además de `pointer: coarse` para que un
+   portátil con pantalla táctil y mouse siga diciendo «scroll». */
+.portada-recorrido .texto-tactil {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .portada-recorrido .texto-tactil {
+    display: inline;
+  }
+
+  .portada-recorrido .texto-mouse {
+    display: none;
+  }
+}
+
+/* La cascada: cada arco baja 6 px y vuelve, con su propio retraso, y se aclara al bajar. */
+@keyframes flotar-portada {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: var(--opacidad);
+  }
+
+  50% {
+    transform: translateY(6px);
+    opacity: var(--opacidad-alta);
+  }
+}
+
+.arcos-portada path {
+  opacity: var(--opacidad);
+  animation: flotar-portada 2s ease-in-out infinite;
+  animation-delay: var(--retraso);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arcos-portada path {
+    animation: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .portada-recorrido .pregunta-portada {
+    font-size: 60px;
+    max-width: 18ch;
+  }
+
+  /* 68 px es el alto con que iclac.cl dibuja este mismo logo, igual que el encabezado. */
+  .portada-recorrido .logo-portada {
+    height: 4.25rem;
+  }
+
+  .portada-recorrido .texto-invitar {
+    font-size: 15px;
+  }
+}
+
 /* El dato que acaba de encenderse destella una vez, en su propio color.
    Sin eso, un punto que aparece con opacidad pasa desapercibido: el lector está leyendo la frase
    y no mira la figura hasta que algo cambia. **El destello no mueve nada**: ni la posición, ni el
@@ -212,8 +276,8 @@
    gesto que deja el scroll a 285 px del punto más cercano no mueve nada en `proximity`, así que el
    imán no existía en la práctica. Con `mandatory` el navegador siempre termina en un punto.
 
-   Lo que hace seguro a `mandatory` es que **todo el recorrido tenga puntos**: los pasos, los dos
-   colchones de cada escena y el cierre de la capa. Sin eso, el navegador tiene que saltar entre
+   Lo que hace seguro a `mandatory` es que **todo el recorrido tenga puntos**: la portada, los
+   respiros, y los pasos y los dos colchones de cada escena y del cierre. Sin eso, el navegador tiene que saltar entre
    puntos lejanos y deja contenido inalcanzable, que es justo lo que pasa con el botón de salida.
    Ningún par de puntos consecutivos puede quedar más lejos que una pantalla.
 
@@ -225,7 +289,6 @@
 
 .paso-recorrido,
 .colchon-recorrido,
-.cierre-recorrido,
 .portada-recorrido,
 .respiro-recorrido {
   scroll-snap-align: start;
@@ -284,7 +347,11 @@
   font-size: 10px;
 }
 
-.respiro-recorrido {
+/* La portada, por la misma razón: con la sección a pantalla menos barra, la capa abría con el logo
+   tapado por la barra y el titular de la escena 1 asomado abajo (medido el 15-09-2026: el imán la
+   dejaba en 43 px de scroll). */
+.respiro-recorrido,
+.portada-recorrido {
   min-height: 100vh;
   min-height: var(--alto-capa, 100svh);
 }
@@ -361,6 +428,22 @@
 
   .capa-recorrido .escena .pie-divergente {
     margin-top: 0.5rem;
+  }
+
+  /* El cierre aprieta el aire entre frases y alrededor de la salida: en 360×640 los botones se
+     parten en tres filas y «Volver al inicio» quedaba 31 px bajo el borde (medido el 15-09-2026). */
+  .capa-recorrido .cierre-recorrido .frases-cierre {
+    margin-top: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .capa-recorrido .cierre-recorrido .salida-cierre {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+  }
+
+  .capa-recorrido .cierre-recorrido .salida-cierre > div {
+    margin-top: 0.625rem;
   }
 }
 
@@ -453,6 +536,44 @@
     max-width: 46rem;
     font-size: 34px;
     line-height: 1.3;
+  }
+
+  /* El cierre crece como el respiro, con el mismo ancho, pero sus frases van al tamaño del
+     titular de escena (27 px) y no al del respiro: son varias, y a 34 px tres titulares y la
+     salida se comen la pantalla. Medidas del laboratorio del cierre, 15-09-2026. */
+  .capa-recorrido .cierre-recorrido .bloque-cierre {
+    max-width: 46rem;
+  }
+
+  .capa-recorrido .cierre-recorrido .bloque-cierre > p:first-child {
+    font-size: 13px;
+  }
+
+  .capa-recorrido .cierre-recorrido h2 {
+    font-size: 34px;
+  }
+
+  .capa-recorrido .cierre-recorrido .frases-cierre {
+    margin-top: 1.75rem;
+    gap: 1rem;
+  }
+
+  .capa-recorrido .cierre-recorrido .frases-cierre > li {
+    font-size: 27px;
+    line-height: 1.3;
+  }
+
+  .capa-recorrido .cierre-recorrido .salida-cierre {
+    margin-top: 2.25rem;
+  }
+
+  .capa-recorrido .cierre-recorrido .salida-cierre p {
+    font-size: 20px;
+  }
+
+  .capa-recorrido .cierre-recorrido .salida-cierre a,
+  .capa-recorrido .cierre-recorrido .salida-cierre button {
+    font-size: 15px;
   }
 
   /* La figura crece con el texto. En el teléfono las filas van a 40 px porque ahí el alto es lo

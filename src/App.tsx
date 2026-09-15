@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { HashRouter, Link, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
 import { distribucion, filtrar, media, multirespuesta, porGrupo, proporcion, serie } from './nucleo/agregar'
 import { CORTES, MODULOS, TERMOMETRO, variableDe, valorDe } from './nucleo/modulos'
@@ -15,7 +15,7 @@ import Ideologia from './componentes/Ideologia'
 import Nubes from './componentes/Nubes'
 import Densidad from './componentes/Densidad'
 import Puntos from './componentes/Puntos'
-import CapaRecorrido, { Escena, Portada, Respiro } from './componentes/CapaRecorrido'
+import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from './componentes/CapaRecorrido'
 import Divergente from './componentes/Divergente'
 import { figuraBalanza, figuraConfianza } from './nucleo/confianza'
 import Descargas from './componentes/Descargas'
@@ -513,6 +513,14 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
     ventajasP26.slice(0, -1).every((v) => (v?.diferencia ?? 0) < 0) &&
     (ventajasP26.at(-1)?.diferencia ?? 0) > 0
 
+  // Los titulares que el cierre repite, escritos una sola vez: si una oleada nueva cambia uno,
+  // cambia en su escena y en el cierre a la vez.
+  const titularTermometro = `En ${ultimaOla} las personas evalúan mejor a ${chinaSobreEeuu ? 'China que a Estados Unidos' : 'Estados Unidos que a China'}.`
+  const titularConfianza = 'La confianza en China crece; la de Estados Unidos va y vuelve'
+  const titularP26 = vuelcoP26
+    ? `En ${ultimaOla}, alinearse con China supera a alinearse con Estados Unidos`
+    : 'Con qué potencia debería alinearse Chile'
+
   const regresion = contraste.regresion
   const primeraDeLaSerie = regresion?.porOla.find((o) => o.ola === primeraOla) ?? null
   // La escala vertical es una sola para los cinco pasos y para las tres oleadas: si dependiera de
@@ -567,55 +575,17 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
       >
         {(raiz) => (
           <>
-            {/* La tapa. **Es borrador**: dice qué es el recorrido, cuánto dura y por dónde va, que
-                es el mínimo para decidir si entrar, pero no tiene guion acordado con ICLAC. */}
-            <Portada raiz={raiz} titulo={`Qué se movió entre ${encuesta.olas.at(0)} y ${encuesta.olas.at(-1)}`}>
-              <div className="mx-auto w-full max-w-2xl">
-                <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">Recorrido</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold leading-tight sm:text-4xl">
-                  Qué se movió entre {encuesta.olas.at(0)} y {encuesta.olas.at(-1)}
-                </h2>
-                <p className="mt-3 text-base text-gray-600">
-                  Cinco escenas que se avanzan con el scroll, en unos dos minutos. Se sale cuando
-                  quieras: el tablero queda del otro lado, con las tres oleadas completas.
-                </p>
-
-                <ol className="mt-5 divide-y divide-gray-200 border-y border-gray-200 text-sm text-gray-700">
-                  {[
-                    'China pasa a Estados Unidos, y el cambio entero ocurre en 2025.',
-                    'La posición política no ordena la opinión sobre China.',
-                    'La confianza en China crece, y la brecha se abre por un lado solo.',
-                    'La ventaja de China se la saca al empate.',
-                    'Cómo cambia la preferencia por alinearse con China o Estados Unidos.',
-                  ].map((linea, i) => (
-                    <li key={linea} className="flex gap-3 py-2">
-                      <span className="w-4 shrink-0 text-right font-display text-xs font-semibold tabular-nums text-gray-400">
-                        {i + 1}
-                      </span>
-                      {linea}
-                    </li>
-                  ))}
-                </ol>
-
-                {/* El botón hace lo mismo que el gesto, y por eso dice lo que el gesto hace: en el
-                    teléfono el scroll es obvio, con teclado o con rueda dura no lo es tanto. */}
-                <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const tapa = raiz?.querySelector('.portada-recorrido')
-                      if (raiz && tapa) raiz.scrollTo({ top: (tapa as HTMLElement).offsetHeight, behavior: 'smooth' })
-                    }}
-                    className="inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2.5 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
-                  >
-                    Empezar
-                    <span aria-hidden>↓</span>
-                  </button>
-                  <Link to="/tablero" className="text-sm text-gray-600 underline underline-offset-2 hover:text-brand-dark">
-                    o ir directo al tablero
-                  </Link>
-                </div>
-              </div>
+            {/* La tapa: el logo y la pregunta, nada más. Lo que dura el recorrido y la salida al
+                tablero ya los dice la barra. La invitación a avanzar la pone `Portada`. */}
+            <Portada raiz={raiz} titulo="¿Qué opina la gente sobre China?">
+              <img
+                src={`${import.meta.env.BASE_URL}icons/iclac.webp`}
+                alt="ICLAC"
+                className="logo-portada h-12 w-auto object-contain"
+              />
+              <h2 className="pregunta-portada my-auto max-w-[22ch] text-balance font-display text-[34px] font-semibold leading-[1.12] text-gray-900">
+                ¿Qué opina la gente sobre China?
+              </h2>
             </Portada>
 
             <Escena
@@ -630,7 +600,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               // ahí se consulta cuando ya se vieron los puntos, y no compite con el titular.
               // «Las personas» y no «los chilenos»: la muestra no es probabilística y no habla
               // por el país.
-              titulo={`En ${encuesta.olas.at(-1)} las personas evalúan mejor a ${chinaSobreEeuu ? 'China que a Estados Unidos' : 'Estados Unidos que a China'}.`}
+              titulo={titularTermometro}
               cabecera={(activo) => (
                 <AnioDelPaso
                   olas={encuesta.olas}
@@ -873,7 +843,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               // Una sola figura por paso, así que en escritorio va el relato a un lado y la figura
               // al otro, igual que la escena 1.
               dosColumnas
-              titulo="La confianza en China crece; la de Estados Unidos va y vuelve"
+              titulo={titularConfianza}
               frases={[
                 // **Un extremo, no los dos.** Antes esta frase pedía cuatro cifras y dos cortes
                 // distintos en una sola oración, sobre una figura que ya tiene seis filas y cuatro
@@ -1045,9 +1015,7 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               dosColumnas
               // **El titular se comprueba antes de escribirse.** Si una oleada nueva deja el vuelco
               // sin sustento, el título cambia solo en vez de quedar contradiciendo a su figura.
-              titulo={vuelcoP26
-                ? `En ${ultimaOla}, alinearse con China supera a alinearse con Estados Unidos`
-                : 'Con qué potencia debería alinearse Chile'}
+              titulo={titularP26}
               frases={[
                 <>
                   En {primeraOla} y {penultimaOla} <strong>ganaba Estados Unidos</strong>:{' '}
@@ -1078,6 +1046,20 @@ function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolea
               )}
             />
 
+            {/* **El cierre**, decidido en `laboratorio/cierre-recorrido.html` el 15-09-2026: los
+                titulares de las escenas 1, 3 y 5, y después la salida. La 5 entra solo con el
+                vuelco comprobado: sin él su titular describe la pregunta y no concluye nada, y el
+                cierre es una lista de conclusiones. */}
+            <Cierre
+              raiz={raiz}
+              titulo={`Lo que se movió entre ${primeraOla} y ${ultimaOla}`}
+              frases={[
+                { escena: 1, texto: titularTermometro },
+                { escena: 3, texto: titularConfianza },
+                ...(vuelcoP26 ? [{ escena: 5, texto: titularP26 }] : []),
+              ]}
+              invitacion="¿Qué más nos puede contar la encuesta? Verifícalo tú en el tablero de nuestras preguntas destacadas y en el explorador de preguntas."
+            />
           </>
         )}
       </CapaRecorrido>
