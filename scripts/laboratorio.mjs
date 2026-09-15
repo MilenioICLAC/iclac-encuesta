@@ -1,15 +1,11 @@
 #!/usr/bin/env node
-// Publica el laboratorio del recorrido como página suelta, para abrirlo en el teléfono sin el
-// marco del artefacto: `node scripts/laboratorio.mjs && npm run dev`.
+// Copia un laboratorio de `laboratorio/` a `public/` con su `<head>`, para servirlo con
+// `npm run dev`: `node scripts/laboratorio.mjs laboratorio/<tema>.html public/laboratorio-<tema>.html`.
+// El método está en la skill `laboratorio`.
 //
-// **Existe por una diferencia que costó encontrar.** El archivo del laboratorio se escribe para
-// el artefacto, y el artefacto lo envuelve en su propio `<head>`, que trae el `meta viewport`.
-// Servido tal cual desde `public/`, ese `meta` no está: el navegador del teléfono cae a su
-// viewport de 980 px, dibuja la página como si fuera de escritorio y todo se sale por la derecha.
-// Medido con emulación de móvil el 07-09-2026: 980 px de ancho suelto contra 360 dentro del marco.
-//
-// El envoltorio va acá y no dentro del archivo del laboratorio porque el artefacto rechaza
-// `<head>` propio: son dos destinos con dos envoltorios, y una sola fuente.
+// **El `<head>` va acá porque sin `meta viewport` el teléfono dibuja a 980 px** y todo se sale por
+// la derecha (medido el 07-09-2026). La fuente no lo trae porque nació para publicarse como
+// artefacto, que pone su propio `<head>`; ya no se publica así, pero la fuente sigue sin él.
 
 import { readFileSync, writeFileSync } from 'node:fs'
 const fuente = process.argv[2]
@@ -17,8 +13,7 @@ const salida = process.argv[3] ?? 'public/laboratorio.html'
 
 if (!fuente) {
   console.error('Uso: node scripts/laboratorio.mjs <archivo del laboratorio> [salida]\n' +
-    'La fuente es el HTML que se publica como artefacto; acá solo se le pone el <head> que el\n' +
-    'artefacto pone por su cuenta y que, servido suelto, falta.')
+    'La fuente es un HTML de laboratorio/ sin <head>; acá se le pone para servirlo desde public/.')
   process.exit(1)
 }
 

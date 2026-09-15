@@ -758,7 +758,7 @@ function Pista ({ cantidad, refs, alto, altoEscena }: {
    * entra encima, superpuesta. Subir la pista consigue lo mismo y deja el alto de la escena
    * intacto, que es lo que separa una escena de la que viene.
    *
-   * Con la pista subida `alto − colchón`, el paso i entra a la banda de lectura exactamente a
+   * Con la pista subida el alto de la escena, el paso i entra a la banda de lectura exactamente a
    * `i × alto de paso`. En píxeles medidos y no en porcentaje: un margen en porcentaje se
    * resuelve contra el **ancho**.
    */

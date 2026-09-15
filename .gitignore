@@ -37,3 +37,6 @@ public/laboratorio-portada.html
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
 # no al escribirlas. Ver docs/README.md y referencia/README.md.
+
+# Índice local de code-review-graph (se regenera con `code-review-graph build`)
+.code-review-graph/
