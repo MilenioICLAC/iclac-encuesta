@@ -48,6 +48,24 @@ export const MEDIDAS = [
     tipo: 'proporcion',
     valor: (c) => { const d = brechaConfianza(c); return d === null ? null : (d === 0 ? 100 : 0) },
   },
+  // **La serie de `p18` viaja con su advertencia pegada.** El enunciado y las categorías no
+  // cambiaron, pero el lugar de la pregunta sí: en 2023 venía después de una escala sobre cómo
+  // habían sido las interacciones, y desde 2024 después de esa misma pregunta vuelta abierta y de
+  // `p18a`, sobre fuentes de información, que además cambia de objeto entre 2024 y 2025. Año y
+  // contexto quedan confundidos y ninguna sensibilidad los separa: en 2024 y 2025 **toda** la
+  // muestra respondió `p18a`, no hay tiempos por ítem y las rotaciones vienen después de `p18`.
+  // La diferencia se publica igual, con el aviso a la vista, que es la decisión editorial del
+  // 21-09-2026. El campo `advertencia` es lo que hace que el aviso no dependa de que alguien se
+  // acuerde de escribirlo en la escena.
+  {
+    id: 'racismo-visto',
+    etiqueta: 'Vio contenido racista contra personas chinas o asiáticas',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p18',
+    codigos: [1],
+    advertencia: 'Desde 2024 la pregunta viene después de otra sobre fuentes de información, así que parte de la diferencia puede venir del cuestionario y no de las personas.',
+  },
   { id: 'no-alineamiento', etiqueta: 'No alineamiento', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3, 4] },
   { id: 'pro-china', etiqueta: 'Prefiere alinearse con China', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [1] },
   { id: 'pro-eeuu', etiqueta: 'Prefiere alinearse con Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [2] },
@@ -131,6 +149,28 @@ export const GRUPOS = [
     ],
     // Las dos puntas: es la brecha que el relato afirma o niega.
     puntas: ['Izquierda', 'Derecha'],
+  },
+  // **Quién reporta haber visto racismo, según contacto personal.** Es una comparación entre dos
+  // grupos **dentro de una misma oleada**, así que no la toca el cambio de contexto que arrastra la
+  // serie de `p18`: los dos grupos llegan a la pregunta por la misma secuencia, y `p16` y `p17` las
+  // responde toda la muestra, conozca o no a alguien. Va acá y no en `MEDIDAS` porque lo que se
+  // contrasta no es una oleada contra otra.
+  //
+  // La proporción se mide con la misma maquinaria que las medias: cada persona entra con 100 o 0
+  // (`valorDe`), así que el promedio del grupo **es** el porcentaje y la diferencia queda en puntos
+  // porcentuales.
+  {
+    id: 'racismo-contacto',
+    etiqueta: 'Vio contenido racista, según si conoce personalmente a alguien de China',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p18',
+    codigos: [1],
+    tramos: [
+      ['Conoce', (c) => Number(c.p14) === 1],
+      ['No conoce', (c) => Number(c.p14) === 2],
+    ],
+    puntas: ['Conoce', 'No conoce'],
   },
 ]
 
@@ -277,6 +317,9 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     id: medida.id,
     etiqueta: medida.etiqueta,
     unidad: medida.unidad,
+    // Viaja con la cifra, no al lado: la escena y la página de método leen el aviso de acá, así que
+    // no hay dos versiones del mismo texto ni una figura que lo pierda al reescribirse.
+    ...(medida.advertencia ? { advertencia: medida.advertencia } : {}),
     comparaciones: pares
       .map(([desde, hasta]) => {
         const r = comparar(de(desde), de(hasta), medida, opciones)
@@ -310,7 +353,11 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
   }))
 
   const grupos = GRUPOS.map((grupo) => {
-    const valores = (casos, tramo) => casos.filter(tramo[1]).map((c) => numero(c[grupo.campo])).filter((v) => v !== null)
+    // El mismo `valorDe` de las medidas: con `tipo: 'proporcion'` cada persona entra con 100 o 0 y
+    // el promedio del tramo es su porcentaje, así que un grupo se contrasta igual sea media o
+    // proporción.
+    const valorGrupo = valorDe(grupo)
+    const valores = (casos, tramo) => casos.filter(tramo[1]).map(valorGrupo).filter((v) => v !== null)
     const porOla = olas.map((ola) => {
       const casos = de(ola)
       const tramos = grupo.tramos.map(([nombre, filtro]) => {

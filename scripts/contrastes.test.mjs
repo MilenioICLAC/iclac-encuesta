@@ -349,6 +349,58 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
     }
   })
 
+  /**
+   * La historia de racismo reportado, sus dos escenas.
+   *
+   * La primera afirma una caída entre las puntas de la serie, y **viaja con una advertencia**: el
+   * enunciado de `p18` no cambió, pero su lugar en el cuestionario sí, y año y contexto no se
+   * pueden separar. Por eso acá no se prueba solo el número: se prueba que el aviso siga saliendo
+   * del artefacto. Una escena que muestre esta cifra sin él es exactamente lo que estas pruebas
+   * tienen que impedir.
+   */
+  it('el reporte de racismo cae entre las puntas de la serie', () => {
+    const serie = entre('racismo-visto', 2023, 2025)
+    expect(serie.diferencia, 'cae').toBeLessThan(0)
+    expect(serie.p, `serie completa p=${serie.p}`).toBeLessThan(0.05)
+    expect(serie.ic[1], 'el intervalo no cruza el cero').toBeLessThan(0)
+    // Y no es la composición: con edad y sexo fijos queda a menos de un punto de la cruda.
+    expect(Math.abs(serie.estandarizada - serie.diferencia)).toBeLessThan(1)
+  })
+
+  it('la cifra de racismo no se publica sin su advertencia de comparabilidad', () => {
+    const medida = calculado.medidas.find((m) => m.id === 'racismo-visto')
+    expect(medida.advertencia, 'la advertencia viaja con la medida').toBeTruthy()
+    expect(medida.advertencia).toMatch(/fuentes de información/)
+    expect(medida.advertencia).toMatch(/cuestionario/)
+  })
+
+  /**
+   * La segunda escena. Es una comparación **dentro de una oleada**, así que el cambio de contexto
+   * que arrastra la serie no la toca: los dos grupos llegaron a la pregunta por la misma
+   * secuencia.
+   *
+   * **La diferencia aparece en las tres oleadas**, no solo en 2025 (2023: +7,3, p 0,020; 2024:
+   * +6,2, p 0,032). Lo que distingue a 2025 es que es la única que sobrevive a corregir por las
+   * quince pruebas de la familia declarada en la revisión del 17-09-2026; este archivo no corrige
+   * por familia, así que acá se prueba lo que sí depende solo de los datos: misma dirección en las
+   * tres, y en 2025 una diferencia que ninguna de las otras alcanza. Por eso la escena dice «en
+   * 2025» y no «siempre».
+   */
+  it('quien conoce personalmente a alguien de China reporta más, y en 2025 es donde más se separa', () => {
+    const grupo = calculado.grupos.find((g) => g.id === 'racismo-contacto')
+    const en = (ola) => grupo.porOla.find((x) => x.ola === ola).brecha
+    for (const ola of [2023, 2024, 2025]) {
+      expect(en(ola).diferencia, `${ola}: quien conoce reporta más`).toBeGreaterThan(0)
+    }
+    expect(en(2025).p, `2025 p=${en(2025).p}`).toBeLessThan(0.01)
+    expect(en(2025).ic[0], 'el intervalo de 2025 no cruza el cero').toBeGreaterThan(0)
+    // Y la de 2025 es la más ancha de las tres: la que aguanta la corrección por familia.
+    for (const ola of [2023, 2024]) {
+      expect(en(2025).diferencia, `2025 contra ${ola}`).toBeGreaterThan(en(ola).diferencia)
+      expect(en(ola).p, `${ola} p=${en(ola).p}`).toBeGreaterThan(en(2025).p)
+    }
+  })
+
   it('el artefacto declara el alcance de estos números', () => {
     expect(calculado.metodo.alcance).toMatch(/no es probabilística/)
     expect(calculado.metodo.alcance).toMatch(/no son margen de error/i)
