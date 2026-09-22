@@ -42,27 +42,25 @@ export function useMovimientoReducido () {
  * `min-h` de la columna de texto.
  */
 /**
- * Cuál es el paso activo dado lo que el observador acaba de reportar.
+ * Cuál es el paso activo, dado qué pasos están **ahora** dentro de la banda.
  *
  * Va aparte del hook, y como función pura, porque es la única decisión del recorrido que se puede
- * equivocar en silencio: el navegador **no garantiza el orden** de las entradas de una misma
- * entrega, así que «la última entrada que intersecta» da un paso distinto según el orden en que
- * llegue. Acá la regla no depende del orden y se puede probar sin DOM.
+ * equivocar en silencio. Recibe el estado acumulado de todos los pasos, no la última entrega del
+ * observador: el observador solo avisa cuando un paso **entra o sale** de la banda, y cada paso
+ * mide 0,75 de pantalla contra una banda de 0,1, así que al cruzar una marca el paso anterior y el
+ * nuevo están dentro a la vez durante un décimo de pantalla. Con la regla vieja («el más cercano
+ * al activo, entre los de esta entrega»), volver atrás desde esa franja solo traía la salida del
+ * nuevo y la frase no volvía nunca (medido el 22-09-2026; con imán, el scroll quedaba siempre ahí).
  *
- * Con la banda angosta lo normal es que intersecte uno solo. Si intersectan varios (una entrega
- * después de un salto, o pasos más bajos que la banda), gana el más cercano al que estaba activo,
- * y en empate el mayor: el lector avanza más veces de las que retrocede.
+ * **Gana el mayor de los que están dentro.** Con dos dentro, el scroll acaba de pasar la marca del
+ * mayor, así que el activo es exactamente el de la última marca que quedó atrás, en los dos
+ * sentidos y después de cualquier salto. No depende del orden de las entradas. Si no hay ninguno
+ * dentro (antes de la pista o después), se queda el que estaba.
  */
-export function pasoActivo (entradas: { paso: number, dentro: boolean }[], actual: number): number {
-  const candidatos = entradas.filter((e) => e.dentro && Number.isInteger(e.paso)).map((e) => e.paso)
-  if (candidatos.length === 0) return actual
-  return candidatos.reduce((mejor, paso) => {
-    const d = Math.abs(paso - actual)
-    const dMejor = Math.abs(mejor - actual)
-    if (d < dMejor) return paso
-    if (d === dMejor) return Math.max(paso, mejor)
-    return mejor
-  })
+export function pasoActivo (dentro: ReadonlyMap<number, boolean>, actual: number): number {
+  let mayor = -1
+  for (const [paso, esta] of dentro) if (esta && Number.isInteger(paso) && paso > mayor) mayor = paso
+  return mayor < 0 ? actual : mayor
 }
 
 export function usePasoActivo (cantidad: number, raiz?: HTMLElement | null) {
@@ -76,12 +74,13 @@ export function usePasoActivo (cantidad: number, raiz?: HTMLElement | null) {
       setActivo(cantidad - 1)
       return
     }
+    // Qué pasos están dentro de la banda, acumulado entre entregas: ver `pasoActivo`.
+    const dentro = new Map<number, boolean>()
     const observador = new IntersectionObserver((entradas) => {
-      const reportadas = entradas.map((entrada) => ({
-        paso: Number((entrada.target as HTMLElement).dataset.paso),
-        dentro: entrada.isIntersecting,
-      }))
-      setActivo((actual) => pasoActivo(reportadas, actual))
+      for (const entrada of entradas) {
+        dentro.set(Number((entrada.target as HTMLElement).dataset.paso), entrada.isIntersecting)
+      }
+      setActivo((actual) => pasoActivo(dentro, actual))
     // `root` es el contenedor que hace scroll. Dentro de una capa con scroll propio, dejarlo
     // en la pantalla mide contra algo que no se mueve y ningún paso se activa nunca.
     }, { root: raiz ?? null, rootMargin: '-45% 0px -45% 0px', threshold: 0 })

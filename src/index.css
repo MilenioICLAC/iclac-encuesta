@@ -306,6 +306,67 @@
   min-height: var(--alto-capa, 100svh);
 }
 
+/*
+ * **La entrada a la pausa es un fundido en el lugar** (laboratorio `pausa-recorrido`, opción A,
+ * 22-09-2026). Antes la escena subía como una página y se llevaba primero el titular y la frase,
+ * que están arriba, con la pausa pegada detrás.
+ *
+ * Ahora la escena que va antes de una pausa se alarga 0,75 de pantalla (`::after`) y sigue
+ * pegada; la pausa sube lo que mide (1,75 de pantalla) y queda montada encima, empezando donde la
+ * escena empezaba a irse. Al cruzar la línea de la pausa (`data-cruzada`, ver `Respiro`) la escena
+ * se desvanece y la frase entra desde abajo, igual que las frases de una escena; las dos quedan
+ * pegadas 0,75 de pantalla y después se van juntas. Al volver atrás, al revés.
+ *
+ * `:has()` porque el estado es de la pausa y lo que se desvanece es la escena de antes.
+ */
+.escena-recorrido:has(+ .respiro-recorrido)::after {
+  content: "";
+  display: block;
+  height: calc(var(--alto-capa, 100svh) * 0.75);
+}
+
+.escena-recorrido + .respiro-recorrido {
+  z-index: 1;
+  margin-top: calc(var(--alto-capa, 100svh) * -1.75);
+  min-height: calc(var(--alto-capa, 100svh) * 1.75);
+  pointer-events: none;
+}
+
+.escena-recorrido + .respiro-recorrido[data-cruzada] {
+  pointer-events: auto;
+}
+
+.escena-recorrido > .escena,
+.escena-recorrido + .respiro-recorrido .bloque-texto {
+  transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.escena-recorrido:has(+ .respiro-recorrido[data-cruzada]) > .escena {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.escena-recorrido + .respiro-recorrido .bloque-texto {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.escena-recorrido + .respiro-recorrido[data-cruzada] .bloque-texto {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escena-recorrido > .escena,
+  .escena-recorrido + .respiro-recorrido .bloque-texto {
+    transition: none;
+  }
+
+  .escena-recorrido + .respiro-recorrido .bloque-texto {
+    transform: none;
+  }
+}
+
 /* Todas las frases en la misma celda de una grilla de una sola celda: el bloque mide lo que la
    frase más alta y no cambia de alto al avanzar, sin ningún número mágico.
 
@@ -320,6 +381,21 @@
 
 .parrafo-escena > span {
   grid-area: 1 / 1;
+  transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* La frase nueva entra desde abajo y la anterior sale hacia arriba, 20 px, en todos los pasos y en
+   todos los anchos (laboratorio `frases-recorrido`, 22-09-2026). Sin movimiento, con la figura
+   quieta, el cambio de frase en la misma celda pasaba desapercibido. Al volver atrás cada frase
+   vuelve por donde se fue. Con movimiento reducido el párrafo no lleva esta clase. */
+.parrafo-escena > span[data-lugar="antes"] {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.parrafo-escena > span[data-lugar="despues"] {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
 /* El relato (titular más frase) es un bloque solo en escritorio. En angosto no tiene que existir:

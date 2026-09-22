@@ -72,6 +72,10 @@ un registro de decisiones interno, en `la documentación interna`.
 
 ## Inventario (15-09-2026)
 
+Los de las frases y la pausa (22-09-2026) se cerraron y se borraron. Su técnica sirve de plantilla:
+la app real dentro de un `iframe` del mismo servidor, y cada opción aplicada sobre su DOM o como CSS
+inyectado. Las figuras, los textos y los anchos son los de verdad, sin copiar nada.
+
 | Fuente | Script | Estado |
 |---|---|---|
 | `laboratorio/recorrido.html` | `npm run lab` | escenas del recorrido; sin revisar desde el 08-09 |

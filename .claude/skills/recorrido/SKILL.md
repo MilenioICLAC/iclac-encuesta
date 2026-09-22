@@ -6,7 +6,7 @@ description: Reglas para construir y modificar el recorrido con scroll (scrollyt
 # El recorrido con scroll
 
 Solo reglas vigentes. De dónde salió cada una, con sus mediciones: un registro de decisiones interno (scroll y capa),
-0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), en `la documentación interna`,
+0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), 0028 (frases y pausa con movimiento), en `la documentación interna`,
 `encuesta/docs/adr/`. Lo que queda pendiente: `encuesta/docs/estado.md` §2.2.
 
 **Antes de cambiar la composición de algo visible, skill `laboratorio`.** Antes de escribir una frase
@@ -57,6 +57,17 @@ estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existie
 - **Si la figura cambia, cambió la escena, y en medio va un respiro.** Un cambio de figura es un
   cambio de pregunta. El respiro es una frase sola, centrada, **sin nada de la escena**: ni titular,
   ni pie, ni leyenda, ni año, ni enlace. No se numera.
+- **Se entra a la pausa con un fundido en el lugar** (22-09-2026, laboratorio de la pausa, opción A
+  con B). La escena anterior no sube como una página (se llevaba primero titular y frase): se queda
+  pegada, y al cruzar la línea de la pausa se desvanece mientras la frase de la pausa entra desde
+  abajo, 20 px y 500 ms como las frases. Las dos quedan quietas 0,75 de pantalla y se van juntas.
+  Geometría en `index.css` (`.escena-recorrido + .respiro-recorrido`, con `:has()`); el estado,
+  `data-cruzada`, lo pone `Respiro` leyendo su posición en cada scroll, porque una marca observada
+  se cruza de un salto sin avisar. La salida de la pausa hacia la escena siguiente no cambió.
+- **Las frases entran desde abajo y salen hacia arriba**, 20 px, 500 ms, curva
+  `cubic-bezier(0.2, 0.8, 0.2, 1)`, en todos los pasos y anchos, por `data-lugar` (`antes`,
+  `activa`, `despues`); al volver atrás cada una vuelve por donde se fue. Tiempo fijo, no atado al
+  scroll (decidido el 22-09-2026 en el laboratorio de las frases).
 - **Una escena puede cambiar de filas sin cambiar de eje** (la 1 pasa de países a tramos
   ideológicos): la escala se calcula sobre los dos juegos de filas juntos.
 - **El encabezado sigue al paso.** `titulo`, `nota` y `cabecera` aceptan una función del paso: un pie
@@ -127,9 +138,14 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - **El disparador es `IntersectionObserver`** sobre una pista invisible (`Pista`, `aria-hidden`), con
   `root` en el contenedor de la capa y banda angosta `rootMargin: '-45% 0px -45% 0px'`. Cada paso tiene
   que ser más alto que la banda.
+- **El paso activo es el mayor de los que están dentro de la banda**, con el estado acumulado entre
+  entregas del observador (`pasoActivo`). Al cruzar una marca, el paso anterior y el nuevo están
+  dentro a la vez durante 0,1 de pantalla; decidir solo con la última entrega dejaba la frase sin
+  volver al retroceder desde esa franja (22-09-2026).
 - **La pista sube el alto de la escena entero** (`marginTop: -altoEscena` en `Pista`), sin restar
   el colchón, que ya está dentro. Colchón de entrada 0,55 × alto, pasos de 0,75 × alto, colchón de
-  salida 0,2 × alto. En píxeles medidos, nunca en porcentaje.
+  salida 0,45 × alto en una escena (así el último paso dura 0,75 como los demás; con 0,2 duraba 0,5)
+  y 0,2 en el cierre (prop `salida` de `Pista`). En píxeles medidos, nunca en porcentaje.
 - **La escena no lleva margen negativo:** su alto propio es lo que separa una escena de la siguiente.
 - **Sin imán** (Felipe, 22-09-2026): nada de `scroll-snap`. Con `mandatory` volver atrás con la
   rueda costaba, el scroll se movía solo y las paradas no coincidían con las marcas. El scroll es del
@@ -143,7 +159,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   cuadro. Nunca `100%` (se resuelve contra una sección sin alto) ni `vh`.
 - **La escena se pega bajo la barra**; la barra se mide y se publica en `--barra-capa`. Alto útil de
   una escena = capa − barra.
-- **Respiro y portada miden la pantalla entera**, barra incluida; su escena interna va pegada bajo la
+- **Respiro y portada miden la pantalla entera**, barra incluida (el respiro que sigue a una escena
+  mide 1,75 y sube lo mismo, montado sobre ella); su escena interna va pegada bajo la
   barra. Con el alto de una escena se asoma la siguiente.
 - **La geometría se fija al abrir** y se rehace solo si cambia el ancho (la barra del navegador móvil
   cambia el alto sin que sea una rotación).
@@ -185,8 +202,6 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 
 - El teclado sigue parando en los colchones (entrada y salida de cada escena), donde no cambia nada y
   la barra no pone marca.
-- Tras un salto largo por código (enlace del cierre a su escena y vuelta), dos pasos tocan la banda y
-  el activo queda en el más cercano al anterior. Con la rueda no pasa.
 
 ## Verificación antes de cerrar
 

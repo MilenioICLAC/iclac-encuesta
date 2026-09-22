@@ -506,6 +506,35 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
   const informar = useContext(Registro)
   const [enVista, setEnVista] = useState(false)
 
+  /*
+   * **Si ya se cruzó la línea de la pausa**, en los dos sentidos. La pausa se monta encima de la
+   * escena anterior (`index.css`), y al cruzar su línea la escena se desvanece y la frase entra.
+   * La línea es su parada: el borde de arriba de la sección en el de la capa.
+   *
+   * **Se lee la posición en cada scroll, no con un observador.** Una marca observada se puede
+   * cruzar entera de un salto (un enlace, un scroll por código) sin tocar la banda, y entonces el
+   * observador no avisa nunca: medido el 22-09-2026, un salto de 310 px dejaba la escena a la vista
+   * encima de la pausa. Es una lectura por cuadro y no mueve nada: la escena sigue pegada con
+   * `sticky`.
+   */
+  const [cruzada, setCruzada] = useState(false)
+  useEffect(() => {
+    const nodo = seccion.current
+    if (!nodo || !raiz) return
+    let cuadro = 0
+    const medir = () => {
+      cuadro = 0
+      setCruzada(nodo.getBoundingClientRect().top - raiz.getBoundingClientRect().top <= 1)
+    }
+    const alMover = () => { if (!cuadro) cuadro = requestAnimationFrame(medir) }
+    medir()
+    raiz.addEventListener('scroll', alMover, { passive: true })
+    return () => {
+      raiz.removeEventListener('scroll', alMover)
+      cancelAnimationFrame(cuadro)
+    }
+  }, [raiz, alto])
+
   useEffect(() => {
     const nodo = seccion.current
     if (!nodo || typeof IntersectionObserver === 'undefined') return
@@ -517,9 +546,10 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
     return () => { observador.disconnect() }
   }, [raiz])
 
+  // Montada sobre la escena, la sección toca la banda antes de verse: se anuncia recién cruzada.
   useEffect(() => {
-    informar?.({ indice, titulo, enVista })
-  }, [informar, indice, titulo, enVista])
+    informar?.({ indice, titulo, enVista: enVista && cruzada })
+  }, [informar, indice, titulo, enVista, cruzada])
 
   return (
     // El alto de la capa va en la sección y no en la escena: su parada la deja en el borde del
@@ -528,6 +558,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
     <section
       ref={seccion}
       className="respiro-recorrido relative"
+      data-cruzada={cruzada ? '' : undefined}
       style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
     >
       <div className="escena sin-figura sticky flex flex-col items-center justify-center px-4 py-6 sm:px-6">
@@ -666,16 +697,23 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   // **En escritorio también.** Antes el párrafo se leía entero en pantalla ancha, con las futuras
   // en gris claro. Con el texto de escritorio a 34 px eso son cuatro frases que no entran, y
   // además rompe la premisa del recorrido: un paso muestra lo que ese paso cuenta.
-  const frase = (i: number) => {
-    if (reducido) return 'text-gray-700'
-    if (i === activo) return 'text-gray-800'
-    // Todas comparten celda de grilla, así que el bloque no cambia de alto al avanzar.
-    return 'opacity-0'
-  }
+  //
+  // Dónde está cada frase respecto del paso activo: la que ya pasó quedó arriba y la que viene
+  // espera abajo. El movimiento lo pone `.parrafo-escena` en `index.css`, y así el sentido se
+  // invierte solo al volver atrás, sin saber hacia dónde va el scroll.
+  const lugar = (i: number) => (i < activo ? 'antes' : i === activo ? 'activa' : 'despues')
 
   return (
     // El `id` es el destino de las frases del cierre, que llevan de vuelta a su escena.
-    <section ref={seccion} id={`escena-${indice}`} className="relative">
+    // El alto de la capa va en la sección y no en el bloque pegado: lo heredan los dos, y la
+    // sección lo necesita para alargarse cuando la sigue una pausa (ver `.escena-recorrido` en
+    // `index.css`).
+    <section
+      ref={seccion}
+      id={`escena-${indice}`}
+      className="escena-recorrido relative"
+      style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+    >
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
           arriba es padding real y no compensación de la barra, así que no se pierde al pegarse. */}
       {/* El orden es titular, frase, figura, y el bloque va centrado en la escena. Salió del
@@ -683,10 +721,9 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           frase quedaba al pie de la pantalla, que es donde el pulgar la tapa. */}
       <div
         ref={escena}
-        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
-        // El alto de la capa, en píxeles medidos. `.escena` lo usa para su `min-height`, que es lo
+        // `.escena` usa el alto de la capa (heredado de la sección) para su `min-height`, que es lo
         // que le da a `justify-center` espacio que repartir (ver `index.css`).
-        style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
+        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
       >
         {/* El titular y la frase son la misma voz, así que viajan juntos: en escritorio son una
             columna y la figura es la otra. En angosto el envoltorio es `display: contents` y no
@@ -708,7 +745,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
                 superpondría: en ese caso el párrafo vuelve a ser un párrafo. */}
             <p className={`${reducido ? '' : 'parrafo-escena'} text-[19px] leading-[1.4] sm:text-lg sm:leading-relaxed`}>
               {frases.map((f, i) => (
-                <span key={i} className={`transition-opacity duration-500 ${frase(i)}`}>
+                <span key={i} data-lugar={reducido ? undefined : lugar(i)} className={reducido ? 'text-gray-700' : 'text-gray-800'}>
                   {f}{' '}
                 </span>
               ))}
@@ -733,7 +770,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         )}
       </div>
 
-      {!reducido && <Pista cantidad={frases.length} refs={refs} alto={alto} altoEscena={altoEscena} />}
+      {!reducido && <Pista cantidad={frases.length} refs={refs} alto={alto} altoEscena={altoEscena} salida={0.45} />}
     </section>
   )
 }
@@ -754,13 +791,15 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
  * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll sin nada nuevo. Ahora
  * cada escena cuesta su propio alto.
  */
-function Pista ({ cantidad, refs, alto, altoEscena }: {
+function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
   cantidad: number
   refs: React.MutableRefObject<(HTMLElement | null)[]>
   /** El alto de la capa. */
   alto: number
   /** El alto del bloque pegado que la pista acompaña. */
   altoEscena: number
+  /** El colchón de salida, en fracción de la capa. Ver abajo. */
+  salida?: number
 }) {
   /*
    * Los pasos tienen que costar todos lo mismo, y no salen parejos solos: la escena pegada ocupa
@@ -789,10 +828,12 @@ function Pista ({ cantidad, refs, alto, altoEscena }: {
   // Con la pista arriba de todo, el paso i entra a la banda de lectura en `colchón + i × paso`
   // menos el propio colchón: exactamente `i × alto de paso`.
   const subirPista = altoEscena ? -altoEscena : undefined
-  // El colchón de salida solo tiene que alcanzar para que el último paso entre a la banda. Al 55 %
-  // sumaba media pantalla de scroll muerto a cada escena, encima del alto de la escena que ya hay
-  // que recorrer para que salga.
-  const colchonFinal = alto ? Math.round(alto * 0.2) : undefined
+  // El colchón de salida. En el cierre solo tiene que alcanzar para que el último paso entre a la
+  // banda (0,2): al 55 % sumaba media pantalla de scroll muerto. En una escena es además el tiempo
+  // de lectura del último paso, y con 0,2 duraba 0,5 de pantalla contra 0,75 de los demás: el
+  // texto y la figura se iban antes de tiempo (medido el 22-09-2026, 422 contra 633 px en
+  // 390×844). La escena pasa 0,45, y su último paso dura lo mismo que cualquiera.
+  const colchonFinal = alto ? Math.round(alto * salida) : undefined
 
   return (
     <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>

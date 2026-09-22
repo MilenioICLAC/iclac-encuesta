@@ -47,10 +47,10 @@ const estado = async () => pagina.evaluate(() => {
   const escenas = [...document.querySelectorAll('.escena')].map((e, i) => ({
     i, visible: visible(e), top: Math.round(e.getBoundingClientRect().top),
   })).filter((e) => e.visible)
-  // Por clase y no por opacidad: la opacidad tarda 500 ms en llegar y mediría la transición, no
+  // Por `data-lugar` y no por opacidad: la opacidad tarda 500 ms en llegar y mediría la transición, no
   // el paso.
   const frases = [...document.querySelectorAll('.parrafo-escena > span')]
-    .filter((s) => visible(s.parentElement) && s.className.includes('text-gray-800'))
+    .filter((s) => visible(s.parentElement) && s.dataset.lugar === 'activa')
     .map((s) => s.textContent.trim().slice(0, 60))
   const rotulosPorFila = [...document.querySelectorAll('.fila-puntos')]
     .map((f) => [...f.querySelectorAll('span')].filter((s) => /^\d+[.,]?\d*$/.test(s.textContent.trim())).map((s) => s.textContent.trim()))
