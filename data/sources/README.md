@@ -62,3 +62,11 @@ variables que no existen y omiten seis que sí están. El detalle, en `.claude/C
 Diseño muestral, cuestionarios por oleada y el `00_LEEME.docx` de ICLAC. De acá sale que la muestra se
 estratificó **por peso económico de China, no por población**, que es la razón de que la Región
 Metropolitana pese 16,5% y no 40%. Es diseño, no defecto.
+
+## geo/
+
+`simplemaps_cl_admin1.svg`: las dieciséis regiones, de simplemaps.com, descargado el 22-09-2026 de
+https://simplemaps.com/static/svg/country/cl/admin1/cl.svg. Licencia «Free for Commercial Use»
+(https://simplemaps.com/resources/svg-license); piden atribución y el mapa la lleva en su nota. No es
+del cliente: es la geometría del mapa de «Donde uno vive». `scripts/geometria_regiones.mjs` (dentro de
+`npm run datos`) la recorta a Chile continental y la escribe en `public/data/chile-regiones.json`.

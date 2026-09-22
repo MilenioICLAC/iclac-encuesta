@@ -1,12 +1,12 @@
 ---
 name: recorrido
-description: Reglas para construir y modificar el recorrido con scroll (scrollytelling) del visualizador ICLAC. Se usa al tocar `CapaRecorrido.tsx`, `nucleo/pasos.ts`, las escenas, respiros, portada o cierre en `App.tsx`, o al agregar un paso, una figura que se enciende con el scroll o cualquier animación ligada al scroll.
+description: Reglas para construir y modificar el recorrido con scroll (scrollytelling) del visualizador ICLAC. Se usa al tocar `CapaRecorrido.tsx`, `nucleo/pasos.ts`, las escenas, respiros, portada o cierre de una historia (`src/historias/`), o al agregar un paso, una figura que se enciende con el scroll o cualquier animación ligada al scroll.
 ---
 
 # El recorrido con scroll
 
 Solo reglas vigentes. De dónde salió cada una, con sus mediciones: un registro de decisiones interno (scroll y capa),
-0021 (laboratorio), 0022 (geometría), 0023 (composición), en `la documentación interna`,
+0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), en `la documentación interna`,
 `encuesta/docs/adr/`. Lo que queda pendiente: `encuesta/docs/estado.md` §2.2.
 
 **Antes de cambiar la composición de algo visible, skill `laboratorio`.** Antes de escribir una frase
@@ -24,16 +24,16 @@ Todo vive en la capa (`CapaRecorrido`, `fixed inset-0`, con barra superior medid
 | Respiro (pausa entre escenas) | `Respiro` | «Pausa» | negativo |
 | Cierre | `Cierre` | «Cierre» | −99 |
 
-Desde el 21-09-2026 hay **cinco historias**, cada una una capa propia en `#/historias/<id>`, con
+Desde el 22-09-2026 hay **seis historias**, cada una una capa propia en `#/historias/<id>`, con
 registro en `src/historias/indice.tsx` y menú en la raíz:
 
 | Historia | Archivo | Escenas |
 |---|---|---|
-| La mirada | `src/historias/recorrido.tsx` (`parte="mirada"`) | 1 termómetro por país; 2 ideología (la recta y el punto de treinta personas) |
+| La mirada | `src/historias/recorrido.tsx` (`parte="mirada"`) | 1 termómetro por país; 2 ideología (la recta y el punto de treinta personas); 3 lo primero que se les viene a la cabeza (palabras de `p4_1` y `p4_2`, «Trump») |
 | Entre dos potencias | ídem (`parte="potencias"`) | 1 confianza (`p24`/`p25`, `Divergente`); 2 la misma comparación dentro de cada persona; 3 posicionamiento (`p26`) |
 | Donde uno vive | `src/historias/territorio.tsx` | 1 riesgo (`p7`); 2 el mapa y los cuatro niveles de exposición, en un paso; 3 riesgo por nivel; 4 rol en la comuna (`p8`). «Estrato» no se dice en pantalla |
 | Inversión y Estado | `src/historias/inversion.tsx` | 1 quiere poder limitar (`p19`); 2 sectores (`p20`, puntos por oleada) |
-| China cotidiana | `src/historias/cotidiana.tsx` | 1 mall y restaurante; 2 conoce a alguien; 3 buses (2025); 4 racismo visto y quién lo ve |
+| China cotidiana | `src/historias/cotidiana.tsx` | 1 mall y restaurante; 2 conoce a alguien; 3 dónde es el contacto (palabras de `p16`); 4 buses (2025); 5 racismo visto y quién lo ve |
 | La vacuna | `src/historias/vacuna.tsx` | 1 dice haberla recibido, y el reparto de 2025 con «No recuerdo»; 2 buena opinión y preferencia por Pfizer |
 
 Las historias nuevas usan `BarrasDeEscena`. Lo que dice el resto de esta skill del «recorrido» vale

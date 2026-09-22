@@ -35,7 +35,7 @@ await page.goto('http://localhost:5180/#/')
   vista, ítems de leyenda y números rotulados. Deja capturas. **Apaga el imán** para no contaminar la
   geometría: el snap se verifica con un script propio y `mouse.wheel`.
 - `node ~/.claude/bin/captura-web.mjs <url> --anchos 360,768,1512 [--completa]`: capturas por ancho y
-  denuncia de desbordes medidos contra la caja de cada `<svg>` y el documento. Sirve para el tablero y
+  denuncia de desbordes medidos contra la caja de cada `<svg>` y el documento. Sirve para el explorador y
   los laboratorios.
 
 ## Anchos
