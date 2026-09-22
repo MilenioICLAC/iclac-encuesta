@@ -39,6 +39,13 @@ registro en `src/historias/indice.tsx` y menú en la raíz:
 Las historias nuevas usan `BarrasDeEscena`. Lo que dice el resto de esta skill del «recorrido» vale
 para cada historia.
 
+**Entrada desde el menú (22-09-2026):** el clic en una tarjeta apila las demás bajo ella, centra la
+pila, hace crecer el fondo de la elegida hasta cubrir la pantalla (se desvanece todo menos la
+pregunta), navega y lleva la pregunta hasta el `.pregunta-portada` **medido** en la capa ya montada;
+después se destapa la portada. Vive en `src/historias/Transicion.tsx`, fuera de las rutas. **Si
+cambia la clase o el estilo del título de la portada, la transición lo sigue sola** (copia el
+estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existiendo en las seis.
+
 ## Editorial
 
 - **Un paso, un cambio visible.** Si dos pasos seguidos muestran lo mismo, sobra uno.

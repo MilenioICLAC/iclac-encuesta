@@ -13,6 +13,7 @@ import { fijarIdioma, locale, numero, type Idioma } from './locale'
 import { TEXTOS } from './textos'
 import { HISTORIAS } from './historias/indice'
 import MenuHistorias from './historias/MenuHistorias'
+import { ProveedorTransicion } from './historias/Transicion'
 import { NumeroHistoria, Siguiente } from './componentes/siguiente'
 
 /**
@@ -95,6 +96,8 @@ export default function App () {
     // Con hash funciona en cualquier hosting estático, incluido abrir el `dist/` a mano. Cuando
     // haya servidor con reescritura, esto pasa a `BrowserRouter` y no cambia nada más.
     <HashRouter>
+      {/* La transición del menú a la portada cruza el cambio de ruta: vive fuera de `Routes`. */}
+      <ProveedorTransicion>
       <Routes>
         <Route element={<Marco idioma={idioma} onIdioma={cambiarIdioma} />}>
           {/* La raíz es el menú de historias. `#/recorrido` era la historia única de antes: los
@@ -142,6 +145,7 @@ export default function App () {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </ProveedorTransicion>
     </HashRouter>
   )
 }

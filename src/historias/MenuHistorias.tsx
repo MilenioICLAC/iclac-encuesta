@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
 import { numero } from '../locale'
 import { HISTORIAS } from './indice'
+import { ContenidoTarjeta, TARJETA } from './TarjetaHistoria'
+import { useTransicionHistoria } from './contextoTransicion'
 
 /**
  * La raíz del sitio: una tarjeta por historia.
@@ -9,10 +12,40 @@ import { HISTORIAS } from './indice'
  * Cada tarjeta dice **la pregunta** (la misma de la portada de la historia) y **lo que se
  * encontró**, sin cifras (ver `indice.tsx`). El orden es el del cuestionario. No hay imagen ni
  * figura en miniatura: una figura sin su escena no dice nada y obliga a leer una leyenda chica.
+ *
+ * Al elegir una, la transición (`Transicion.tsx`) apila las demás bajo ella y lleva su pregunta
+ * hasta el título de la portada. Con movimiento reducido, o con un clic que pide otra pestaña
+ * (tecla modificadora, botón del medio), el enlace navega sin transición.
  */
 export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   const olas = encuesta.olas
   const n = encuesta.casos.length
+  const navegar = useNavigate()
+  const { iniciar, enCurso, volviendoDe } = useTransicionHistoria()
+  const tarjetas = useRef<(HTMLAnchorElement | null)[]>([])
+
+  // De vuelta de una historia, el foco va a su tarjeta (ver `ProveedorTransicion`), y la tarjeta
+  // a la vista. Un cuadro después: en este la capa todavía tiene el cuerpo fijo y lo devuelve al
+  // scroll que tenía al abrirse, que es 0 (el menú ya se había desmontado y el documento se
+  // acortó). Sin esperar, el foco quedaba en una tarjeta fuera de la pantalla.
+  useEffect(() => {
+    if (!volviendoDe) return
+    const cuadro = requestAnimationFrame(() => {
+      const tarjeta = tarjetas.current[HISTORIAS.findIndex((h) => h.id === volviendoDe)]
+      tarjeta?.focus({ preventScroll: true })
+      tarjeta?.scrollIntoView({ block: 'center' })
+    })
+    return () => { cancelAnimationFrame(cuadro) }
+  }, [volviendoDe])
+
+  const elegir = (e: React.MouseEvent, i: number) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    if (enCurso) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(`/historias/${HISTORIAS[i].id}`); return }
+    iniciar({ indice: i, cajas: tarjetas.current.map((t) => t!.getBoundingClientRect()) })
+  }
+
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
       <h1 className="font-display text-2xl font-semibold text-gray-900 sm:text-3xl">
@@ -22,23 +55,20 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
         {HISTORIAS.length} historias contadas con la encuesta de ICLAC: {olas.length} oleadas ({olas[0]} a {olas[olas.length - 1]}),{' '}
         {numero(n)} personas encuestadas en un panel en línea.
       </p>
-      <ol className="mt-8 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Durante la transición los originales quedan transparentes, no `invisible`: con
+          `visibility: hidden` el enlace elegido perdía el foco y la lista salía del árbol
+          accesible (medido por Codex, 22-09-2026). Fuera del tabulador mientras dura. */}
+      <ol aria-busy={enCurso} className={`mt-8 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 ${enCurso ? 'opacity-0' : ''}`}>
         {HISTORIAS.map((h, i) => (
           <li key={h.id} className="flex">
             <Link
+              ref={(el) => { tarjetas.current[i] = el }}
               to={`/historias/${h.id}`}
-              className="group flex w-full flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition-colors hover:border-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark"
+              tabIndex={enCurso ? -1 : undefined}
+              onClick={(e) => { elegir(e, i) }}
+              className={`group ${TARJETA} transition-colors hover:border-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark`}
             >
-              <span className="text-xs font-semibold uppercase tracking-wide text-brand-dark">
-                Historia {i + 1} · {h.nombre}
-              </span>
-              <span className="mt-2 font-display text-lg font-semibold leading-snug text-gray-900">
-                {h.pregunta}
-              </span>
-              <span className="mt-2 text-sm leading-relaxed text-gray-600">{h.hallazgo}</span>
-              <span className="mt-auto pt-4 text-sm font-semibold text-brand-dark group-hover:underline">
-                Leer la historia <span aria-hidden>→</span>
-              </span>
+              <ContenidoTarjeta h={h} i={i} />
             </Link>
           </li>
         ))}
