@@ -22,14 +22,7 @@ export interface Variable {
   serie: boolean
   comparabilidad: string | null
   nota: string | null
-  /** Uno de los seis bloques temáticos de la guía de Urdinez, o null si no entra en ninguno. */
-  bloque: string | null
   categorias: Categoria[] | null
-}
-
-export interface Bloque {
-  id: string
-  titulo: string
 }
 
 export type Caso = Record<string, number | string | null>
@@ -62,29 +55,19 @@ export interface Palabra {
   n: number
 }
 
-export interface GrupoNube {
-  id: string
-  etiqueta: string
-  /** Personas que contestaron la pregunta en ese grupo. Es el denominador del porcentaje. */
-  base?: number
-  palabras: Palabra[]
-}
-
 /**
  * Una respuesta abierta, ya contada. **No trae el texto que la persona escribió**: la
- * tokenización ocurre en el ETL y al navegador solo viajan frecuencias.
+ * tokenización ocurre en el ETL y al navegador solo viajan frecuencias (y, en `casos`, las
+ * columnas 1/0 de las palabras que se contrastan).
  */
 export interface NubePalabras {
   id: string
   titulo: string
   olas: number[]
-  total: Palabra[]
-  /** Personas que contestaron la pregunta, en total y por oleada. */
-  base?: number
+  /** Personas que contestaron la pregunta, por oleada. **No hay total**: nada suma oleadas. */
   baseOla?: Record<string, number>
+  /** Cuántas **personas** escribieron cada palabra, por oleada (no menciones). */
   porOla: Record<string, Palabra[]>
-  porIdeologia?: GrupoNube[]
-  porRol?: GrupoNube[]
 }
 
 /**
@@ -114,6 +97,14 @@ export interface Medida {
   id: string
   etiqueta: string
   unidad: string
+  /**
+   * Lo que hay que decir junto a la cifra para que no se lea de más.
+   *
+   * Viaja pegada a la medida y no escrita en la vista: el aviso de `p18` (desde 2024 la pregunta
+   * viene después de otra sobre fuentes de información) tiene que aparecer dondequiera que se
+   * publique la serie, y si depende de que alguien se acuerde, un día no aparece.
+   */
+  advertencia?: string
   comparaciones: Comparacion[]
 }
 
@@ -208,7 +199,6 @@ export interface Encuesta {
   procedencia: string
   olas: number[]
   n: Record<string, number>
-  bloques: Bloque[]
   multiples: Multiple[]
   nubes: NubePalabras[]
   regiones: Region[]

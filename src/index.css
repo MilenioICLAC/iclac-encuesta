@@ -408,7 +408,25 @@
  *
  * La consulta es por **alto** y no por ancho: lo que falta es alto, y hay teléfonos anchos y bajos.
  */
+/* El mapa de regiones: Chile es angosto y largo, así que lo que manda es el alto de la pantalla.
+   En 360×640 con 300 px fijos la nota de la escena se salía 49 px. */
+.mapa-regiones {
+  height: var(--alto-mapa-ancho, var(--alto-mapa));
+  width: auto;
+}
+
+:root {
+  --alto-mapa: clamp(200px, 36svh, 320px);
+}
+
+@media (min-width: 900px) {
+  .mapa-regiones {
+    --alto-mapa-ancho: clamp(320px, 52svh, 520px);
+  }
+}
+
 @media (max-height: 700px) {
+
   .capa-recorrido .escena {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -442,7 +460,23 @@
     padding-top: 0.75rem;
   }
 
-  .capa-recorrido .cierre-recorrido .salida-cierre > div {
+  .capa-recorrido .cierre-recorrido .salida-cierre .otras-salidas {
+    margin-top: 0.625rem;
+  }
+
+  /* Con la historia siguiente en la salida, tres titulares largos más la tarjeta no caben en
+     360×640 y el rótulo de arriba quedaba bajo la barra (medido el 22-09-2026): ceden las frases
+     y la pregunta de la siguiente. */
+  .capa-recorrido .cierre-recorrido .frases-cierre > li {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
+    font-size: 18px;
+  }
+
+  .capa-recorrido .cierre-recorrido .boton-siguiente {
     margin-top: 0.625rem;
   }
 }
@@ -528,6 +562,18 @@
     font-size: 12px;
   }
 
+  /* Las barras de escena crecen igual que el divergente: con filas de 26 px y números de 13 px
+     quedan de teléfono en una columna de 570 px. El alto va por variable porque el componente lo
+     escribe en `style` y ninguna media query alcanza un `--algo` puesto ahí (ver CLAUDE.md). */
+  .capa-recorrido .escena.en-columnas {
+    --alto-fila-barra-ancho: 38px;
+  }
+
+  .capa-recorrido .escena.en-columnas .barras-escena .nombre-barra,
+  .capa-recorrido .escena.en-columnas .barras-escena .valor-barra {
+    font-size: 15px;
+  }
+
   /* El respiro crece igual que el puente de la escena 1: son el mismo recurso y tienen que verse
      igual. A 19 px en una pantalla de 1512 la frase queda perdida en el medio. El ancho es el
      mismo de `.escena.en-columnas.sin-figura`, porque 34 rem a 34 px son unas quince palabras por
@@ -567,8 +613,8 @@
     margin-top: 2.25rem;
   }
 
-  .capa-recorrido .cierre-recorrido .salida-cierre p {
-    font-size: 20px;
+  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
+    font-size: 24px;
   }
 
   .capa-recorrido .cierre-recorrido .salida-cierre a,

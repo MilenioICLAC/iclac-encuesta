@@ -1,0 +1,369 @@
+<title>Decisiones de las historias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /*
+   * Dashboard de decisiones, no laboratorio de composición: cada tarjeta es algo que Claude decidió
+   * al armar las historias y que Felipe aprueba, rechaza o comenta. Las cifras no están escritas
+   * acá: se leen de `public/data/encuesta.json` por id de contraste, igual que en la app.
+   */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7; --superficie: #FFFFFF; --tinta: #101917; --tinta-suave: #5F6D6A;
+    --linea: #DFE4E2; --marca: #00A89C; --marca-oscura: #00776E;
+    --ok: #1F7A4D; --ok-fondo: #E7F4EC; --no: #A3302A; --no-fondo: #FBEAE8; --pend: #8A5A00; --pend-fondo: #FFF4DB;
+    --g500: #6B7280; --g600: #4B5563; --g700: #374151;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+  .envoltorio { max-width: 1100px; margin: 0 auto; padding: 20px 16px 64px; }
+  header h1 { font-family: var(--display); font-size: 24px; font-weight: 600; margin: 0; text-wrap: balance; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 14px; max-width: 75ch; }
+
+  .tablero { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 16px -16px 0; padding: 10px 16px; background: rgba(251,250,247,.96); border-bottom: 1px solid var(--linea); font-size: 13px; }
+  /* En teléfono el índice ocupa cinco líneas: pegado arriba se come la pantalla. */
+  @media (max-width: 700px) { .tablero { position: static; } }
+  .tablero .cuenta { font-variant-numeric: tabular-nums; color: var(--g700); }
+  .tablero nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tablero nav a { color: var(--marca-oscura); text-decoration: none; border: 1px solid var(--linea); background: var(--superficie); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; white-space: nowrap; }
+  .tablero nav a .n { color: var(--pend); font-weight: 600; margin-left: 4px; }
+  .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .accion:focus-visible, textarea:focus-visible, .estado button:focus-visible, a:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  section.seccion { margin-top: 28px; scroll-margin-top: 64px; }
+  section.seccion > h2 { font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0; }
+  section.seccion > .bajada { margin: 4px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  section.seccion > .bajada a { color: var(--marca-oscura); }
+
+  .decision { margin-top: 12px; border: 1px solid var(--linea); border-left: 4px solid var(--linea); border-radius: 10px; background: var(--superficie); padding: 12px 14px; }
+  .decision[data-estado="aprobada"] { border-left-color: var(--ok); }
+  .decision[data-estado="rechazada"] { border-left-color: var(--no); }
+  .decision[data-estado="pendiente"] { border-left-color: var(--pend); }
+  .cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .cabeza h3 { font-family: var(--display); font-size: 16px; font-weight: 600; margin: 0; flex: 1 1 320px; text-wrap: balance; }
+  .origen { font-size: 11.5px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--linea); color: var(--g600); white-space: nowrap; }
+  .origen.codex { border-color: #C9B8F0; color: #5B3FB0; }
+  .origen.guia { border-color: #B8D8F0; color: #1F5E8A; }
+  .decision dl { margin: 8px 0 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; font-size: 14px; }
+  .decision dt { font-size: 11.5px; color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+  .decision dd { margin: 0; color: var(--g700); overflow-wrap: anywhere; }
+  .decision dd.cifras { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--g600); }
+  .decision dd.cifras div + div { margin-top: 2px; }
+  .decision .verbatim { font-style: normal; background: #F3F6F5; border-radius: 6px; padding: 1px 5px; }
+  .pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+  .estado { display: flex; gap: 6px; }
+  .estado button { border: 1px solid var(--linea); background: var(--superficie); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .estado button[data-v="aprobada"][aria-pressed="true"] { background: var(--ok-fondo); border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .estado button[data-v="rechazada"][aria-pressed="true"] { background: var(--no-fondo); border-color: var(--no); color: var(--no); font-weight: 600; }
+  .pie a { font-size: 13px; color: var(--marca-oscura); }
+  .decision textarea { width: 100%; margin-top: 8px; font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; min-height: 38px; resize: vertical; }
+
+  table.hipotesis { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: var(--superficie); }
+  .tabla-deslizable { overflow-x: auto; margin-inline: -16px; padding-inline: 16px; }
+  table.hipotesis { min-width: 720px; }
+  table.hipotesis th, table.hipotesis td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--linea); }
+  table.hipotesis th { font-size: 11.5px; color: var(--tinta-suave); font-weight: 600; }
+  table.hipotesis td.num { font-variant-numeric: tabular-nums; color: var(--g600); }
+  .veredicto { font-weight: 600; white-space: nowrap; }
+  .veredicto.si { color: var(--ok); } .veredicto.parte { color: var(--pend); } .veredicto.no { color: var(--no); } .veredicto.explora { color: #5B3FB0; }
+
+  .exportar { margin-top: 28px; padding: 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .exportar textarea { width: 100%; font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; min-height: 60px; }
+  .exportar pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: #F3F6F5; border-radius: 8px; padding: 8px; max-height: 240px; overflow: auto; }
+  #error-datos { color: var(--no); font-size: 13px; }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Decisiones de las historias, para aprobar</h1>
+    <p>
+      Sexta ronda cerrada (22-09-2026): sin decisiones pendientes. Lo que ya cerraste está al final, en «Ya cerradas», sin
+      pedir aprobación otra vez. Cada tarjeta dice qué quedó, por qué, las alternativas y de dónde vino.
+      Las cifras se leen en vivo de <code>public/data/encuesta.json</code>. Los enlaces abren la historia en
+      la app; todavía no hay enlace a un paso, así que hay que bajar hasta él.
+    </p>
+    <p id="error-datos"></p>
+  </header>
+
+  <div class="tablero" id="tablero">
+    <span class="cuenta" id="cuenta"></span>
+    <nav id="indice"></nav>
+    <button class="accion" id="ir-exportar">Exportar</button>
+  </div>
+
+  <main id="secciones"></main>
+
+  <section class="seccion" id="cerradas">
+    <h2>Ya cerradas en el JSON del 21-09</h2>
+    <details><summary style="cursor:pointer; font-size: 13.5px; color: var(--marca-oscura);">Ver las 30</summary>
+      <ul id="lista-cerradas" style="font-size: 13.5px; color: var(--g700); padding-left: 18px;"></ul>
+    </details>
+  </section>
+
+  <section class="seccion" id="tabla">
+    <h2>Todas las hipótesis de la guía, con su veredicto</h2>
+    <p class="bajada">
+      Una familia por bloque, declarada antes de correr los contrastes y corregida con Holm dentro de ella.
+      Las filas marcadas «exploratorio» no son hipótesis previas, y el tercer puesto de P20 se sostiene con
+      un contraste también exploratorio: en los tres miré la cifra antes de declarar la prueba, y eso los
+      debilita. Registro completo en
+      <code>la documentación interna</code>.
+    </p>
+    <div class="tabla-deslizable"><table class="hipotesis" id="hipotesis"></table></div>
+  </section>
+
+  <section class="exportar" id="bloque-exportar">
+    <h2 style="font-family: var(--display); font-size: 17px; margin: 0 0 6px;">Exportar</h2>
+    <label for="nota" style="font-size: 12px; color: var(--tinta-suave);">Nota general</label>
+    <textarea id="nota" placeholder="Lo que quieras agregar para el pulido"></textarea>
+    <div class="pie">
+      <button class="accion" id="exportar">Copiar JSON</button>
+      <button class="accion" id="limpiar">Borrar mis respuestas</button>
+      <span id="copiado" style="font-size: 13px; color: var(--g600);"></span>
+    </div>
+    <pre id="json" hidden></pre>
+  </section>
+</div>
+
+<script>
+(() => {
+  const CLAVE = 'lab-decisiones-v1';
+  const $ = (id) => document.getElementById(id);
+  const APP = './#';
+
+  const SECCIONES = [
+    { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
+    { id: 'mirada', titulo: 'Historia 1 · La mirada', bajada: 'Bloque 1 de la guía: cómo se mira a China.', ruta: '/historias/mirada' },
+    { id: 'entre-potencias', titulo: 'Historia 2 · Entre dos potencias', bajada: 'Bloque 2: Chile entre Washington y Beijing.', ruta: '/historias/entre-potencias' },
+    { id: 'territorio', titulo: 'Historia 3 · Donde uno vive', bajada: 'Bloque 3, nuevo y descriptivo: China en la economía de la región y la comuna.', ruta: '/historias/territorio' },
+    { id: 'inversion', titulo: 'Historia 4 · Inversión y Estado', bajada: 'Bloque 4.', ruta: '/historias/inversion' },
+    { id: 'china-cotidiana', titulo: 'Historia 5 · China cotidiana', bajada: 'Bloque 5, con una escena nueva de respuestas abiertas.', ruta: '/historias/china-cotidiana' },
+    { id: 'vacuna', titulo: 'Historia 6 · La vacuna', bajada: 'Bloque 6: vacunas y memoria.', ruta: '/historias/vacuna' },
+  ];
+
+  /* Sexta ronda (22-09-2026) cerrada entera: no queda nada pendiente. */
+  const D = [];
+
+  /* Lo que ya cerraste en los JSON del 21-09 y del 22-09-2026. Solo lectura: no vuelve a pedir aprobación. */
+  const CERRADAS = [
+    ['General', 'La raíz es un menú de tarjetas: pregunta y hallazgo, sin cifras'],
+    ['General', 'Las frases de hallazgo de las tarjetas'],
+    ['General', 'Rutas: #/historias/<id>, y #/recorrido redirige al menú'],
+    ['General', 'El botón de la barra dice «Volver a las historias» y lleva al menú'],
+    ['General', 'PageUp ya no se traba en el cierre, y el teclado para donde para la rueda'],
+    ['General', '«No se distingue del ruido» queda una sola vez, con una prueba que lo vigila'],
+    ['General', 'Método por historia en «Sobre los datos», armado solo'],
+    ['General', 'Dos contrastes nuevos que son exploratorios, no hipótesis previas'],
+    ['General', 'Lo que la guía afirma y no se sostiene: se cuenta lo que pasó, sin nombrarla'],
+    ['General', 'Qué se tomó de Codex y qué no'],
+    ['General', 'Revisión adversarial de Codex: qué se arregló y qué queda para el pulido'],
+    ['General', 'Pendientes que no toqué'],
+    ['La mirada', 'La polarización no entra como escena'],
+    ['La mirada', 'La historia termina en la escena de ideología'],
+    ['Entre dos potencias', 'Titular de la confianza: «despega»'],
+    ['Entre dos potencias', 'El no alineamiento cae, y se dice'],
+    ['Inversión y Estado', 'Advertencia del experimento de 2025, en la nota'],
+    ['Inversión y Estado', 'Titular 2 y el orden de los sectores'],
+    ['Inversión y Estado', 'Nota de los sectores acortada para teléfono chico'],
+    ['China cotidiana', 'La lectura de saliencia en la nota del racismo'],
+    ['China cotidiana', 'Cambios de vocabulario sobre la composición aprobada'],
+    ['China cotidiana', 'El interés por el mandarín no entra'],
+    ['La vacuna', 'Dos escenas: el recuerdo y la opinión (Pfizer dentro de la segunda)'],
+    ['La vacuna', 'Titular 2: la buena opinión cae en 2024 y ahí se queda'],
+    ['La vacuna', 'Pfizer: «entre 38 y 41 % las tres oleadas», con su base'],
+    ['Aplicadas con cambio (ver arriba)', 'Titular de la escena 1 · Paso 4 de La mirada · Titular 1 de Inversión · «No recuerdo» · Sin el dato de la inversión china real'],
+    ['General', 'Bloque 3: sin historia propia, con el riesgo como primera escena de «Inversión y Estado» (segunda ronda)'],
+    ['La mirada', 'Aplicado: «…pero Japón sigue liderando» (segunda ronda)'],
+    ['La mirada', 'Aplicado: «ninguno de los cinco países se mueve» (segunda ronda)'],
+    ['Entre dos potencias', '«De punta a punta» pasa a nombrar los años (segunda ronda)'],
+    ['Inversión y Estado', 'Aplicado: «En todas las oleadas, tres de cada cuatro personas…» (segunda ronda)'],
+    ['Inversión y Estado', 'Sectores como puntos por oleada; en 360 px queda para el pulido (segunda ronda)'],
+    ['Inversión y Estado', 'No entra el dato del Repositorio Regional de Inversiones Chinas (segunda ronda)'],
+    ['China cotidiana', 'Buses rediseñados: dos preguntas, dos formas (segunda ronda)'],
+    ['La vacuna', 'Aplicado: «No recuerdo» sale de la figura y va a la nota (segunda ronda)'],
+    ['Inversión y Estado', 'El riesgo como escena 1 (tercera ronda; en la cuarta pasa a «Donde uno vive»)'],
+    ['Inversión y Estado', 'Sectores: se quedan en 2023 y 2024 (tercera ronda)'],
+    ['China cotidiana', 'La cifra de la escena 2 lleva su signo (tercera ronda)'],
+    ['General', 'Ninguna historia ofrece el tablero, ni por escena ni en el cierre'],
+    ['General', 'El cierre ofrece la historia siguiente (número, pregunta, «Leer la historia →»); la última, «Ver todas las historias →»'],
+    ['General', 'Debajo, en texto: volver a las historias, explorar las preguntas, cómo se hizo y volver al inicio'],
+    ['General', 'Bloque 3 como historia propia con mapa; abiertas repartidas con contrastes; nunca sumar oleadas'],
+    ['General', 'El texto de las abiertas ya no viaja al navegador; conteos por persona (cuarta ronda)'],
+    ['General', 'Las cuatro palabras contrastadas: solo «Trump» se sostiene (cuarta ronda)'],
+    ['General', 'El rótulo del cierre pasa a «Historia N» (cuarta ronda)'],
+    ['La mirada', 'Escena nueva al final: lo primero que se les viene a la cabeza (cuarta ronda)'],
+    ['China cotidiana', 'Escena nueva: dónde es el contacto (cuarta ronda)'],
+    ['China cotidiana', 'Las marcas chinas salen de la nota de la escena 1 (rechazada en la cuarta ronda)'],
+    ['General', 'El tablero sale de la app (quinta ronda)'],
+    ['Donde uno vive', 'La historia se queda como historia propia (quinta ronda)'],
+    ['Donde uno vive', 'Rearmada: el riesgo, el mapa y la comparación por nivel (quinta ronda)'],
+    ['Donde uno vive', 'El riesgo en una barra por año, en tres partes, con las sumas declaradas (quinta ronda)'],
+    ['Donde uno vive', 'Mapa real con la geometría de simplemaps (quinta ronda)'],
+    ['China cotidiana', 'Las marcas quedan fuera, sin otro destino (quinta ronda)'],
+    ['General', '#/tablero lleva al explorador; fuera lo que era del tablero: bloques temáticos del ETL, paleta contigua, laboratorio de series, gris de oleadas inactivas (sexta ronda)'],
+    ['General', 'El explorador muestra una oleada a la vez, la última por defecto; «Entre oleadas» sigue con una barra por oleada (sexta ronda)'],
+  ];
+
+  /* La tabla de hipótesis: el texto es del registro; las cifras, del artefacto. */
+  const H = [
+    [1, 'En 2025 China queda sobre EE. UU. por primera vez', 'brecha-china-eeuu', 'parte', 'El cruce de 2025 se sostiene; en 2023 estaban parejos, no «EE. UU. arriba».'],
+    [1, 'EE. UU. cae unos 6 puntos en un año', 'termometro-eeuu', 'si', ''],
+    [1, 'Japón es el mejor evaluado', 'brecha-japon-china', 'si', 'Arriba en las tres oleadas.'],
+    [1, 'La evaluación de China cae hacia la derecha', 'ideologia-china', 'no', 'La pendiente de 2023 la sostiene un punto de 30 personas.'],
+    [1, 'La opinión se polariza', 'dispersion-china', 'no', ''],
+    [2, 'La confianza en China crece', 'confia-china', 'si', ''],
+    [2, 'La confianza en EE. UU. queda igual', 'confia-eeuu', 'parte', 'Pareja de punta a punta, pero sube y vuelve. Con «mucha» sola, crece.'],
+    [2, 'El no alineamiento no se movió', 'no-alineamiento', 'no', 'Cae, y sobrevive a Holm.'],
+    [2, 'La minoría que elige se da vuelta hacia China', 'ventaja-china-p26', 'si', ''],
+    [3, 'A más exposición exportadora, menos riesgo percibido', 'riesgo-estrato', 'no', 'Ninguna oleada sobrevive a Holm.'],
+    [3, 'El riesgo percibido se mantiene (P7, como nivel)', 'riesgo-comuna', 'explora', 'Declarado después de ver la cifra. Escena 2 de «Donde uno vive».'],
+    [3, '«Proveedor» es la respuesta más frecuente (P8)', 'p8-proveedor-sobre-inversor', 'explora', 'Contra inversor, comprador y competidor, en cada oleada, con Holm.'],
+    [3, '«Proveedor» cae', 'p8-proveedor', 'no', 'p nominal < 0,05, cae con Holm.'],
+    [3, '«Inversor» sube', 'p8-inversor', 'no', ''],
+    [4, 'La mayoría que quiere poder limitar es estable', 'limitar-inversiones', 'si', 'Con la advertencia del experimento de 2025.'],
+    [4, 'P20: minería primero, eléctrica tercera', 'electrica-sobre-banca', 'si', 'Nivel descriptivo; el tercer puesto, con contraste exploratorio.'],
+    [5, 'La cercanía comercial crece', 'mall-cerca', 'si', ''],
+    [5, 'La cercanía personal no', 'conoce-china', 'si', ''],
+    [5, 'P18 baja (quizá por saliencia)', 'racismo-visto', 'si', 'La lectura de saliencia va en la nota.'],
+    [5, 'Quien sabía que los buses son chinos los evalúa mejor', 'buses-sabia', 'explora', 'No está en la guía.'],
+    [1, '«Trump» sube como lo que se asocia a EE. UU.', 'palabra-trump', 'explora', 'Familia de cuatro palabras con Holm; todo el salto entre 2024 y 2025.'],
+    [1, '«Tecnología» sube como lo que se asocia a China', 'palabra-tecnologia', 'explora', 'p nominal 0,020; no pasa Holm.'],
+    [5, '«Mall» como lugar del contacto', 'palabra-mall', 'explora', 'Pareja.'],
+    [5, '«Buena» para describir el contacto', 'palabra-buena', 'explora', 'Pareja (2024 y 2025).'],
+    [6, 'El recuerdo de haber recibido Sinovac es estable', 'sinovac-recibio', 'si', 'Sin quienes no recuerdan.'],
+    [6, 'La buena opinión de Sinovac cae (no está en la guía)', 'sinovac-buena', 'si', 'Con la base fija en quienes la recibieron.'],
+    [6, 'Hubiese preferido Pfizer o Moderna', 'prefiere-pfizer', 'si', 'Pareja: es el contraste de la escena.'],
+  ];
+
+  let datos = null;
+  let estado = { decisiones: {}, nota: '' };
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    // Leído por identificador: una decisión que ya no existe se ignora, una nueva arranca pendiente.
+    if (g && typeof g === 'object') {
+      if (g.decisiones && typeof g.decisiones === 'object') for (const d of D) if (g.decisiones[d.id]) estado.decisiones[d.id] = g.decisiones[d.id];
+      if (typeof g.nota === 'string') estado.nota = g.nota;
+    }
+  } catch (e) { /* almacenamiento bloqueado o viejo */ }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* modo privado */ } };
+  const de = (id) => estado.decisiones[id] || { estado: 'pendiente', comentario: '' };
+
+  const dec = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : new Intl.NumberFormat('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+  const sg = (v) => `${v > 0 ? '+' : ''}${dec(v)}`;
+  const pv = (p) => p < 0.001 ? 'p < 0,001' : `p = ${dec(p, 3)}`;
+  const lee = (ic) => ic[0] * ic[1] <= 0 ? 'parejo' : ic[0] > 0 ? 'sube' : 'baja';
+
+  const cifrasDe = (id) => {
+    if (!datos) return [];
+    const c = datos.contrastes;
+    const m = c.medidas.find((x) => x.id === id);
+    if (m) return [`${m.etiqueta}: ` + m.comparaciones.map((k) => `${k.desde}→${k.hasta} ${dec(k.a)}→${dec(k.b)} (${sg(k.diferencia)}, ${pv(k.p)}, ${lee(k.ic)})`).join(' · ')];
+    const b = c.brechas.find((x) => x.id === id);
+    if (b) return [`${b.etiqueta}: ` + b.porOla.map((o) => `${o.ola} ${sg(o.diferencia)} (${pv(o.p)}, ${lee(o.ic)})`).join(' · ')];
+    const g = c.grupos.find((x) => x.id === id);
+    if (g) return [`${g.etiqueta}: ` + g.porOla.filter((o) => o.brecha).map((o) => `${o.ola} ${o.tramos.map((t) => `${t.nombre} ${dec(t.media)}`).join(', ')} (${o.brecha.entre.join('−')} ${sg(o.brecha.diferencia)}, ${pv(o.brecha.p)})`).join(' · ')];
+    return [`${id}: sin dato en el artefacto`];
+  };
+  const resumenH = (id) => {
+    const l = cifrasDe(id)[0] || '';
+    return l.replace(/^[^:]*: /, '');
+  };
+
+  const esc = (t) => String(t).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+  const pintar = () => {
+    const main = $('secciones');
+    main.innerHTML = '';
+    for (const s of SECCIONES.filter((x) => D.some((d) => d.s === x.id))) {
+      const sec = document.createElement('section');
+      sec.className = 'seccion'; sec.id = `sec-${s.id}`;
+      sec.innerHTML = `<h2>${esc(s.titulo)}</h2><p class="bajada">${esc(s.bajada)} ${s.ruta ? `<a href="${APP}${s.ruta}" target="_blank" rel="noopener">Abrir en la app</a>` : ''}</p>`;
+      for (const d of D.filter((x) => x.s === s.id)) {
+        const e = de(d.id);
+        const art = document.createElement('article');
+        art.className = 'decision'; art.dataset.estado = e.estado; art.id = `d-${d.id}`;
+        const origenClase = /codex/i.test(d.origen) ? 'codex' : /gu[ií]a/i.test(d.origen) ? 'guia' : '';
+        const cifras = (d.cifras || []).flatMap(cifrasDe);
+        art.innerHTML = `
+          <div class="cabeza"><h3>${esc(d.titulo)}</h3><span class="origen ${origenClase}">${esc(d.origen)}</span></div>
+          <dl>
+            ${d.verbatim ? `<dt>En la app hoy</dt><dd>${d.verbatim.map((v) => `<div class="verbatim">${esc(v)}</div>`).join('')}</dd>` : ''}
+            <dt>Qué se decidió</dt><dd>${esc(d.decidido)}</dd>
+            <dt>Por qué</dt><dd>${esc(d.porque)}</dd>
+            ${d.alternativas ? `<dt>Alternativas</dt><dd>${esc(d.alternativas)}</dd>` : ''}
+            ${cifras.length ? `<dt>Cifras (del artefacto)</dt><dd class="cifras">${cifras.map((c) => `<div>${esc(c)}</div>`).join('')}</dd>` : ''}
+          </dl>
+          <div class="pie">
+            <div class="estado" role="group" aria-label="Estado de la decisión">
+              <button type="button" data-v="aprobada" aria-pressed="${e.estado === 'aprobada'}">Aprobar</button>
+              <button type="button" data-v="rechazada" aria-pressed="${e.estado === 'rechazada'}">Rechazar</button>
+            </div>
+            ${d.ruta ? `<a href="${APP}${d.ruta}" target="_blank" rel="noopener">Ver en la app</a>` : ''}
+          </div>
+          <textarea aria-label="Comentario" placeholder="Comentario (opcional)">${esc(e.comentario)}</textarea>`;
+        art.querySelectorAll('.estado button').forEach((b) => b.addEventListener('click', () => {
+          const actual = de(d.id);
+          const nuevo = actual.estado === b.dataset.v ? 'pendiente' : b.dataset.v;
+          estado.decisiones[d.id] = { ...actual, estado: nuevo };
+          guardar();
+          art.dataset.estado = nuevo;
+          art.querySelectorAll('.estado button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === nuevo)));
+          contar();
+        }));
+        art.querySelector('textarea').addEventListener('input', (ev) => {
+          estado.decisiones[d.id] = { ...de(d.id), comentario: ev.target.value };
+          guardar();
+        });
+        sec.appendChild(art);
+      }
+      main.appendChild(sec);
+    }
+    $('lista-cerradas').innerHTML = CERRADAS.map(([sec, t]) => `<li><span style="color:var(--tinta-suave)">${esc(sec)} ·</span> ${esc(t)}</li>`).join('');
+    const t = $('hipotesis');
+    const nombres = { si: 'Se sostiene', parte: 'En parte', no: 'Descartada', explora: 'Exploratorio' };
+    t.innerHTML = `<thead><tr><th>Bloque</th><th>Hipótesis</th><th>Veredicto</th><th>Cifras</th><th>Nota</th></tr></thead><tbody>${
+      H.map(([b, h, id, v, n]) => `<tr><td>${b}</td><td>${esc(h)}<br><code style="font-size:11px;color:var(--g500)">${esc(id)}</code></td><td><span class="veredicto ${v}">${nombres[v]}</span></td><td class="num">${esc(resumenH(id))}</td><td>${esc(n)}</td></tr>`).join('')
+    }</tbody>`;
+    contar();
+  };
+
+  const contar = () => {
+    const pend = D.filter((d) => de(d.id).estado === 'pendiente').length;
+    const ok = D.filter((d) => de(d.id).estado === 'aprobada').length;
+    const no = D.filter((d) => de(d.id).estado === 'rechazada').length;
+    $('cuenta').textContent = `${pend} pendientes · ${ok} aprobadas · ${no} rechazadas, de ${D.length}`;
+    $('indice').innerHTML = SECCIONES.filter((x) => D.some((d) => d.s === x.id)).map((s) => {
+      const n = D.filter((d) => d.s === s.id && de(d.id).estado === 'pendiente').length;
+      return `<a href="#sec-${s.id}">${esc(s.titulo.replace(/^Historia \d · /, ''))}${n ? `<span class="n">${n}</span>` : ''}</a>`;
+    }).join('') + '<a href="#cerradas">Cerradas</a><a href="#tabla">Hipótesis</a>';
+  };
+
+  $('nota').value = estado.nota;
+  $('nota').addEventListener('input', (e) => { estado.nota = e.target.value; guardar(); });
+  $('ir-exportar').addEventListener('click', () => $('bloque-exportar').scrollIntoView({ behavior: 'smooth' }));
+  $('limpiar').addEventListener('click', () => {
+    if (!confirm('¿Borrar todas tus respuestas de este navegador?')) return;
+    estado = { decisiones: {}, nota: '' }; guardar(); $('nota').value = ''; pintar();
+  });
+  $('exportar').addEventListener('click', () => {
+    const texto = JSON.stringify({
+      laboratorio: 'decisiones',
+      ronda: 6,
+      fecha: new Date().toISOString(),
+      decisiones: D.map((d) => ({ id: d.id, seccion: d.s, titulo: d.titulo, estado: de(d.id).estado, comentario: de(d.id).comentario })),
+      nota: estado.nota,
+    }, null, 2);
+    const pre = $('json');
+    const aMano = () => { pre.hidden = false; pre.textContent = texto; $('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => { $('copiado').textContent = 'Copiado. Pégalo en el chat.'; pre.hidden = false; pre.textContent = texto; }, aMano);
+    else aMano();
+  });
+
+  pintar();
+  fetch('./data/encuesta.json').then((r) => r.json()).then((j) => { datos = j; pintar(); })
+    .catch(() => { $('error-datos').textContent = 'No se pudieron leer las cifras de public/data/encuesta.json: las tarjetas se ven sin ellas.'; });
+})();
+</script>

@@ -1,13 +1,13 @@
 ---
 name: laboratorio
-description: Método para decidir la composición de algo visible del visualizador ICLAC (una escena, la portada, el cierre, un módulo o una figura del tablero) antes de tocar el código, con un laboratorio HTML servido desde el servidor de desarrollo y el JSON que exporta. Se usa cuando Felipe pide opciones o «un laboratorio», cuando pide «hazme preguntas para pulir» sobre algo visual, y cuando pega un JSON con `"laboratorio": ...`.
+description: Método para decidir la composición de algo visible del visualizador ICLAC (una escena, la portada, el cierre o una figura del explorador) antes de tocar el código, con un laboratorio HTML servido desde el servidor de desarrollo y el JSON que exporta. Se usa cuando Felipe pide opciones o «un laboratorio», cuando pide «hazme preguntas para pulir» sobre algo visual, y cuando pega un JSON con `"laboratorio": ...`.
 ---
 
 # Laboratorio: la composición se decide mirando
 
 Felipe decide composición mirándola, no leyendo un diff, y su respuesta llega como JSON exportado
 desde el laboratorio. **En el recorrido es obligatorio** (portada, escenas, respiros, cierre); en el
-tablero, para cualquier cambio de forma de una figura. Por qué existe y qué costó cada regla:
+explorador, para cualquier cambio de forma de una figura. Por qué existe y qué costó cada regla:
 un registro de decisiones interno, en `la documentación interna`.
 
 ## Flujo
@@ -75,6 +75,5 @@ un registro de decisiones interno, en `la documentación interna`.
 | Fuente | Script | Estado |
 |---|---|---|
 | `laboratorio/recorrido.html` | `npm run lab` | escenas del recorrido; sin revisar desde el 08-09 |
-| `laboratorio/tablero-series.html` y `datos-series.ts` | `npm run lab:series` | cerrado: salió `BarrasPorOla` |
 | `laboratorio/cierre-recorrido.html` | `npm run lab:cierre` | cerrado, falta podar |
 | `laboratorio/portada-recorrido.html` | `npm run lab:portada` | cerrado, falta podar |

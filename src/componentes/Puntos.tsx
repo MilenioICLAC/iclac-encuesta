@@ -40,6 +40,9 @@ export interface FilaDePuntos {
   etiqueta: string
   /** Un valor por serie, en el mismo orden. `null` es «no hay dato», que no es cero. */
   valores: (number | null)[]
+  /** Muestra de color junto al nombre, cuando la fila es una categoría que otra figura ya pintó
+   *  (los niveles de exposición del mapa). El color es de la fila, no de los puntos. */
+  color?: string
 }
 
 interface Props {
@@ -192,7 +195,8 @@ export default function Puntos ({
               className={`${rejilla} items-center ${compacto ? '' : 'pb-1 sm:pb-0'}`}
               style={ancho}
             >
-              <span className="truncate text-xs text-gray-700 sm:text-right" title={fila.etiqueta}>
+              <span className={`truncate text-xs text-gray-700 sm:text-right ${fila.color ? 'flex items-center gap-1.5 sm:justify-end' : ''}`} title={fila.etiqueta}>
+                {fila.color && <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: fila.color }} />}
                 {fila.etiqueta}
               </span>
               <div

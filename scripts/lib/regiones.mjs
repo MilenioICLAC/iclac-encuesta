@@ -79,6 +79,8 @@ const ABREVIADAS = {
   "Libertador General Bernardo O'Higgins": "O'Higgins",
   'Aysén del General Carlos Ibañez del Campo': 'Aysén',
   'Magallanes y la Antártica Chilena': 'Magallanes',
+  // «X Región de los Lagos»: el artículo es parte del nombre, y el recorte de «de los» lo comía.
+  Lagos: 'Los Lagos',
 }
 
 /** «V Región de Valparaíso» → «Valparaíso». El número romano no aporta y ocupa el eje. */

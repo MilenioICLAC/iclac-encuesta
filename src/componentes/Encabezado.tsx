@@ -16,7 +16,7 @@ import { TEXTOS } from '../textos'
  * scroll infinito. Una sola página larga no se recorre, se abandona.
  *
  * **Queda pegado arriba**, y por eso publica su alto medido en `--alto-encabezado`: la barra de
- * controles del tablero también es pegajosa y tiene que pegarse **debajo** de este, no debajo
+ * controles del explorador también es pegajosa y tiene que pegarse **debajo** de este, no debajo
  * del borde de la pantalla. El alto no se escribe a mano en ninguna de las dos, porque cambia
  * con el ancho (79 px en teléfono, 88 en escritorio) y dos números a mano se desincronizan.
  */
@@ -48,8 +48,7 @@ export function IconoRecorrido ({ className }: { className?: string }) {
 }
 
 const NAV: { a: string, clave: keyof typeof TEXTOS.nav }[] = [
-  { a: '/recorrido', clave: 'recorrido' },
-  { a: '/tablero', clave: 'tablero' },
+  { a: '/', clave: 'recorrido' },
   { a: '/explorar', clave: 'explorar' },
   { a: '/descargas', clave: 'descargas' },
   { a: '/datos', clave: 'datos' },
@@ -68,7 +67,8 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
   // La portada y la capa son el mismo destino para el lector, aunque sean dos rutas: el ítem se
   // marca en las dos. `NavLink` solo por sí mismo marcaría la capa y dejaría la portada sin marca.
   const { pathname } = useLocation()
-  const enRecorrido = pathname === '/' || pathname === '/recorrido'
+  // El menú y cada historia son el mismo destino para el lector: el ítem se marca en todos.
+  const enRecorrido = pathname === '/' || pathname === '/recorrido' || pathname.startsWith('/historias')
 
   // El alto medido, no declarado: lo lee quien tenga que pegarse debajo.
   useEffect(() => {

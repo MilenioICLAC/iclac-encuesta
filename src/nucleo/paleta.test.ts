@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { IDENTIDAD, IDENTIDAD_CONTIGUA, ORDEN, SEMANTICOS, pasosDeOrden } from './paleta'
+import { IDENTIDAD, ORDEN, SEMANTICOS, pasosDeOrden } from './paleta'
 
 /**
  * La paleta pasó por el validador de la skill `dataviz`, que no se puede correr desde acá.
@@ -40,12 +40,6 @@ describe('la paleta', () => {
       expect(pasos[0]).toBe(ORDEN[0])
       expect(pasos[n - 1]).toBe(ORDEN[ORDEN.length - 1])
     }
-  })
-
-  it('empieza la paleta contigua con el mismo tono que la de identidad', () => {
-    // Que el primer color sea siempre el mismo es lo que hace que la página se lea como una
-    // sola cosa, en vez de como figuras sueltas de colores distintos.
-    expect(IDENTIDAD_CONTIGUA[0]).toBe(IDENTIDAD[0])
   })
 
   it('amarra los colores con significado a la etiqueta exacta que trae la base', () => {

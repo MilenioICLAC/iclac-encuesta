@@ -39,8 +39,7 @@ export const TEXTOS = {
     '目前仅站点导航已翻译：图表、图注与叙事内容仍为西班牙语。',
   ),
   nav: {
-    recorrido: cadena('El recorrido', 'The story', '叙事'),
-    tablero: cadena('El tablero', 'Dashboard', '数据面板'),
+    recorrido: cadena('Historias', 'Stories', '故事'),
     explorar: cadena('Explorar', 'Explore', '自由探索'),
     descargas: cadena('Descargas', 'Downloads', '数据下载'),
     datos: cadena('Sobre los datos', 'About the data', '关于数据'),

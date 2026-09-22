@@ -1,6 +1,6 @@
 ---
 name: verificar-navegador
-description: Cómo mirar y medir en un navegador de verdad (Playwright, ya instalado) cualquier cambio visible del visualizador ICLAC o de un laboratorio, antes de darlo por cerrado o de mandarle un enlace a Felipe. Se usa después de tocar componentes, CSS, escenas del recorrido, módulos del tablero o un archivo de `laboratorio/`, y siempre que haya que afirmar que algo cabe, no se mueve, no se desborda o se alcanza.
+description: Cómo mirar y medir en un navegador de verdad (Playwright, ya instalado) cualquier cambio visible del visualizador ICLAC o de un laboratorio, antes de darlo por cerrado o de mandarle un enlace a Felipe. Se usa después de tocar componentes, CSS, escenas del recorrido, el explorador o un archivo de `laboratorio/`, y siempre que haya que afirmar que algo cabe, no se mueve, no se desborda o se alcanza.
 ---
 
 # Verificar en el navegador

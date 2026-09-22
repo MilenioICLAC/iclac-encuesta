@@ -43,8 +43,8 @@ export interface FiguraDivergente {
 /**
  * Las cuatro categorías en orden visual, del extremo izquierdo al derecho.
  *
- * El color sale de `SEMANTICOS`, amarrado a la etiqueta exacta, así que el tablero pinta la misma
- * pregunta con los mismos colores sin que nadie los repita: una figura, dos vistas.
+ * El color sale de `SEMANTICOS`, amarrado a la etiqueta exacta: cualquier vista que pinte la misma
+ * pregunta usa los mismos colores sin que nadie los repita.
  */
 export const CATEGORIAS: CategoriaConfianza[] = [
   { clave: 'ninguna', etiqueta: 'Ninguna', color: SEMANTICOS.Ninguna, lado: -1 },

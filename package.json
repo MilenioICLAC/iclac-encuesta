@@ -16,11 +16,13 @@
     "etl": "node scripts/etl.mjs",
     "etl:combinada": "node scripts/etl_combinada.mjs",
     "descargas": "node scripts/descargas.mjs",
-    "datos": "npm run etl:combinada && npm run descargas",
+    "datos": "npm run etl:combinada && npm run descargas && npm run geometria",
+    "geometria": "node scripts/geometria_regiones.mjs",
     "lab": "node scripts/laboratorio.mjs laboratorio/recorrido.html",
-    "lab:series": "node scripts/laboratorio.mjs laboratorio/tablero-series.html public/laboratorio-series.html",
     "lab:cierre": "node scripts/laboratorio.mjs laboratorio/cierre-recorrido.html public/laboratorio-cierre.html",
-    "lab:portada": "node scripts/laboratorio.mjs laboratorio/portada-recorrido.html public/laboratorio-portada.html"
+    "lab:portada": "node scripts/laboratorio.mjs laboratorio/portada-recorrido.html public/laboratorio-portada.html",
+    "lab:cotidiana": "node scripts/laboratorio.mjs laboratorio/china-cotidiana.html public/laboratorio-cotidiana.html",
+    "lab:decisiones": "node scripts/laboratorio.mjs laboratorio/decisiones.html public/laboratorio-decisiones.html"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

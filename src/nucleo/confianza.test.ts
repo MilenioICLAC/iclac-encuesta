@@ -49,8 +49,7 @@ describe('las figuras de confianza', () => {
   })
 
   it('pinta la escala con los colores amarrados a la etiqueta, no con hexadecimales sueltos', () => {
-    // Así el tablero pinta la misma pregunta igual sin que nadie repita un color: una figura, dos
-    // vistas.
+    // Así cualquier vista pinta la misma pregunta igual sin que nadie repita un color.
     expect(CATEGORIAS.map((c) => c.color)).toEqual([
       SEMANTICOS.Ninguna, SEMANTICOS.Poca, SEMANTICOS.Algo, SEMANTICOS.Mucha,
     ])

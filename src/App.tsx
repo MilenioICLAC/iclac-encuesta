@@ -1,60 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
-import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
-import { distribucion, filtrar, media, multirespuesta, porGrupo, proporcion, serie } from './nucleo/agregar'
-import { CORTES, MODULOS, TERMOMETRO, variableDe, valorDe } from './nucleo/modulos'
+import { filtrar } from './nucleo/agregar'
 import BarraEstado from './componentes/BarraEstado'
-import Modulo from './componentes/Modulo'
-import Distribucion from './componentes/Distribucion'
-import Menciones from './componentes/Menciones'
-import PorRegion from './componentes/PorRegion'
-import BarrasPosicionamiento from './componentes/BarrasPosicionamiento'
-import BarrasPorOla from './componentes/BarrasPorOla'
 import Graficador from './componentes/Graficador'
-import Ideologia from './componentes/Ideologia'
-import Nubes from './componentes/Nubes'
-import Densidad from './componentes/Densidad'
-import Puntos from './componentes/Puntos'
-import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from './componentes/CapaRecorrido'
-import Divergente from './componentes/Divergente'
-import { figuraBalanza, figuraConfianza } from './nucleo/confianza'
 import Descargas from './componentes/Descargas'
 import Contrastes from './componentes/Contrastes'
 import MetodoRecorrido from './componentes/MetodoRecorrido'
+import MetodoHistorias from './componentes/MetodoHistorias'
 import Encabezado from './componentes/Encabezado'
-import { figuraTermometro } from './nucleo/termometro'
-import { escalaRedonda } from './nucleo/escala'
-import Regresion from './componentes/Regresion'
-import { NEUTRO, SEMANTICOS, pasosDeOrden } from './nucleo/paleta'
-import { decimal, fijarIdioma, locale, numero, porcentaje, type Idioma } from './locale'
+import { fijarIdioma, locale, numero, type Idioma } from './locale'
 import { TEXTOS } from './textos'
+import { HISTORIAS } from './historias/indice'
+import MenuHistorias from './historias/MenuHistorias'
+import { NumeroHistoria, Siguiente } from './componentes/siguiente'
 
 /**
  * Borrador del visualizador.
  *
- * Dos tramos en una página, en este orden: el **recorrido**, que cuenta qué se movió entre
- * oleadas, y el **tablero**, para consultar. La estructura sale de la «Guía de contexto para
- * el visualizador» que Urdinez mandó el 02-09-2026: los tres hallazgos que abren el recorrido
- * y los seis bloques temáticos que agrupan el tablero son suyos, no nuestros.
+ * Las **historias**, que afirman lo que se movió entre oleadas, y el **explorador**, para
+ * consultar cualquier pregunta. Las historias salen de los bloques de la «Guía de contexto para
+ * el visualizador» que Urdinez mandó el 02-09-2026.
  *
- * Tres decisiones que se ven en el código y conviene no deshacer sin querer:
+ * **La desagregación es global**, en la barra de estado del explorador, y no una por figura como
+ * en el monitor actual. Un solo control además impide cruzar dos variables, que es una regla del
+ * producto y no una preferencia.
  *
- *  - **La desagregación es global**, en la barra de estado, y no una por tarjeta como en el
- *    monitor actual. Un solo control además impide cruzar dos variables, que es una regla del
- *    producto y no una preferencia.
- *  - **El tablero arranca limpio**: no hereda el recorte del recorrido, para que nadie quede
- *    leyendo un filtro que no eligió.
- *  - **Los módulos son una rejilla temática, no una secuencia.** Ordenarlos afirmaría un
- *    argumento que nadie escribió.
- *
- * Lo que falta está anotado al pie de la página, a la vista y no en un comentario.
+ * Lo que falta está anotado en «Sobre los datos», a la vista y no en un comentario.
  */
 
 export default function App () {
   const [encuesta, setEncuesta] = useState<Encuesta | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const [olas, setOlas] = useState<number[]>([])
+  // **Una oleada a la vez** (Felipe, 22-09-2026): nada suma oleadas. Arranca en la última.
+  const [ola, setOla] = useState<number | null>(null)
   const [corte, setCorte] = useState<string | null>(null)
   const [soloIndependientes, setSoloIndependientes] = useState(false)
 
@@ -70,13 +50,13 @@ export default function App () {
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/encuesta.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: Encuesta) => { setEncuesta(d); setOlas(d.olas) })
+      .then((d: Encuesta) => { setEncuesta(d); setOla(d.olas[d.olas.length - 1]) })
       .catch((e: Error) => setError(e.message))
   }, [])
 
   const casos = useMemo(
-    () => (encuesta ? filtrar(encuesta, { olas, soloIndependientes }) : []),
-    [encuesta, olas, soloIndependientes],
+    () => (encuesta && ola !== null ? filtrar(encuesta, { olas: [ola], soloIndependientes }) : []),
+    [encuesta, ola, soloIndependientes],
   )
 
   if (error) {
@@ -92,15 +72,15 @@ export default function App () {
     )
   }
 
-  if (!encuesta) {
+  if (!encuesta || ola === null) {
     return <main className="mx-auto max-w-2xl p-8 text-sm text-gray-500">Cargando…</main>
   }
 
   const barra = (
     <BarraEstado
       olas={encuesta.olas}
-      olasActivas={olas}
-      onOlas={setOlas}
+      ola={ola}
+      onOla={setOla}
       corte={corte}
       onCorte={setCorte}
       soloIndependientes={soloIndependientes}
@@ -111,33 +91,36 @@ export default function App () {
 
   return (
     // **Rutas por hash y no por ruta limpia.** El sitio todavía no tiene servidor elegido, y
-    // `/tablero` como ruta real necesita que ese servidor devuelva el index en cualquier ruta.
+    // `/explorar` como ruta real necesita que ese servidor devuelva el index en cualquier ruta.
     // Con hash funciona en cualquier hosting estático, incluido abrir el `dist/` a mano. Cuando
     // haya servidor con reescritura, esto pasa a `BrowserRouter` y no cambia nada más.
     <HashRouter>
       <Routes>
         <Route element={<Marco idioma={idioma} onIdioma={cambiarIdioma} />}>
-          {/* La raíz **es** el recorrido: la portada es su primera pantalla, no una página
-              anterior que la capa tapaba. `#/recorrido` se queda como alias para los enlaces ya
-              repartidos. */}
-          <Route index element={<Recorrido encuesta={encuesta} abierta />} />
-          <Route path="recorrido" element={<Recorrido encuesta={encuesta} abierta />} />
-          <Route
-            path="tablero"
-            element={(
-              <>
-                {barra}
-                <Tablero
-                  encuesta={encuesta}
-                  casos={casos}
-                  corte={corte}
-                  soloIndependientes={soloIndependientes}
-                  olas={olas}
-                />
-                <Nubes encuesta={encuesta} />
-              </>
-            )}
-          />
+          {/* La raíz es el menú de historias. `#/recorrido` era la historia única de antes: los
+              enlaces ya repartidos llegan al menú. */}
+          <Route index element={<MenuHistorias encuesta={encuesta} />} />
+          <Route path="recorrido" element={<Navigate to="/" replace />} />
+          {/* Cada historia sabe cuál sigue, para ofrecerla en su cierre (`Siguiente`). */}
+          {HISTORIAS.map(({ id, Componente }, i) => {
+            const s = HISTORIAS[i + 1]
+            return (
+              <Route
+                key={id}
+                path={`historias/${id}`}
+                element={(
+                  <NumeroHistoria.Provider value={i + 1}>
+                    <Siguiente.Provider value={s ? { numero: i + 2, nombre: s.nombre, pregunta: s.pregunta, ruta: `/historias/${s.id}` } : null}>
+                      <Componente encuesta={encuesta} abierta />
+                    </Siguiente.Provider>
+                  </NumeroHistoria.Provider>
+                )}
+              />
+            )
+          })}
+          {/* El tablero salió de la app (22-09-2026): sumaba las oleadas activas en cada módulo, y
+              consultar pregunta por pregunta ya lo hace el explorador. Sus enlaces llegan ahí. */}
+          <Route path="tablero" element={<Navigate to="/explorar" replace />} />
           <Route
             path="explorar"
             element={(
@@ -148,7 +131,7 @@ export default function App () {
                   casos={casos}
                   corte={corte}
                   soloIndependientes={soloIndependientes}
-                  olasActivas={olas}
+                  ola={ola}
                 />
               </>
             )}
@@ -171,15 +154,15 @@ export default function App () {
  * en una o dos pantallas, el botón de atrás del navegador funciona, y un enlace a `#/descargas`
  * lleva a las descargas.
  *
- * **El recorte del tablero no se pierde al cambiar de vista.** El estado vive en `App`, que no se
- * desmonta: quien elige 2025 y va a explorar sigue con 2025.
+ * **El recorte del explorador no se pierde al cambiar de vista.** El estado vive en `App`, que no
+ * se desmonta: quien elige 2025, lee una historia y vuelve a explorar sigue con 2025.
  */
 function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) => void }) {
   const { pathname, search } = useLocation()
 
   // Cambiar de vista deja la vista nueva empezada por la mitad si se hereda el desplazamiento
-  // de la anterior, que es más larga. **Salvo cuando la URL pide una figura**
-  // (`#/tablero?foco=…`): ahí el destino lo fija ella, y mandar la vista arriba deshace el salto
+  // de la anterior, que es más larga. **Salvo cuando la URL pide una sección**
+  // (`#/datos?foco=…`): ahí el destino lo fija ella, y mandar la vista arriba deshace el salto
   // que el propio enlace acaba de hacer.
   useEffect(() => { if (!search) window.scrollTo(0, 0) }, [pathname, search])
 
@@ -212,1153 +195,6 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
 }
 
 /**
- * El recorrido, con los tres hallazgos que la guía propone para ordenar la narrativa.
- *
- * **Los textos son datos, no código.** Hoy están acá porque es un borrador, pero cada tramo
- * tiene que salir de un archivo de contenido con sus tres idiomas: así, que ICLAC entregue
- * tarde deja de bloquear el desarrollo.
- *
- * Y las cifras se calculan, no se transcriben. Es la diferencia entre una frase que envejece
- * mal y una que se corrige sola al incorporar una oleada.
- */
-/**
- * Qué puntos enciende cada paso del primer tramo.
- *
- * Va como tabla y no repartido por el texto porque es la parte que hay que poder auditar de un
- * vistazo: es lo único que decide qué dato se muestra y qué dato se calla. **El último paso
- * enciende todo**, que es la garantía de que el recorrido no termina escondiendo nada, y el
- * estado sin JavaScript o con `prefers-reduced-motion` (ver `nucleo/pasos.ts`).
- */
-function encendidos (olas: number[]) {
-  const ultima = olas.at(-1)
-  const dosPotencias = (pais: string) => pais === 'China' || pais === 'Estados Unidos'
-  return [
-    // Las dos potencias, sin la última oleada todavía: el paso habla de 2023 y 2024.
-    (pais: string, ola: number) => dosPotencias(pais) && ola !== ultima,
-    (pais: string) => dosPotencias(pais),
-    (pais: string) => dosPotencias(pais) || pais === 'Japón',
-    () => true,
-    // Los cinco pasos del experimento cambian la figura entera, no los países: la tabla los deja
-    // encendidos para que el estado sin JavaScript y el de movimiento reducido sigan mostrando
-    // todo el termómetro.
-    () => true,
-    () => true,
-    () => true,
-    () => true,
-    () => true,
-  ]
-}
-
-/**
- * El año del dato más nuevo que ya entró, en grande y arriba de la figura.
- *
- * Hace el trabajo que la leyenda sola no hace: dice de qué oleada habla **este** paso, sin mandar
- * la vista fuera de la figura y traerla de vuelta. Va fuera del lienzo porque flotando sobre los
- * puntos chocaba con la fila de arriba, que es la del país mejor evaluado.
- */
-function AnioDelPaso ({ olas, tonos, hasta }: { olas: number[], tonos: string[], hasta: number }) {
-  return (
-    <div className="mb-1 flex justify-end">
-      <span
-        className="font-display text-[34px] font-bold leading-none tracking-tight tabular-nums opacity-40 transition-colors duration-500"
-        style={{ color: tonos[hasta] }}
-        aria-hidden
-      >
-        {olas[hasta]}
-      </span>
-    </div>
-  )
-}
-
-/**
- * Qué color es qué oleada, al pie de la figura y a la derecha.
- *
- * **La muestra es el punto, del mismo tamaño que tiene en la figura**, incluido el crecimiento por
- * oleada: la leyenda tiene que verse como lo que el lector está mirando. Con barras de color había
- * que traducir de barra a punto.
- */
-function LeyendaDeOleadas ({ olas, tonos }: { olas: number[], tonos: string[] }) {
-  return (
-    <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
-      {olas.map((ola, i) => (
-        <li key={ola} className="flex items-center gap-1.5 text-[11px] tabular-nums text-gray-500">
-          <span
-            className="inline-block shrink-0 rounded-full"
-            style={{ backgroundColor: tonos[i], width: 8 + i * 2, height: 8 + i * 2 }}
-          />
-          {ola}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
- * La portada del recorrido y, encima, la capa.
- *
- * **La capa la decide la ruta** (`#/recorrido`), no un estado suelto: así el gesto de atrás del
- * teléfono la cierra, se puede enlazar, y quien entra por la raíz cae adentro sin apretar nada.
- * La portada queda detrás, y es a donde vuelve el botón de atrás.
- *
- * **Salir lleva al tablero**, que es lo que quiere quien deja el relato: ir a consultar.
- */
-/**
- * Lectura de los contrastes que el ETL dejó en el artefacto.
- *
- * **El recorrido solo afirma lo que pasa el contraste** (ver `CLAUDE.md`, «Cuándo un cambio entre
- * oleadas es un cambio»), así que las frases no describen la diferencia: describen el resultado de
- * la prueba. Si el artefacto viene sin contrastes, cada función devuelve `null` y la frase cae a
- * una versión que solo dice lo que se ve en la figura.
- */
-function lector (encuesta: Encuesta) {
-  const c = encuesta.contrastes
-  return {
-    /** La brecha entre dos países dentro de la misma persona, en una oleada. */
-    brecha: (ola: number) =>
-      c?.brechas.find((b) => b.id === 'brecha-china-eeuu')?.porOla.find((x) => x.ola === ola) ?? null,
-    entre: (id: string, desde: number, hasta: number) =>
-      c?.medidas.find((m) => m.id === id)?.comparaciones.find((x) => x.desde === desde && x.hasta === hasta) ?? null,
-    /** Si ningún país del termómetro se distingue del ruido entre dos oleadas. */
-    todosQuietos: (desde: number, hasta: number) => {
-      const suyas = c?.medidas.filter((m) => m.id.startsWith('termometro-')) ?? []
-      const comparaciones = suyas
-        .map((m) => m.comparaciones.find((x) => x.desde === desde && x.hasta === hasta))
-        .filter((x): x is NonNullable<typeof x> => Boolean(x))
-      return comparaciones.length === suyas.length && comparaciones.length > 0 &&
-        comparaciones.every((x) => x.p >= 0.05)
-    },
-    paises: (c?.medidas.filter((m) => m.id.startsWith('termometro-')).length) ?? 0,
-    /** La opinión sobre China por tramo ideológico, oleada por oleada. */
-    ideologia: c?.grupos.find((g) => g.id === 'ideologia-china') ?? null,
-    /** La misma pregunta sobre la escala entera de 1 a 10, con la recta y el punto que la sostiene. */
-    regresion: c?.regresiones.find((r) => r.id === 'ideologia-china') ?? null,
-    /** En cuántos grupos de cada corte sube la opinión sobre China, entre las dos últimas oleadas. */
-    transversal: c?.transversal.find((t) => t.id === 'opinion-china') ?? null,
-    /**
-     * La ventaja de una potencia sobre la otra en `p26`, **dentro de la persona**.
-     *
-     * Es lo que sostiene el titular de la escena 5. Va por acá y no restando dos porcentajes
-     * sueltos porque `p26` es una elección única: quien contesta «China» está a la vez no
-     * contestando «Estados Unidos», y la prueba de signo usa esa dependencia.
-     */
-    ventajaP26: (ola: number) =>
-      c?.brechas.find((b) => b.id === 'ventaja-china-p26')?.porOla.find((x) => x.ola === ola) ?? null,
-  }
-}
-
-/**
- * Los números chicos se escriben con letra dentro de una frase.
- *
- * Sale de los datos (son las medidas del termómetro que trae el artefacto), así que no se puede
- * escribir a mano, pero «ninguno de los 5 países» en medio de una oración se lee como una planilla.
- */
-function cardinal (n: number): string {
-  return ['cero', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'][n] ?? numero(n)
-}
-
-/**
- * Cómo se describe una brecha según lo que dice su prueba.
- *
- * Tres estados y no dos: además de «China arriba» y «Estados Unidos arriba» está **«parejos»**,
- * que es lo que corresponde cuando el intervalo contiene el cero. La escena decía que en 2023 y
- * 2024 Estados Unidos estaba mejor evaluado; en 2023 la brecha es de 2,1 puntos con un intervalo
- * que cruza el cero, así que esa mitad de la frase afirmaba de más.
- */
-function describir (brecha: { diferencia: number, p: number } | null) {
-  if (!brecha) return null
-  if (brecha.p >= 0.05) return { estado: 'parejos' as const, puntos: Math.abs(brecha.diferencia) }
-  return { estado: brecha.diferencia > 0 ? 'china' as const : 'eeuu' as const, puntos: Math.abs(brecha.diferencia) }
-}
-
-function Recorrido ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolean }) {
-  const todos = (ola: number) => filtrar(encuesta, { olas: [ola] })
-
-  // Una fila por país y un punto por oleada, ordenadas por la última oleada. Con tres
-  // encuestas sueltas una línea prometería interpolación que no existe, y cinco líneas que se
-  // cruzan obligarían a distinguir todos los pares de color contra todos, que es el caso donde
-  // la paleta topa en tres (un registro de decisiones interno). Acá el color son las tres oleadas y el nombre del país
-  // carga la identidad, así que el tope alcanza justo.
-  const termometro = TERMOMETRO.map((p) => ({
-    ...p,
-    valores: encuesta.olas.map((ola) => media(todos(ola), p.nombre)),
-  }))
-  // La escala, el orden de las filas y el rótulo del eje salen del módulo compartido con el
-  // tablero: las dos vistas muestran la misma pregunta y no pueden verse distinto.
-  const figura = figuraTermometro(termometro.map((t) => ({
-    clave: t.pais,
-    etiqueta: t.pais,
-    valores: t.valores.map((v) => (v.base > 0 ? v.media : null)),
-  })))
-  const basesPorPais = new Map(termometro.map((t) => [t.pais, t.valores]))
-
-
-  const chinaT = termometro[0].valores
-  const eeuuT = termometro[1].valores
-  // El mayor movimiento de cualquier país entre las dos primeras oleadas. Se calcula en vez de
-  // escribirse porque la frase que lo usa deja de ser cierta el día que entre una oleada nueva.
-  const quietas = Math.max(...termometro.map((t) => Math.abs((t.valores[1]?.media ?? 0) - (t.valores[0]?.media ?? 0))))
-  // El singular se decide sobre el número que se **muestra**, no sobre el crudo. Con el crudo, el
-  // mayor movimiento (0,973) se escribe «1,0» y se leía «más de 1,0 puntos».
-  const quietasRedondo = Math.round(quietas * 10) / 10
-  // El mejor evaluado sale de los datos, no del texto: hoy es Japón, y la frase que lo nombra se
-  // corrige sola si deja de serlo. `siempreMejor` es lo que habilita decir «sigue», que es una
-  // afirmación sobre las tres oleadas y no sobre la última.
-  // La primera fila de la figura ya viene ordenada por la última oleada, que es justo lo que la
-  // frase quiere decir: quién encabeza hoy.
-  const mejor = termometro.find((t) => t.pais === figura.filas[0]?.clave) ?? termometro[0]
-  const siempreMejor = encuesta.olas.every((_, i) =>
-    termometro.every((t) => (t.valores[i]?.media ?? 0) <= (mejor.valores[i]?.media ?? 0)))
-  // El titular afirma quién quedó por encima en la última oleada, así que se arma con el dato y
-  // no se escribe: el día que entre una oleada que dé vuelta la serie, el título se da vuelta con
-  // ella en vez de quedar publicado diciendo lo contrario de su propia figura.
-  const chinaSobreEeuu = (chinaT.at(-1)?.media ?? 0) > (eeuuT.at(-1)?.media ?? 0)
-  const pasosEncendidos = encendidos(encuesta.olas)
-  const bases = termometro.flatMap((t) => t.valores.map((v) => v.base)).filter((n) => n > 0)
-  const baseMinima = Math.min(...bases)
-  const baseMaxima = Math.max(...bases)
-
-  const p24 = variableDe(encuesta, 'p24')
-  const p25 = variableDe(encuesta, 'p25')
-  const p26 = variableDe(encuesta, 'p26')
-
-  const confianza = p24
-    ? encuesta.olas.map((ola) => ({ ola, valor: proporcion(todos(ola), p24, [1]).porcentaje, base: todos(ola).length }))
-    : []
-  /**
-   * Las dos figuras de la escena 2.
-   *
-   * **La escena no elige un umbral**: muestra las cuatro categorías a los dos lados de un cero
-   * común y cierra comparando dentro de la persona. Con «mucha» sola, China pasa a Estados Unidos
-   * en 2025; con «mucha o algo», venía arriba desde 2023, y una frase cuyo signo depende de un
-   * corte que la figura no declara es el defecto que ya dejó tres cifras de opinión circulando.
-   */
-  const confianzaFigura = p24 && p25
-    ? figuraConfianza([{ grupo: 'China', variable: p24 }, { grupo: 'Estados Unidos', variable: p25 }], encuesta.olas, todos)
-    : null
-  const balanza = p24 && p25 ? figuraBalanza(encuesta.olas, todos) : null
-  /**
-   * `p26` para la escena 5, armado desde el libro de códigos del artefacto.
-   *
-   * **Ningún código ni etiqueta se escribe acá.** Las categorías salen de la variable, el color de
-   * cada una sale de `SEMANTICOS` por su etiqueta, y el denominador es el de `proporcion`: las
-   * personas que contestaron, que en `p26` son todas las de la oleada porque no tiene faltantes.
-   * Una oleada nueva que agregue o renombre una categoría entra sola.
-   */
-  const catP26 = p26?.categorias ?? []
-  const cuota = (codigo: number, ola: number) =>
-    (p26 ? proporcion(todos(ola), p26, [codigo]) : { porcentaje: 0, base: 0 })
-  const serieDe = (codigo: number) => encuesta.olas.map((ola) => {
-    const { porcentaje: valor, base } = cuota(codigo, ola)
-    return { ola, valor, base }
-  })
-  const proChina = catP26.some((c) => c.codigo === 1) ? serieDe(1) : []
-  const proEeuu = catP26.some((c) => c.codigo === 2) ? serieDe(2) : []
-  /**
-   * El reparto completo, en orden visual: las dos que se cruzan a los extremos y las que no
-   * eligen bando al medio. Es el orden que hace legible la franja, porque deja juntas a las dos
-   * que la escena compara.
-   */
-  const repartoP26 = [2, 3, 4, 1]
-    .map((codigo) => catP26.find((c) => c.codigo === codigo))
-    .filter((c): c is NonNullable<typeof c> => Boolean(c))
-    .map((c) => ({
-      clave: String(c.codigo),
-      etiqueta: c.etiqueta,
-      color: SEMANTICOS[c.etiqueta] ?? NEUTRO,
-      valores: encuesta.olas.map((ola) => cuota(c.codigo, ola).porcentaje),
-    }))
-  const navegar = useNavigate()
-
-  // Lo que dicen las pruebas del ETL sobre las tres oleadas. Las frases de la escena 1 se arman
-  // con esto y no con la diferencia cruda.
-  const contraste = lector(encuesta)
-  const primeraOla = encuesta.olas.at(0) ?? 0
-  const penultimaOla = encuesta.olas.at(-2) ?? 0
-  const ultimaOla = encuesta.olas.at(-1) ?? 0
-  const brechaPrimera = describir(contraste.brecha(primeraOla))
-  const brechaPenultima = describir(contraste.brecha(penultimaOla))
-  const quietasEntreOlas = contraste.todosQuietos(primeraOla, penultimaOla)
-  // Estados Unidos en la escena 2, con «mucha o algo»: sube en la oleada del medio, baja en la
-  // última, y en la serie completa no se distingue del ruido. Las tres cosas salen de la prueba y
-  // no de mirar la figura.
-  const vuelveEeuu = contraste.entre('confia-eeuu', penultimaOla, ultimaOla)
-  const serieEeuu = contraste.entre('confia-eeuu', primeraOla, ultimaOla)
-  // La caída del empate es lo que sostiene el titular de la escena 4: la ventaja de China sale de
-  // ahí y no de Estados Unidos, cuya baja no pasa el contraste.
-  /**
-   * Las dos caídas del **último tramo**, que es del que habla la escena 4.
-   *
-   * **Antes se leía la serie completa y la frase decía «Estados Unidos no se mueve».** Eso es
-   * cierto de 2023→2025 (−3,2, p = 0,10) y **falso** de 2024→2025 (−6,1, p = 0,002), que es el
-   * tramo que la figura está mostrando. Las dos cifras salen del contraste del tramo, así que una
-   * oleada nueva las mueve sola.
-   */
-  const caeElEmpate = contraste.entre('empate-confianza', penultimaOla, ultimaOla)
-  const caeEeuu = contraste.entre('mas-confianza-eeuu', penultimaOla, ultimaOla)
-
-  // **Los cinco pasos del experimento**, que son la segunda mitad de la escena 1.
-  //
-  // Reemplazaron a dos pasos que comparaban izquierda, centro y derecha como tres filas. Decían lo
-  // mismo con menos: que el eje político no ordena la opinión sobre China. El experimento además
-  // muestra **por qué** el monitor publicado encuentra un gradiente donde no lo hay, y eso solo se
-  // puede contar mostrándolo. El hallazgo que se perdió (las dos puntas suben) sigue publicado en
-  // «Sobre los datos».
-  /**
-   * **El vuelco de `p26`, comprobado antes de titularlo.** Tres condiciones: las dos primeras
-   * oleadas favorecen a Estados Unidos, la última a China, y las tres pasan el contraste. Sin las
-   * tres, el titular cae a uno descriptivo en vez de afirmar algo que la figura no sostiene.
-   */
-  const ventajasP26 = encuesta.olas.map((ola) => contraste.ventajaP26(ola))
-  const vuelcoP26 = ventajasP26.length > 1 && ventajasP26.every((v) => v !== null && v.p < 0.05) &&
-    ventajasP26.slice(0, -1).every((v) => (v?.diferencia ?? 0) < 0) &&
-    (ventajasP26.at(-1)?.diferencia ?? 0) > 0
-
-  // Los titulares que el cierre repite, escritos una sola vez: si una oleada nueva cambia uno,
-  // cambia en su escena y en el cierre a la vez.
-  const titularTermometro = `En ${ultimaOla} las personas evalúan mejor a ${chinaSobreEeuu ? 'China que a Estados Unidos' : 'Estados Unidos que a China'}.`
-  const titularConfianza = 'La confianza en China crece; la de Estados Unidos va y vuelve'
-  const titularP26 = vuelcoP26
-    ? `En ${ultimaOla}, alinearse con China supera a alinearse con Estados Unidos`
-    : 'Con qué potencia debería alinearse Chile'
-
-  const regresion = contraste.regresion
-  const primeraDeLaSerie = regresion?.porOla.find((o) => o.ola === primeraOla) ?? null
-  // La escala vertical es una sola para los cinco pasos y para las tres oleadas: si dependiera de
-  // lo que cada paso muestra, el mismo promedio cambiaría de lugar al avanzar el relato.
-  const valoresRegresion = (regresion?.porOla ?? []).flatMap((o) => [
-    ...o.puntos.map((q) => q.media).filter((v): v is number => v !== null),
-    ...o.puntos.flatMap((q) => q.ic ?? []),
-  ])
-  const escalaRegresion = valoresRegresion.length > 0
-    ? escalaRedonda(valoresRegresion, 4)
-    : { min: 0, max: 100 }
-  // El experimento solo se cuenta si el punto que sostiene la recta **la da vuelta**: con la
-  // pendiente y su versión sin ese punto del mismo lado del cero, no hay nada que mostrar.
-  const sostiene = primeraDeLaSerie?.sostiene ?? null
-  const conExperimento = Boolean(
-    regresion && primeraDeLaSerie && sostiene &&
-    primeraDeLaSerie.recta.p < 0.05 && sostiene.recta.p >= 0.05,
-  )
-  const puntoMasPoblado = primeraDeLaSerie
-    ? primeraDeLaSerie.puntos.reduce((mejor, q) => (q.n > mejor.n ? q : mejor), primeraDeLaSerie.puntos[0])
-    : null
-  const totalPrimera = primeraDeLaSerie ? primeraDeLaSerie.puntos.reduce((s, q) => s + q.n, 0) : 0
-
-  // El puente entre las dos mitades de la escena: el alza no viene de un sector. Se nombran los
-  // cortes donde **todos** los grupos se mueven en la misma dirección; el que tiene una excepción
-  // se calla, porque la frase no tiene figura que la respalde y no puede redondear a su favor.
-  const cortesEnteros = (contraste.transversal?.cortes ?? []).filter((c) => c.suben === c.total && c.total >= 3)
-  const conPuente = cortesEnteros.length >= 2
-  // «Por primera vez» es una afirmación sobre toda la serie, así que se comprueba sobre toda la
-  // serie: China arriba y por encima del ruido en la última oleada, y en ninguna anterior.
-  const arriba = (ola: number) => {
-    const b = contraste.brecha(ola)
-    return b !== null && b.diferencia > 0 && b.p < 0.05
-  }
-  const primeraVezArriba = arriba(ultimaOla) && encuesta.olas.slice(0, -1).every((ola) => !arriba(ola))
-
-  // Las oleadas son una secuencia, no tres categorías sueltas: van en un tono de claro a oscuro,
-  // que es la paleta de orden del proyecto. Con tres colores distintos hay que aprenderse cuál es
-  // cuál; con la rampa, más oscuro es más nuevo y no hay nada que memorizar.
-  const tonos = pasosDeOrden(encuesta.olas.length)
-  const serieTermometro = encuesta.olas.map((ola, i) => ({
-    clave: String(ola),
-    etiqueta: String(ola),
-    color: tonos[i],
-  }))
-
-  return (
-    <>      <CapaRecorrido
-        abierta={abierta}
-        alCerrar={() => { navegar('/tablero') }}
-        titulo="Qué se movió entre 2023 y 2025"
-      >
-        {(raiz) => (
-          <>
-            {/* La tapa: el logo y la pregunta, nada más. Lo que dura el recorrido y la salida al
-                tablero ya los dice la barra. La invitación a avanzar la pone `Portada`. */}
-            <Portada raiz={raiz} titulo="¿Qué opina la gente sobre China?">
-              <img
-                src={`${import.meta.env.BASE_URL}icons/iclac.webp`}
-                alt="ICLAC"
-                className="logo-portada h-12 w-auto object-contain"
-              />
-              <h2 className="pregunta-portada my-auto max-w-[22ch] text-balance font-display text-[34px] font-semibold leading-[1.12] text-gray-900">
-                ¿Qué opina la gente sobre China?
-              </h2>
-            </Portada>
-
-            <Escena
-              indice={1}
-              modulo="termometro"
-              raiz={raiz}
-              // La figura es una sola, así que en escritorio va el relato a un lado y la figura al
-              // otro. Las escenas con dos o tres paneles en paralelo no pueden.
-              dosColumnas
-              // Un solo nivel de encabezado, con el hallazgo, como quedó en el laboratorio el
-              // 07-09-2026. Lo que se está mirando bajó al pie de la figura, junto con las bases:
-              // ahí se consulta cuando ya se vieron los puntos, y no compite con el titular.
-              // «Las personas» y no «los chilenos»: la muestra no es probabilística y no habla
-              // por el país.
-              titulo={titularTermometro}
-              cabecera={(activo) => (
-                <AnioDelPaso
-                  olas={encuesta.olas}
-                  tonos={tonos}
-                  // Hasta qué oleada llegó el relato: es la más nueva que el paso enciende.
-                  hasta={Math.max(0, ...encuesta.olas.map((ola, i) => (
-                    termometro.some((t) => pasosEncendidos[activo]?.(t.pais, ola)) ? i : 0
-                  )))}
-                />
-              )}
-              // **Las frases salen de las pruebas, no de restar dos promedios.** La brecha entre
-              // los dos países se calcula dentro de cada persona, que es quien pone las dos notas:
-              // así, «una oleada usó la escala más generosa» deja de ser una explicación posible.
-              // Y donde el intervalo cruza el cero se dice «parejos», no se elige un ganador.
-              frases={[
-                <>
-                  {brechaPrimera?.estado === 'parejos'
-                    ? <>En {primeraOla} los dos estaban <strong>parejos</strong></>
-                    : <>En {primeraOla} <strong>{brechaPrimera?.estado === 'china' ? 'China' : 'Estados Unidos'} estaba arriba</strong></>}
-                  {brechaPenultima && (brechaPenultima.estado === 'parejos'
-                    ? <>, y en {penultimaOla} seguían parejos.</>
-                    : <>, y en {penultimaOla} <strong>{brechaPenultima.estado === 'china' ? 'China' : 'Estados Unidos'}</strong> quedó
-                      arriba por {decimal(brechaPenultima.puntos)} puntos.</>)}
-                </>,
-                <>
-                  {/* **La frase dice lo que la figura muestra.** Antes daba la brecha pareada
-                      (6,5 puntos dentro de la misma persona), que es el estadístico más fuerte y
-                      no tiene dónde verse en el gráfico: el lector leía un número que no está en
-                      ningún punto. La brecha sigue sosteniendo la afirmación, y vive en el pie y
-                      en «Sobre los datos», que es donde se va a buscar el método. */}
-                  <strong>En {ultimaOla} China queda arriba{primeraVezArriba && ' por primera vez'}</strong>:
-                  {' '}sube a {decimal(chinaT.at(-1)?.media ?? 0)} y Estados Unidos baja a{' '}
-                  {decimal(eeuuT.at(-1)?.media ?? 0)}.
-                </>,
-                <>
-                  <strong>{mejor.pais} {siempreMejor ? 'encabeza las tres oleadas' : `encabeza ${encuesta.olas.at(-1)}`}</strong>,
-                  con {decimal(mejor.valores.at(-1)!.media)} en {encuesta.olas.at(-1)}:{' '}
-                  {decimal((mejor.valores.at(-1)?.media ?? 0) - (chinaT.at(-1)?.media ?? 0))} puntos
-                  sobre China.
-                </>,
-                <>
-                  {/* Antes decía «ningún país se movió más de 1,0 puntos». El número era cierto y
-                      no se podía calibrar: en una escala de 0 a 100 con desviación de 28, nadie
-                      sabe si 1,0 es mucho. Con los contrastes se puede afirmar algo más fuerte y
-                      sin número arbitrario. El hecho, en cambio, es el que sostiene el titular:
-                      sin él no se distingue un quiebre de una tendencia que ya venía. */}
-                  <strong>Todo el cambio de la serie ocurre en {ultimaOla}</strong>: entre{' '}
-                  {primeraOla} y {penultimaOla}{' '}
-                  {quietasEntreOlas
-                    ? <>ninguno de los {cardinal(contraste.paises)} países se distingue del ruido de la muestra</>
-                    : <>ningún país se movió más de {decimal(quietas)} {quietasRedondo === 1 ? 'punto' : 'puntos'}</>}.
-                </>,
-              ]}
-              figura={(activo) => (
-                <Puntos
-                  series={serieTermometro}
-                  filas={figura.filas}
-                  escala={figura.escala}
-                  formato={(v) => decimal(v, 1)}
-                  formatoEje={(v) => decimal(v, 0)}
-                  titulo={(fila, serie, valor) => {
-                    const i = encuesta.olas.indexOf(Number(serie.clave))
-                    const v = basesPorPais.get(fila.clave)?.[i]
-                    return `${fila.etiqueta} · ${serie.etiqueta}: ${decimal(valor)} sobre 100 (n = ${numero(v?.base ?? 0)})`
-                  }}
-                  marcas={figura.marcas}
-                  anchoEtiqueta="6.5rem"
-                  compacto
-                  altoFila={40}
-                  radioCreciente
-                  leyenda={false}
-                  // Corto a propósito: en 360 px, la versión larga se partía en tres líneas y se
-                  // pegaba a las marcas del eje.
-                  unidadEje={figura.unidadEje}
-                  rotular={encuesta.olas.length - 1}
-                  visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
-                />
-              )}
-              nota={(
-                // La leyenda va acá, en la esquina de abajo a la derecha del gráfico: el lector la
-                // busca cuando ya vio los puntos, no antes.
-                // El pie mide **lo mismo que la figura**, y por eso va en columna y no al lado de
-                // la leyenda: compartiendo fila, el texto se encogía a 140 px bajo un gráfico de
-                // 328 y la escena crecía 49 px de puro salto de línea.
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs leading-snug text-gray-500">
-                    {/* **Corto porque el alto está contado.** En un iPhone 12 la escena tiene 621 px
-                        útiles y con el pie largo medía 697: el enlace al tablero quedaba bajo el
-                        borde. Lo que se fue es la explicación de «parejos» con su intervalo, que es
-                        material de método y vive completo en «Cómo se hizo el recorrido», a un
-                        toque desde la barra. */}
-                    Un punto por oleada, promedio de quienes contestaron. Bases de{' '}
-                    {numero(baseMinima)} a {numero(baseMaxima)} según país y oleada. «Parejos» y
-                    «arriba» comparan las dos notas dentro de cada persona.
-                  </p>
-                  <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
-                </div>
-              )}
-            />
-
-            {/* **El puente entre las dos historias, ahora como pausa y no como paso.**
-                Era el quinto paso de la escena del termómetro, y la barra lo anunciaba como «paso 5
-                de 9»: el lector no estaba en una pausa, estaba a mitad de una escena, y al entrar
-                el bloque de texto brincaba 187 px porque la figura desaparecía. Como respiro tiene
-                su propia pantalla, la barra dice «Pausa» y no hay figura que se vaya. */}
-            {conExperimento && (
-              <Respiro
-                raiz={raiz}
-                indice={-2}
-                titulo="El alza no se concentra en un solo grupo. ¿Y en el eje político?"
-              >
-                {conPuente
-                  ? <>El alza aparece en {cardinal(cortesEnteros[0].total)} {cortesEnteros[0].etiqueta} y
-                    en {cardinal(cortesEnteros[1].total)} {cortesEnteros[1].etiqueta}. <strong>¿Y en el eje
-                    político?</strong></>
-                  : <>El alza no se concentra en un solo grupo. <strong>¿Y en el eje político?</strong></>}
-              </Respiro>
-            )}
-
-            {/* **El experimento es una escena propia.**
-                Contar el método es contar un hallazgo cuando el método *es* el hallazgo: se muestra
-                la recta que publica el monitor, se marca el punto de treinta personas que la
-                sostiene, se retira y la recta se endereza. Las cifras salen del ETL: si una oleada
-                nueva cambia cuál punto sostiene la recta, las frases se corrigen solas, y si el
-                punto deja de darla vuelta, la escena entera desaparece. */}
-            {conExperimento && regresion && (
-              <Escena
-                indice={2}
-                modulo="ideologia"
-                raiz={raiz}
-                dosColumnas
-                titulo="La posición política no ordena la opinión sobre China"
-                cabecera={(activo) => (
-                  <AnioDelPaso
-                    olas={encuesta.olas}
-                    tonos={tonos}
-                    // El experimento trabaja sobre la primera oleada, y su último paso muestra las
-                    // tres: el año grande dice lo mismo que la figura.
-                    hasta={activo >= 3 ? encuesta.olas.length - 1 : 0}
-                  />
-                )}
-                frases={[
-                  <>
-                    El monitor traza una recta y encuentra inclinación:{' '}
-                    <strong>{decimal(Math.abs(primeraDeLaSerie?.recta.b ?? 0))} puntos menos por cada paso
-                    hacia la derecha</strong>.
-                  </>,
-                  // **El intervalo tiene que decir de qué es.** Antes decía «cuyo promedio podría
-                  // estar entre 31 y 55» sin nombrar qué promedio, y la frase siguiente repetía la
-                  // cifra de personas que esta acababa de dar.
-                  <>
-                    Toda esa inclinación la sostiene <strong>un solo punto</strong>: las{' '}
-                    {numero(sostiene?.n ?? 0)} personas del {sostiene?.x}, que evalúan a China entre{' '}
-                    {decimal(primeraDeLaSerie?.puntos.find((q) => q.x === sostiene?.x)?.ic?.[0] ?? 0, 0)} y{' '}
-                    {decimal(primeraDeLaSerie?.puntos.find((q) => q.x === sostiene?.x)?.ic?.[1] ?? 0, 0)}.
-                  </>,
-                  <>
-                    <strong>Sin ellas la recta se endereza</strong>: {decimal(sostiene?.recta.b ?? 0)}{' '}
-                    puntos, y la horizontal entra en el rango.
-                  </>,
-                  <>
-                    Las otras oleadas dicen lo mismo: <strong>la posición política no ordena la
-                    opinión sobre China</strong>.
-                  </>,
-                ]}
-                figura={(activo) => (
-                  <Regresion
-                    datos={regresion}
-                    ola={primeraOla}
-                    escala={{ ...escalaRegresion, paso: Math.max(5, Math.round((escalaRegresion.max - escalaRegresion.min) / 3)) }}
-                    tonos={tonos}
-                    olas={encuesta.olas}
-                    paso={activo + 1}
-                    etiquetaIzquierda="1 · izquierda"
-                    etiquetaDerecha="derecha · 10"
-                    unidadEje="Evaluación de China de 0 a 100"
-                  />
-                )}
-                nota={(activo, reducido) => (
-                  // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que
-                  // retira un punto seguiría declarando la muestra entera. La leyenda de oleadas
-                  // aparece solo en el último, que es donde el color pasa a significar un año:
-                  // antes hay una sola oleada en la figura y la clave ofrecería dos colores que
-                  // no están dibujados.
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs leading-snug text-gray-500">
-                      {/* Corto a propósito: el eje ya dice qué es 1 y qué es 10, y en un teléfono
-                          de 664 px de alto cada línea del pie se la quita a la figura. */}
-                      Cada punto es un promedio; su tamaño dice cuánta gente hay.{' '}
-                      {activo >= 3 || reducido
-                        ? <>Las tres oleadas, con sus muestras completas. La franja de cada recta es el rango de pendientes compatibles con los datos.</>
-                        : activo === 2
-                          ? <>Oleada {primeraOla} sin quienes se ubican en el {sostiene?.x}: {numero(sostiene?.recta.n ?? 0)} personas. El punto retirado queda hueco, no borrado.</>
-                          : activo === 1
-                            ? <>Oleada {primeraOla}, {numero(totalPrimera)} personas. La barra vertical es el intervalo del 95 % del promedio de ese punto.</>
-                            : <>Oleada {primeraOla}, {numero(totalPrimera)} personas, de las cuales{' '}
-                              {porcentaje(100 * (puntoMasPoblado?.n ?? 0) / (totalPrimera || 1), 0)} se ubica
-                              en el {puntoMasPoblado?.x}. La recta es una regresión lineal simple de la
-                              evaluación sobre la escala de ideología.</>}
-                    </p>
-                    {/* La leyenda del último paso lleva la pendiente de cada oleada: en la figura,
-                        dos de las tres rectas terminan a menos de un punto y sus rótulos se pisan.
-                        Acá el color ata cada cifra a su recta y no hay nada que se superponga. */}
-                    {(activo >= 3 || reducido) && (
-                      <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
-                        {encuesta.olas.map((ola, i) => {
-                          const r = regresion?.porOla.find((o) => o.ola === ola)?.recta
-                          const nula = r ? r.ic[0] <= 0 && r.ic[1] >= 0 : true
-                          return (
-                            <li key={ola} className="flex items-center gap-1.5 text-[11px] tabular-nums text-gray-500">
-                              <span
-                                className="inline-block h-0.5 w-4 shrink-0 rounded-full"
-                                style={{ backgroundColor: tonos[i] }}
-                              />
-                              {ola}
-                              {r && <> {r.b > 0 ? '+' : ''}{decimal(r.b, 2)}{nula && ' ns'}</>}
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              />
-            )}
-
-            {/* **El respiro entre las dos escenas.** La 1 termina midiendo evaluación y la 2 abre
-                midiendo confianza, que son dos cosas distintas: sin la frase, el lector lee la
-                segunda como si siguiera hablando de la primera. No es una escena y no se numera
-                (ver `Respiro` en `CapaRecorrido.tsx`). */}
-            <Respiro raiz={raiz} titulo="Entonces la gente evalúa mejor que antes a China, ¿pero confía en ella?">
-              Ok, entonces la gente evalúa mejor que antes a China.{' '}
-              <strong>¿Pero confía en ella?</strong>
-            </Respiro>
-
-            <Escena
-              indice={3}
-              modulo="confianza-china"
-              raiz={raiz}
-              // Una sola figura por paso, así que en escritorio va el relato a un lado y la figura
-              // al otro, igual que la escena 1.
-              dosColumnas
-              titulo={titularConfianza}
-              frases={[
-                // **Un extremo, no los dos.** Antes esta frase pedía cuatro cifras y dos cortes
-                // distintos en una sola oración, sobre una figura que ya tiene seis filas y cuatro
-                // categorías. El movimiento de «poca o ninguna» se ve en la figura sin narrarlo.
-                <>
-                  En China <strong>se corre el reparto entero</strong>: «mucha» se duplica, de{' '}
-                  {porcentaje(confianza.at(0)?.valor ?? 0, 1)} a{' '}
-                  {porcentaje(confianza.at(-1)?.valor ?? 0, 1)}.
-                </>,
-                // **La frase anterior decía «no es que Estados Unidos pierda confianza».** Con la
-                // escala entera a la vista eso es falso en el último tramo: con «mucha o algo»
-                // pierde por encima del ruido. Lo que sí se sostiene, y es lo que dice ahora, es
-                // que en la serie completa vuelve a donde estaba.
-                <>
-                  {/* **La frase nombra su corte.** El titular dice que Estados Unidos va y vuelve,
-                      que solo es cierto sumando «mucha» y «algo»: con «mucha» sola sube y se queda
-                      (13,3 → 17,1, p = 0,029). La frase anterior habla de «mucha», así que sin
-                      nombrarlo acá el lector cree que sigue leyendo la misma vara. */}
-                  Sumando <strong>«mucha» y «algo»</strong>, Estados Unidos sube en {encuesta.olas[1]} y{' '}
-                  <strong>vuelve</strong> en {ultimaOla}
-                  {vuelveEeuu && vuelveEeuu.p < 0.05 && <> ({decimal(vuelveEeuu.diferencia)} puntos)</>}:{' '}
-                  {serieEeuu && serieEeuu.p >= 0.05
-                    ? <>en la serie completa no se distingue del ruido</>
-                    : <>en la serie completa suma {decimal(serieEeuu?.diferencia ?? 0)} puntos</>}.
-                </>,
-              ]}
-              figura={(activo, reducido) => (confianzaFigura && (
-                <Divergente
-                  categorias={confianzaFigura.categorias}
-                  filas={confianzaFigura.filas}
-                  extremo={confianzaFigura.extremo}
-                  formato={(v) => decimal(v, 0)}
-                  altoFila={26}
-                  anchoEtiqueta="2.6rem"
-                  // El primer paso habla solo de China. Las filas de Estados Unidos siguen en el
-                  // documento con opacidad cero, y la escala ya está calculada sobre las seis, así
-                  // que ningún segmento cambia de largo al encenderse.
-                  visible={(clave) => reducido || activo >= 1 || clave.startsWith('p24-')}
-                  // **Un solo foco, y solo donde la frase señala un segmento.** El paso 1 dice que
-                  // «mucha» se duplica en China, así que se marca esa categoría en la última
-                  // oleada, que es donde termina la cifra. El paso 2 habla de «mucha» **más**
-                  // «algo» a lo largo de la serie: eso no es un segmento, son dos categorías por
-                  // tres oleadas, y marcarlas todas llenaría la figura. Ahí no va marca.
-                  enfatizar={(fila, categoria) =>
-                    activo === 0 && fila.clave === `p24-${ultimaOla}` && categoria.etiqueta === 'Mucha'}
-                  unidadEje="Porcentaje de quienes contestaron. El 0 del eje es el borde entre los dos lados, y cada fila suma 100."
-                  titulo={(fila, categoria, valor) =>
-                    `${fila.grupo ?? ''} ${fila.etiqueta} · ${categoria.etiqueta}: ${decimal(valor, 1)} % (n = ${numero(fila.base)})`}
-                />
-              ))}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  Las cuatro respuestas de la pregunta, sin elegir un umbral: con «mucha» sola, China
-                  queda encima de Estados Unidos solo en {ultimaOla}; con «mucha o algo», ya estaba
-                  encima en {primeraOla}.
-                </p>
-              )}
-            />
-
-            {/* **La segunda pausa, y por la misma razón que la primera.** Acá el recorrido cambia
-                de figura: deja de mirar el reparto de cada potencia y pasa a mirar a cada persona.
-                Sin pausa, el cambio ocurría en el mismo paso en que cambiaba la frase, y el bloque
-                se recolocaba de golpe (medido: la figura pasaba de 412 px a 291 y el titular bajaba
-                60 px). */}
-            {balanza && (
-              <Respiro
-                raiz={raiz}
-                indice={-3}
-                titulo="Los dos repartos miran al país entero. ¿Y si miramos a cada persona?"
-              >
-                Los dos repartos miran al país entero. <strong>¿Y si miramos a cada persona?</strong>
-              </Respiro>
-            )}
-
-            {balanza && (
-              <Escena
-                indice={4}
-                modulo="confianza-eeuu"
-                raiz={raiz}
-                dosColumnas
-                titulo="La ventaja de China crece, y caen tanto el empate como Estados Unidos"
-                frases={[
-                  <>
-                    Cada persona contesta por las dos potencias, así que se puede restar dentro del
-                    caso. En {primeraOla} y {penultimaOla} <strong>manda el empate</strong>:{' '}
-                    {porcentaje(balanza.filas[0].valores[1], 1)} y{' '}
-                    {porcentaje(balanza.filas[1].valores[1], 1)} les tienen la misma confianza a las dos.
-                  </>,
-                  <>
-                    En {ultimaOla} quienes <strong>confían más en China</strong> saltan a{' '}
-                    {porcentaje(balanza.filas[balanza.filas.length - 1].valores[2], 1)}. El empate cae{' '}
-                    {decimal(Math.abs(caeElEmpate?.diferencia ?? 0))} puntos y Estados Unidos{' '}
-                    {decimal(Math.abs(caeEeuu?.diferencia ?? 0))}: los dos pasan el contraste.
-                  </>,
-                ]}
-                figura={(activo, reducido) => (
-                  <Divergente
-                    categorias={balanza.categorias}
-                    filas={balanza.filas}
-                    extremo={balanza.extremo}
-                    // **El mismo redondeo que la frase.** La frase cita 39,7 % y la barra decía
-                    // 40: dos números para el mismo dato en la misma pantalla. Con el decimal
-                    // puesto, el número que se lee arriba es el que está en la figura.
-                    formato={(v) => decimal(v, 1)}
-                    minimoRotulo={14}
-                    altoFila={30}
-                    anchoEtiqueta="2.6rem"
-                    // La última oleada entra en el segundo paso: es donde ocurre el salto, y verlo
-                    // aparecer es el cambio visible que ese paso se gana.
-                    visible={(clave) => reducido || activo >= 1 || clave !== `balanza-${ultimaOla}`}
-                    enfatizar={(fila, cat) => !reducido && activo >= 1 && fila.clave === `balanza-${ultimaOla}` && cat.lado === 1}
-                    unidadEje="Cada persona contesta por las dos potencias, así que la comparación va dentro del caso. «La misma» queda a caballo del cero."
-                    titulo={(fila, categoria, valor) =>
-                      `${fila.etiqueta} · ${categoria.etiqueta}: ${decimal(valor, 1)} % (n = ${numero(fila.base)})`}
-                  />
-                )}
-                nota={(
-                  <p className="text-xs leading-snug text-gray-500">
-                    Sobre quienes contestaron las dos preguntas: {balanza.filas.map((f) => numero(f.base)).join(', ')} personas.
-                    Las tres categorías suman 100, así que lo que gana una es lo que pierden las otras
-                    dos: la figura no dice que las mismas personas hayan cambiado de lado. Entre{' '}
-                    {primeraOla} y {ultimaOla}, la caída de Estados Unidos no se distingue del ruido.
-                  </p>
-                )}
-              />
-            )}
-
-            {/* **La tercera pausa.** Acá el recorrido cambia de pregunta, no solo de figura: hasta
-                la escena 4 mide opiniones (cuánto te gusta un país, cuánto confías en él) y la 5
-                pregunta qué debería hacer Chile. Es el salto más grande del relato y no puede
-                ocurrir en el mismo gesto en que cambia la frase.
-
-                La primera mitad cierra lo que quedó establecido y la segunda abre lo que viene,
-                que es el patrón de los otros tres respiros. **Y cierra por el método, no por el
-                resultado**: «confiar más en un país» describe la comparación dentro de la persona
-                que acaba de hacer la escena 4, sin repetir ninguna de sus cifras, que es lo que
-                evita arrastrar una afirmación de un tramo al otro. */}
-            <Respiro
-              raiz={raiz}
-              indice={-4}
-              titulo="Una cosa es confiar más en un país. ¿Con cuál debería alinearse Chile?"
-            >
-              Una cosa es confiar más en un país. <strong>¿Con cuál debería alinearse Chile?</strong>
-            </Respiro>
-
-            {/*
-              * **La escena 5, rehecha el 08-09-2026.** Antes afirmaba que el no alineamiento se
-              * erosiona «y lo que pierde se va a China», con tres paneles apilados. Salió por tres
-              * razones medidas, no por gusto:
-              *
-              *  - **La aritmética no daba.** El no alineamiento pierde 5,0 puntos y China gana
-              *    8,0: no puede venir todo de ahí.
-              *  - **Ninguna de las dos categorías del no alineamiento se mueve sola** en ningún
-              *    par de oleadas. El hallazgo dependía de sumarlas y de mirar solo las puntas, y
-              *    hay una prueba que lo deja escrito (`scripts/contrastes.test.mjs`).
-              *  - **No cabía.** Bajo 640 px la grilla de tres columnas colapsa y los paneles se
-              *    apilan: 1.088 px de escena contra 857 de pantalla, con el tercer panel y la nota
-              *    entera bajo el borde.
-              *
-              * Lo que quedó es el hallazgo firme de la pregunta: el vuelco. Las tres oleadas pasan
-              * el contraste, dos hacia Estados Unidos y la última hacia China, así que la línea
-              * base no es una oleada suelta.
-              */}
-            <Escena
-              indice={5}
-              modulo="posicionamiento"
-              raiz={raiz}
-              // Una figura sola, así que en escritorio va el relato a un lado y la figura al otro.
-              dosColumnas
-              // **El titular se comprueba antes de escribirse.** Si una oleada nueva deja el vuelco
-              // sin sustento, el título cambia solo en vez de quedar contradiciendo a su figura.
-              titulo={titularP26}
-              frases={[
-                <>
-                  En {primeraOla} y {penultimaOla} <strong>ganaba Estados Unidos</strong>:{' '}
-                  {porcentaje(proEeuu.at(0)?.valor ?? 0, 1)} y{' '}
-                  {porcentaje(proEeuu.at(1)?.valor ?? 0, 1)} contra{' '}
-                  {porcentaje(proChina.at(0)?.valor ?? 0, 1)} y{' '}
-                  {porcentaje(proChina.at(1)?.valor ?? 0, 1)}.
-                </>,
-                <>
-                  <strong>En {ultimaOla} se da vuelta:</strong> China llega a{' '}
-                  {porcentaje(proChina.at(-1)?.valor ?? 0, 1)} y Estados Unidos baja a{' '}
-                  {porcentaje(proEeuu.at(-1)?.valor ?? 0, 1)}.
-                </>,
-              ]}
-              figura={(activo, reducido) => (
-                <BarrasPosicionamiento
-                  olas={encuesta.olas}
-                  reparto={repartoP26}
-                  mostrarUltima={activo >= 1}
-                  reducido={reducido}
-                />
-              )}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  Porcentaje de respuestas a cómo debería posicionarse Chile. Bases por oleada:{' '}
-                  {proChina.map((p) => numero(p.base)).join(', ')} personas; sin respuestas faltantes.
-                </p>
-              )}
-            />
-
-            {/* **El cierre**, decidido en `laboratorio/cierre-recorrido.html` el 15-09-2026: los
-                titulares de las escenas 1, 3 y 5, y después la salida. La 5 entra solo con el
-                vuelco comprobado: sin él su titular describe la pregunta y no concluye nada, y el
-                cierre es una lista de conclusiones. */}
-            <Cierre
-              raiz={raiz}
-              titulo={`Lo que se movió entre ${primeraOla} y ${ultimaOla}`}
-              frases={[
-                { escena: 1, texto: titularTermometro },
-                { escena: 3, texto: titularConfianza },
-                ...(vuelcoP26 ? [{ escena: 5, texto: titularP26 }] : []),
-              ]}
-              invitacion="¿Qué más nos puede contar la encuesta? Verifícalo tú en el tablero de nuestras preguntas destacadas y en el explorador de preguntas."
-            />
-          </>
-        )}
-      </CapaRecorrido>
-    </>
-  )
-}
-
-function Tablero ({ encuesta, casos, corte, soloIndependientes, olas }: {
-  encuesta: Encuesta
-  casos: ReturnType<typeof filtrar>
-  corte: string | null
-  soloIndependientes: boolean
-  olas: number[]
-}) {
-  // De qué figura le hablaron. El recorrido enlaza `#/tablero?foco=termometro`, y el tablero
-  // lleva la vista a ese módulo y lo marca: en una rejilla de veintisiete tarjetas, «está más
-  // abajo» no es una respuesta.
-  const [parametros] = useSearchParams()
-  const foco = parametros.get('foco')
-  useEffect(() => {
-    if (!foco) return
-    const nodo = document.getElementById(`modulo-${foco}`)
-    // `start` y no `center`: el termómetro mide más que la pantalla, y centrarlo deja su título
-    // (y su pregunta) arriba del borde. El aire bajo los pegajosos lo pone `scroll-mt-40`.
-    nodo?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [foco])
-
-  return (
-    <section className="mx-auto max-w-5xl px-4 py-10">
-      <h2 className="font-display text-2xl font-semibold">El tablero</h2>
-      <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Los módulos van agrupados por tema, no en secuencia: el orden no afirma nada. Los controles de
-        arriba gobiernan todas las figuras a la vez.
-      </p>
-
-      {encuesta.bloques.map((bloque) => {
-        const suyos = MODULOS.filter((m) => m.bloque === bloque.id)
-        if (suyos.length === 0) return null
-        return (
-          <div key={bloque.id} className="mt-8">
-            <h3 className="mb-3 border-b border-gray-200 pb-1 font-display text-sm font-semibold uppercase tracking-wide text-gray-500">
-              {bloque.titulo}
-            </h3>
-            <div className="grid gap-3 md:grid-cols-6">
-              {suyos.map((def) => {
-                if (def.forma === 'multiple') {
-                  return (
-                    <MultipleFigura
-                      key={def.id}
-                      definicion={def}
-                      encuesta={encuesta}
-                      casos={casos}
-                      corte={corte}
-                      destacado={def.id === foco}
-                    />
-                  )
-                }
-                const variable = variableDe(encuesta, def.variable)
-                if (!variable) return null
-                return (
-                  <Figura
-                    key={def.id}
-                    definicion={def}
-                    variable={variable}
-                    encuesta={encuesta}
-                    casos={casos}
-                    corte={corte}
-                    soloIndependientes={soloIndependientes}
-                    olas={olas}
-                    destacado={def.id === foco}
-                  />
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
-    </section>
-  )
-}
-
-function Figura ({
-  definicion, variable, encuesta, casos, corte, soloIndependientes, olas, destacado,
-}: {
-  definicion: typeof MODULOS[number]
-  variable: NonNullable<ReturnType<typeof variableDe>>
-  encuesta: Encuesta
-  casos: ReturnType<typeof filtrar>
-  corte: string | null
-  soloIndependientes: boolean
-  olas: number[]
-  destacado: boolean
-}) {
-  // Con corte activo la figura muestra la distribución por grupo; sin corte, la serie por
-  // oleada. Son dos preguntas distintas y no tiene sentido responder las dos a la vez.
-  // `por-region` e `ideologia` ya son desagregaciones: aplicarles el corte encima cruzaría
-  // dos variables, que es justo lo que la muestra no aguanta.
-  // `termometro` entra acá porque **se desagrega él mismo**: con corte cambia sus filas de países
-  // a grupos. Sin esta línea caía en la rama de distribución, que a una variable continua de 0 a
-  // 100 le pide una categoría por valor: la tarjeta medía 7.667 px.
-  const yaDesagrega = definicion.forma === 'por-region' || definicion.forma === 'ideologia' ||
-    definicion.forma === 'densidad' || definicion.forma === 'termometro'
-  if (corte && !yaDesagrega) {
-    const agregado = distribucion(casos, variable, { excluidos: definicion.excluidos })
-    const orden = CORTES.find((c) => c.nombre === corte)?.orden
-    const grupos = porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({
-      etiqueta: g.etiqueta,
-      agregado: distribucion(g.casos, variable, { excluidos: definicion.excluidos }),
-    }))
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={agregado.base}>
-        <Distribucion agregado={agregado} grupos={grupos} />
-      </Modulo>
-    )
-  }
-
-  if (definicion.forma === 'termometro') {
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={media(casos, definicion.variable).base}>
-        <TermometroTablero
-          encuesta={encuesta}
-          casos={casos}
-          corte={corte}
-          olas={olas}
-          variable={definicion.variable}
-        />
-      </Modulo>
-    )
-  }
-
-  if (definicion.forma === 'densidad') {
-    const base = media(casos, definicion.variable).base
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={base}>
-        <Densidad encuesta={encuesta} casos={casos} corte={corte} variable={definicion.variable} />
-      </Modulo>
-    )
-  }
-
-  if (definicion.forma === 'ideologia') {
-    const base = media(casos, definicion.variable).base
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={base}>
-        <Ideologia
-          encuesta={encuesta}
-          olas={olas}
-          soloIndependientes={soloIndependientes}
-          variable={definicion.variable}
-        />
-      </Modulo>
-    )
-  }
-
-  if (definicion.forma === 'por-region') {
-    const agregado = distribucion(casos, variable)
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={agregado.base}>
-        <PorRegion encuesta={encuesta} casos={casos} variable={variable} />
-      </Modulo>
-    )
-  }
-
-  if (definicion.forma === 'distribucion') {
-    const agregado = distribucion(casos, variable, { excluidos: definicion.excluidos })
-    return (
-      <Modulo destacado={destacado} definicion={definicion} variable={variable} base={agregado.base}>
-        <Distribucion agregado={agregado} />
-      </Modulo>
-    )
-  }
-
-  const puntos = serie(encuesta, variable, (c) => valorDe(definicion, c, variable), { soloIndependientes })
-  const base = definicion.forma === 'serie-media'
-    ? media(casos, definicion.variable).base
-    : distribucion(casos, variable, { excluidos: definicion.excluidos }).base
-
-  return (
-    <Modulo destacado={destacado} definicion={definicion} variable={variable} base={base}>
-      <BarrasPorOla puntos={puntos} unidad={definicion.forma === 'serie-media' ? 'media' : 'porcentaje'} activas={olas} />
-    </Modulo>
-  )
-}
-
-/**
- * El termómetro en el tablero: **la misma figura del recorrido**, con la misma escala y el mismo
- * orden de filas (ver `nucleo/termometro.ts`).
- *
- * **Sin corte, las filas son los países.** Un 65,8 solo no significa nada, que es lo que la bajada
- * del módulo viene prometiendo desde el principio y la figura no cumplía.
- *
- * **Con un corte activo, las filas son los grupos y el país es solo China.** La pregunta cambia:
- * ya no es «cómo se compara China con los otros» sino «quiénes evalúan mejor a China». Cinco
- * países por seis grupos serían treinta filas, que no se leen. Es una decisión del cliente
- * (07-09-2026), no una limitación técnica.
- */
-function TermometroTablero ({ encuesta, casos, corte, olas, variable }: {
-  encuesta: Encuesta
-  casos: ReturnType<typeof filtrar>
-  corte: string | null
-  olas: number[]
-  variable: string
-}) {
-  const activas = encuesta.olas.filter((o) => olas.includes(o))
-  const tonos = pasosDeOrden(activas.length)
-  const series = activas.map((ola, i) => ({ clave: String(ola), etiqueta: String(ola), color: tonos[i] }))
-  const deOla = (lista: ReturnType<typeof filtrar>, ola: number) => lista.filter((c) => Number(c.ola) === ola)
-
-  // Sin corte, una fila por país; con corte, una fila por grupo y solo China.
-  const orden = CORTES.find((c) => c.nombre === corte)?.orden
-  const fuentes = corte
-    ? porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({ clave: g.etiqueta, etiqueta: g.etiqueta, casos: g.casos, campo: variable }))
-    : TERMOMETRO.map((p) => ({ clave: p.pais, etiqueta: p.pais, casos, campo: p.nombre }))
-
-  const medidas = fuentes.map((f) => ({
-    clave: f.clave,
-    etiqueta: f.etiqueta,
-    resumen: activas.map((ola) => media(deOla(f.casos, ola), f.campo)),
-  }))
-
-  const figura = figuraTermometro(medidas.map((m) => ({
-    clave: m.clave,
-    etiqueta: m.etiqueta,
-    valores: m.resumen.map((r) => (r.base > 0 ? r.media : null)),
-  })))
-  const bases = new Map(medidas.map((m) => [m.clave, m.resumen]))
-
-  if (figura.filas.length === 0 || activas.length === 0) {
-    return <p className="text-sm text-gray-500">Sin casos para el recorte elegido.</p>
-  }
-
-  return (
-    <Puntos
-      series={series}
-      filas={figura.filas}
-      escala={figura.escala}
-      marcas={figura.marcas}
-      unidadEje={figura.unidadEje}
-      formato={(v) => decimal(v, 1)}
-      formatoEje={(v) => decimal(v, 0)}
-      titulo={(fila, serie, valor) => {
-        const i = activas.indexOf(Number(serie.clave))
-        const r = bases.get(fila.clave)?.[i]
-        return `${fila.etiqueta} · ${serie.etiqueta}: ${decimal(valor)} sobre 100 (n = ${numero(r?.base ?? 0)})`
-      }}
-      rotular={activas.length - 1}
-      radioCreciente
-      anchoEtiqueta="9rem"
-    />
-  )
-}
-
-/**
- * Los módulos de selección múltiple no tienen una variable en el diccionario: su `variable` es
- * el id de un grupo de columnas binarias. Por eso van por su propio camino, con una ficha
- * sintética que le da al pie del módulo lo que necesita.
- */
-function MultipleFigura ({
-  definicion, encuesta, casos, corte, destacado,
-}: {
-  definicion: typeof MODULOS[number]
-  encuesta: Encuesta
-  casos: ReturnType<typeof filtrar>
-  corte: string | null
-  destacado: boolean
-}) {
-  const grupo = encuesta.multiples.find((m) => m.id === definicion.variable)
-  if (!grupo) return null
-
-  const olas = [...new Set(grupo.opciones.flatMap((o) => o.olas))].sort()
-  const variable = {
-    nombre: grupo.id,
-    etiqueta: grupo.titulo,
-    tipo: 'selección múltiple',
-    olas,
-    serie: false,
-    comparabilidad: null,
-    nota: null,
-    bloque: definicion.bloque,
-    categorias: null,
-  }
-
-  const datos = multirespuesta(casos, grupo)
-
-  // Con corte activo se contrasta contra el primer grupo, en vez de dibujar una barra por
-  // categoría: con nueve opciones y cinco grupos serían cuarenta y cinco barras.
-  const orden = CORTES.find((c) => c.nombre === corte)?.orden
-  const grupos = corte ? porGrupo(casos, corte, encuesta.variables, orden) : []
-  const contraste = grupos.length > 0
-    ? { etiqueta: grupos[0].etiqueta, datos: multirespuesta(grupos[0].casos, grupo) }
-    : undefined
-
-  return (
-    <Modulo destacado={destacado} definicion={definicion} variable={variable} base={datos.base}>
-      <Menciones datos={datos} contraste={contraste} />
-    </Modulo>
-  )
-}
-
-/**
  * La vista «Sobre los datos»: lo que hay que saber antes de citar una cifra.
  *
  * Era el pie de la página única. Como vista tiene destino propio en el nav y en el pie de
@@ -1366,8 +202,8 @@ function MultipleFigura ({
  * qué está parada.
  */
 function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
-  // Mismo patrón que el tablero: `#/datos?foco=metodo-recorrido` lleva la vista al bloque. Es lo
-  // que hace que el enlace desde el recorrido caiga en la sección y no al principio de la página.
+  // `#/datos?foco=metodo-<id>` lleva la vista al bloque. Es lo que hace que el enlace desde una
+  // historia caiga en su sección y no al principio de la página.
   const [parametros] = useSearchParams()
   const foco = parametros.get('foco')
   useEffect(() => {
@@ -1417,7 +253,7 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
           </li>
           <li>
             <strong>No es un panel.</strong> Son tres cortes transversales. 159 personas participaron en
-            más de una oleada y se pueden excluir con el control del tablero.
+            más de una oleada y se pueden excluir con el control del explorador.
           </li>
           <li>
             <strong>Los porcentajes van sobre respuestas efectivas</strong>, sin perdidos. Cada figura
@@ -1427,18 +263,20 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
 
         {encuesta.contrastes && <Contrastes contrastes={encuesta.contrastes} olas={encuesta.olas} />}
 
+        {/* `metodo-recorrido` queda como ancla para los enlaces ya repartidos. */}
         <div id="metodo-recorrido">
           <MetodoRecorrido encuesta={encuesta} />
         </div>
+        <MetodoHistorias encuesta={encuesta} />
 
         <h3 className="mt-8 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h3>
         <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
-          <li>Los textos del recorrido viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
+          <li>Los textos de las historias viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
           <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
           <li>
             El sitio todavía no está en inglés ni en chino: el selector de idioma cambia el nav, los
-            títulos del encabezado y el formato de los números, pero las figuras, sus notas y el
-            recorrido siguen en español.
+            títulos del encabezado y el formato de los números, pero las figuras, sus notas y las
+            historias siguen en español.
           </li>
         </ul>
       </div>

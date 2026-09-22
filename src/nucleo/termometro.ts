@@ -4,16 +4,16 @@ import { numero } from '../locale'
 /**
  * El trato de la figura del termómetro, en un solo lugar.
  *
- * **El recorrido y el tablero muestran la misma pregunta y tienen que verse igual.** Hasta el
+ * **El recorrido y el tablero mostraban la misma pregunta y tenían que verse igual.** Hasta el
  * 07-09-2026 no se parecían en nada: el recorrido dibujaba cinco países en filas con un punto por
  * oleada, y el tablero una sola línea de tres puntos estirada a una tarjeta de ancho completo,
  * con los números a 91 px y el módulo midiendo 1.385 px de alto. Y con un corte activo era peor:
  * la variable es continua de 0 a 100, así que pedirle una distribución por categoría producía un
  * centenar de filas y una tarjeta de 4.247 px.
  *
- * Acá viven las decisiones que las dos vistas comparten: qué escala, en qué orden van las filas y
- * qué dice el eje. Cada vista pone sus filas y su comportamiento (el recorrido enciende por paso,
- * el tablero responde al corte), pero **ninguna de las dos elige su propia escala**.
+ * Acá viven qué escala, en qué orden van las filas y qué dice el eje. El tablero salió de la app
+ * (22-09-2026) y hoy solo la usa «La mirada», pero la regla sigue: si otra vista vuelve a dibujar
+ * el termómetro, pasa por acá y **no elige su propia escala**.
  */
 
 export interface FilaMedia {

@@ -3,7 +3,7 @@ import type { Caso, Encuesta, Multiple, Variable } from './tipos'
 /**
  * El único lugar donde se calcula un porcentaje.
  *
- * Lo usan los módulos del tablero, el recorrido y el explorador. La razón de que sea uno
+ * Lo usan las historias y el explorador. La razón de que sea uno
  * solo es que hay **dos criterios de denominador circulando en la misma casa**: el monitor
  * publicado calcula sobre todos los casos, incluidos los que no contestaron, y el Policy
  * Paper 2023 calcula sobre respuestas efectivas. Nuestro ETL reproduce las dieciocho cifras
@@ -43,7 +43,7 @@ export interface Resumen {
   total: number
 }
 
-/** Un corte demográfico del tablero. `null` es «sin corte». */
+/** Un corte demográfico del explorador. `null` es «sin corte». */
 export type Corte = string | null
 
 export interface Recorte {

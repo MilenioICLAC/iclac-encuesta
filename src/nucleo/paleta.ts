@@ -26,16 +26,6 @@
 export const IDENTIDAD = ['#00998C', '#E8632A', '#2A6FD6'] as const
 
 /**
- * **Identidad en figuras apiladas o de barras contiguas**, donde solo se tocan los vecinos.
- * Ese caso admite seis: la comprobación es sobre pares adyacentes, no sobre todos.
- *
- * Lo usa el desglose por región, cuyas cuatro categorías (inversor, comprador, proveedor,
- * competidor) son nominales: no hay un orden entre ellas y pintarlas con una rampa insinuaría
- * uno.
- */
-export const IDENTIDAD_CONTIGUA = ['#00998C', '#E8632A', '#2A6FD6', '#C64A8E', '#C98500', '#6B4FC4'] as const
-
-/**
  * **Orden**, para categorías cuya secuencia significa algo: tramos de edad, nivel educacional,
  * nivel socioeconómico, macrozona de norte a sur, impacto de bajo a muy alto.
  *
@@ -49,6 +39,14 @@ export const IDENTIDAD_CONTIGUA = ['#00998C', '#E8632A', '#2A6FD6', '#C64A8E', '
  * macrozonas en vez de dieciséis regiones.
  */
 export const ORDEN = ['#6ABDB4', '#2AA69B', '#008C81', '#006B62', '#004A44', '#002E29'] as const
+
+/**
+ * **Estratos de exposición del diseño muestral**, de Bajo a Muy alto: una rampa ordinal propia, en
+ * naranja, porque el teal de `ORDEN` ya dice «oleada» en las mismas historias. Validada el
+ * 22-09-2026 con `validate_palette.js --ordinal` sobre blanco: un solo tono (6°), luminosidad
+ * monótona con saltos ≥ 0,06 y el extremo claro a 2,02:1. El número va en `tintaSobre()`.
+ */
+export const EXPOSICION = ['#EFA67A', '#D9733A', '#A84D17', '#6B2E0B'] as const
 
 /**
  * Toma `n` pasos de la rampa, repartidos de punta a punta.
@@ -101,3 +99,21 @@ export const SEMANTICOS: Record<string, string> = {
 
 /** Gris de reserva, para lo que no calza en ningún conjunto. */
 export const NEUTRO = '#8A8A85'
+
+/**
+ * Tinta del texto que va **encima** de un relleno de color, decidida por su luminancia.
+ *
+ * Blanco sobre `#E9A26A` da 2:1, muy por debajo del piso de 4,5:1 para texto chico: el número de
+ * «Poca» quedaba ilegible mientras el de «Ninguna», sobre un óxido oscuro, se leía bien. Como sale
+ * del color y no de una tabla escrita a mano, un cambio de paleta no vuelve a romperlo.
+ *
+ * Vive acá, y no en la figura que la estrenó, porque la usan todas las que escriben un número
+ * dentro de su relleno: el divergente de la confianza y las barras de las escenas.
+ */
+export function tintaSobre (fondo: string): string {
+  const canal = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+  const [r, g, b] = [1, 3, 5].map((i) => canal(parseInt(fondo.slice(i, i + 2), 16) / 255))
+  const luz = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  // El umbral sale de igualar los dos contrastes: sobre este valor gana el texto oscuro.
+  return luz > 0.32 ? '#1f2937' : '#ffffff'
+}

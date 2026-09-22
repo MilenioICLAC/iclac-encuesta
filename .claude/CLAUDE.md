@@ -8,18 +8,19 @@ Acá no va historia: si una regla necesita su anécdota para entenderse, la ané
 ## Qué es
 
 Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una oleada por año:
-2023, 2024, 2025). Cinco vistas con ruta por hash:
+2023, 2024, 2025). Cuatro vistas con ruta por hash:
 
-- **Recorrido** (raíz y `#/recorrido`): capa a pantalla completa que avanza con el scroll. Portada,
-  cinco escenas separadas por pausas («respiros») y cierre.
-- **Tablero** (`#/tablero`, `?foco=<id>`): módulos por pregunta, selector de oleada, filtro y un corte.
-- **Explorador** (`#/explorar`), **Descargas** (`#/descargas`) y **Sobre los datos** (`#/datos`, con
-  «Cómo se hizo el recorrido» en `?foco=metodo-recorrido`).
+- **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
+  menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
+  («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
+- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; «Entre oleadas» pone una barra por oleada), **Descargas** (`#/descargas`) y **Sobre los datos** (`#/datos`, con
+  el método de cada historia en `?foco=metodo-<id>`).
 
-El tablero reconstruye el monitor Shiny que ICLAC publica hoy desde la cuenta de un tercero. Su código
-(de Bastián Olea, especificación y no dependencia) está en
-`la documentación interna`; el inventario figura por figura, en
-`encuesta/docs/sprint_1/paridad_monitor.md` del mismo repo.
+El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
+de un tercero, **salió de la app** (Felipe, 22-09-2026): sumaba las oleadas activas en cada módulo.
+`#/tablero` lleva al explorador. El código del monitor (de Bastián Olea, especificación y no
+dependencia) sigue en `la documentación interna`, y el inventario
+figura por figura en `encuesta/docs/sprint_1/paridad_monitor.md` del mismo repo.
 
 ## Mapa del código
 
@@ -29,22 +30,24 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 
 | Dónde | Qué hay |
 |---|---|
-| `src/App.tsx` | Todo lo de página. `App`, `Marco` (177, encabezado y rutas), `encendidos` (232), `lector` (313, lee contrastes), `Recorrido` (373: portada ~580, escenas `indice={1..5}` en 592/731/840/923/1011, respiros con índice negativo, cierre al final), `Tablero` (1070), `Figura` (1144), `TermometroTablero` (1258), `MultipleFigura` (1319), `SobreLosDatos` (1368) |
-| `src/componentes/CapaRecorrido.tsx` | La capa: `CapaRecorrido` (80), `Portada` (336), `Respiro` (461), `Escena` (532), `Pista` (742), `Cierre` (826) |
+| `src/App.tsx` | Rutas y páginas que no son historias: `App` (rutas), `Marco` (159, encabezado), `SobreLosDatos` (203) |
+| `src/historias/` | `indice.tsx` (registro: id, bloque, pregunta, hallazgo, contrastes que la sostienen), `MenuHistorias.tsx` (la raíz), una historia por archivo (`recorrido.tsx` tiene `La mirada` y `Entre dos potencias`, partidas del recorrido viejo; `territorio`, `inversion`, `cotidiana`, `vacuna`), `comun.tsx` (`AnioDelPaso`, `LeyendaDeOleadas`) y `lectura.ts` (`lector`, `serieDeMedida`, `casosDe`) |
+| `src/componentes/CapaRecorrido.tsx` | La capa: `CapaRecorrido` (87, props `metodo` y `salida`), `Portada` (353), `Respiro` (478), `Escena` (549), `Pista` (759), `Cierre` (843) |
 | `src/nucleo/pasos.ts` | `usePasoActivo`, `pasoActivo`, `useMovimientoReducido` |
-| `src/nucleo/modulos.ts` | `MODULOS` (qué módulos tiene el tablero y su forma), `TERMOMETRO`, `CORTES` |
+| `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `SEMANTICOS` (color por etiqueta) |
-| `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro, compartidos por recorrido y tablero |
+| `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro, hoy solo en «La mirada» |
 | `src/nucleo/` resto | `agregar.ts` (porcentajes), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
-| `src/componentes/` | Figuras: `BarrasPorOla` (series del tablero), `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `Encabezado`, `MetodoRecorrido`, `Contrastes`, `Descargas`, `Nubes`, `Modulo` |
+| `src/componentes/` | Figuras: `BarrasPorOla` (series del explorador), `Distribucion`, `Menciones`, `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoRecorrido` (reglas de la animación) y `MetodoHistorias` (método por historia), `Contrastes`, `Descargas`, `Graficador` (el explorador), `BarraEstado` |
 | `src/textos.ts`, `src/locale.ts` | Cromo en tres idiomas; formato de números según idioma |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `bloques`, `variables`, `casos`, `contrastes`, …) |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican (skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
+| `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
 | `scripts/mirar_recorrido.mjs` | Recorre la capa con Playwright y mide costo de paso, escenas y leyendas a la vista |
 | `scripts/laboratorio.mjs`, `laboratorio/` | Laboratorios de composición (skill `laboratorio`) |
-| Pruebas | `scripts/*.test.mjs` (`informe_2023`, `contrastes`, `descargas`, `guia_urdinez`), `scripts/lib/*.test.mjs`, `src/nucleo/*.test.ts` |
+| Pruebas | `scripts/*.test.mjs` (`informe_2023`, `contrastes`, `descargas`, `guia_urdinez`, `historias`: vocabulario), `scripts/lib/*.test.mjs`, `src/nucleo/*.test.ts` |
 | `data/sources/` | Fuentes del cliente por oleada, la combinada y la metodología; su `README.md` dice cuál es canónica |
 
 ## Comandos
@@ -53,7 +56,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 npm run dev          # Vite en 5180; desde otra máquina: http://localhost:5180
 npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar algo
 npm run datos        # etl:combinada + descargas
-npm run lab:<tema>   # copia un laboratorio a public/ (lab, lab:series, lab:cierre, lab:portada)
+npm run lab:<tema>   # copia un laboratorio a public/ (lab, lab:cierre, lab:portada, lab:cotidiana; lab:decisiones es el dashboard de decisiones)
 npm run build
 ```
 
@@ -113,10 +116,10 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
   Categóricos nuevos se generan con el validador de `dataviz`; no se copia la paleta de `mapa_FDI`.
 - **Ningún locale a mano** en un `Intl`; `cn` es etiqueta interna, `Intl` conoce `zh`.
 - **El vocabulario del equipo no va en la interfaz** («microdata», «ponderador», «quiebre de serie»).
-- **Una figura por pregunta.** Si recorrido y tablero muestran la misma pregunta, pasan por el mismo
-  código (`termometro.ts`, con una prueba que lee `App.tsx`). A una variable continua no se le pide
-  distribución por categoría: con corte va la media por grupo. La bajada es cierta en todos los
-  estados del módulo.
+- **Una figura por pregunta.** Si dos vistas muestran la misma pregunta, pasan por el mismo código
+  (`termometro.ts`, con una prueba que lee `src/historias/recorrido.tsx`). A una variable continua no
+  se le pide distribución por categoría: con corte va la media por grupo. La bajada es cierta en
+  todos los estados de la figura.
 - **Una figura pensada para columna angosta no se estira a ancho completo** sin revisar su lienzo.
 - **Un `--algo` escrito en `style` no lo alcanza ninguna media query:** dos nombres y
   `var(--algo-ancho, var(--algo))` (usado en `Puntos`).
@@ -129,6 +132,6 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
 - **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** El selector de
   idioma cubre el cromo y una franja lo declara.
 - **El encabezado replica el de iclac.cl** (88 px escritorio, 79 teléfono, sombra y no borde; nav
-  completo desde `lg`). El estado del tablero vive en `App` y sobrevive al cambio de vista.
+  completo desde `lg`). El estado del explorador vive en `App` y sobrevive al cambio de vista.
 - **Commits** en español, en presente y describiendo el efecto («El recorrido estrena cierre y
   portada»). Solo cuando Felipe lo pide.

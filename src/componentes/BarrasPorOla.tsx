@@ -4,21 +4,14 @@ import { decimal, numero, porcentaje } from '../locale'
 /**
  * Una variable a lo largo de las oleadas: una barra por oleada.
  *
- * **Reemplaza a la línea de tres puntos**, decidido el 15-09-2026 comparando las dos en
- * `laboratorio/tablero-series.html`. Tres puntos unidos no son una tendencia, y el lienzo de la
- * línea, pensado para una columna angosta, crecía en alto con el ancho de la tarjeta: `screening`
- * medía 1.368 px a ancho completo y las de un tercio 560. Con una barra por oleada rondan los 280,
- * y por eso los módulos que la usan caben a medio ancho, dos por fila.
+ * **Reemplaza a la línea de tres puntos** (15-09-2026): tres puntos unidos no son una tendencia,
+ * y el lienzo de la línea crecía en alto con el ancho de la tarjeta.
  *
  * La escala va de 0 a 100 en todas las filas, así que dos puntos de diferencia se ven como dos
  * puntos y no como una pendiente. **Parte en cero siempre**: el monitor actual encuadra el
  * termómetro entre 40 y 75 con `oob = squish`, que aplasta lo que queda fuera contra el borde y
  * exagera la pendiente del hallazgo principal, y una barra que no parte en cero miente con su
  * largo. La fila es la de `Distribucion`, con la oleada en el lugar de la categoría.
- *
- * **Las oleadas que no están activas en la barra de estado van en gris, no se esconden.** La
- * línea dibujaba siempre las tres mientras el n del pie contaba solo las activas; así la figura
- * dice cuál recorte cuenta el n sin perder el resto de la serie.
  *
  * **Una oleada donde la pregunta no se hizo es un hueco con su nombre, no una barra en cero.**
  */
@@ -36,13 +29,11 @@ interface Props {
    * media que el producto grafica es la del termómetro (las variables `_val`).
    */
   unidad: 'porcentaje' | 'media'
-  /** Oleadas activas en la barra de estado. Vacía, todas: pasa solo mientras cargan los datos. */
-  activas: number[]
-  /** Qué se está siguiendo, cuando el título del módulo no lo dice. */
+  /** Qué se está siguiendo, cuando el título de la figura no lo dice. */
   etiqueta?: string
 }
 
-export default function BarrasPorOla ({ puntos, unidad, activas, etiqueta }: Props) {
+export default function BarrasPorOla ({ puntos, unidad, etiqueta }: Props) {
   const conDato = puntos.filter((p): p is Punto & { valor: number } => p.valor !== null && Number.isFinite(p.valor))
   const max = Math.max(100, ...conDato.map((p) => p.valor))
   const fmt = (v: number) => (unidad === 'porcentaje' ? porcentaje(v, 0) : decimal(v))
@@ -52,7 +43,6 @@ export default function BarrasPorOla ({ puntos, unidad, activas, etiqueta }: Pro
       {etiqueta && <figcaption className="mb-1 text-xs text-gray-500">{etiqueta}</figcaption>}
       <div className="flex flex-col gap-[3px]" aria-hidden>
         {puntos.map((p) => {
-          const activa = activas.length === 0 || activas.includes(p.ola)
           const valor = p.valor !== null && Number.isFinite(p.valor) ? p.valor : null
           // Con menos de 30 casos el valor se muestra igual, marcado, como en `Distribucion`.
           const escaso = p.base < 30
@@ -62,7 +52,7 @@ export default function BarrasPorOla ({ puntos, unidad, activas, etiqueta }: Pro
               className="grid grid-cols-[2.25rem_minmax(0,1fr)_3.5rem] items-center gap-3"
               title={valor === null ? undefined : `${fmt(valor)} sobre ${numero(p.base)} casos`}
             >
-              <span className={`text-xs tabular-nums ${valor !== null && activa ? 'text-gray-600' : 'text-gray-400'}`}>
+              <span className={`text-xs tabular-nums ${valor !== null ? 'text-gray-600' : 'text-gray-400'}`}>
                 {p.ola}
               </span>
               {valor === null
@@ -75,11 +65,11 @@ export default function BarrasPorOla ({ puntos, unidad, activas, etiqueta }: Pro
                   <>
                     <div className="h-4 rounded-sm bg-gray-100">
                       <div
-                        className={`h-4 rounded-sm ${activa ? '' : 'bg-gray-300'}`}
-                        style={{ width: `${Math.max((100 * valor) / max, 0.6)}%`, backgroundColor: activa ? IDENTIDAD[0] : undefined }}
+                        className="h-4 rounded-sm"
+                        style={{ width: `${Math.max((100 * valor) / max, 0.6)}%`, backgroundColor: IDENTIDAD[0] }}
                       />
                     </div>
-                    <span className={`text-right text-xs tabular-nums ${activa && !escaso ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <span className={`text-right text-xs tabular-nums ${!escaso ? 'text-gray-900' : 'text-gray-400'}`}>
                       {fmt(valor)}{escaso ? '*' : ''}
                     </span>
                   </>

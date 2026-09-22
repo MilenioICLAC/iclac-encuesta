@@ -1,0 +1,829 @@
+<title>Laboratorio de la historia «China cotidiana»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Los mismos dos pesos que carga la app (`src/index.css`). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca: #00A89C;
+    --marca-oscura: #00776E;
+    --g200: #E5E7EB; --g300: #D1D5DB; --g400: #9CA3AF; --g500: #6B7280;
+    --g600: #4B5563; --g700: #374151; --g800: #1F2937; --g900: #111827;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+
+  .envoltorio { max-width: 1600px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 72ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 90ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  .textos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 10px 16px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .textos label { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tinta-suave); }
+  .textos textarea { font: inherit; font-size: 13.5px; color: var(--tinta); border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; min-height: 3.2em; resize: vertical; }
+  .textos .cuenta { font-size: 11px; color: var(--tinta-suave); }
+  .textos .cuenta.largo { color: #9A3412; }
+
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .deslizable { overflow-x: auto; padding-block: 16px; }
+
+  /* ------------------------------------------------------------------------------------
+     La capa, con las medidas de la app. El umbral de escritorio va por consulta de contenedor:
+     el visor simula un ancho que no es el de la ventana.
+     ------------------------------------------------------------------------------------ */
+
+  #visor { font-size: 16px; position: relative; margin-inline: auto; background: #fff; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y mandatory; container-type: inline-size; box-shadow: 0 1px 3px rgba(0,0,0,.12); color: var(--g900); }
+
+  .barra { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--g200); background: rgba(255,255,255,.95); }
+  .barra .donde { flex-shrink: 0; font-family: var(--display); font-size: 12px; font-weight: 600; }
+  .barra .avance { flex-grow: 1; height: 4px; border-radius: 999px; background: var(--g200); }
+  .barra .avance div { height: 4px; border-radius: 999px; background: var(--marca-oscura); width: 0; }
+  .barra .salir { flex-shrink: 0; border: 1px solid var(--g300); border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; color: var(--g700); background: #fff; }
+
+  .snap { scroll-snap-align: start; }
+
+  /* ---- Portada ---- */
+  .portada { position: relative; }
+  .portada .dentro { position: sticky; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; text-align: center; }
+  .portada .pregunta { margin-block: auto; max-width: 22ch; font-family: var(--display); font-weight: 600; line-height: 1.12; font-size: 34px; text-wrap: balance; }
+  .portada .invitar { display: flex; flex-direction: column; align-items: center; gap: 10px; border: 0; background: none; padding: 8px 16px; margin-bottom: 24px; font: inherit; color: var(--g500); cursor: pointer; }
+  .portada .invitar .texto { font-size: 14px; }
+  .portada svg { display: block; overflow: visible; }
+  .portada svg path { fill: none; stroke-linecap: round; }
+
+  /* ------------------------------------------------------------------------------------
+     La escena, copiada de las primitivas de la app: `Escena` en `src/componentes/CapaRecorrido.tsx`
+     y sus reglas en `src/index.css`. Los nombres de clase son los mismos a propósito, para que lo
+     que se decida acá se traslade sin traducir: `.escena`, `.columna-relato`, `.bloque-encabezado`,
+     `.bloque-texto`, `.bloque-figura`, `.parrafo-escena`. Las medidas salen de las utilidades de
+     Tailwind que usa el componente (gap-6 = 24 px, px-4 pt-6 pb-6, max-w-2xl = 42rem, pt-2/pt-3…).
+     ------------------------------------------------------------------------------------ */
+
+  .escena-seccion { position: relative; }
+  .escena { position: sticky; display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; padding: 1.5rem 1rem; }
+  .pasos { position: relative; }
+  .paso { display: block; }
+
+  /* En angosto el envoltorio del relato no existe: sus hijos son hijos del flex de la escena. */
+  .columna-relato { display: contents; }
+  .bloque-encabezado, .bloque-texto, .bloque-figura { margin-inline: auto; width: 100%; max-width: 42rem; }
+
+  .bloque-encabezado h3 { margin: 0; font-family: var(--display); font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--g900); }
+  .bajada-escena { margin: 4px 0 0; font-size: 13px; line-height: 1.375; color: var(--g500); }
+
+  .bloque-texto { padding-top: 8px; }
+  .parrafo-escena { display: grid; margin: 0; font-size: 19px; line-height: 1.4; }
+  .parrafo-escena > span { grid-area: 1 / 1; color: var(--g800); transition: opacity 500ms ease; }
+  .parrafo-escena > span[data-activo="false"] { opacity: 0; }
+  /* Con movimiento reducido el párrafo vuelve a ser un párrafo: la grilla superpondría las frases. */
+  .reducido .parrafo-escena { display: block; }
+  .reducido .parrafo-escena > span { color: var(--g700); }
+  .reducido .parrafo-escena > span { opacity: 1 !important; }
+
+  .bloque-figura { padding-top: 12px; }
+  /* El año del paso vive **dentro** del bloque de la figura, arriba y a la derecha, como en la app
+     (`AnioDelPaso`, `src/App.tsx:259`): 34 px, negrita, opacidad 40 % y el color de su oleada. */
+  .cabecera-figura { display: flex; justify-content: flex-end; align-items: flex-end; min-height: 34px; margin-bottom: 4px; }
+  .cabecera-figura span { font-family: var(--display); font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; opacity: .4; transition: color 500ms ease; }
+
+  /* Una sola grilla para todas las filas: la columna de nombres se dimensiona al más largo y
+     ninguno parte en dos líneas («Restaurante 2025»), que subía el alto de una fila y no de las
+     otras. Las filas son `display: contents`. */
+  .figura { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 8px; align-items: center; }
+  .fila-fig { display: contents; }
+  .fila-fig .nombre { font-size: 13px; color: var(--g600); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .corte-figura { grid-column: 1 / -1; height: 4px; }
+  .pista-barra { position: relative; height: 26px; background: #F3F4F6; border-radius: 3px; }
+  .pista-barra .relleno-barra { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 3px; transition: opacity 250ms ease; }
+  .pista-barra .valor { position: absolute; top: 50%; transform: translateY(-50%); padding-left: 8px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--g800); white-space: nowrap; transition: opacity 250ms ease; }
+  /* Con la barra larga el rótulo no cabe afuera: entra, alineado a su punta. */
+  .pista-barra .valor.dentro { padding-left: 0; padding-right: 8px; transform: translate(-100%, -50%); }
+  .apagado { opacity: 0; }
+  .anillo { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--g900); }
+
+  /* Columnas por año */
+  .columnas { display: flex; align-items: flex-end; gap: 12px; height: 200px; }
+  .columnas .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; }
+  .columnas .tubo { position: relative; width: 100%; height: 100%; background: #F3F4F6; border-radius: 3px; display: flex; align-items: flex-end; }
+  .columnas .relleno { width: 100%; border-radius: 3px; transition: opacity 250ms ease; }
+  .columnas .cifra { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .columnas .nombre { font-size: 13px; color: var(--g600); font-variant-numeric: tabular-nums; }
+
+  .nota-fig { margin: 8px 0 0; font-size: 12px; color: var(--g500); }
+
+  /* Pantallas bajas: el aire es lo primero que cede (media query por alto en la app). */
+  .bajo .escena { padding-block: 0.75rem; gap: 0.75rem; }
+  /* Cuando la pantalla es baja cede primero el aire, y después la figura: seis filas no caben en
+     640 px de alto con la barra de 26 px de la app. */
+  .bajo .figura { row-gap: 6px; }
+  .bajo .pista-barra { height: 22px; }
+  .bajo .cabecera-figura span { font-size: 28px; }
+
+  /* ---- Respiro ---- */
+  .respiro { position: relative; }
+  .respiro .dentro { position: sticky; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  .respiro p { margin: 0; max-width: 20ch; font-family: var(--display); font-size: 28px; font-weight: 600; line-height: 1.15; color: var(--g900); text-wrap: balance; }
+
+  /* ---- Cierre ---- */
+  .cierre { position: relative; }
+  .cierre .dentro { position: sticky; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 24px 16px; }
+  .cierre ol { margin: 0; padding: 0; list-style: none; border-block: 1px solid var(--g200); }
+  .cierre li { padding: 12px 0; font-family: var(--display); font-size: 17px; font-weight: 600; line-height: 1.25; color: var(--g900); }
+  .cierre li + li { border-top: 1px solid var(--g200); }
+  .cierre .invitacion { margin: 0; font-size: 15px; color: var(--g600); }
+  .cierre .salidas { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cierre .salidas span { border: 1px solid var(--g300); border-radius: 6px; padding: 8px 12px; font-size: 13.5px; color: var(--g700); }
+
+  @container (min-width: 640px) {
+    .escena { padding-inline: 1.5rem; }
+    .bloque-encabezado h3 { font-size: 18px; line-height: 1.5555; }
+    .bloque-texto { padding-top: 12px; }
+    .parrafo-escena { font-size: 18px; line-height: 1.625; }
+    .bloque-figura { padding-top: 16px; }
+  }
+
+  /* El umbral de escritorio: en la app es media query (la capa es la ventana); acá va por
+     contenedor, porque el visor simula un ancho que no es el de la ventana. */
+  @container (min-width: 900px) {
+    .barra { padding-inline: 24px; }
+    .escena.en-columnas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-content: center; align-items: center; column-gap: 2.75rem; max-width: 74rem; margin-inline: auto; padding-inline: 2rem; }
+    .escena.en-columnas > .columna-relato { grid-column: 1; display: flex; flex-direction: column; gap: 1.5rem; align-self: stretch; }
+    .escena.en-columnas > .columna-relato > .bloque-texto { margin-block: auto; padding-top: 0; }
+    .escena.en-columnas > .bloque-figura { grid-column: 2; padding-top: 0; }
+    .escena.en-columnas .bloque-encabezado,
+    .escena.en-columnas .bloque-texto,
+    .escena.en-columnas .bloque-figura { max-width: none; }
+    .escena.en-columnas .bloque-encabezado h3 { font-size: 27px; line-height: 1.2; }
+    .escena.en-columnas .bajada-escena { font-size: 22px; line-height: 1.35; }
+    .escena.en-columnas .parrafo-escena { font-size: 34px; line-height: 1.3; }
+    /* La figura crece con la columna, igual que el divergente y el termómetro de la app
+       (`--alto-fila-divergente-ancho: 38px`): con filas de 26 px y números de 13 px queda un
+       dibujo de teléfono en una columna de 570 px. */
+    .escena.en-columnas .figura { column-gap: 16px; row-gap: 12px; }
+    .escena.en-columnas .pista-barra { height: 38px; }
+    .escena.en-columnas .fila-fig .nombre,
+    .escena.en-columnas .pista-barra .valor { font-size: 15px; }
+    .escena.en-columnas .cabecera-figura { min-height: 44px; }
+    .escena.en-columnas .cabecera-figura span { font-size: 44px; }
+    .escena.en-columnas .nota-fig { font-size: 14px; margin-top: 12px; }
+    .portada .pregunta { font-size: 60px; max-width: 18ch; }
+    .respiro p { font-size: 44px; }
+    .cierre li { font-size: 22px; }
+  }
+
+  .nota { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .nota textarea { min-height: 4.5em; resize: vertical; font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; }
+  .nota .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; color: var(--tinta-suave); }
+  #json { font-family: ui-monospace, monospace; font-size: 12px; min-height: 8em; }
+  .falla { padding: 12px 14px; border: 1px dashed #9A3412; border-radius: 12px; color: #9A3412; font-size: 13px; }
+</style>
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio de la historia «China cotidiana»</h1>
+    <p>
+      La historia entera: portada, tres escenas con un respiro entre cada una y cierre. Las cosas
+      que la gente tiene cerca, las personas que conoce, y lo que dice haber visto. Haz scroll
+      dentro del visor para recorrerla.
+    </p>
+  </header>
+
+  <ul class="avisos">
+    <li>El visor usa las primitivas de la app, no una imitación: los mismos nombres de clase que
+      <code>Escena</code> (<code>.escena</code>, <code>.columna-relato</code>, <code>.bloque-encabezado</code>,
+      <code>.bloque-texto</code>, <code>.bloque-figura</code>, <code>.parrafo-escena</code>) y sus medidas
+      comprobadas contra el recorrido que está corriendo, en 390 y en 1512.</li>
+    <li>Ya está decidido: tres escenas, el restaurante entra como contraste del mall, la advertencia
+      del cuestionario va en la nota al pie de la escena 3 y los conteos van con el N. Lo que queda
+      abierto está en los controles.</li>
+    <li>Las cifras y los textos por defecto se calculan de <code>public/data/encuesta.json</code>
+      (<code>mall-cerca</code>, <code>restaurante-cerca</code>, <code>conoce-china</code>,
+      <code>racismo-visto</code> y <code>racismo-contacto</code>). Lo que edites manda sobre eso;
+      «Volver a los calculados» lo deshace. Si el archivo no carga, el visor lo dice en vez de
+      inventar números.</li>
+    <li>Dos de las tres escenas afirman que algo <strong>no</strong> se mueve. «Parejo» es lo que
+      dice el intervalo cuando cruza el cero, y nunca «creció un poco»: el restaurante va +3,5 con
+      IC [−1,2; 8,2] y el contacto −1,2 con IC [−5,7; 3,3].</li>
+    <li>La regla de la app es que toda barra va de 0 a 100. El control «Escala» la vuelve a abrir:
+      con el tope en la serie más alta las diferencias se ven más, y a cambio la barra deja de decir
+      qué parte del total es. Ojo que acá conviven cifras de 60 % y de 7 %.</li>
+    <li>La escena 3 cambia de filas sin cambiar de eje (los años pasan a ser los dos grupos de
+      contacto), igual que la escena 1 del recorrido actual. Falta el logo de ICLAC de la portada:
+      se resuelve al escribir el componente.</li>
+    <li>Revísalo en el aparato donde se va a leer: en el teléfono, abre esta página directo y elige «Todo».</li>
+  </ul>
+
+  <div class="controles">
+    <div class="grupo"><span>Combinación</span><div class="seg" id="c-preset"></div></div>
+    <div class="grupo"><span>Escala</span><div class="seg" id="c-escala"></div></div>
+    <div class="grupo"><span>Forma de la figura</span><div class="seg" id="c-forma"></div></div>
+    <div class="grupo"><span>Año del paso</span><div class="seg" id="c-anio"></div></div>
+    <div class="grupo"><span>Énfasis en el paso</span><div class="seg" id="c-enfasis"></div></div>
+    <div class="grupo"><span>Dónde va la nota</span><div class="seg" id="c-nota"></div></div>
+    <div class="grupo"><span>Lo que aún no entra</span><div class="seg" id="c-apagadas"></div></div>
+    <div class="grupo"><span>Movimiento reducido</span><div class="seg" id="c-reducido"></div></div>
+    <div class="grupo"><span>Ventana simulada</span><div class="seg" id="c-ventana"></div></div>
+    <div class="grupo"><span>Textos</span><div class="seg"><button type="button" class="accion" id="restaurar">Volver a los calculados</button></div></div>
+  </div>
+
+  <div class="textos" id="textos"></div>
+
+  <div class="marco">
+    <div class="barra-visor" id="info"></div>
+    <div class="deslizable"><div id="visor"></div></div>
+  </div>
+
+  <div class="nota">
+    <div class="fila"><strong style="color:var(--tinta)">Tu nota sobre esta combinación</strong></div>
+    <textarea id="nota" placeholder="Qué funciona, qué no, y por qué."></textarea>
+    <div class="fila"><button class="accion" id="exportar">Copiar JSON</button><span id="copiado"></span></div>
+    <textarea id="json" readonly hidden></textarea>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ---------------------------------------------------------------------------------------------
+  // Parámetros, presets y almacenamiento
+  // ---------------------------------------------------------------------------------------------
+  const P_BASE = {
+    escala: 'ajustada', forma: 'filas', anio: 'si', enfasis: 'anillo', nota: 'pie',
+    apagadas: 'invisible', reducido: 'no', ventana: '390',
+  };
+  const VALIDOS = {
+    escala: ['100', 'ajustada'], forma: ['filas', 'columnas'], anio: ['si', 'no'],
+    enfasis: ['anillo', 'no'], nota: ['pie', 'texto'], apagadas: ['invisible', 'gris'],
+    reducido: ['no', 'si'], ventana: ['360', '390', '768', '1512', 'todo'],
+  };
+  const PRESETS = {
+    propuesta: Object.assign({}, P_BASE),
+    tablero: Object.assign({}, P_BASE, { escala: '100', anio: 'no', enfasis: 'no', apagadas: 'gris' }),
+  };
+  const NOMBRES_PRESET = { propuesta: 'Propuesta', tablero: 'Como se ve hoy en el tablero' };
+  const VENTANAS = { '360': [360, 640], '390': [390, 844], '768': [768, 1024], '1512': [1512, 945], todo: null };
+
+  // `pasosDeOrden(3)` sobre ORDEN de `src/nucleo/paleta.ts`, la misma rampa de oleadas de la app.
+  const RAMPA = ['#6ABDB4', '#006B62', '#002E29'];
+  // Los grupos de la escena 3 no son una secuencia: un solo color, y la fila rotula.
+  const COLOR_GRUPO = '#00998C';
+
+  const CLAVE = 'lab-china-cotidiana-v1';
+  let E = Object.assign({}, P_BASE);
+  let TEXTOS_BASE = {};
+  let T = {};
+  let nota = '';
+  let guardado = null;
+  try {
+    guardado = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    if (guardado) {
+      Object.keys(P_BASE).forEach((k) => { if (guardado.p && VALIDOS[k].includes(guardado.p[k])) E[k] = guardado.p[k]; });
+      if (typeof guardado.nota === 'string') nota = guardado.nota;
+    }
+  } catch (e) { /* modo privado */ }
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = new Intl.NumberFormat('es-CL');
+  // Espacio duro entre la cifra y el símbolo: sin él la frase parte «49,7» y «%» en dos líneas.
+  const pc = (v) => `${v.toFixed(1).replace('.', ',')}\u00A0%`;
+  const un = (v) => Math.abs(v).toFixed(1).replace('.', ',');
+  const cifra = (v) => v.toFixed(1).replace('.', ',');
+  const casos = (pct, n) => num.format(Math.round((pct * n) / 100));
+
+  // ---------------------------------------------------------------------------------------------
+  // Los datos: se leen del artefacto, nunca se escriben acá
+  // ---------------------------------------------------------------------------------------------
+  let DATOS = null;
+  let fallaDatos = '';
+
+  function serieDe (medida) {
+    const valores = new Map();
+    const enes = new Map();
+    for (const c of medida.comparaciones) {
+      valores.set(c.desde, c.a); valores.set(c.hasta, c.b);
+      enes.set(c.desde, c.n[0]); enes.set(c.hasta, c.n[1]);
+    }
+    const olas = [...valores.keys()].sort();
+    return {
+      etiqueta: medida.etiqueta,
+      advertencia: medida.advertencia || '',
+      puntos: olas.map((ola) => ({ ola, valor: valores.get(ola), n: enes.get(ola) })),
+      punta: medida.comparaciones.find((c) => c.desde === olas[0] && c.hasta === olas[olas.length - 1]),
+    };
+  }
+
+  async function cargarDatos () {
+    try {
+      const r = await fetch('/data/encuesta.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const medida = (id) => {
+        const m = j.contrastes.medidas.find((x) => x.id === id);
+        if (!m) throw new Error(`falta el contraste ${id}`);
+        return serieDe(m);
+      };
+      const grupo = j.contrastes.grupos.find((g) => g.id === 'racismo-contacto');
+      if (!grupo) throw new Error('falta el grupo racismo-contacto');
+      const enOla = grupo.porOla[grupo.porOla.length - 1];
+      DATOS = {
+        mall: medida('mall-cerca'),
+        restaurante: medida('restaurante-cerca'),
+        conoce: medida('conoce-china'),
+        racismo: medida('racismo-visto'),
+        contacto: enOla.tramos.map((t) => ({ nombre: t.nombre, valor: t.media, n: t.n })),
+        brecha: enOla.brecha,
+        olaContacto: enOla.ola,
+      };
+    } catch (e) {
+      fallaDatos = String(e && e.message ? e.message : e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Los textos por defecto se calculan de los contrastes; lo editado a mano manda sobre ellos
+  // ---------------------------------------------------------------------------------------------
+  function textosDe (D) {
+    const mall = D.mall.puntos, rest = D.restaurante.puntos, con = D.conoce.puntos, rac = D.racismo.puntos;
+    const a = mall[0].ola, c = mall[mall.length - 1].ola;
+    const noConoce = D.contacto.find((t) => t.nombre === 'No conoce');
+    const conoce = D.contacto.find((t) => t.nombre === 'Conoce');
+    return {
+      portada: '¿Cuánta China hay en la vida diaria?',
+      invitar: 'Haz scroll para desplazarte',
+
+      e1titular: `Entre ${a} y ${c} creció la proporción que vive cerca de un mall chino; la del restaurante quedó pareja`,
+      e1bajada: '',
+      e1p1: `En ${a}, el ${pc(mall[0].valor)} decía vivir a menos de diez cuadras de un mall chino.`,
+      e1p2: `En ${c}, el ${pc(mall[2].valor)}: ${un(D.mall.punta.diferencia)} puntos más.`,
+      e1p3: `El restaurante chino, en cambio, queda parejo: ${pc(rest[0].valor)} en ${a} y ${pc(rest[2].valor)} en ${c}, una diferencia que no se distingue del ruido.`,
+      e1nota: `Sobre ${num.format(mall[0].n)}, ${num.format(mall[1].n)} y ${num.format(mall[2].n)} personas encuestadas. Es lo que cada persona dice tener cerca, no un dato de su dirección.`,
+
+      respiro1: '¿Y con personas?',
+
+      e2titular: 'El contacto con personas de China no se movió',
+      e2bajada: '',
+      e2p1: `En ${a}, el ${pc(con[0].valor)} decía conocer personalmente a alguien de China o de ascendencia china.`,
+      e2p2: pc(con[1].valor) === pc(con[2].valor)
+        ? `En ${con[1].ola} y en ${c} el ${cifra(con[1].valor)}. La diferencia con ${a} no se distingue del ruido.`
+        : `En ${con[1].ola} el ${cifra(con[1].valor)} y en ${c} el ${cifra(con[2].valor)}. La diferencia con ${a} no se distingue del ruido.`,
+      e2nota: `${casos(con[0].valor, con[0].n)} de ${num.format(con[0].n)}, ${casos(con[1].valor, con[1].n)} de ${num.format(con[1].n)} y ${casos(con[2].valor, con[2].n)} de ${num.format(con[2].n)} personas encuestadas.`,
+
+      respiro2: '¿Y qué se ve?',
+
+      e3titular: `Entre ${a} y ${c} bajó la proporción que dice haber visto racismo contra personas chinas o asiáticas`,
+      e3bajada: '',
+      e3p1: `En ${a} lo reportó el ${pc(rac[0].valor)} de las personas encuestadas; en ${rac[1].ola}, el ${pc(rac[1].valor)}. De un año al siguiente la baja no se distingue del ruido.`,
+      e3p2: `En ${c}, el ${pc(rac[2].valor)}: ${un(D.racismo.punta.diferencia)} puntos menos que en ${a}, y esa sí se distingue.`,
+      e3p3: `Quienes conocen personalmente a alguien de China lo reportan más: ${pc(conoce.valor)} contra ${pc(noConoce.valor)} en ${D.olaContacto}.`,
+      e3nota: `${casos(rac[0].valor, rac[0].n)} de ${num.format(rac[0].n)} en ${a}, ${casos(rac[1].valor, rac[1].n)} de ${num.format(rac[1].n)} en ${rac[1].ola} y ${casos(rac[2].valor, rac[2].n)} de ${num.format(rac[2].n)} en ${c}: baja la proporción, no el número de personas. ${D.racismo.advertencia}`,
+      e3notaContacto: `${casos(noConoce.valor, noConoce.n)} de ${num.format(noConoce.n)} y ${casos(conoce.valor, conoce.n)} de ${num.format(conoce.n)} personas encuestadas en ${D.olaContacto}. Es una asociación en la encuesta: no dice si el contacto cambia lo que se ve o lo que se reconoce como racista, ni descarta otras diferencias entre los dos grupos.`,
+
+      cierreInvitacion: 'Las tres oleadas completas quedan del otro lado.',
+    };
+  }
+
+  const ROTULOS = {
+    portada: 'Portada: la pregunta', invitar: 'Portada: invitación',
+    e1titular: 'Escena 1: titular', e1bajada: 'Escena 1: bajada',
+    e1p1: 'Escena 1, paso 1 (mall, primera oleada)', e1p2: 'Escena 1, paso 2 (mall, última)',
+    e1p3: 'Escena 1, paso 3 (restaurante)', e1nota: 'Escena 1: nota al pie',
+    respiro1: 'Respiro 1',
+    e2titular: 'Escena 2: titular', e2bajada: 'Escena 2: bajada',
+    e2p1: 'Escena 2, paso 1', e2p2: 'Escena 2, paso 2', e2nota: 'Escena 2: nota al pie',
+    respiro2: 'Respiro 2',
+    e3titular: 'Escena 3: titular', e3bajada: 'Escena 3: bajada',
+    e3p1: 'Escena 3, paso 1 (2023 y 2024)', e3p2: 'Escena 3, paso 2 (2025)',
+    e3p3: 'Escena 3, paso 3 (contacto)', e3nota: 'Escena 3: nota de la serie',
+    e3notaContacto: 'Escena 3: nota del contacto',
+    cierreInvitacion: 'Cierre: invitación',
+  };
+
+  function fijarTextos () {
+    TEXTOS_BASE = textosDe(DATOS);
+    T = Object.assign({}, TEXTOS_BASE);
+    Object.keys(TEXTOS_BASE).forEach((k) => {
+      if (guardado && guardado.tEditados && typeof guardado.tEditados[k] === 'string') T[k] = guardado.tEditados[k];
+    });
+  }
+
+  const editados = () => {
+    const d = {};
+    Object.keys(TEXTOS_BASE).forEach((k) => { if (T[k] !== TEXTOS_BASE[k]) d[k] = T[k]; });
+    return d;
+  };
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ p: E, tEditados: editados(), nota: nota })); } catch (e) { /* modo privado */ } };
+
+  // ---------------------------------------------------------------------------------------------
+  // Controles
+  // ---------------------------------------------------------------------------------------------
+  function seg (id, opciones, clave, alElegir) {
+    const nodo = $(id);
+    nodo.innerHTML = '';
+    Object.keys(opciones).forEach((v) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opciones[v];
+      b.setAttribute('aria-pressed', (clave ? E[clave] === v : alElegir.activo(v)) ? 'true' : 'false');
+      b.addEventListener('click', () => { if (clave) E[clave] = v; else alElegir.elegir(v); guardar(); pintarTodo(); });
+      nodo.appendChild(b);
+    });
+  }
+
+  const presetActivo = () => Object.keys(PRESETS).find((k) => Object.keys(P_BASE).every((c) => c === 'ventana' || PRESETS[k][c] === E[c]));
+
+  function pintarControles () {
+    seg('c-preset', NOMBRES_PRESET, null, { activo: (v) => presetActivo() === v, elegir: (v) => { const w = E.ventana; E = Object.assign({}, PRESETS[v], { ventana: w }); } });
+    seg('c-escala', { ajustada: 'Ajustada a la figura', '100': '0 a 100 (regla de la app)' }, 'escala');
+    seg('c-forma', { filas: 'Filas', columnas: 'Columnas' }, 'forma');
+    seg('c-anio', { si: 'Sí, sobre la figura', no: 'No' }, 'anio');
+    seg('c-enfasis', { anillo: 'Anillo en la barra', no: 'Sin énfasis' }, 'enfasis');
+    seg('c-nota', { pie: 'Al pie de la figura', texto: 'Bajo la frase' }, 'nota');
+    seg('c-apagadas', { invisible: 'Invisible hasta su paso', gris: 'En gris desde el principio' }, 'apagadas');
+    seg('c-reducido', { no: 'No', si: 'Sí' }, 'reducido');
+    seg('c-ventana', { '360': '360×640', '390': '390×844', '768': '768', '1512': '1512', todo: 'Todo' }, 'ventana');
+  }
+
+  function pintarTextos () {
+    const nodo = $('textos');
+    if (nodo.childElementCount) return;
+    Object.keys(TEXTOS_BASE).forEach((k) => {
+      const l = document.createElement('label');
+      l.textContent = ROTULOS[k] || k;
+      const campo = document.createElement('textarea');
+      campo.value = T[k];
+      const cuenta = document.createElement('span');
+      cuenta.className = 'cuenta';
+      const marcar = () => {
+        cuenta.textContent = `${campo.value.length} caracteres`;
+        cuenta.classList.toggle('largo', campo.value.length > 130);
+      };
+      marcar();
+      campo.addEventListener('input', () => { T[k] = campo.value; marcar(); guardar(); pintarVisor(true); });
+      l.appendChild(campo);
+      l.appendChild(cuenta);
+      nodo.appendChild(l);
+    });
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Las figuras. Todas dibujan la misma lista de filas: nombre, valor, color y si está encendida.
+  // ---------------------------------------------------------------------------------------------
+  // Luminancia relativa, para elegir tinta o blanco dentro de la barra.
+  function claro (hex) {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.35;
+  }
+
+  // **La escala no depende de lo encendido**: se calcula sobre todas las filas de la escena, las
+  // que todavía no entran incluidas, y se pasa hecha.
+  const tope = (filas) => {
+    if (E.escala === '100') return 100;
+    const alto = Math.max(...filas.map((f) => f.valor));
+    return Math.min(100, Math.ceil((alto * 1.1) / 5) * 5);
+  };
+
+  function dibujar (filas, max) {
+    if (E.forma === 'columnas') {
+      const cols = filas.map((f) => {
+        const alto = Math.max(0, Math.min(100, (f.valor / max) * 100));
+        const oculto = f.encendida ? '' : (E.apagadas === 'gris' ? '' : ' apagado');
+        const color = f.encendida ? f.color : '#E5E7EB';
+        return `<div class="col">
+          <span class="cifra${oculto}">${pc(f.valor)}</span>
+          <div class="tubo"><div class="relleno${f.anillo ? ' anillo' : ''}${oculto}" style="height:${alto}%;background:${color}"></div></div>
+          <span class="nombre">${esc(f.nombre)}</span>
+        </div>`;
+      }).join('');
+      return `<div class="columnas">${cols}</div>`;
+    }
+    return filas.map((f) => {
+      const ancho = Math.max(0, Math.min(100, (f.valor / max) * 100));
+      const oculto = f.encendida ? '' : (E.apagadas === 'gris' ? '' : ' apagado');
+      const color = f.encendida ? f.color : '#E5E7EB';
+      const dentro = ancho > 62;
+      const tinta = dentro ? (claro(color) ? 'var(--g900)' : '#fff') : 'var(--g800)';
+      return `<div class="fila-fig">
+        <span class="nombre">${esc(f.nombre)}</span>
+        <div class="pista-barra">
+          <div class="relleno-barra${f.anillo ? ' anillo' : ''}${oculto}" style="width:${ancho}%;background:${color}"></div>
+          <span class="valor${dentro ? ' dentro' : ''}${oculto}" style="left:${ancho}%;color:${tinta}">${pc(f.valor)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const marca = (i, activo) => E.enfasis === 'anillo' && E.reducido !== 'si' && i === activo;
+
+  // Escena 1: las cosas que se tienen cerca. Dos series en el mismo eje; la segunda entra en el
+  // último paso, que es la comparación que hace la escena.
+  function figuraCosas (activo) {
+    const todo = E.reducido === 'si';
+    const filas = [];
+    DATOS.mall.puntos.forEach((p, i) => filas.push({
+      nombre: `Mall ${p.ola}`, valor: p.valor, color: RAMPA[i],
+      encendida: todo || (activo === 0 ? i === 0 : true),
+      anillo: !todo && ((activo === 0 && i === 0) || (activo === 1 && i === 2)),
+    }));
+    DATOS.restaurante.puntos.forEach((p, i) => filas.push({
+      nombre: `Restaurante ${p.ola}`, valor: p.valor, color: RAMPA[i],
+      encendida: todo || activo >= 2,
+      anillo: false,
+    }));
+    return dibujar(filas, tope(filas));
+  }
+
+  // Escena 2: las personas. Una sola serie, y lo que la escena afirma es que no se mueve.
+  function figuraPersonas (activo) {
+    const todo = E.reducido === 'si';
+    const filas = DATOS.conoce.puntos.map((p, i) => ({
+      nombre: String(p.ola), valor: p.valor, color: RAMPA[i],
+      encendida: todo || activo >= 1 || i === 0,
+      anillo: !todo && activo === 0 && i === 0,
+    }));
+    return dibujar(filas, tope(filas));
+  }
+
+  // Escena 3: la serie de lo que se ve y, en el último paso, quién lo ve. **Cambia de filas sin
+  // cambiar de eje**: el tope se calcula sobre los dos juegos de filas juntos.
+  function figuraVisto (activo) {
+    const todo = E.reducido === 'si';
+    // Paso 1: 2023 y 2024 juntos, y sin anillo, porque la frase habla de las dos. Paso 2: entra
+    // 2025, que es la punta que sí se distingue, y ahí va la marca.
+    const hasta = activo === 0 ? 1 : 2;
+    const serie = DATOS.racismo.puntos.map((p, i) => ({
+      nombre: String(p.ola), valor: p.valor, color: RAMPA[i],
+      encendida: todo || i <= hasta,
+      anillo: !todo && activo === 1 && i === 2 && E.enfasis === 'anillo',
+    }));
+    const grupos = ['No conoce', 'Conoce'].map((nombre) => {
+      const t = DATOS.contacto.find((x) => x.nombre === nombre);
+      return { nombre, valor: t.valor, color: COLOR_GRUPO, encendida: true, anillo: false };
+    });
+    const max = tope(serie.concat(grupos));
+    if (todo) return dibujar(serie, max) + '<div class="corte-figura"></div>' + dibujar(grupos, max);
+    return activo >= 2 ? dibujar(grupos, max) : dibujar(serie, max);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // La capa
+  // ---------------------------------------------------------------------------------------------
+  const ESCENAS = [
+    { id: 'e1', pasos: 3, figura: figuraCosas, anios: (D, i) => D.mall.puntos[Math.min(i === 0 ? 0 : 2, 2)].ola, color: (i) => RAMPA[i === 0 ? 0 : 2] },
+    { id: 'e2', pasos: 2, figura: figuraPersonas, anios: (D, i) => (i === 0 ? D.conoce.puntos[0].ola : D.conoce.puntos[2].ola), color: (i) => RAMPA[i === 0 ? 0 : 2] },
+    // El año en grande es el del paso: en el paso que enciende dos oleadas no se dibuja, porque
+    // poner una de las dos sería falso. El hueco queda reservado para que la figura no salte.
+    { id: 'e3', pasos: 3, figura: figuraVisto, anios: (D, i) => (i === 0 ? '' : i === 1 ? D.racismo.puntos[2].ola : D.olaContacto), color: (i) => (i >= 2 ? COLOR_GRUPO : RAMPA[2]) },
+  ];
+
+  function htmlEscena (id, titular, bajada, frases, notaTexto, figura, conAnio, anioInicial, colorInicial) {
+    const frasesHtml = frases.map((f, i) => `<span data-paso="${i}" data-activo="${i === 0 ? 'true' : 'false'}">${esc(f)} </span>`).join('');
+    const anio = E.anio === 'si' && conAnio
+      ? `<div class="cabecera-figura"><span data-anio style="color:${colorInicial}" aria-hidden>${anioInicial}</span></div>`
+      : '';
+    const notaHtml = `<p class="nota-fig" data-nota>${esc(notaTexto)}</p>`;
+    return `<section class="escena-seccion" id="${id}" data-pasos="${frases.length}">
+      <div class="escena en-columnas">
+        <div class="columna-relato">
+          <div class="bloque-encabezado">
+            <h3>${esc(titular)}</h3>
+            ${bajada ? `<p class="bajada-escena">${esc(bajada)}</p>` : ''}
+          </div>
+          <div class="bloque-texto">
+            <p class="parrafo-escena">${frasesHtml}</p>
+            ${E.nota === 'texto' ? notaHtml : ''}
+          </div>
+        </div>
+        <div class="bloque-figura">
+          ${anio}
+          <div class="figura" data-figura>${figura}</div>
+          ${E.nota === 'pie' ? notaHtml : ''}
+        </div>
+      </div>
+      ${E.reducido === 'si' ? '' : `<div class="pasos">${frases.map((_, i) => `<div class="paso snap" data-escena="${id}" data-paso="${i}"></div>`).join('')}</div>`}
+    </section>`;
+  }
+
+  function pintarVisor (conservar) {
+    const visor = $('visor');
+    const antes = conservar ? visor.scrollTop : 0;
+    const medidas = VENTANAS[E.ventana];
+    const w = medidas ? medidas[0] : Math.min(window.innerWidth, 1600);
+    const h = medidas ? medidas[1] : window.innerHeight;
+    visor.style.width = `${w}px`;
+    visor.style.height = `${h}px`;
+    const reducido = E.reducido === 'si';
+    visor.classList.toggle('reducido', reducido);
+    // Con movimiento reducido no hay pasos que encender: sin pista, el imán obligaría a parar en
+    // puntos que ya no muestran nada nuevo.
+    visor.style.scrollSnapType = reducido ? 'none' : 'y mandatory';
+
+    if (fallaDatos) {
+      visor.innerHTML = `<div class="falla">No se pudieron leer las cifras de <code>/data/encuesta.json</code> (${esc(fallaDatos)}). Corre <code>npm run datos</code> y recarga: el laboratorio no inventa números.</div>`;
+      $('info').textContent = 'Sin datos';
+      return;
+    }
+
+    const arcos = `<svg width="48" height="34" viewBox="0 0 48 34" aria-hidden="true">
+      <path d="M 4.5 2.5 A 19.5 19.5 0 0 0 43.5 2.5" stroke="#00776E" stroke-width="2.5" opacity="1"/>
+      <path d="M 10.35 16.5 A 13.65 13.65 0 0 0 37.65 16.5" stroke="#00776E" stroke-width="2.5" opacity=".7"/>
+      <path d="M 15.2 26.5 A 8.8 8.8 0 0 0 32.8 26.5" stroke="#00776E" stroke-width="2.5" opacity=".45"/>
+    </svg>`;
+
+    const respiro = (id, texto) => `<section class="respiro snap" id="${id}"><div class="dentro"><p>${esc(texto)}</p></div></section>`;
+
+    visor.innerHTML = `
+      <div class="barra" id="barra">
+        <span class="donde" id="donde">Portada</span>
+        <div class="avance"><div id="avance"></div></div>
+        <button type="button" class="salir">Salir ✕</button>
+      </div>
+      <section class="portada snap" id="portada"><div class="dentro">
+        <h2 class="pregunta">${esc(T.portada)}</h2>
+        <button type="button" class="invitar" id="invitar">${arcos}<span class="texto">${esc(T.invitar)}</span></button>
+      </div></section>
+      ${htmlEscena('e1', T.e1titular, T.e1bajada, [T.e1p1, T.e1p2, T.e1p3], T.e1nota, figuraCosas(reducido ? 2 : 0), true, DATOS.mall.puntos[0].ola, RAMPA[0])}
+      ${respiro('respiro1', T.respiro1)}
+      ${htmlEscena('e2', T.e2titular, T.e2bajada, [T.e2p1, T.e2p2], T.e2nota, figuraPersonas(reducido ? 1 : 0), true, DATOS.conoce.puntos[0].ola, RAMPA[0])}
+      ${respiro('respiro2', T.respiro2)}
+      ${htmlEscena('e3', T.e3titular, T.e3bajada, [T.e3p1, T.e3p2, T.e3p3], T.e3nota, figuraVisto(reducido ? 2 : 0), true, DATOS.racismo.puntos[0].ola, RAMPA[0])}
+      <section class="cierre snap" id="cierre"><div class="dentro">
+        <ol><li>${esc(T.e1titular)}</li><li>${esc(T.e2titular)}</li><li>${esc(T.e3titular)}</li></ol>
+        <p class="invitacion">${esc(T.cierreInvitacion)}</p>
+        <div class="salidas"><span>Volver a las historias</span><span>Explorar los datos</span><span>Cómo se hizo</span></div>
+      </div></section>`;
+
+    const listo = () => {
+      const H = visor.clientHeight;
+      const barra = $('barra').getBoundingClientRect().height;
+      const util = H - barra;
+      for (const id of ['portada', 'respiro1', 'respiro2', 'cierre']) {
+        const s = $(id);
+        s.style.minHeight = `${H}px`;
+        const dentro = s.querySelector('.dentro');
+        dentro.style.top = `${barra}px`;
+        dentro.style.minHeight = `${util}px`;
+      }
+      visor.classList.toggle('bajo', H <= 700);
+      visor.querySelectorAll('.escena-seccion').forEach((escena) => {
+        const pegado = escena.querySelector('.escena');
+        pegado.style.top = `${barra}px`;
+        pegado.style.minHeight = `${util}px`;
+        // Con movimiento reducido la escena no tiene pista: no hay nada que subir ni que medir.
+        const pasos = escena.querySelector('.pasos');
+        if (pasos) pasos.style.marginTop = `${-util}px`;
+        const ultimo = escena.querySelectorAll('.paso').length - 1;
+        escena.querySelectorAll('.paso').forEach((p, i) => {
+          // Colchón de entrada 0,55, pasos de 0,75 y colchón de salida 0,2, en píxeles medidos.
+          let f = 0.75;
+          if (i === 0) f += 0.55;
+          if (i === ultimo) f += 0.2;
+          p.style.height = `${Math.round(util * f)}px`;
+          p.style.scrollMarginTop = `${barra}px`;
+        });
+      });
+
+      const activo = { e1: 0, e2: 0, e3: 0 };
+      const obs = new IntersectionObserver((entradas) => {
+        let cambio = false;
+        for (const e of entradas) {
+          if (!e.isIntersecting) continue;
+          const id = e.target.dataset.escena;
+          const i = Number(e.target.dataset.paso);
+          if (activo[id] !== i) { activo[id] = i; cambio = true; }
+        }
+        if (cambio) aplicar();
+      }, { root: visor, rootMargin: '-45% 0px -45% 0px' });
+      visor.querySelectorAll('.paso').forEach((p) => obs.observe(p));
+
+      function aplicar () {
+        for (const def of ESCENAS) {
+          const escena = $(def.id);
+          if (!escena) continue;
+          const i = activo[def.id];
+          escena.querySelectorAll('.parrafo-escena > span').forEach((p) => {
+            p.dataset.activo = Number(p.dataset.paso) === i ? 'true' : 'false';
+          });
+          escena.querySelector('[data-figura]').innerHTML = def.figura(i);
+          const anio = escena.querySelector('[data-anio]');
+          if (anio) { anio.textContent = def.anios(DATOS, i); anio.style.color = def.color(i); }
+          // La nota sigue al paso: la escena 3 cambia de figura en su último paso y el pie que
+          // describe la serie no describe los dos grupos.
+          const pie = escena.querySelector('[data-nota]');
+          if (pie && def.id === 'e3') pie.textContent = i >= 2 ? T.e3notaContacto : T.e3nota;
+          // El bloque de la figura no se encoge entre pasos: guarda el mayor alto de este ancho.
+          const bloque = escena.querySelector('.bloque-figura');
+          if (bloque) {
+            const medido = Math.round(bloque.getBoundingClientRect().height);
+            const previo = Number(bloque.dataset.mayor || 0);
+            if (medido > previo) { bloque.dataset.mayor = medido; bloque.style.minHeight = `${medido}px`; }
+          }
+        }
+        visor.onscroll();
+        medir();
+      }
+
+      visor.onscroll = () => {
+        const r = visor.scrollHeight - visor.clientHeight;
+        $('avance').style.width = `${Math.round((r > 0 ? visor.scrollTop / r : 1) * 100)}%`;
+        const y = visor.getBoundingClientRect().top;
+        const dentroDe = (id) => { const s = $(id); if (!s) return false; const b = s.getBoundingClientRect(); return b.top - y < H * 0.5 && b.bottom - y > H * 0.5; };
+        const escena = ESCENAS.find((d) => dentroDe(d.id));
+        $('donde').textContent = dentroDe('cierre') ? 'Cierre'
+          : escena ? `Escena ${ESCENAS.indexOf(escena) + 1} de 3 · paso ${activo[escena.id] + 1} de ${escena.pasos}`
+            : (dentroDe('respiro1') || dentroDe('respiro2')) ? 'Pausa' : 'Portada';
+      };
+
+      function medir () {
+        const e1 = $('e1');
+        const texto = e1.querySelector('.bloque-texto').getBoundingClientRect();
+        const fig = e1.querySelector('[data-figura]').getBoundingClientRect();
+        const pegado = e1.querySelector('.escena');
+        const caja = pegado.getBoundingClientRect();
+        const bloques = [...pegado.querySelectorAll('.bloque-encabezado, .bloque-texto, .bloque-figura')]
+          .map((b) => b.getBoundingClientRect().height);
+        const dosCol = visor.clientWidth >= 900;
+        // El gap se lee, no se supone: en pantallas bajas vale 12 px y no 24, y un medidor que
+        // supone el grande informa menos aire del que hay.
+        const aire = getComputedStyle(pegado);
+        const hueco = parseFloat(dosCol ? aire.rowGap : aire.gap) || 0;
+        const usado = dosCol
+          ? Math.max(bloques[0] + bloques[1] + hueco, bloques[2])
+          : bloques.reduce((a, b) => a + b, 0) + hueco * (bloques.length - 1);
+        const sobra = Math.round(caja.height - usado - parseFloat(aire.paddingTop) - parseFloat(aire.paddingBottom));
+        $('info').textContent = [
+          `Ventana ${visor.clientWidth}×${H}`,
+          `Alto útil ${Math.round(util)} px`,
+          `Bloque de frases ${Math.round(texto.height)} px`,
+          `Figura de la escena 1 ${Math.round(fig.height)} px`,
+          `Aire sobrante en la escena 1: ${sobra} px`,
+          `Historia entera ${Math.round(visor.scrollHeight)} px (${(visor.scrollHeight / H).toFixed(1)} pantallas)`,
+        ].join(' · ');
+      }
+
+      const boton = $('invitar');
+      if (boton) boton.addEventListener('click', () => {
+        visor.scrollTo({ top: $('e1').offsetTop - barra, behavior: 'smooth' });
+      });
+
+      visor.scrollTop = antes;
+      visor.onscroll();
+      medir();
+    };
+    if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(() => requestAnimationFrame(listo));
+    else requestAnimationFrame(listo);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Nota, exportación y arranque
+  // ---------------------------------------------------------------------------------------------
+  $('restaurar').addEventListener('click', () => {
+    T = Object.assign({}, TEXTOS_BASE);
+    guardar();
+    $('textos').innerHTML = '';
+    pintarTodo();
+  });
+
+  $('nota').value = nota;
+  $('nota').addEventListener('input', (e) => { nota = e.target.value; guardar(); });
+  $('exportar').addEventListener('click', () => {
+    const texto = JSON.stringify({ laboratorio: 'china-cotidiana', fecha: new Date().toISOString(), combinacion: presetActivo() || 'personalizada', parametros: E, textos: T, textosEditados: Object.keys(editados()), medida: $('info').textContent, nota: nota }, null, 2);
+    const caja = $('json');
+    caja.hidden = false;
+    caja.value = texto;
+    const aMano = () => { caja.select(); $('copiado').textContent = 'Selecciónalo y cópialo a mano.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => { $('copiado').textContent = 'Copiado. Pégalo en el chat.'; }, aMano);
+    else aMano();
+  });
+
+  function pintarTodo () { pintarControles(); pintarTextos(); pintarVisor(true); }
+
+  let anchoVentana = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === anchoVentana) return;
+    anchoVentana = window.innerWidth;
+    if (E.ventana === 'todo') pintarVisor(true);
+  });
+
+  cargarDatos().then(() => { if (DATOS) fijarTextos(); pintarTodo(); });
+})();
+</script>

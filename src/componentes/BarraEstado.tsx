@@ -2,24 +2,26 @@ import { CORTES } from '../nucleo/modulos'
 import { numero } from '../locale'
 
 /**
- * El estado del tablero, en un solo lugar y siempre visible.
+ * El estado del explorador, en un solo lugar y siempre visible.
  *
  * El monitor actual tiene un selector de desagregación **por tarjeta**, diecinueve controles
  * que no conversan entre sí: comparar dos figuras obliga a configurarlas dos veces, y a la
- * altura de la figura 15 ya no se ve qué años están activos. Acá el estado es uno, gobierna
- * todos los módulos y queda pegado arriba.
+ * altura de la figura 15 ya no se ve qué años están activos. Acá el estado es uno y queda pegado
+ * arriba.
  *
  * Que el control de corte sea **uno solo** además hace cumplir sola la regla de un corte a la
  * vez: si no hay dos selectores, no hay forma de cruzar dos variables.
  *
- * El N vive acá y no en cada figura porque es el mismo para todas: es el tamaño del recorte.
- * Cada módulo muestra igual su propia base, que es otra cosa y suele ser menor.
+ * El N vive acá porque es el tamaño del recorte. La figura muestra igual su propia base, que es
+ * otra cosa y suele ser menor.
  */
 
 interface Props {
   olas: number[]
-  olasActivas: number[]
-  onOlas: (olas: number[]) => void
+  /** **Una sola.** Sumar oleadas da una cifra en que 2025 pesa el doble y que no describe a
+   * ninguna (Felipe, 22-09-2026), así que el selector elige, no acumula. */
+  ola: number
+  onOla: (ola: number) => void
   corte: string | null
   onCorte: (corte: string | null) => void
   soloIndependientes: boolean
@@ -28,16 +30,8 @@ interface Props {
 }
 
 export default function BarraEstado ({
-  olas, olasActivas, onOlas, corte, onCorte, soloIndependientes, onSoloIndependientes, n,
+  olas, ola: elegida, onOla, corte, onCorte, soloIndependientes, onSoloIndependientes, n,
 }: Props) {
-  function alternar (ola: number) {
-    const siguiente = olasActivas.includes(ola)
-      ? olasActivas.filter((o) => o !== ola)
-      : [...olasActivas, ola].sort()
-    // Sin oleadas no hay nada que mostrar: se vuelve a todas, como hace el monitor actual.
-    onOlas(siguiente.length === 0 ? olas : siguiente)
-  }
-
   const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta ?? 'Sin corte'
 
   return (
@@ -48,15 +42,16 @@ export default function BarraEstado ({
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Oleada</span>
-          <div className="flex rounded-md border border-gray-300">
+          <div role="radiogroup" aria-label="Oleada" className="flex rounded-md border border-gray-300">
             {olas.map((ola, i) => {
-              const activa = olasActivas.includes(ola)
+              const activa = ola === elegida
               return (
                 <button
                   key={ola}
                   type="button"
-                  aria-pressed={activa}
-                  onClick={() => alternar(ola)}
+                  role="radio"
+                  aria-checked={activa}
+                  onClick={() => onOla(ola)}
                   className={[
                     'px-3 py-1 text-sm tabular-nums transition-colors',
                     i > 0 ? 'border-l border-gray-300' : '',

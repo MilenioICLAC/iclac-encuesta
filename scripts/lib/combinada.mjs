@@ -9,6 +9,7 @@
 // que la prueba calcule por su cuenta es lo que la vuelve una prueba y no una tautología.
 
 import { registros } from './xlsx.mjs'
+import { palabrasDe } from './texto.mjs'
 
 export const RUTA = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -16,7 +17,8 @@ let cache = null
 
 function cargar () {
   if (cache) return cache
-  const { datos: casos } = registros(RUTA, 'datos')
+  // Con las columnas de palabras de las respuestas abiertas, derivadas igual que en el ETL.
+  const casos = registros(RUTA, 'datos').datos.map((c) => ({ ...c, ...palabrasDe(c) }))
   const { datos: valores } = registros(RUTA, 'valores')
   const { datos: diccionario } = registros(RUTA, 'diccionario')
 

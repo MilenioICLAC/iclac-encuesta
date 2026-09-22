@@ -1,14 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { usePasoActivo } from '../nucleo/pasos'
+import { NumeroHistoria, Siguiente } from './siguiente'
 
 /**
  * El recorrido vive en una capa propia, no en el scroll de la página.
  *
- * **Por qué separado.** El recorrido y el tablero se leen distinto: el recorrido tiene un orden
- * y afirma cosas, el tablero es para consultar y no afirma nada (un registro de decisiones interno). Mezclados en un
+ * **Por qué separado.** Una historia y el explorador se leen distinto: la historia tiene un orden
+ * y afirma cosas, el explorador es para consultar y no afirma nada (un registro de decisiones interno). Mezclados en un
  * scroll, el lector no sabe cuándo dejó de leer un relato y empezó a usar una herramienta, y el
- * recorrido con scroll le secuestra la rueda a alguien que solo quería llegar al tablero.
+ * scroll de la historia le secuestra la rueda a quien solo quería consultar.
  *
  * **Se entra cuando se quiere y se sale cuando se quiere.** Botón de cierre siempre a la vista,
  * `Escape`, y una barra de avance que dice cuánto falta: sin ella, «salir cuando quieras» es una
@@ -23,8 +24,7 @@ import { usePasoActivo } from '../nucleo/pasos'
  * Antes la capa se metía sola al historial con `pushState`; con la ruta encima eso duplicaba
  * entradas y el botón de atrás pedía dos toques.
  *
- * **Se sale al tablero.** Salir del recorrido es ir a consultar, así que el botón no dice
- * «cerrar»: dice a dónde lleva.
+ * **El botón de salida dice a dónde lleva**, no «cerrar»: las historias salen al menú.
  */
 
 /**
@@ -53,6 +53,9 @@ interface EstadoEscena {
 
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
+/** La sección de método de la historia, para que el cierre la ofrezca sin que cada historia la repita. */
+const Metodo = createContext('metodo-recorrido')
+
 /**
  * Si un elemento puede recibir el foco de verdad, no solo hacer juego con el selector.
  *
@@ -72,12 +75,19 @@ interface Props {
   abierta: boolean
   alCerrar: () => void
   titulo: string
+  /**
+   * La sección de «Sobre los datos» que explica esta historia. Cada historia publica su propio
+   * método: el enlace de la barra lleva al de la que se está leyendo, no al de otra.
+   */
+  metodo?: string
+  /** Qué dice el botón de salida, que dice a dónde lleva. Las historias salen al menú. */
+  salida?: string
   /** Recibe el contenedor con scroll: el observador de los pasos mide contra él y no contra la
    *  pantalla. Con la pantalla como raíz, dentro de una capa, ningún paso se activa nunca. */
   children: (raiz: HTMLElement | null) => React.ReactNode
 }
 
-export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: Props) {
+export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'metodo-recorrido', salida = 'Volver a las historias', children }: Props) {
   const capa = useRef<HTMLDivElement | null>(null)
   const cerrar = useRef<HTMLButtonElement | null>(null)
   // El cierre va por referencia y no por dependencia del efecto: llega como función anónima desde
@@ -159,10 +169,20 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
           // pasos de la escena 3 devolvían números chicos, la lista salía revuelta y el teclado se
           // quedaba clavado en la primera parada (medido el 08-09-2026: el scroll no pasaba de
           // 351 px por más flechas que se apretaran).
+          //
+          // **Y la parada es donde el imán deja el scroll, no el borde del elemento.** El imán
+          // alinea el borde menos su `scroll-margin-top` (el colchón, casi media pantalla). Con el
+          // borde como parada, bajando el imán corregía hacia adelante y no se notaba; subiendo, el
+          // objetivo quedaba más cerca del punto de partida que del anterior y el imán lo devolvía:
+          // PageUp no salía del cierre (medido el 21-09-2026, clavado en 15.446 px en 390×844).
           const arriba = capa.current.getBoundingClientRect().top - capa.current.scrollTop
-          const paradas = [...capa.current.querySelectorAll<HTMLElement>(
+          const tope = capa.current.scrollHeight - capa.current.clientHeight
+          const paradas = [...new Set([...capa.current.querySelectorAll<HTMLElement>(
             '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido',
-          )].map((el) => Math.round(el.getBoundingClientRect().top - arriba)).sort((a, b) => a - b)
+          )].map((el) => {
+            const margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+            return Math.min(tope, Math.max(0, Math.round(el.getBoundingClientRect().top - arriba - margen)))
+          }))].sort((a, b) => a - b)
           const actual = capa.current.scrollTop
           const siguiente = sentido > 0
             ? paradas.find((y) => y > actual + 4)
@@ -280,7 +300,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
                 : actual.indice > 0
                 ? `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
                 : actual.indice === 0
-                  ? `Portada. ${actual.titulo}. El recorrido tiene ${numeradas} escenas.`
+                  ? `Portada. ${actual.titulo}. La historia tiene ${numeradas} escenas.`
                   : `Pausa. ${actual.titulo}`)
             : titulo}
         </p>
@@ -289,7 +309,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
             en ese momento, no al final. En teléfono no cabe junto a la salida y se queda solo el
             enlace del cierre. */}
         <Link
-          to="/datos?foco=metodo-recorrido"
+          to={`/datos?foco=${metodo}`}
           className="hidden shrink-0 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark sm:inline"
         >
           Método
@@ -303,7 +323,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
           onClick={alCerrar}
           className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
         >
-          <span className="hidden sm:inline">Salir al tablero</span>
+          <span className="hidden sm:inline">{salida}</span>
           <span className="sm:hidden">Salir</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden className="h-3.5 w-3.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
@@ -312,7 +332,9 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, children }: 
       </div>
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
-      <Registro.Provider value={informar}>{children(raiz)}</Registro.Provider>
+      <Registro.Provider value={informar}>
+        <Metodo.Provider value={metodo}>{children(raiz)}</Metodo.Provider>
+      </Registro.Provider>
     </div>
   )
 }
@@ -529,7 +551,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
  * Con `prefers-reduced-motion` el párrafo va entero también en el teléfono: quien pide menos
  * movimiento ve todo, no una versión recortada.
  */
-export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, raiz, modulo, dosColumnas = false }: {
+export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, raiz, dosColumnas = false }: {
   /** Qué número de escena es, para la barra de la capa. Va explícito y no contado solo: las
    *  escenas se escriben a mano en la página, y un contador implícito se desordena en silencio
    *  al mover una. */
@@ -558,12 +580,6 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   nota?: React.ReactNode | ((activo: number, reducido: boolean) => React.ReactNode)
   raiz: HTMLElement | null
   /**
-   * El módulo del tablero que responde esta misma pregunta, si lo hay. Con él, la escena termina
-   * ofreciendo el camino del tramo que afirma al que deja consultar (un registro de decisiones interno), con el módulo ya
-   * enfocado. Sin él, la escena no ofrece nada: mandar al tablero entero no es una respuesta.
-   */
-  modulo?: string
-  /**
    * En escritorio, el relato a la izquierda y la figura a la derecha (ver `.escena.en-columnas` en
    * `index.css`). **Es por escena y no global**: sirve cuando la figura es una sola, como el
    * termómetro, y no cuando son varios paneles al lado. Las escenas 2 y 3 tienen tres series en
@@ -578,8 +594,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
 
   // **Un paso puede no tener figura.** Cuando `figura` devuelve `null`, la escena se queda con la
   // frase sola y centrada: es la pausa entre dos historias, y una figura de relleno ahí compite con
-  // el respiro en vez de aportarlo. Sin figura tampoco hay pie, ni leyenda, ni enlace al tablero:
-  // todos hablan de algo que no está.
+  // el respiro en vez de aportarlo. Sin figura tampoco hay pie ni leyenda:
+  // los dos hablan de algo que no está.
   const dibujo = figura(activo, reducido)
   const sinFigura = dibujo === null || dibujo === undefined
   const bloqueFigura = useRef<HTMLDivElement | null>(null)
@@ -704,15 +720,6 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           {cabecera?.(activo)}
           {dibujo}
           {nota && <div className="mt-2">{typeof nota === 'function' ? nota(activo, reducido) : nota}</div>}
-          {modulo && (
-            <Link
-              to={`/tablero?foco=${modulo}`}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-dark underline underline-offset-2 hover:text-gray-900"
-            >
-              Ver esta pregunta en el tablero
-              <span aria-hidden>→</span>
-            </Link>
-          )}
         </div>
         )}
       </div>
@@ -822,14 +829,19 @@ function Pista ({ cantidad, refs, alto, altoEscena }: {
  *   rehacer el recorrido entero.
  * - **La salida tiene su propio paso.** Con la última frase compartía el gesto, y se leía antes
  *   de que la frase terminara de encenderse.
+ * - **La salida principal es la historia siguiente**, con su número y su pregunta de portada, como
+ *   la tarjeta del menú. La última historia ofrece volver al menú. Lo que sigue a una historia es
+ *   otra (decisión de Felipe, 22-09-2026).
  */
-export function Cierre ({ raiz, titulo, frases, invitacion }: {
+export function Cierre ({ raiz, titulo, frases }: {
   raiz: HTMLElement | null
   titulo: string
   /** El titular de cada escena que el cierre repite, con la escena a la que lleva. */
   frases: { escena: number, texto: string }[]
-  invitacion: React.ReactNode
 }) {
+  const siguiente = useContext(Siguiente)
+  const numero = useContext(NumeroHistoria)
+  const metodo = useContext(Metodo)
   // Una frase por paso, y uno más para la salida.
   const pasos = frases.length + 1
   const { activo, refs, reducido } = usePasoActivo(pasos, raiz)
@@ -877,7 +889,7 @@ export function Cierre ({ raiz, titulo, frases, invitacion }: {
       >
         {/* Las medidas de escritorio viven en `index.css` (`.cierre-recorrido`). */}
         <div className="bloque-cierre mx-auto w-full max-w-2xl">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">Recorrido</p>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">{numero ? `Historia ${numero}` : 'Recorrido'}</p>
           <h2 className="mt-1.5 font-display text-2xl font-semibold leading-tight text-gray-900">{titulo}</h2>
 
           <ol className="frases-cierre mt-5 flex flex-col gap-3">
@@ -911,24 +923,29 @@ export function Cierre ({ raiz, titulo, frases, invitacion }: {
           {/* `invisible` además de la opacidad: son controles, y un botón transparente se puede
               tabular y apretar sin verlo. */}
           <div className={`salida-cierre mt-7 border-t border-gray-200 pt-5 transition-[opacity,visibility] duration-500 ${salidaVisible ? '' : 'invisible opacity-0'}`}>
-            <p className="text-base leading-snug text-gray-700">{invitacion}</p>
-            <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2.5">
-              <Link
-                to="/tablero"
-                className="inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
-              >
-                Preguntas destacadas <span aria-hidden>→</span>
-              </Link>
-              <Link
-                to="/explorar"
-                className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
-              >
-                Explorar las preguntas <span aria-hidden>→</span>
-              </Link>
+            {siguiente && (
+              <>
+                <p className="rotulo-siguiente font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">
+                  Siguiente · Historia {siguiente.numero}
+                </p>
+                <p className="pregunta-siguiente mt-1 text-balance font-display text-xl font-semibold leading-snug text-gray-900">{siguiente.pregunta}</p>
+              </>
+            )}
+            <Link
+              to={siguiente ? siguiente.ruta : '/'}
+              aria-label={siguiente ? `Leer la historia ${siguiente.numero}: ${siguiente.nombre}` : undefined}
+              className="boton-siguiente mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
+            >
+              {siguiente ? 'Leer la historia' : 'Ver todas las historias'} <span aria-hidden>→</span>
+            </Link>
+            <div className="otras-salidas mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+              {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">Volver a las historias</Link>}
+              <Link to="/explorar" className="underline underline-offset-2 hover:text-brand-dark">Explorar las preguntas</Link>
+              <Link to={`/datos?foco=${metodo}`} className="underline underline-offset-2 hover:text-brand-dark">Cómo se hizo</Link>
               <button
                 type="button"
                 onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
-                className="text-sm text-gray-600 underline underline-offset-2 hover:text-brand-dark"
+                className="underline underline-offset-2 hover:text-brand-dark"
               >
                 Volver al inicio <span aria-hidden>↑</span>
               </button>

@@ -5,7 +5,7 @@ import { decimal, numero, porcentaje } from '../locale'
  * Cómo se hizo el recorrido: qué sostiene cada afirmación y qué puede hacer una figura mientras
  * avanza el scroll.
  *
- * **Existe porque el recorrido afirma.** El tablero deja consultar y no dice nada; el recorrido
+ * **Existe porque el recorrido afirma.** El explorador deja consultar y no dice nada; el recorrido
  * dice cosas, y en el formato en que las dice —una figura que cambia con el scroll— el lector no
  * tiene cómo auditar lo que se le muestra. Acá está el respaldo, y lo que la animación no hace.
  *
@@ -50,17 +50,17 @@ export default function MetodoRecorrido ({ encuesta }: { encuesta: Encuesta }) {
   // en el recorrido.
   const afirmaciones = [
     {
-      escena: `Escena 1 · en ${primera} los dos estaban parejos`,
+      escena: `La mirada · en ${primera} los dos estaban parejos`,
       dice: `La brecha entre China y Estados Unidos en ${primera} no se distingue de cero.`,
       prueba: brecha(primera) && `Brecha dentro de cada persona: ${cifra(brecha(primera)!.diferencia)} puntos ${rango(brecha(primera)!.ic)}, ${valorP(brecha(primera)!.p)}, n = ${numero(brecha(primera)!.n)}.`,
     },
     {
-      escena: `Escena 1 · en ${ultima} China queda arriba`,
+      escena: `La mirada · en ${ultima} China queda arriba`,
       dice: 'La misma persona pone a China por encima de Estados Unidos, y antes no.',
       prueba: brecha(ultima) && `${cifra(brecha(ultima)!.diferencia)} puntos ${rango(brecha(ultima)!.ic)}, ${valorP(brecha(ultima)!.p)}, n = ${numero(brecha(ultima)!.n)}. Es una comparación pareada: la misma persona pone las dos notas, así que «una oleada usó la escala más generosa» deja de ser una explicación posible.`,
     },
     {
-      escena: `Escena 1 · entre ${primera} y ${penultima} no se movió nada`,
+      escena: `La mirada · entre ${primera} y ${penultima} no se movió nada`,
       dice: 'Ninguno de los cinco países del termómetro se distingue del ruido en ese tramo.',
       prueba: `Los cinco quedan sobre p = 0,05. El mayor movimiento es ${
         decimal(Math.max(...['china', 'eeuu', 'corea', 'francia', 'japon']
@@ -68,7 +68,7 @@ export default function MetodoRecorrido ({ encuesta }: { encuesta: Encuesta }) {
       } puntos, con su intervalo cruzando el cero.`,
     },
     {
-      escena: 'Escena 1 · la posición política no ordena la opinión',
+      escena: 'La mirada · la posición política no ordena la opinión',
       dice: `En ${primera} la recta parece inclinada, y esa inclinación la sostiene un puñado de respuestas.`,
       prueba: deLaPrimera && sostiene && `Pendiente ${cifra(deLaPrimera.recta.b)} ${rango(deLaPrimera.recta.ic)}, ${valorP(deLaPrimera.recta.p)}, R² ${decimal(deLaPrimera.recta.r2, 1)} %. Sin el punto ${sostiene.x} (${numero(sostiene.n)} personas): ${cifra(sostiene.recta.b)} ${rango(sostiene.recta.ic)}, ${valorP(sostiene.recta.p)}.`,
     },
@@ -76,10 +76,10 @@ export default function MetodoRecorrido ({ encuesta }: { encuesta: Encuesta }) {
 
   return (
     <>
-      <h3 className="mt-8 font-display text-base font-semibold text-gray-900">Cómo se hizo el recorrido</h3>
+      <h3 className="mt-8 font-display text-base font-semibold text-gray-900">Cómo se hicieron las historias</h3>
       <div className="mt-2 flex max-w-2xl flex-col gap-2">
         <p>
-          El recorrido <strong>afirma</strong>, y lo hace con una figura que cambia mientras se
+          Las historias <strong>afirman</strong>, y lo hacen con una figura que cambia mientras se
           avanza. Ese formato es cómodo de leer y difícil de auditar, así que acá está lo que
           sostiene cada frase y lo que la animación tiene prohibido hacer.
         </p>
@@ -97,7 +97,7 @@ export default function MetodoRecorrido ({ encuesta }: { encuesta: Encuesta }) {
           pantalla. La animación es una capa de lectura sobre una figura que ya está completa.
         </Regla>
         <Regla titulo="El último paso muestra todo.">
-          Es la garantía de que el recorrido no termina escondiendo nada, y es también lo que ve
+          Es la garantía de que una historia no termina escondiendo nada, y es también lo que ve
           quien pide menos movimiento o navega sin JavaScript.
         </Regla>
         <Regla titulo="Un eje recortado lo dice.">
@@ -106,7 +106,7 @@ export default function MetodoRecorrido ({ encuesta }: { encuesta: Encuesta }) {
         </Regla>
       </ul>
 
-      <h4 className="mt-5 font-display text-sm font-semibold text-gray-900">Qué sostiene cada afirmación</h4>
+      <h4 className="mt-5 font-display text-sm font-semibold text-gray-900">Las afirmaciones de «La mirada», en detalle</h4>
       <ul className="mt-2 flex max-w-2xl flex-col gap-3 text-xs leading-snug">
         {afirmaciones.map((a) => (
           <li key={a.escena}>

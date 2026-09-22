@@ -8,17 +8,14 @@ import BarrasPorOla from './BarrasPorOla'
 import { numero } from '../locale'
 
 /**
- * El explorador libre: cualquier pregunta del instrumento, con los controles del tablero.
+ * El explorador: cualquier pregunta del instrumento, para consultar. Las historias afirman; esto no.
  *
- * Es la pieza más reutilizable del monitor actual y la que menos se ve, al final de la página.
- * Cubre de una vez las decenas de preguntas que no tienen módulo propio, así que sin esto no
- * hay paridad por más módulos que se agreguen.
+ * **La oleada y el corte vienen de la barra de estado**, y la oleada es una sola: nada suma
+ * oleadas (Felipe, 22-09-2026). La distribución es la de esa oleada. La vista «Entre oleadas»
+ * (y las numéricas, que solo tienen esa) pone una barra por oleada sin sumar nada, y por eso no
+ * usa la oleada elegida: lo dice debajo de la figura.
  *
- * **Hereda la oleada y el corte de la barra de estado**, en vez de tener selectores propios
- * como el monitor actual. Ahí el graficador repite los controles del tablero y el lector
- * termina con dos estados distintos en la misma página sin darse cuenta.
- *
- * Lo único que agrega es qué pregunta mirar y cómo: por oleada o comparando oleadas.
+ * Lo único que agrega es qué pregunta mirar y cómo: en una oleada o comparando oleadas.
  */
 
 type Vista = 'distribucion' | 'serie'
@@ -28,8 +25,8 @@ interface Props {
   casos: Caso[]
   corte: string | null
   soloIndependientes: boolean
-  /** Las oleadas activas de la barra de estado: la vista entre oleadas pinta las otras en gris. */
-  olasActivas: number[]
+  /** La oleada de la barra de estado. */
+  ola: number
 }
 
 /** Las de caracterización no se grafican: son los cortes, no las preguntas. */
@@ -39,7 +36,7 @@ const CARACTERIZACION = new Set([
   'olas_panelista', 'ola',
 ])
 
-export default function Graficador ({ encuesta, casos, corte, soloIndependientes, olasActivas }: Props) {
+export default function Graficador ({ encuesta, casos, corte, soloIndependientes, ola }: Props) {
   const opciones = useMemo(() => {
     const categoricas = encuesta.variables
       .filter((v) => !CARACTERIZACION.has(v.nombre))
@@ -70,6 +67,10 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
     ? [...new Set(grupo.opciones.flatMap((o) => o.olas))].sort()
     : variable?.olas ?? []
 
+  // Qué dibuja la figura: la oleada elegida, o una barra por oleada.
+  const entreOlas = !grupo && (elegida.tipo === 'numerica' || vista === 'serie')
+  const sinOla = !entreOlas && !olas.includes(ola)
+
   const base = grupo
     ? multirespuesta(casos, grupo).base
     : variable
@@ -80,12 +81,11 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
     <section className="mx-auto max-w-5xl px-4 pb-12">
       <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Las preguntas que no tienen módulo propio. Usa la oleada y el corte de arriba, así que lo que se
-        elija acá se lee con el mismo recorte que el resto de la página.
+        Cualquier pregunta de la encuesta, una oleada a la vez. La oleada y el corte se eligen arriba.
       </p>
 
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4">
-        <label className="flex min-w-0 flex-1 flex-col gap-1">
+        <label className="flex min-w-[min(100%,16rem)] flex-1 flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Pregunta</span>
           <select
             value={elegida.clave}
@@ -101,7 +101,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Ver</span>
           <div className="flex rounded-md border border-gray-300">
-            {([['distribucion', 'Distribución'], ['serie', 'Entre oleadas']] as const).map(([id, texto], i) => (
+            {([['distribucion', `En ${ola}`], ['serie', 'Entre oleadas']] as const).map(([id, texto], i) => (
               <button
                 key={id}
                 type="button"
@@ -121,7 +121,14 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
       <article className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
         <h3 className="font-display text-base font-semibold">{elegida.etiqueta}</h3>
 
-        <Figura
+        {sinOla
+          ? (
+            <p className="mt-3 text-sm text-gray-600">
+              Esta pregunta no se hizo en {ola}. Está en {olas.join(' y ')}: elige {olas.length > 1 ? 'una de esas oleadas' : 'esa oleada'} arriba
+              {variable?.serie && olas.length > 1 ? ', o mírala entre oleadas' : ''}.
+            </p>
+            )
+          : <Figura
           encuesta={encuesta}
           casos={casos}
           corte={corte}
@@ -130,14 +137,19 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
           variable={variable}
           grupo={grupo}
           esNumerica={elegida.tipo === 'numerica'}
-          olasActivas={olasActivas}
-        />
+        />}
 
         <footer className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 pt-2 text-xs text-gray-500">
           {/* La base efectiva de la figura, no el tamaño del recorte: en una pregunta que se
               hizo en una sola oleada las dos cifras difieren mucho, y la que importa es esta. */}
-          <span className="tabular-nums">n = {numero(base)}</span>
-          <span aria-hidden>·</span>
+          {!sinOla && (
+            <>
+              {entreOlas
+                ? <span>Una barra por oleada; no usa la oleada ni el corte elegidos arriba</span>
+                : <span className="tabular-nums">n = {numero(base)} · {ola}</span>}
+              <span aria-hidden>·</span>
+            </>
+          )}
           <span className={olas.length < 3 ? 'text-amber-700' : undefined}>
             {olas.length === 0 ? 'Sin oleadas' : olas.length === 1 ? `Solo ${olas[0]}` : olas.length < 3 ? `Solo ${olas.join(' y ')}` : 'Las tres oleadas'}
           </span>
@@ -159,7 +171,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
 }
 
 function Figura ({
-  encuesta, casos, corte, soloIndependientes, vista, variable, grupo, esNumerica, olasActivas,
+  encuesta, casos, corte, soloIndependientes, vista, variable, grupo, esNumerica,
 }: {
   encuesta: Encuesta
   casos: Caso[]
@@ -169,7 +181,6 @@ function Figura ({
   variable?: Variable
   grupo?: Encuesta['multiples'][number]
   esNumerica: boolean
-  olasActivas: number[]
 }) {
   if (grupo) {
     const datos = multirespuesta(casos, grupo)
@@ -186,7 +197,7 @@ function Figura ({
   if (esNumerica) {
     // Una media no tiene distribución de categorías, así que la única vista útil es la serie.
     const puntos = serie(encuesta, variable, (c) => media(c, variable.nombre).media, { soloIndependientes })
-    return <BarrasPorOla puntos={puntos} unidad="media" activas={olasActivas} etiqueta="Promedio de 0 a 100" />
+    return <BarrasPorOla puntos={puntos} unidad="media" etiqueta="Promedio de 0 a 100" />
   }
 
   if (vista === 'serie') {
@@ -200,7 +211,7 @@ function Figura ({
       (c) => distribucion(c, variable).segmentos.find((s) => s.codigo === primera.codigo)?.porcentaje ?? 0,
       { soloIndependientes },
     )
-    return <BarrasPorOla puntos={puntos} unidad="porcentaje" activas={olasActivas} etiqueta={primera.etiqueta} />
+    return <BarrasPorOla puntos={puntos} unidad="porcentaje" etiqueta={primera.etiqueta} />
   }
 
   const agregado = distribucion(casos, variable)

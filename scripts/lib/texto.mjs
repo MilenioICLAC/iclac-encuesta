@@ -112,29 +112,92 @@ export function tokenizar (texto) {
 }
 
 /**
- * Cuenta palabras sobre un conjunto de respuestas, agrupando por raíz.
+ * Las palabras de una persona, **una vez cada una**: la raíz de cada palabra corregida, sin repetir.
  *
- * La etiqueta del grupo es **la forma más frecuente**, no la raíz: la raíz de «inversión» es
- * «invers», que no se puede mostrar. Es el mismo criterio del monitor.
+ * Una persona puede escribir «mall» dos veces en la misma respuesta, o nombrar tres marcas en tres
+ * casillas. Lo que se publica es cuántas **personas** la escribieron, que es lo único que se puede
+ * dividir por las personas que contestaron sin que el porcentaje pase de cien.
  */
-export function contar (textos, { minimo = 2 } = {}) {
-  const grupos = new Map()
-
-  for (const texto of textos) {
+function raicesDe (respuestas) {
+  const lista = Array.isArray(respuestas) ? respuestas : [respuestas]
+  const vistas = new Map()
+  for (const texto of lista) {
     for (const palabra of tokenizar(texto)) {
       const clave = raiz(palabra)
-      if (!grupos.has(clave)) grupos.set(clave, { total: 0, formas: new Map() })
-      const g = grupos.get(clave)
-      g.total += 1
-      g.formas.set(palabra, (g.formas.get(palabra) ?? 0) + 1)
+      if (!vistas.has(clave)) vistas.set(clave, palabra)
     }
   }
+  return vistas
+}
 
-  return [...grupos.values()]
-    .map((g) => {
-      const [forma] = [...g.formas.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))[0]
-      return { palabra: forma, n: g.total }
-    })
+/**
+ * Si la respuesta de una persona contiene la palabra (por raíz, con las mismas correcciones que el
+ * conteo). Es lo que alimenta los contrastes de palabras: 1 si la escribió, 0 si contestó otra cosa.
+ */
+export function menciona (respuestas, palabra) {
+  return raicesDe(respuestas).has(raiz(corregir(palabra)))
+}
+
+/**
+ * La forma visible de cada raíz, **decidida una sola vez sobre todas las respuestas**.
+ *
+ * La raíz de «inversión» es «invers», que no se puede mostrar, así que cada grupo lleva la forma
+ * más frecuente. Si cada oleada eligiera la suya, la misma palabra podía llamarse distinto en dos
+ * oleadas y la figura las mostraría como dos filas. Por eso se decide acá, con todos los datos, y
+ * cada conteo la recibe hecha.
+ */
+export function etiquetas (personas) {
+  const formas = new Map()
+  for (const respuestas of personas) {
+    const lista = Array.isArray(respuestas) ? respuestas : [respuestas]
+    for (const texto of lista) {
+      for (const palabra of tokenizar(texto)) {
+        const clave = raiz(palabra)
+        if (!formas.has(clave)) formas.set(clave, new Map())
+        formas.get(clave).set(palabra, (formas.get(clave).get(palabra) ?? 0) + 1)
+      }
+    }
+  }
+  return new Map([...formas].map(([clave, f]) => [clave, [...f.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))[0][0]]))
+}
+
+/**
+ * Cuántas personas escribieron cada palabra, agrupando por raíz.
+ *
+ * `personas` trae un elemento por persona: su respuesta, o la lista de sus respuestas cuando la
+ * pregunta tiene varias casillas. `nombres` es el mapa de `etiquetas()`, calculado sobre todas las
+ * oleadas; sin él, la forma se elige con estas mismas personas.
+ */
+export function contar (personas, { minimo = 2, nombres = etiquetas(personas) } = {}) {
+  const n = new Map()
+  for (const respuestas of personas) {
+    for (const clave of raicesDe(respuestas).keys()) n.set(clave, (n.get(clave) ?? 0) + 1)
+  }
+  return [...n.entries()]
+    .map(([clave, total]) => ({ palabra: nombres.get(clave) ?? clave, n: total }))
     .filter((p) => p.n >= minimo)
     .sort((a, b) => b.n - a.n || a.palabra.localeCompare(b.palabra, 'es'))
+}
+
+/**
+ * Las palabras que se contrastan entre oleadas, **fijadas por Felipe el 22-09-2026** después de ver
+ * las frecuencias: son exploratorias y así se publican. Cada una deja una columna 1/0 (null si la
+ * persona no contestó esa pregunta), que es lo único de la respuesta abierta que viaja al navegador.
+ * Holm va sobre las cuatro juntas (`scripts/contrastes.test.mjs`).
+ */
+export const PALABRAS = [
+  { campo: 'palabra_trump', columnas: ['p4_2'], palabra: 'trump' },
+  { campo: 'palabra_tecnologia', columnas: ['p4_1'], palabra: 'tecnología' },
+  { campo: 'palabra_mall', columnas: ['p16'], palabra: 'mall' },
+  { campo: 'palabra_buena', columnas: ['p17_texto'], palabra: 'buena' },
+]
+
+/** Las columnas de `PALABRAS` para una fila de la base: el ETL y las pruebas usan esta misma. */
+export function palabrasDe (fila) {
+  const salida = {}
+  for (const p of PALABRAS) {
+    const respuestas = p.columnas.map((c) => fila[c]).filter((x) => typeof x === 'string' && x.trim())
+    salida[p.campo] = respuestas.length === 0 ? null : menciona(respuestas, p.palabra) ? 1 : 0
+  }
+  return salida
 }

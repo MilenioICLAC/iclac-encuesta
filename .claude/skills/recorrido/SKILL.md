@@ -20,14 +20,24 @@ Todo vive en la capa (`CapaRecorrido`, `fixed inset-0`, con barra superior medid
 | Pieza | Componente | En la barra | Índice |
 |---|---|---|---|
 | Portada | `Portada` | «Portada» | 0 |
-| Escena 1 a 5 | `Escena` | «Escena N de 5» y un punto por paso | 1 a 5 |
+| Escena 1 a N | `Escena` | «Escena N de M» y un punto por paso | 1 a N |
 | Respiro (pausa entre escenas) | `Respiro` | «Pausa» | negativo |
 | Cierre | `Cierre` | «Cierre» | −99 |
 
-Escenas: 1 termómetro por país; 2 ideología (la recta del monitor y el punto de treinta personas); 3
-confianza en China y Estados Unidos (`p24`/`p25`, `Divergente`); 4 la misma comparación dentro de
-cada persona; 5 posicionamiento (`p26`, `BarrasPosicionamiento`). Las define `Recorrido` en
-`src/App.tsx`.
+Desde el 21-09-2026 hay **cinco historias**, cada una una capa propia en `#/historias/<id>`, con
+registro en `src/historias/indice.tsx` y menú en la raíz:
+
+| Historia | Archivo | Escenas |
+|---|---|---|
+| La mirada | `src/historias/recorrido.tsx` (`parte="mirada"`) | 1 termómetro por país; 2 ideología (la recta y el punto de treinta personas) |
+| Entre dos potencias | ídem (`parte="potencias"`) | 1 confianza (`p24`/`p25`, `Divergente`); 2 la misma comparación dentro de cada persona; 3 posicionamiento (`p26`) |
+| Donde uno vive | `src/historias/territorio.tsx` | 1 riesgo (`p7`); 2 el mapa y los cuatro niveles de exposición, en un paso; 3 riesgo por nivel; 4 rol en la comuna (`p8`). «Estrato» no se dice en pantalla |
+| Inversión y Estado | `src/historias/inversion.tsx` | 1 quiere poder limitar (`p19`); 2 sectores (`p20`, puntos por oleada) |
+| China cotidiana | `src/historias/cotidiana.tsx` | 1 mall y restaurante; 2 conoce a alguien; 3 buses (2025); 4 racismo visto y quién lo ve |
+| La vacuna | `src/historias/vacuna.tsx` | 1 dice haberla recibido, y el reparto de 2025 con «No recuerdo»; 2 buena opinión y preferencia por Pfizer |
+
+Las historias nuevas usan `BarrasDeEscena`. Lo que dice el resto de esta skill del «recorrido» vale
+para cada historia.
 
 ## Editorial
 
@@ -39,9 +49,9 @@ cada persona; 5 posicionamiento (`p26`, `BarrasPosicionamiento`). Las define `Re
   ideológicos): la escala se calcula sobre los dos juegos de filas juntos.
 - **El encabezado sigue al paso.** `titulo`, `nota` y `cabecera` aceptan una función del paso: un pie
   que describe la figura anterior contradice a la actual.
-- **El recorrido afirma, el tablero consulta.** Cada escena ofrece su módulo
-  (`#/tablero?foco=<id>`), no el tablero entero.
-- **El recorrido publica su método** en «Sobre los datos» (`#/datos?foco=metodo-recorrido`), enlazado
+- **Lo que sigue a una historia es otra** (Felipe, 22-09-2026). El tablero salió de la app ese mismo
+  día; el cierre ofrece además el explorador.
+- **Cada historia publica su método** en «Sobre los datos» (`#/datos?foco=metodo-<id>`, armado desde `indice.tsx`), enlazado
   desde la barra (oculto bajo 640 px). Una frase sin prueba ahí no debería estar en el recorrido.
 - **Contar el método vale cuando el método es el hallazgo**, y solo si retirar el punto da vuelta la
   conclusión; si no, esos pasos no se dibujan.
@@ -50,10 +60,12 @@ cada persona; 5 posicionamiento (`p26`, `BarrasPosicionamiento`). Las define `Re
 - **Portada:** logo de ICLAC, «¿Qué opina la gente sobre China?» y un botón de tres arcos flotando en
   cascada con «Haz scroll para desplazarte» («Desliza» con puntero táctil, por media query de puntero
   y no por ancho). El botón hace lo mismo que el gesto. Sin lista de escenas.
-- **Cierre:** repite conclusiones, no escenas. Los titulares de las escenas 1, 3 y 5 (la 5 solo con el
-  vuelco comprobado), cada uno enlazado a su escena y en gris 500 al pasar; en un paso propio, la
-  invitación y tres salidas (tablero, explorador, volver al inicio). Las frases **son** los titulares,
-  escritos una vez.
+- **Cierre:** repite conclusiones, no escenas. Los titulares de las escenas, cada uno enlazado a su
+  escena y en gris 500 al pasar. En un paso propio, la salida: la historia siguiente como la tarjeta
+  del menú («Siguiente · Historia N», su pregunta y «Leer la historia →», por el contexto `Siguiente`
+  que arma `App`); en la última, «Ver todas las historias →». Debajo, en texto: volver a las
+  historias (no en la última, que ya lo es), explorar las preguntas, cómo se hizo (el método de la
+  historia) y volver al inicio. Las frases **son** los titulares, escritos una vez.
 
 ## Honestidad de la animación
 
@@ -116,7 +128,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   rueda no, o al revés.
 - **Teclado:** la capa maneja `PageUp`/`PageDown` y flechas llevando al anclaje siguiente. Los anclajes
   se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
-  nunca con `offsetTop`. No es scroll-jacking: rueda y gesto quedan intactos.
+  nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento**: la parada es donde el imán deja el
+  scroll, no el borde. Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
 - **El alto sale del contenedor y va en píxeles** (`--alto-capa`), con `svh` de respaldo para el primer
   cuadro. Nunca `100%` (se resuelve contra una sección sin alto) ni `vh`.
 - **La escena se pega bajo la barra**; la barra se mide y se publica en `--barra-capa`. Alto útil de
@@ -130,8 +143,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - **El bloque de la figura no se encoge entre pasos:** `Escena` guarda su mayor alto por ancho con
   `useLayoutEffect`.
 - **Pantallas bajas:** media query por alto (`max-height: 700px`); el aire es lo primero que cede.
-- **La capa es una ruta** (`#/recorrido` y la raíz). Sin `pushState` propio. Salir lleva al tablero y el
-  botón lo dice. En iOS, bloquear el fondo pide `position: fixed` con `top: -scrollY`.
+- **La capa es una ruta** (`#/historias/<id>`). Sin `pushState` propio. Salir lleva al menú de historias y
+  el botón lo dice («Volver a las historias», prop `salida`). En iOS, bloquear el fondo pide `position: fixed` con `top: -scrollY`.
 
 ## Escritorio: dos columnas
 

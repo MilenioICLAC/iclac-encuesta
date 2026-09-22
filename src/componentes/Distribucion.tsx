@@ -46,7 +46,7 @@ export default function Distribucion ({ agregado, grupos }: Props) {
     )
   }
 
-  // Los cortes que ofrece el tablero están ordenados (edad, educación, nivel socioeconómico,
+  // Los cortes que ofrece el explorador están ordenados (edad, educación, nivel socioeconómico,
   // macrozona de norte a sur, impacto de bajo a muy alto), así que van con la rampa de orden
   // y no con colores de identidad: el orden tiene que verse en el color.
   const colores = pasosDeOrden(grupos.length)

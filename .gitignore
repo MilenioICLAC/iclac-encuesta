@@ -20,19 +20,19 @@ public/data/oleada_*.json
 # Salida del ETL: se regenera con `npm run etl:combinada` y la construccion la
 # rehace, asi que versionarla solo garantiza que se desincronice de sus fuentes.
 public/data/encuesta.json
+public/data/chile-regiones.json
 # Igual que el artefacto: se regeneran con `npm run descargas`.
 public/descargas/
 # El laboratorio del recorrido se sirve desde acá para abrirlo en el teléfono, pero **no es parte
 # del producto** y no se publica con el sitio: es una copia que `npm run lab` genera a partir de
 # `laboratorio/recorrido.html`, que sí se versiona.
 public/laboratorio.html
-# Lo mismo para el de las series del tablero: `npm run lab:series` a partir de
-# `laboratorio/tablero-series.html`.
-public/laboratorio-series.html
 # Y el del cierre del recorrido: `npm run lab:cierre` a partir de `laboratorio/cierre-recorrido.html`.
 public/laboratorio-cierre.html
 # Y el de la portada: `npm run lab:portada` a partir de `laboratorio/portada-recorrido.html`.
 public/laboratorio-portada.html
+# Y el de la historia «China cotidiana»: `npm run lab:cotidiana` a partir de `laboratorio/china-cotidiana.html`.
+public/laboratorio-cotidiana.html
 
 # docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
 # máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
@@ -40,3 +40,5 @@ public/laboratorio-portada.html
 
 # Índice local de code-review-graph (se regenera con `code-review-graph build`)
 .code-review-graph/
+# Y el dashboard de decisiones de las historias: `npm run lab:decisiones` a partir de `laboratorio/decisiones.html`.
+public/laboratorio-decisiones.html

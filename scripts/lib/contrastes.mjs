@@ -5,8 +5,9 @@
 // La maquinaria estadística vive en `contraste.mjs`; esto es qué se le pide.
 
 import { bootstrap, bootstrapMedia, estandarizada, generador, media, permutacion, permutacionPareada, RONDAS, SEMILLA } from './contraste.mjs'
+import { impacto } from './regiones.mjs'
 
-/** Las medidas que el recorrido y el tablero comparan entre oleadas. */
+/** Las medidas que las historias comparan entre oleadas. */
 export const MEDIDAS = [
   { id: 'termometro-china', etiqueta: 'Opinión sobre China', unidad: 'puntos', tipo: 'media', campo: 'p5_1_val' },
   { id: 'termometro-eeuu', etiqueta: 'Opinión sobre Estados Unidos', unidad: 'puntos', tipo: 'media', campo: 'p5_2_val' },
@@ -66,6 +67,13 @@ export const MEDIDAS = [
     codigos: [1],
     advertencia: 'Desde 2024 la pregunta viene después de otra sobre fuentes de información, así que parte de la diferencia puede venir del cuestionario y no de las personas.',
   },
+  // **El resto del bloque cotidiano de ICLAC**, que es donde vive `p18`. La historia «China
+  // cotidiana» cuenta las tres a la vez: la China material que se tiene cerca (`p12`, `p13`) y el
+  // contacto con personas (`p14`). Sin estas tres, decir que una crece y la otra no sería una
+  // lectura a ojo de la figura.
+  { id: 'mall-cerca', etiqueta: 'Vive a menos de diez cuadras de un mall chino', unidad: '%', tipo: 'proporcion', campo: 'p12', codigos: [1] },
+  { id: 'restaurante-cerca', etiqueta: 'Vive a menos de diez cuadras de un restaurante chino', unidad: '%', tipo: 'proporcion', campo: 'p13', codigos: [1] },
+  { id: 'conoce-china', etiqueta: 'Conoce personalmente a alguien de China o de ascendencia china', unidad: '%', tipo: 'proporcion', campo: 'p14', codigos: [1] },
   { id: 'no-alineamiento', etiqueta: 'No alineamiento', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3, 4] },
   { id: 'pro-china', etiqueta: 'Prefiere alinearse con China', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [1] },
   { id: 'pro-eeuu', etiqueta: 'Prefiere alinearse con Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [2] },
@@ -76,6 +84,70 @@ export const MEDIDAS = [
   // eso estaría midiendo otra cosa.
   { id: 'distancia-ambos', etiqueta: 'Prefiere mantener distancia de ambas potencias', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [3] },
   { id: 'relacionarse-ambos', etiqueta: 'Prefiere relacionarse con ambas potencias', unidad: '%', tipo: 'proporcion', campo: 'p26', codigos: [4] },
+  // **Las hipótesis de la guía de contexto de ICLAC (02-09-2026) que no tenían medida.** Cada una
+  // se declara acá antes de mirar su resultado, y la historia de su bloque la afirma solo si pasa
+  // la corrección de Holm dentro de su familia (`FAMILIAS`, más abajo).
+  //
+  // Bloque 1: la guía, citando a Eichenauer, Fuchs y Brückner, propone mirar si la opinión sobre
+  // China **se polariza** entre oleadas y no solo si sube. Se mide como la distancia promedio de
+  // cada respuesta a la mediana común de las dos oleadas que se comparan (Brown-Forsythe), con la
+  // misma permutación de medias: si la opinión se abre hacia los dos extremos, esa distancia crece.
+  { id: 'dispersion-china', etiqueta: 'Distancia promedio de la opinión sobre China a su mediana', unidad: 'puntos', tipo: 'dispersion', campo: 'p5_1_val' },
+  // Bloque 3: qué rol cumple China en la comuna. La guía afirma que «proveedor» cae e «inversor»
+  // sube; son dos categorías de una elección única, así que cada una se contrasta por separado.
+  { id: 'p8-proveedor', etiqueta: 'Ve a China como un proveedor importante en su comuna', unidad: '%', tipo: 'proporcion', campo: 'p8', codigos: [3] },
+  { id: 'p8-inversor', etiqueta: 'Ve a China como un inversor importante en su comuna', unidad: '%', tipo: 'proporcion', campo: 'p8', codigos: [1] },
+  { id: 'p8-comprador', etiqueta: 'Ve a China como un comprador importante en su comuna', unidad: '%', tipo: 'proporcion', campo: 'p8', codigos: [2] },
+  // Respuestas abiertas: si la persona escribió la palabra (1) o contestó otra cosa (0). Las columnas
+  // las arma el ETL (`PALABRAS` en `etl_combinada.mjs`). **Exploratorias**: Felipe las fijó el
+  // 22-09-2026 después de ver las frecuencias, y la familia de las cuatro va con Holm.
+  { id: 'palabra-trump', etiqueta: 'Escribe «Trump» como lo primero que asocia a Estados Unidos', unidad: '%', tipo: 'proporcion', campo: 'palabra_trump', codigos: [1], advertencia: 'Contraste exploratorio: la palabra se eligió después de ver las frecuencias.' },
+  { id: 'palabra-tecnologia', etiqueta: 'Escribe «tecnología» como lo primero que asocia a China', unidad: '%', tipo: 'proporcion', campo: 'palabra_tecnologia', codigos: [1], advertencia: 'Contraste exploratorio: la palabra se eligió después de ver las frecuencias.' },
+  { id: 'palabra-mall', etiqueta: 'Nombra el mall como contexto de contacto con personas chinas', unidad: '%', tipo: 'proporcion', campo: 'palabra_mall', codigos: [1], advertencia: 'Contraste exploratorio: la palabra se eligió después de ver las frecuencias.' },
+  { id: 'palabra-buena', etiqueta: 'Describe como «buena» su interacción con personas chinas', unidad: '%', tipo: 'proporcion', campo: 'palabra_buena', codigos: [1], advertencia: 'Contraste exploratorio: la palabra se eligió después de ver las frecuencias.' },
+  // Las otras dos partes de la escala de `p7`: la historia dice que **ninguna** se mueve, así que
+  // cada una necesita su contraste. El acuerdo es `riesgo-comuna`, que ya estaba.
+  { id: 'riesgo-desacuerdo', etiqueta: 'En desacuerdo con que el acercamiento con China trajo más riesgos que oportunidades', unidad: '%', tipo: 'proporcion', campo: 'p7', codigos: [1, 2] },
+  { id: 'riesgo-indiferente', etiqueta: 'Indiferente ante si el acercamiento con China trajo más riesgos que oportunidades', unidad: '%', tipo: 'proporcion', campo: 'p7', codigos: [3] },
+  { id: 'riesgo-comuna', etiqueta: 'Cree que el acercamiento con China trajo más riesgos que oportunidades', unidad: '%', tipo: 'proporcion', campo: 'p7', codigos: [4, 5] },
+  // Bloque 4: una institución que pueda bloquear inversiones en sectores estratégicos. La guía
+  // afirma que la mayoría es **estable**; eso se sostiene solo si ninguna comparación se mueve.
+  {
+    id: 'limitar-inversiones',
+    etiqueta: 'Quiere una institución que pueda limitar inversiones en sectores estratégicos',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p19',
+    codigos: [1],
+    advertencia: 'En 2025 la pregunta se respondió después de un bloque experimental sobre inversión china en telecomunicaciones.',
+  },
+  // Bloque 6: la memoria de la vacuna. `p9_rec` deja fuera a quienes en 2025 marcan «No
+  // recuerdo», una opción que antes no existía, así que la base de 2025 es menor.
+  {
+    id: 'sinovac-recibio',
+    etiqueta: 'Recibió al menos una dosis de Sinovac',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p9_rec',
+    codigos: [1],
+    advertencia: 'En 2025 se agregó la opción «No recuerdo», y quienes la marcan quedan fuera de esta cifra.',
+  },
+  // **Solo entre quienes recibieron Sinovac, en las tres oleadas.** En 2023 `p11` se le preguntó
+  // únicamente a quien se había vacunado con Sinovac, y desde 2024 a toda la muestra, que suma a
+  // quienes no la recibieron y la evalúan mucho peor (16 % de buena opinión en 2024). Sin fijar la
+  // base, la serie mide el cambio de a quién se le pregunta: la caída parecía de 20 puntos y es de
+  // 10. La guía de contexto la clasifica como serie limpia; los datos dicen que no.
+  {
+    id: 'sinovac-buena',
+    etiqueta: 'Tiene buena o muy buena opinión de las vacunas Sinovac, entre quienes la recibieron',
+    unidad: '%',
+    tipo: 'proporcion',
+    valor: (c) => {
+      const v = numero(c.p11)
+      return c.p9_rec === 1 && v !== null ? ([1, 2].includes(v) ? 100 : 0) : null
+    },
+  },
+  { id: 'prefiere-pfizer', etiqueta: 'Hubiese preferido Pfizer o Moderna', unidad: '%', tipo: 'proporcion', campo: 'p10', codigos: [4, 5] },
 ]
 
 /**
@@ -103,6 +175,22 @@ export const BRECHAS = [
   // termómetro. Quien no elige bando entra con cero: no inclina la balanza, pero cuenta en el
   // denominador, que es lo que hace que la cifra sea comparable con las proporciones publicadas.
   { id: 'ventaja-china-p26', etiqueta: 'Prefiere alinearse con China menos prefiere alinearse con Estados Unidos', unidad: 'puntos porcentuales', valor: ventajaP26 },
+  // **El borde del podio de `p20`** (solo 2023 y 2024, y solo quien quiere poder limitar). La
+  // historia «Inversión y Estado» dice que cobre, litio y distribución eléctrica son los tres
+  // sectores más marcados; lo que esa frase arriesga es el tercer puesto contra el cuarto, la
+  // banca. Es multirespuesta: la misma persona puede marcar los dos, así que va dentro del caso.
+  // Bloque 3: «proveedor» es la respuesta más frecuente sobre el rol de China en la comuna. Es
+  // elección única, así que la ventaja va dentro de la persona, contra cada una de las otras tres.
+  ...[['inversor', 1], ['comprador', 2], ['competidor', 4]].map(([nombre, codigo]) => ({
+    id: `p8-proveedor-sobre-${nombre}`,
+    etiqueta: `Ve a China como proveedor menos la ve como ${nombre}, en su comuna`,
+    unidad: 'puntos porcentuales',
+    valor: (c) => { const v = numero(c.p8); return v === null ? null : v === 3 ? 100 : v === codigo ? -100 : 0 },
+  })),
+  // **Cuál lado pesa más, dentro de la persona.** `p7` es una sola respuesta: quien está en
+  // desacuerdo no está de acuerdo, así que restar las dos proporciones tira esa dependencia.
+  { id: 'riesgo-desacuerdo-sobre-acuerdo', etiqueta: 'Está en desacuerdo menos está de acuerdo con que el acercamiento con China trajo más riesgos', unidad: 'puntos porcentuales', valor: (c) => { const v = numero(c.p7); return v === null ? null : [1, 2].includes(v) ? 100 : [4, 5].includes(v) ? -100 : 0 } },
+  { id: 'electrica-sobre-banca', etiqueta: 'Marca distribución eléctrica menos marca banca', unidad: 'puntos porcentuales', valor: (c) => (numero(c.p20_1) === null || numero(c.p20_7) === null ? null : 100 * (numero(c.p20_1) - numero(c.p20_7))) },
 ]
 
 /** +100 si prefiere a China, −100 si prefiere a Estados Unidos, 0 si no elige bando. */
@@ -171,6 +259,58 @@ export const GRUPOS = [
       ['No conoce', (c) => Number(c.p14) === 2],
     ],
     puntas: ['Conoce', 'No conoce'],
+  },
+  // **Los buses (solo 2025).** No es hipótesis de la guía, que da los dos niveles por separado:
+  // se declara acá, antes de mirarla, como complemento de la historia «China cotidiana». Es una
+  // asociación: saber la marca no causa la buena opinión, y quien se fija en la marca puede ser quien
+  // más se fija en el transporte.
+  {
+    id: 'buses-sabia',
+    etiqueta: 'Evalúa bien la electrificación de los buses, según si sabía que son de marcas chinas',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p18d',
+    codigos: [1, 2],
+    tramos: [
+      ['Sabía', (c) => Number(c.p18e) === 1],
+      ['No sabía', (c) => Number(c.p18e) === 2],
+    ],
+    puntas: ['Sabía', 'No sabía'],
+  },
+  // **El estrato del diseño muestral**: la muestra se estratificó por el peso económico de China
+  // en la región, y la guía lo llama «el hallazgo más publicable»: a mayor exposición exportadora,
+  // menor percepción de riesgo. Se contrastan las dos puntas en cada oleada.
+  {
+    id: 'riesgo-estrato',
+    etiqueta: 'Cree que el acercamiento con China trajo más riesgos que oportunidades, según la exposición de su región',
+    unidad: '%',
+    tipo: 'proporcion',
+    campo: 'p7',
+    codigos: [4, 5],
+    tramos: [
+      ['Muy alto', (c) => impacto(numero(c.region)) === 'Muy alto'],
+      ['Alto', (c) => impacto(numero(c.region)) === 'Alto'],
+      ['Medio', (c) => impacto(numero(c.region)) === 'Medio'],
+      ['Bajo', (c) => impacto(numero(c.region)) === 'Bajo'],
+    ],
+    puntas: ['Muy alto', 'Bajo'],
+  },
+  // **El mismo corte, con la escala entera.** Desde el 22-09-2026 la historia lee `p7` como los dos
+  // lados de una pregunta de acuerdo, así que el nivel de exposición se compara con la misma vara:
+  // dentro de cada persona, +100 si está en desacuerdo y −100 si está de acuerdo. La media del
+  // tramo queda en puntos de diferencia, no en porcentaje.
+  {
+    id: 'riesgo-neto-exposicion',
+    etiqueta: 'Desacuerdo menos acuerdo con que el acercamiento con China trajo más riesgos, según la exposición de su región',
+    unidad: 'puntos',
+    valor: (c) => { const v = numero(c.p7); return v === null ? null : [1, 2].includes(v) ? 100 : [4, 5].includes(v) ? -100 : 0 },
+    tramos: [
+      ['Muy alto', (c) => impacto(numero(c.region)) === 'Muy alto'],
+      ['Alto', (c) => impacto(numero(c.region)) === 'Alto'],
+      ['Medio', (c) => impacto(numero(c.region)) === 'Medio'],
+      ['Bajo', (c) => impacto(numero(c.region)) === 'Bajo'],
+    ],
+    puntas: ['Muy alto', 'Bajo'],
   },
 ]
 
@@ -282,7 +422,19 @@ function valoresDe (casos, medida) {
 // cuotas controla, y con la región las celdas quedan con menos de diez casos (hecho 5).
 const celda = (c) => `${c.edadr ?? 'sd'}|${c.sexo ?? 'sd'}`
 
-function comparar (casosA, casosB, medida, opciones) {
+/**
+ * Una medida de dispersión se vuelve una de medias: cada respuesta vale su distancia a la mediana
+ * **común de las dos oleadas que se comparan**. Así la permutación y el bootstrap de siempre
+ * contrastan si la opinión se abrió, sin maquinaria nueva.
+ */
+function comoDistancia (casosA, casosB, medida) {
+  const crudos = [...casosA, ...casosB].map((c) => numero(c[medida.campo])).filter((v) => v !== null).sort((x, y) => x - y)
+  const m = crudos.length % 2 ? crudos[(crudos.length - 1) / 2] : (crudos[crudos.length / 2 - 1] + crudos[crudos.length / 2]) / 2
+  return { ...medida, valor: (c) => { const v = numero(c[medida.campo]); return v === null ? null : Math.abs(v - m) } }
+}
+
+function comparar (casosA, casosB, medidaDeclarada, opciones) {
+  const medida = medidaDeclarada.tipo === 'dispersion' ? comoDistancia(casosA, casosB, medidaDeclarada) : medidaDeclarada
   const a = valoresDe(casosA, medida)
   const b = valoresDe(casosB, medida)
   if (a.length < 30 || b.length < 30) return null

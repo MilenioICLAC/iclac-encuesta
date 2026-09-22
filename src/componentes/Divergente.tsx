@@ -1,5 +1,6 @@
 import type React from 'react'
 import Enfasis from './Enfasis'
+import { tintaSobre } from '../nucleo/paleta'
 
 /**
  * Barras apiladas **divergentes**: una fila por entidad, los segmentos repartidos a los dos lados
@@ -77,21 +78,6 @@ interface Props {
  */
 const MINIMO_ROTULO = 11
 
-/**
- * Tinta del número **según el relleno que tiene detrás**, no según la figura.
- *
- * Blanco sobre `#E9A26A` da 2:1, muy por debajo del piso de 4,5:1 para texto chico: el número de
- * «Poca» quedaba ilegible mientras el de «Ninguna», sobre un óxido oscuro, se leía bien. Se decide
- * con la luminancia relativa del relleno, así que un cambio de paleta no vuelve a romperlo.
- */
-function tinta (fondo: string): string {
-  const canal = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
-  const [r, g, b] = [1, 3, 5].map((i) => canal(parseInt(fondo.slice(i, i + 2), 16) / 255))
-  const luz = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  // El umbral sale de igualar los dos contrastes: sobre este valor gana el texto oscuro.
-  return luz > 0.32 ? '#1f2937' : '#ffffff'
-}
-
 export default function Divergente ({
   categorias, filas, extremo, formato, visible, altoFila = 30, anchoEtiqueta = '3.5rem',
   unidadEje, leyenda = true, titulo, enfatizar, minimoRotulo = MINIMO_ROTULO,
@@ -164,7 +150,7 @@ export default function Divergente ({
                           className="segmento-divergente relative flex items-center justify-center overflow-hidden font-medium tabular-nums"
                           // 1 px de fondo entre segmentos: sin la separación, dos tonos vecinos
                           // se leen como uno solo.
-                          style={{ width: `${ancho}%`, backgroundColor: cat.color, color: tinta(cat.color), boxShadow: '1px 0 0 0 #fff inset' }}
+                          style={{ width: `${ancho}%`, backgroundColor: cat.color, color: tintaSobre(cat.color), boxShadow: '1px 0 0 0 #fff inset' }}
                           title={titulo?.(fila, cat, v)}
                         >
                           {/* **Por encima de la marca del cero, y con relleno propio.** En la

@@ -19,7 +19,7 @@ import { dirname, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { registros } from './lib/xlsx.mjs'
 import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
-import { contar } from './lib/texto.mjs'
+import { contar, etiquetas as etiquetasDePalabras, palabrasDe } from './lib/texto.mjs'
 import { contrastes } from './lib/contrastes.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
@@ -41,29 +41,6 @@ const EXPERIMENTAL = new Set([
   'p29a_1', 'p29a_2', 'p29a_3', 'p29a_4', 'p29b_1', 'p29b_2', 'p29b_3', 'p29b_4',
   'p30', 'p31', 'p32', 'p33', 'p34',
 ])
-
-/**
- * Los seis bloques temáticos con los que Urdinez ordena el instrumento en su «Guía de
- * contexto para el visualizador» (02-09-2026). No son nuestros: son suyos, y por eso el
- * tablero agrupa por acá en vez de por un criterio que hubiéramos inventado nosotros.
- */
-const BLOQUES = [
-  { id: 'potencias', titulo: 'Cómo se mira a China frente a otras potencias' },
-  { id: 'geopolitica', titulo: 'Chile entre Washington y Beijing' },
-  { id: 'territorio', titulo: 'China en la economía del lugar donde uno vive' },
-  { id: 'inversion', titulo: 'Inversión, sectores estratégicos y capacidad del Estado' },
-  { id: 'cotidiana', titulo: 'La China cotidiana' },
-  { id: 'vacunas', titulo: 'Vacunas y memoria de la pandemia' },
-]
-
-const DE_BLOQUE = {
-  potencias: ['p5_1_val', 'p5_2_val', 'p5_3_val', 'p5_4_val', 'p5_5_val', 'p3'],
-  geopolitica: ['p24', 'p25', 'p26', 'p37'],
-  territorio: ['p7', 'p8', 'p1', 'p2'],
-  inversion: ['p19', 'p20', 'p21', 'p22'],
-  cotidiana: ['p12', 'p13', 'p14', 'p15', 'p16', 'p17_escala', 'p18', 'p18a', 'p18c', 'p18d', 'p18e', 'p6a_1'],
-  vacunas: ['p9', 'p10', 'p11'],
-}
 
 /**
  * Preguntas de selección múltiple. En la base cada opción es una columna binaria
@@ -90,33 +67,19 @@ function opcionDe (etiqueta) {
  * Respuestas abiertas que alimentan las nubes de palabras.
  *
  * **El verbatim no viaja al navegador.** Se tokeniza y se cuenta acá, y al artefacto van
- * conteos agregados, que es lo que permite tener nubes sin romper la anonimización. El precio
- * es que los cortes disponibles son los que se precalculan, y por eso están declarados.
+ * conteos agregados, que es lo que permite tener nubes sin romper la anonimización. Van por
+ * oleada y sin cortes: los cortes los usaba el tablero, que salió de la app (22-09-2026).
  */
 const TEXTOS = [
-  { id: 'p4_1', titulo: 'China', columnas: ['p4_1'], conCortes: true },
-  { id: 'p4_2', titulo: 'Estados Unidos', columnas: ['p4_2'], conCortes: true },
-  { id: 'p4_3', titulo: 'Corea del Sur', columnas: ['p4_3'], conCortes: true },
-  { id: 'p4_4', titulo: 'Francia', columnas: ['p4_4'], conCortes: true },
-  { id: 'p4_5', titulo: 'Japón', columnas: ['p4_5'], conCortes: true },
-  { id: 'p16', titulo: 'Contextos de interacción', columnas: ['p16'], conCortes: false },
-  { id: 'p17_texto', titulo: 'Cómo fueron las interacciones', columnas: ['p17_texto'], conCortes: false },
-  { id: 'p6a', titulo: 'Marcas chinas mencionadas', columnas: ['p6a_2_txt', 'p6a_3_txt', 'p6a_4_txt'], conCortes: false },
+  { id: 'p4_1', titulo: 'China', columnas: ['p4_1'] },
+  { id: 'p4_2', titulo: 'Estados Unidos', columnas: ['p4_2'] },
+  { id: 'p4_3', titulo: 'Corea del Sur', columnas: ['p4_3'] },
+  { id: 'p4_4', titulo: 'Francia', columnas: ['p4_4'] },
+  { id: 'p4_5', titulo: 'Japón', columnas: ['p4_5'] },
+  { id: 'p16', titulo: 'Contextos de interacción', columnas: ['p16'] },
+  { id: 'p17_texto', titulo: 'Cómo fueron las interacciones', columnas: ['p17_texto'] },
+  { id: 'p6a', titulo: 'Marcas chinas mencionadas', columnas: ['p6a_2_txt', 'p6a_3_txt', 'p6a_4_txt'] },
 ]
-
-/** Los tres tramos de ideología con los que el monitor parte las nubes. */
-const TRAMOS_IDEOLOGIA = [
-  { id: 'izquierda', etiqueta: 'Izquierda (1-4)', prueba: (p) => p >= 1 && p <= 4 },
-  { id: 'centro', etiqueta: 'Centro (5-6)', prueba: (p) => p === 5 || p === 6 },
-  { id: 'derecha', etiqueta: 'Derecha (7-10)', prueba: (p) => p >= 7 && p <= 10 },
-]
-
-function bloqueDe (nombre) {
-  for (const [id, variables] of Object.entries(DE_BLOQUE)) {
-    if (variables.includes(nombre)) return id
-  }
-  return null
-}
 
 export function procesar () {
   const { datos: filas } = registros(FUENTE, 'datos')
@@ -160,7 +123,6 @@ export function procesar () {
       serie: d.uso_serie_longitudinal === 'sí',
       comparabilidad: d.comparabilidad ?? null,
       nota: d.nota ?? null,
-      bloque: bloqueDe(nombre),
       categorias,
     })
   }
@@ -184,50 +146,41 @@ export function procesar () {
   const columnasMultiples = new Set(multiples.flatMap((m) => m.opciones.map((o) => o.columna)))
 
   // Nubes de palabras, ya contadas. El texto crudo se queda acá.
-  const etiquetasP8 = etiquetas.get('p8')
   const nubes = TEXTOS.map((t) => {
     const disponibles = t.columnas.filter((c) => dicc.some((d) => String(d.variable ?? '').trim() === c))
     if (disponibles.length === 0) return null
 
-    const textosDe = (filas) => filas.flatMap((f) => disponibles.map((c) => f[c]))
+    // **Un elemento por persona**, con todas sus casillas: el conteo es de personas, no de menciones.
+    const conTexto = (f) => disponibles.some((c) => typeof f[c] === 'string' && f[c].trim())
+    const personasDe = (filas) => filas.filter(conTexto).map((f) => disponibles.map((c) => f[c]))
 
     // Cuánta gente contestó la pregunta. Sin esto no se puede comparar entre oleadas: 2025
     // tiene 1.227 casos contra 664 de 2023, así que un conteo crudo dice más sobre el tamaño
     // de la muestra que sobre la palabra.
-    const respondieron = (filas) => filas.filter((f) => disponibles.some((c) => typeof f[c] === 'string' && f[c].trim())).length
+    const respondieron = (filas) => filas.filter(conTexto).length
     const olasCon = [2023, 2024, 2025].filter((a) => filas.some((f) => f.ola === a && disponibles.some((c) => f[c])))
+    // La forma visible de cada palabra se decide una vez, con todas las oleadas: si no, la misma
+    // raíz podía llamarse distinto en dos oleadas.
+    const nombres = etiquetasDePalabras(personasDe(filas))
 
+    // **Nada suma oleadas** (decisión de Felipe, 22-09-2026): tres muestras de tamaño distinto
+    // sumadas dan un número en que 2025 pesa el doble y que no describe a ninguna.
     const nube = {
       id: t.id,
       titulo: t.titulo,
       olas: olasCon,
-      total: contar(textosDe(filas)).slice(0, 80),
-      base: respondieron(filas),
-      porOla: Object.fromEntries(olasCon.map((a) => [a, contar(textosDe(filas.filter((f) => f.ola === a))).slice(0, 60)])),
+      porOla: Object.fromEntries(olasCon.map((a) => [a, contar(personasDe(filas.filter((f) => f.ola === a)), { nombres }).slice(0, 60)])),
       baseOla: Object.fromEntries(olasCon.map((a) => [a, respondieron(filas.filter((f) => f.ola === a))])),
-    }
-
-    if (t.conCortes) {
-      nube.porIdeologia = TRAMOS_IDEOLOGIA.map((tramo) => {
-        const suyas = filas.filter((f) => typeof f.p3 === 'number' && tramo.prueba(f.p3))
-        return {
-          id: tramo.id,
-          etiqueta: tramo.etiqueta,
-          base: respondieron(suyas),
-          palabras: contar(textosDe(suyas)).slice(0, 40),
-        }
-      })
-
-      // El corte por rol de China queda fuera: son cuatro categorías, y la paleta validada
-      // admite tres series cuando las marcas pueden tocarse. Con la cuarta, dos colores
-      // colapsan bajo deuteranopía.
-      nube.porRol = []
     }
 
     return nube
   }).filter(Boolean)
 
-  const publicadas = new Set(variables.map((v) => v.nombre))
+  // **Las respuestas abiertas no viajan en `casos`.** Se cuentan arriba y de ellas solo sale el
+  // conteo y las columnas de `PALABRAS` (`lib/texto.mjs`). Hasta el 22-09-2026 las de `p4_1` a `p4_5` y `p16` se
+  // colaban, porque sus nombres no terminan en `_txt`: el filtro va por lista, no por sufijo.
+  const abiertas = new Set(TEXTOS.flatMap((t) => t.columnas))
+  const publicadas = new Set(variables.map((v) => v.nombre).filter((n) => !abiertas.has(n)))
   const casos = filas.map((f) => {
     const caso = { ola: f.ola }
     for (const [k, v] of Object.entries(f)) {
@@ -237,6 +190,8 @@ export function procesar () {
     // Número de oleadas en que participó la persona. Sin identificador: permite filtrar el
     // solapamiento sin permitir seguir a nadie.
     caso.olas_panelista = typeof f.olas_panelista === 'number' ? f.olas_panelista : 1
+    // De las respuestas abiertas viaja solo si la persona escribió cada palabra contrastada.
+    Object.assign(caso, palabrasDe(f))
 
     // Educación en cuatro niveles y nivel socioeconómico en cinco. Las categorías originales
     // son diez y siete, y sus grupos más chicos tienen 7 y 35 casos: un porcentaje sobre siete
@@ -286,7 +241,6 @@ export function procesar () {
     procedencia: 'Base combinada rehecha por ICLAC el 01-09-2026 sobre los 1.228 casos de terreno de 2025, menos un panelista duplicado.',
     olas: Object.keys(porOla).map(Number).sort(),
     n: porOla,
-    bloques: BLOQUES,
     multiples,
     nubes,
     // Regiones de norte a sur, con el número romano fuera del nombre: ocupa eje y no aporta.
@@ -314,7 +268,7 @@ if (esEjecutable) {
   console.log(`\nOleadas: ${datos.olas.map((o) => `${o} (${datos.n[o]})`).join(' · ')}`)
   console.log(`Variables publicadas: ${datos.variables.length}`)
   console.log(`Grupos de selección múltiple: ${datos.multiples.map((m) => `${m.id} (${m.opciones.length})`).join(' · ')}`)
-  console.log(`Nubes de palabras: ${datos.nubes.map((n) => `${n.id} (${n.total.length})`).join(' · ')}`)
+  console.log(`Nubes de palabras: ${datos.nubes.map((n) => `${n.id} (${n.olas.join(", ")})`).join(' · ')}`)
   console.log(`En serie longitudinal: ${datos.variables.filter((v) => v.serie).length}`)
   const comparaciones = datos.contrastes.medidas.flatMap((m) => m.comparaciones)
   console.log(`Contrastes: ${comparaciones.length} comparaciones, ${comparaciones.filter((c) => c.p < 0.05).length} por encima del ruido (p < 0,05)`)

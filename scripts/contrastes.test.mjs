@@ -350,7 +350,51 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
   })
 
   /**
-   * La historia de racismo reportado, sus dos escenas.
+   * La historia «China cotidiana», escenas 1 y 2.
+   *
+   * El arco es una comparación entre tres series del mismo bloque de ICLAC, y **la mitad de lo que
+   * afirma es que algo no se mueve**. Eso es lo frágil: «parejo» no se prueba con un promedio, se
+   * prueba con el intervalo cruzando el cero, y un día que la muestra crezca puede dejar de ser
+   * cierto. Por eso las tres van juntas en una prueba: si el restaurante o el contacto empiezan a
+   * moverse, la escena que los usa como contraste del mall deja de tener sentido y esto falla.
+   *
+   * La corrección por familia se comprueba acá misma, sobre las cuatro puntas de la historia
+   * (mall, restaurante, contacto y racismo), con Holm. Sin eso, «el mall crece» sería un p sin
+   * corregir elegido entre cuatro.
+   */
+  it('de la China cotidiana crece el mall, y el restaurante y el contacto quedan parejos', () => {
+    const mall = entre('mall-cerca', 2023, 2025)
+    expect(mall.diferencia, 'el mall crece').toBeGreaterThan(0)
+    expect(mall.ic[0], 'el intervalo del mall no cruza el cero').toBeGreaterThan(0)
+    // Y no es la composición de la muestra: con edad y sexo fijos queda a menos de un punto.
+    expect(Math.abs(mall.estandarizada - mall.diferencia)).toBeLessThan(1)
+
+    for (const id of ['restaurante-cerca', 'conoce-china']) {
+      const punta = entre(id, 2023, 2025)
+      expect(punta.ic[0] * punta.ic[1], `${id}: el intervalo cruza el cero, se dice «parejo»`).toBeLessThan(0)
+    }
+  })
+
+  it('el mall sigue creciendo después de corregir por las cuatro puntas de la historia', () => {
+    const familia = ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'racismo-visto']
+      .map((id) => ({ id, p: entre(id, 2023, 2025).p }))
+      .sort((a, b) => a.p - b.p)
+    // Holm: el i-ésimo p se compara contra alfa / (m - i), y ninguno puede bajar del anterior.
+    let previo = 0
+    const corregidos = familia.map((x, i) => {
+      previo = Math.max(previo, Math.min(1, x.p * (familia.length - i)))
+      return { id: x.id, corregido: previo }
+    })
+    const busca = (id) => corregidos.find((x) => x.id === id).corregido
+    expect(busca('racismo-visto'), `racismo Holm=${busca('racismo-visto')}`).toBeLessThan(0.05)
+    expect(busca('mall-cerca'), `mall Holm=${busca('mall-cerca')}`).toBeLessThan(0.05)
+    for (const id of ['restaurante-cerca', 'conoce-china']) {
+      expect(busca(id), `${id} Holm=${busca(id)}`).toBeGreaterThan(0.05)
+    }
+  })
+
+  /**
+   * La escena 3, que es la que era la historia de racismo reportado.
    *
    * La primera afirma una caída entre las puntas de la serie, y **viaja con una advertencia**: el
    * enunciado de `p18` no cambió, pero su lugar en el cuestionario sí, y año y contexto no se
@@ -404,5 +448,174 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
   it('el artefacto declara el alcance de estos números', () => {
     expect(calculado.metodo.alcance).toMatch(/no es probabilística/)
     expect(calculado.metodo.alcance).toMatch(/no son margen de error/i)
+  })
+})
+
+/**
+ * **Las hipótesis de la guía de contexto de ICLAC (02-09-2026), una familia por bloque.**
+ *
+ * Cada familia se declaró antes de correr los contrastes (registro en
+ * `la documentación interna`), y la historia de su bloque afirma
+ * solo lo que sobrevive a Holm dentro de ella. Lo que cae se prueba también: una historia que
+ * dijera lo contrario el día que entre una oleada nueva tiene que hacer fallar esto.
+ */
+describe('las hipótesis de la guía, bloque por bloque', () => {
+  const casos = [...casosDe(2023), ...casosDe(2024), ...casosDe(2025)]
+  const calculado = contrastes(casos, RONDAS)
+  const medida = (id) => calculado.medidas.find((m) => m.id === id)
+  const entre = (id, desde, hasta) => medida(id).comparaciones.find((c) => c.desde === desde && c.hasta === hasta)
+  const brecha = (id, ola) => calculado.brechas.find((b) => b.id === id).porOla.find((x) => x.ola === ola)
+  const grupo = (id, ola) => calculado.grupos.find((g) => g.id === id).porOla.find((x) => x.ola === ola)
+
+  /** Holm sobre una familia `{ clave: p }`: devuelve los p corregidos con la misma clave. */
+  const holm = (familia) => {
+    const orden = Object.entries(familia).sort((a, b) => a[1] - b[1])
+    let previo = 0
+    return Object.fromEntries(orden.map(([k, p], i) => {
+      previo = Math.max(previo, Math.min(1, p * (orden.length - i)))
+      return [k, previo]
+    }))
+  }
+
+  it('bloque 1: en 2025 China queda sobre Estados Unidos, Japón encabeza y la opinión no se polariza', () => {
+    const h = holm({
+      cruce: brecha('brecha-china-eeuu', 2025).p,
+      japon: brecha('brecha-japon-china', 2025).p,
+      gradiente: grupo('ideologia-china', 2023).brecha.p,
+      polarizacion: entre('dispersion-china', 2023, 2025).p,
+    })
+    expect(brecha('brecha-china-eeuu', 2025).diferencia).toBeGreaterThan(0)
+    expect(h.cruce).toBeLessThan(0.05)
+    expect(h.japon).toBeLessThan(0.05)
+    // En 2023 los dos países estaban parejos, no «Estados Unidos arriba».
+    const b23 = brecha('brecha-china-eeuu', 2023)
+    expect(b23.ic[0] * b23.ic[1], 'en 2023 parejos').toBeLessThan(0)
+    expect(h.polarizacion, `polarización Holm=${h.polarizacion}`).toBeGreaterThan(0.05)
+  })
+
+  it('bloque 2: la confianza en China crece, la de Estados Unidos queda pareja, el no alineamiento cae y la minoría se da vuelta', () => {
+    const h = holm({
+      china: entre('confia-china', 2023, 2025).p,
+      eeuu: entre('confia-eeuu', 2023, 2025).p,
+      noAlineamiento: entre('no-alineamiento', 2023, 2025).p,
+      vuelco: brecha('ventaja-china-p26', 2025).p,
+    })
+    expect(entre('confia-china', 2023, 2025).diferencia).toBeGreaterThan(0)
+    expect(h.china).toBeLessThan(0.05)
+    expect(h.eeuu, `EE. UU. Holm=${h.eeuu}`).toBeGreaterThan(0.05)
+    // La guía dice que el no alineamiento no se movió: cae, y sobrevive a la corrección.
+    expect(entre('no-alineamiento', 2023, 2025).diferencia).toBeLessThan(0)
+    expect(h.noAlineamiento, `no alineamiento Holm=${h.noAlineamiento}`).toBeLessThan(0.05)
+    expect(brecha('ventaja-china-p26', 2025).diferencia).toBeGreaterThan(0)
+    expect(h.vuelco).toBeLessThan(0.05)
+  })
+
+  it('bloque 3: ni la exposición de la región ni el rol de China en la comuna sostienen una afirmación', () => {
+    const h = holm({
+      estrato: grupo('riesgo-estrato', 2023).brecha.p,
+      proveedor: entre('p8-proveedor', 2023, 2025).p,
+      inversor: entre('p8-inversor', 2023, 2025).p,
+    })
+    for (const [k, p] of Object.entries(h)) expect(p, `${k} Holm=${p}`).toBeGreaterThan(0.05)
+    // Y el estrato no ordena el riesgo en ninguna oleada, corrigiendo por las tres.
+    const porOla = holm(Object.fromEntries([2023, 2024, 2025].map((o) => [o, grupo('riesgo-estrato', o).brecha.p])))
+    for (const [o, p] of Object.entries(porOla)) expect(p, `estrato ${o} Holm=${p}`).toBeGreaterThan(0.05)
+  })
+
+  it('palabras de las respuestas abiertas: familia exploratoria de cuatro, con Holm', () => {
+    // Fijada el 22-09-2026 después de ver las frecuencias. Cada palabra, entre su primera y su
+    // última oleada; «buena» solo existe en 2024 y 2025.
+    const h = holm({
+      trump: entre('palabra-trump', 2023, 2025).p,
+      tecnologia: entre('palabra-tecnologia', 2023, 2025).p,
+      mall: entre('palabra-mall', 2023, 2025).p,
+      buena: entre('palabra-buena', 2024, 2025).p,
+    })
+    // Solo «Trump» sobrevive, y su salto está entero entre 2024 y 2025. «Tecnología» tiene p nominal
+    // bajo 0,05 pero no pasa la corrección: la historia no puede decir que sube.
+    expect(h.trump).toBeLessThan(0.05)
+    expect(entre('palabra-trump', 2024, 2025).ic[0]).toBeGreaterThan(0)
+    expect(entre('palabra-trump', 2023, 2024).ic[0]).toBeLessThan(0)
+    for (const k of ['tecnologia', 'mall', 'buena']) expect(h[k], `${k} Holm=${h[k]}`).toBeGreaterThan(0.05)
+    for (const id of ['palabra-trump', 'palabra-tecnologia', 'palabra-mall', 'palabra-buena']) {
+      expect(medida(id).advertencia).toMatch(/exploratorio/)
+    }
+  })
+
+  it('bloque 3: «proveedor» es la respuesta más frecuente en las tres oleadas, contra cada una de las otras', () => {
+    const h = holm(Object.fromEntries(['inversor', 'comprador', 'competidor'].flatMap((k) =>
+      [2023, 2024, 2025].map((o) => [`${k}-${o}`, brecha(`p8-proveedor-sobre-${k}`, o).p]))))
+    for (const k of ['inversor', 'comprador', 'competidor']) {
+      for (const o of [2023, 2024, 2025]) expect(brecha(`p8-proveedor-sobre-${k}`, o).diferencia).toBeGreaterThan(0)
+    }
+    for (const [k, p] of Object.entries(h)) expect(p, `${k} Holm=${p}`).toBeLessThan(0.05)
+  })
+
+  it('bloque 3: la pregunta del riesgo se lee entera, y el desacuerdo le gana al acuerdo', () => {
+    // Las tres partes de `p7` quedan parejas entre oleadas...
+    for (const id of ['riesgo-desacuerdo', 'riesgo-indiferente', 'riesgo-comuna']) {
+      for (const c of medida(id).comparaciones) expect(c.ic[0] * c.ic[1], `${id} ${c.desde}→${c.hasta} cruza el cero`).toBeLessThan(0)
+    }
+    // ...y en cada oleada hay más desacuerdo que acuerdo, comparado dentro de la persona.
+    const h = holm(Object.fromEntries([2023, 2024, 2025].map((o) => [o, brecha('riesgo-desacuerdo-sobre-acuerdo', o).p])))
+    for (const o of [2023, 2024, 2025]) {
+      expect(brecha('riesgo-desacuerdo-sobre-acuerdo', o).diferencia).toBeGreaterThan(0)
+      expect(h[o], `${o} Holm=${h[o]}`).toBeLessThan(0.05)
+    }
+    // Y el nivel de exposición tampoco ordena ese neto en ninguna oleada.
+    const porNivel = holm(Object.fromEntries([2023, 2024, 2025].map((o) => [o, grupo('riesgo-neto-exposicion', o).brecha.p])))
+    for (const [o, p] of Object.entries(porNivel)) expect(p, `neto por nivel ${o} Holm=${p}`).toBeGreaterThan(0.05)
+  })
+
+  it('bloque 3: el riesgo que se ve en China no se mueve y ronda tres de cada diez', () => {
+    for (const [a, b] of [[2023, 2024], [2024, 2025], [2023, 2025]]) {
+      const c = entre('riesgo-comuna', a, b)
+      expect(c.ic[0] * c.ic[1], `${a}→${b} cruza el cero`).toBeLessThan(0)
+    }
+    for (const c of medida('riesgo-comuna').comparaciones) {
+      for (const v of [c.a, c.b]) expect(v >= 25 && v < 35, `${v} redondea a tres de cada diez`).toBe(true)
+    }
+  })
+
+  it('bloque 4: la mayoría que quiere poder limitar inversiones estratégicas no se mueve', () => {
+    for (const [a, b] of [[2023, 2024], [2024, 2025], [2023, 2025]]) {
+      const c = entre('limitar-inversiones', a, b)
+      expect(c.ic[0] * c.ic[1], `${a}→${b} cruza el cero`).toBeLessThan(0)
+    }
+    for (const c of medida('limitar-inversiones').comparaciones) expect(c.a).toBeGreaterThan(70)
+    expect(medida('limitar-inversiones').advertencia).toMatch(/experimental/)
+    // Los tres sectores más marcados son cobre, litio y distribución eléctrica: el tercero le gana
+    // al cuarto (la banca) en las dos oleadas en que se preguntó, corrigiendo por las dos.
+    const podio = holm({ 2023: brecha('electrica-sobre-banca', 2023).p, 2024: brecha('electrica-sobre-banca', 2024).p })
+    for (const ola of [2023, 2024]) {
+      expect(brecha('electrica-sobre-banca', ola).diferencia).toBeGreaterThan(0)
+      expect(podio[ola], `eléctrica sobre banca ${ola} Holm=${podio[ola]}`).toBeLessThan(0.05)
+    }
+  })
+
+  it('bloque 5, complemento: quien sabía que los buses son chinos evalúa mejor la electrificación', () => {
+    const b = grupo('buses-sabia', 2025).brecha
+    expect(b.diferencia).toBeGreaterThan(0)
+    expect(b.p).toBeLessThan(0.05)
+    // Solo 2025: en las otras oleadas no se preguntó, y el grupo no inventa una comparación.
+    expect(grupo('buses-sabia', 2023).brecha).toBeNull()
+  })
+
+  it('bloque 6: el recuerdo de la vacuna se mantiene y la buena opinión de quienes la recibieron cae', () => {
+    const recibio = entre('sinovac-recibio', 2023, 2025)
+    expect(recibio.ic[0] * recibio.ic[1], 'recuerdo parejo').toBeLessThan(0)
+    const h = holm({
+      opinion: entre('sinovac-buena', 2023, 2025).p,
+      pfizer: entre('prefiere-pfizer', 2023, 2025).p,
+    })
+    expect(entre('sinovac-buena', 2023, 2025).diferencia).toBeLessThan(0)
+    expect(h.opinion, `opinión Holm=${h.opinion}`).toBeLessThan(0.05)
+    expect(h.pfizer).toBeGreaterThan(0.05)
+    // Toda la caída está en el primer tramo: entre 2024 y 2025 no se mueve.
+    const segundo = entre('sinovac-buena', 2024, 2025)
+    expect(segundo.ic[0] * segundo.ic[1]).toBeLessThan(0)
+    // Y no es la base: la medida solo cuenta a quienes recibieron Sinovac, así que 2023 y 2025
+    // comparan a la misma clase de persona. Sin fijarla la caída se duplicaba.
+    expect(Math.abs(entre('sinovac-buena', 2023, 2025).diferencia)).toBeLessThan(15)
   })
 })

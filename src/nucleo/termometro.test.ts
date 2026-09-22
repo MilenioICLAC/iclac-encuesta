@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs'
 import { figuraTermometro, unidadEje } from './termometro'
 
 /**
- * La figura del termómetro es una sola, la usen el recorrido o el tablero.
+ * La figura del termómetro es una sola, la use quien la use.
  *
- * Las dos vistas mostraban la misma pregunta y no se parecían en nada (07-09-2026), así que acá
- * se fija lo que comparten: la escala sale de los datos y no de quién la pide, las filas se
- * ordenan por la última oleada, y el eje declara el recorte. La última prueba es la que impide
- * que vuelvan a separarse: si una de las dos deja de pasar por acá, falla.
+ * El recorrido y el tablero mostraban la misma pregunta y no se parecían en nada (07-09-2026), así
+ * que acá se fija lo común: la escala sale de los datos y no de quién la pide, las filas se ordenan
+ * por la última oleada, y el eje declara el recorte. La última prueba vigila que la historia siga
+ * pasando por acá.
  */
 
 const filas = [
@@ -52,11 +52,10 @@ describe('la figura del termómetro', () => {
     expect(escala.max).toBeGreaterThanOrEqual(70)
   })
 
-  // **La prueba que vigila que no se separen.** Un componente compartido no sirve de nada si una
-  // de las dos vistas deja de llamarlo, y eso no lo ve ningún tipo: las dos seguirían compilando.
-  it('el recorrido y el tablero arman su figura con esta función', () => {
-    const app = readFileSync('src/App.tsx', 'utf8')
-    const usos = app.match(/figuraTermometro\(/g) ?? []
-    expect(usos.length, 'el recorrido y el módulo del tablero tienen que pasar los dos por figuraTermometro').toBeGreaterThanOrEqual(2)
+  // **La prueba que vigila que no se separen.** El tablero, la otra vista que dibujaba esta
+  // pregunta, salió de la app el 22-09-2026; si otra vista vuelve a dibujarla, se suma acá.
+  it('la historia arma su figura con esta función', () => {
+    const historia = readFileSync('src/historias/recorrido.tsx', 'utf8').match(/figuraTermometro\(/g) ?? []
+    expect(historia.length, 'la historia «La mirada» tiene que pasar por figuraTermometro').toBeGreaterThanOrEqual(1)
   })
 })
