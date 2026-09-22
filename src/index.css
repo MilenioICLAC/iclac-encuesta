@@ -270,61 +270,12 @@
   height: 75svh;
 }
 
-/* La pausa entre pasos, con imán nativo.
-
-   **`mandatory`, no `proximity`.** Medido con Playwright el 06-09-2026: con pasos de 585 px, un
-   gesto que deja el scroll a 285 px del punto más cercano no mueve nada en `proximity`, así que el
-   imán no existía en la práctica. Con `mandatory` el navegador siempre termina en un punto.
-
-   Lo que hace seguro a `mandatory` es que **todo el recorrido tenga puntos**: la portada, los
-   respiros, y los pasos y los dos colchones de cada escena y del cierre. Sin eso, el navegador tiene que saltar entre
-   puntos lejanos y deja contenido inalcanzable, que es justo lo que pasa con el botón de salida.
-   Ningún par de puntos consecutivos puede quedar más lejos que una pantalla.
-
-   Sigue sin interceptarse el scroll: el imán es del navegador, el gesto es del lector, y el teclado
-   y el lector de pantalla no pierden nada. */
-.capa-recorrido {
-  scroll-snap-type: y mandatory;
-}
-
-.paso-recorrido,
-.colchon-recorrido,
-.portada-recorrido,
-.respiro-recorrido {
-  scroll-snap-align: start;
-}
-
-/*
- * **Con movimiento reducido no hay imán, y no es una concesión: es la única salida correcta.**
- *
- * Ahí la pista no se dibuja (ver `CapaRecorrido.tsx`), así que los puntos de cada escena
- * desaparecen. El primer intento fue hacer punto a la sección entera, y **la medición lo tumbó**:
- * una escena más alta que la pantalla deja su propia sección como un salto de 1.274 px contra una
- * pantalla de 844, que es exactamente el caso que `mandatory` no tolera y que deja contenido
- * inalcanzable.
- *
- * Apagarlo resuelve las dos cosas a la vez. Sin puntos que respetar no hay nada que quedar fuera
- * de alcance, y además el imán **es** movimiento: mueve el scroll por su cuenta después del gesto,
- * que es justo lo que el lector pidió que no pasara.
- */
-@media (prefers-reduced-motion: reduce) {
-  .capa-recorrido {
-    scroll-snap-type: none;
-  }
-}
-
-/*
- * **Un paso no se puede saltar.** `mandatory` lleva el scroll al punto más cercano, y con teclado
- * eso no alcanza: `PageDown` avanza el alto del contenedor, que no coincide con el alto del paso,
- * y el desfase acumulado se comía un paso entero (medido el 08-09-2026: del 4 se saltaba al 6).
- * `always` obliga al navegador a detenerse en cada punto, venga el desplazamiento de donde venga.
- *
- * Solo en los pasos, no en los colchones: si no, pasar de una escena a la otra pediría tres
- * detenciones donde no cambia nada.
- */
-.paso-recorrido {
-  scroll-snap-stop: always;
-}
+/* **Sin imán** (Felipe, 22-09-2026). Hasta esa fecha la capa llevaba `scroll-snap-type: y
+   mandatory` con puntos en cada paso, colchón, portada y respiro. Volver atrás con la rueda
+   costaba (el imán devolvía el scroll al punto de partida), el lector veía el scroll moverse solo
+   y las paradas no coincidían con las marcas de la barra. Ahora el scroll es del lector: cada paso
+   se enciende al cruzar la banda de lectura y la barra marca dónde. El teclado sigue avanzando de
+   parada en parada (`paradas` en `CapaRecorrido.tsx`), que es lo que lo hace no saltarse pasos. */
 
 /* Los colchones que emparejan el paso. El de arriba vale el 55 % de la pantalla, que es lo que
    hace que el paso i entre a la banda de lectura exactamente a `i × alto de paso`; el de abajo
@@ -336,8 +287,8 @@
 }
 
 /* **El respiro mide la pantalla entera, barra incluida.**
-   El imán alinea el borde de arriba de la sección con el borde del contenedor, y la barra tapa los
-   primeros 43 px: si la sección midiera lo mismo que la escena de adentro (pantalla menos barra),
+   Con el borde de arriba de la sección en el borde del contenedor (donde lo deja el teclado), la
+   barra tapa los primeros 43 px: si la sección midiera lo mismo que la escena de adentro (pantalla menos barra),
    los últimos 43 px mostrarían ya el titular de la escena siguiente, que es justo lo que la pausa
    no tiene que dejar ver. La frase queda centrada igual, porque la escena de adentro se pega bajo
    la barra y ocupa el hueco que queda. */
@@ -348,8 +299,7 @@
 }
 
 /* La portada, por la misma razón: con la sección a pantalla menos barra, la capa abría con el logo
-   tapado por la barra y el titular de la escena 1 asomado abajo (medido el 15-09-2026: el imán la
-   dejaba en 43 px de scroll). */
+   tapado por la barra y el titular de la escena 1 asomado abajo (medido el 15-09-2026). */
 .respiro-recorrido,
 .portada-recorrido {
   min-height: 100vh;

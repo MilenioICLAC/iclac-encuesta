@@ -6,7 +6,7 @@ description: Reglas para construir y modificar el recorrido con scroll (scrollyt
 # El recorrido con scroll
 
 Solo reglas vigentes. De dónde salió cada una, con sus mediciones: un registro de decisiones interno (scroll y capa),
-0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), en `la documentación interna`,
+0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), en `la documentación interna`,
 `encuesta/docs/adr/`. Lo que queda pendiente: `encuesta/docs/estado.md` §2.2.
 
 **Antes de cambiar la composición de algo visible, skill `laboratorio`.** Antes de escribir una frase
@@ -17,12 +17,17 @@ lista del final.
 
 Todo vive en la capa (`CapaRecorrido`, `fixed inset-0`, con barra superior medida en `--barra-capa`):
 
-| Pieza | Componente | En la barra | Índice |
-|---|---|---|---|
-| Portada | `Portada` | «Portada» | 0 |
-| Escena 1 a N | `Escena` | «Escena N de M» y un punto por paso | 1 a N |
-| Respiro (pausa entre escenas) | `Respiro` | «Pausa» | negativo |
-| Cierre | `Cierre` | «Cierre» | −99 |
+| Pieza | Componente | Índice |
+|---|---|---|
+| Portada | `Portada` | 0 |
+| Escena 1 a N | `Escena` | 1 a N |
+| Respiro (pausa entre escenas) | `Respiro` | negativo |
+| Cierre | `Cierre` | −99 |
+
+**La barra no nombra piezas** (Felipe, 22-09-2026): «escena», «pausa», «paso», «portada» y «cierre»
+son vocabulario interno. La barra de avance lleva una línea blanca en cada paso y cada respiro,
+medida en la parada de cada uno (`paradas`, la misma función del teclado): dice cuánto scroll falta
+para lo próximo. Con movimiento reducido no hay pasos y quedan solo las de los respiros.
 
 Desde el 22-09-2026 hay **seis historias**, cada una una capa propia en `#/historias/<id>`, con
 registro en `src/historias/indice.tsx` y menú en la raíz:
@@ -126,17 +131,14 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   el colchón, que ya está dentro. Colchón de entrada 0,55 × alto, pasos de 0,75 × alto, colchón de
   salida 0,2 × alto. En píxeles medidos, nunca en porcentaje.
 - **La escena no lleva margen negativo:** su alto propio es lo que separa una escena de la siguiente.
-- **Imán `scroll-snap-type: y mandatory`**, `scroll-snap-align: start` en cada paso y
-  `scroll-margin-top` igual al colchón. **Todo el recorrido tiene puntos** (pasos, colchones, portada,
-  respiros, cierre) y **ningún par consecutivo está a más de una pantalla**. `proximity` no sirve.
-  **La lista de puntos está dos veces:** en el CSS (`scroll-snap-align` en `src/index.css`) y en el
-  selector de paradas del teclado (`CapaRecorrido`, `'.portada-recorrido, .respiro-recorrido,
-  .colchon-recorrido, .paso-recorrido'`). Cambiar una sin la otra deja al teclado parando donde la
-  rueda no, o al revés.
+- **Sin imán** (Felipe, 22-09-2026): nada de `scroll-snap`. Con `mandatory` volver atrás con la
+  rueda costaba, el scroll se movía solo y las paradas no coincidían con las marcas. El scroll es del
+  lector; cada paso lleva `scroll-margin-top` igual al colchón, que define su **parada**: el scroll en
+  que toca la banda de lectura. Medido: cada frase cambia a menos de 8 px de su marca.
 - **Teclado:** la capa maneja `PageUp`/`PageDown` y flechas llevando al anclaje siguiente. Los anclajes
   se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
-  nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento**: la parada es donde el imán deja el
-  scroll, no el borde. Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
+  nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, compartida con
+  las marcas de la barra). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
 - **El alto sale del contenedor y va en píxeles** (`--alto-capa`), con `svh` de respaldo para el primer
   cuadro. Nunca `100%` (se resuelve contra una sección sin alto) ni `vh`.
 - **La escena se pega bajo la barra**; la barra se mide y se publica en `--barra-capa`. Alto útil de
@@ -166,12 +168,12 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 ## Accesibilidad
 
 - Texto entero en el DOM siempre, con opacidad, nunca `display: none`.
-- Botón de salida siempre visible, `Escape`, barra de avance y posición en texto (`sr-only`,
-  `aria-live="polite"`).
+- Botón de salida siempre visible, `Escape`, barra de avance como `progressbar` y el titular en pantalla
+  en texto (`sr-only`, `aria-live="polite"`), sin número de escena ni de paso.
 - Trampa de foco con los focos **filtrados por visibilidad** (`checkVisibility()`, respaldo
   `getClientRects().length > 0`), foco al abrir y devuelto al cerrar.
-- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista y sin imán** (media
-  query que apaga el snap), arcos quietos, sin emanata; el énfasis estático se queda.
+- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista** (y la barra marca solo
+  los respiros), arcos quietos, sin emanata; el énfasis estático se queda.
 
 ## Lo que no se hace
 
@@ -181,9 +183,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 
 ## Límites conocidos (15-09-2026)
 
-- Entre portada o respiro y la escena siguiente hay un punto de imán intermedio (el colchón de entrada
-  de la escena, a 0,45 × alto): un gesto corto deja la pantalla partida. Arreglarlo toca el CSS **y**
-  el selector del teclado, y hay que medir el cierre, que va detrás de la escena 5 sin respiro.
+- El teclado sigue parando en los colchones (entrada y salida de cada escena), donde no cambia nada y
+  la barra no pone marca.
 - Tras un salto largo por código (enlace del cierre a su escena y vuelta), dos pasos tocan la banda y
   el activo queda en el más cercano al anterior. Con la rueda no pasa.
 
@@ -192,14 +193,14 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 1. `npm run typecheck && npm run lint && npm test`. Verde no dice nada de lo que sigue.
 2. Anchos de la skill `verificar-navegador`: al menos 360×640, 390×844 táctil, 899, 901 y 1512.
 3. `node scripts/mirar_recorrido.mjs 360` y `768`: costos de paso iguales, una escena a la vista salvo
-   en la transición, una leyenda por figura. Abrir las capturas. **Ese script apaga el imán** para
-   medir la geometría: no dice nada del snap, que va en el punto 8.
+   en la transición, una leyenda por figura. Abrir las capturas. Entra por `#/recorrido`, que hoy
+   redirige al menú: hay que apuntarlo a `#/historias/<id>`.
 4. Medido: el bloque de la figura no se mueve entre pasos, y el **último hijo** de la escena queda
    dentro de la capa en 360×640 y 375×667.
 5. Pasando de una escena a la siguiente, no una sola: superposición y paso desparejo.
 6. Con teclado de punta a punta en los dos sentidos, sin pasos saltados; `Shift+Tab` no escapa.
 7. Con movimiento reducido: todo encendido, frases sin superponerse, sin pista.
-8. Imán con `mouse.wheel`, no con `scrollTop`: ningún contenido inalcanzable, empezando por la salida.
+8. Con `mouse.wheel` en los dos sentidos: cada frase cambia sobre su marca de la barra, y la salida se alcanza.
 9. Si vino de un laboratorio: contra el JSON, parámetro por parámetro, textos verbatim.
 10. Lo que el emulador no reproduce (barra del navegador móvil) se reporta como no verificado.
 

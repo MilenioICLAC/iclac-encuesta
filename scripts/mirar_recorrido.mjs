@@ -34,8 +34,6 @@ const pagina = await navegador.newPage({ viewport: { width: ancho, height: 780 }
 // aparte.
 await pagina.goto('http://localhost:5180/#/recorrido', { waitUntil: 'networkidle' })
 await pagina.waitForSelector('[role="dialog"]')
-// El imán mueve el scroll que se pide por código y contamina la medición de la geometría.
-await pagina.addStyleTag({ content: '.capa-recorrido { scroll-snap-type: none !important }' })
 await pagina.waitForTimeout(400)
 
 const capa = pagina.locator('[role="dialog"]')

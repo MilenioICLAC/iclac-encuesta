@@ -28,27 +28,48 @@ import { NumeroHistoria, Siguiente } from './siguiente'
  */
 
 /**
- * Dónde va el lector: qué escena y qué paso dentro de ella.
+ * Qué está leyendo el lector, para anunciarlo a quien no ve la pantalla.
  *
- * Cada escena informa su estado y la capa lo pinta arriba. Va por contexto y no por props porque
- * las escenas son hijas del `children` que arma la página: la capa no las conoce.
+ * Cada pieza informa su estado y la capa lo anuncia. Va por contexto y no por props porque las
+ * escenas son hijas del `children` que arma la página: la capa no las conoce.
+ *
+ * **La barra no nombra piezas.** «Escena», «pausa», «paso», «portada» y «cierre» son vocabulario
+ * nuestro (Felipe, 22-09-2026): al lector le sirve saber cuánto le falta, no cómo llamamos a cada
+ * tramo. Eso lo dicen las marcas de la barra de avance.
  */
 interface EstadoEscena {
   indice: number
   /**
-   * El titular de la escena. **Puede depender del paso**: una escena que cambia de tema a mitad de
-   * camino (la 1 pasa del termómetro a la ideología) necesita que el encabezado la siga, o el
-   * lector lee un hallazgo sobre una figura que ya no está.
+   * El titular de la escena, ya resuelto para el paso: una escena que cambia de tema a mitad de
+   * camino (la 1 pasa del termómetro a la ideología) necesita que el anuncio la siga.
    */
-  titulo: string | ((activo: number) => string)
-  /**
-   * Lo que dice la barra en vez de «Escena N de M». Solo el cierre lo usa: no es una escena, pero
-   * sí tiene pasos, así que a diferencia de la portada y los respiros lleva sus puntos.
-   */
-  rotulo?: string
-  pasos: number
-  activo: number
+  titulo: string
   enVista: boolean
+}
+
+/**
+ * La parada de cada elemento del selector, en píxeles de scroll del contenedor: el scroll en que
+ * un paso entra a la banda de lectura, o en que una sección llena la pantalla.
+ *
+ * **Se mide contra el contenedor, no con `offsetTop`.** `offsetTop` cuenta desde el ancestro
+ * posicionado, y cada escena es una `<section class="relative">`: los pasos de la escena 3
+ * devolvían números chicos, la lista salía revuelta y el teclado se quedaba clavado en la primera
+ * parada (medido el 08-09-2026: el scroll no pasaba de 351 px por más flechas que se apretaran).
+ *
+ * **Y la parada es el borde menos su `scroll-margin-top`** (el colchón, 0,55 de la pantalla): con
+ * el borde de un paso ahí, el paso toca la banda de lectura, que termina en el 55 %. Medido sin
+ * imán el 22-09-2026: cada frase cambia a menos de 8 px de su marca.
+ *
+ * La usan el teclado y las marcas de la barra: si midieran distinto, la marca diría que el paso
+ * está en un lugar y la flecha llevaría a otro.
+ */
+function paradas (contenedor: HTMLElement, selector: string) {
+  const arriba = contenedor.getBoundingClientRect().top - contenedor.scrollTop
+  const tope = contenedor.scrollHeight - contenedor.clientHeight
+  return [...new Set([...contenedor.querySelectorAll<HTMLElement>(selector)].map((el) => {
+    const margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+    return Math.min(tope, Math.max(0, Math.round(el.getBoundingClientRect().top - arriba - margen)))
+  }))].sort((a, b) => a - b)
 }
 
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
@@ -106,7 +127,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
   const informar = useCallback((estado: EstadoEscena) => {
     setEscenas((previo) => {
       const antes = previo[estado.indice]
-      if (antes && antes.activo === estado.activo && antes.enVista === estado.enVista && antes.pasos === estado.pasos) {
+      if (antes && antes.titulo === estado.titulo && antes.enVista === estado.enVista) {
         return previo
       }
       return { ...previo, [estado.indice]: estado }
@@ -117,12 +138,35 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
     () => Object.values(escenas).sort((a, b) => a.indice - b.indice),
     [escenas],
   )
-  // La escena en vista, y si ninguna lo está todavía (primer cuadro), la primera.
-  const actual = lista.find((e) => e.enVista) ?? lista[0]
-  // La portada se registra con el índice 0 y no cuenta como escena: es la tapa del recorrido, no
-  // uno de sus hallazgos. Si se contara, el lector leería «escena 1 de 5» sin haber visto ningún
-  // dato todavía.
-  const numeradas = lista.filter((e) => e.indice > 0).length
+  // La pieza en vista, y si ninguna lo está todavía (primer cuadro), la portada.
+  const actual = lista.find((e) => e.enVista) ?? escenas[0] ?? lista[0]
+
+  /*
+   * Las marcas de la barra: una línea en cada lugar donde cambia algo (un paso o un respiro), en
+   * fracción del recorrido. Así la barra dice cuánto scroll falta para lo próximo, sin nombrarlo.
+   * Se miden con la misma función que el teclado, y se rehacen cuando
+   * cambia el alto de algo: la geometría de la pista se fija después del primer cuadro.
+   */
+  const [marcas, setMarcas] = useState<number[]>([])
+  useEffect(() => {
+    const contenedor = raiz
+    if (!abierta || !contenedor) return
+    const medir = () => {
+      const tope = contenedor.scrollHeight - contenedor.clientHeight
+      if (tope <= 0) { setMarcas([]); return }
+      const nuevas = paradas(contenedor, '.respiro-recorrido, .paso-recorrido')
+        .map((y) => y / tope)
+        // Ni el inicio ni el final llevan marca: ahí la barra ya tiene su borde.
+        .filter((f) => f > 0.002 && f < 0.998)
+      setMarcas((previas) =>
+        previas.length === nuevas.length && previas.every((f, i) => Math.abs(f - nuevas[i]) < 0.0005) ? previas : nuevas)
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(contenedor)
+    for (const hijo of contenedor.children) observador.observe(hijo)
+    return () => { observador.disconnect() }
+  }, [abierta, raiz, lista.length])
 
   useEffect(() => {
     if (!abierta) return
@@ -149,8 +193,6 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
        *
        * `PageDown` mueve el alto del contenedor, que no coincide con el alto de un paso, y el
        * desfase acumulado se comía uno entero (medido el 08-09-2026: del cuarto saltaba al sexto).
-       * `scroll-snap-stop: always` no lo arregla, porque el navegador no vuelve a encajar después
-       * de un desplazamiento por teclado.
        *
        * **Esto no es scroll-jacking:** no se toca la rueda ni el gesto táctil, que siguen libres.
        * Es lo contrario, de hecho: quien navega con teclado pide «el siguiente» y recibe el
@@ -164,29 +206,12 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
         const enControl = activo instanceof HTMLElement &&
           ['INPUT', 'SELECT', 'TEXTAREA'].includes(activo.tagName)
         if (!enControl) {
-          // **La posición se mide contra el contenedor, no con `offsetTop`.** `offsetTop` cuenta
-          // desde el ancestro posicionado, y cada escena es una `<section class="relative">`: los
-          // pasos de la escena 3 devolvían números chicos, la lista salía revuelta y el teclado se
-          // quedaba clavado en la primera parada (medido el 08-09-2026: el scroll no pasaba de
-          // 351 px por más flechas que se apretaran).
-          //
-          // **Y la parada es donde el imán deja el scroll, no el borde del elemento.** El imán
-          // alinea el borde menos su `scroll-margin-top` (el colchón, casi media pantalla). Con el
-          // borde como parada, bajando el imán corregía hacia adelante y no se notaba; subiendo, el
-          // objetivo quedaba más cerca del punto de partida que del anterior y el imán lo devolvía:
-          // PageUp no salía del cierre (medido el 21-09-2026, clavado en 15.446 px en 390×844).
-          const arriba = capa.current.getBoundingClientRect().top - capa.current.scrollTop
-          const tope = capa.current.scrollHeight - capa.current.clientHeight
-          const paradas = [...new Set([...capa.current.querySelectorAll<HTMLElement>(
-            '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido',
-          )].map((el) => {
-            const margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
-            return Math.min(tope, Math.max(0, Math.round(el.getBoundingClientRect().top - arriba - margen)))
-          }))].sort((a, b) => a - b)
+          // Las mismas paradas que marca la barra: ver `paradas`.
+          const lista = paradas(capa.current, '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido')
           const actual = capa.current.scrollTop
           const siguiente = sentido > 0
-            ? paradas.find((y) => y > actual + 4)
-            : [...paradas].reverse().find((y) => y < actual - 4)
+            ? lista.find((y) => y > actual + 4)
+            : [...lista].reverse().find((y) => y < actual - 4)
           if (siguiente !== undefined) {
             e.preventDefault()
             capa.current.scrollTo({ top: siguiente, behavior: 'smooth' })
@@ -260,49 +285,35 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
       className="capa-recorrido fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-white"
     >
       <div ref={barra} className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
-        {/* Dónde va el lector, en dos niveles: qué escena de cuántas, y qué paso dentro de ella.
-            La barra de avance sola dice cuánto falta pero no dice de qué; los puntos dicen que la
-            escena tiene tres momentos y que este es el segundo. */}
-        {actual
-          ? (
-            <span className="shrink-0 font-display text-xs font-semibold tabular-nums text-gray-900">
-              {/* Índice 0 es la portada e índice negativo un respiro: ninguno de los dos es una
-                  escena, así que ninguno lleva número. */}
-              {actual.rotulo ?? (actual.indice > 0 ? `Escena ${actual.indice} de ${numeradas}` : actual.indice === 0 ? 'Portada' : 'Pausa')}
-            </span>
-            )
-          : <span className="truncate font-display text-sm font-semibold text-gray-900">{titulo}</span>}
-
-        {actual && (actual.indice > 0 || actual.rotulo) && actual.pasos > 1 && (
-          <ol aria-hidden className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-            {Array.from({ length: actual.pasos }, (_, i) => (
-              <li
-                key={i}
-                className={`h-1.5 w-1.5 rounded-full transition-colors ${i <= actual.activo ? 'bg-brand-dark' : 'bg-gray-300'}`}
-              />
-            ))}
-          </ol>
-        )}
-
-        <div className="h-1 grow rounded-full bg-gray-200">
+        {/* Cuánto falta, y cuánto hasta lo próximo: la barra se llena con el scroll y cada línea es
+            un lugar donde algo cambia. Sin rótulo: cómo se llama cada tramo es vocabulario nuestro.
+            Las líneas son relleno blanco sobre la barra, así cortan igual la parte llena y la vacía. */}
+        <div
+          role="progressbar"
+          aria-label="Avance de la historia"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(avance * 100)}
+          className="relative h-1.5 grow overflow-hidden rounded-full bg-gray-200"
+        >
           <div
-            className="h-1 rounded-full bg-brand-dark transition-[width] duration-200"
+            className="h-full rounded-full bg-brand-dark transition-[width] duration-200"
             style={{ width: `${Math.round(avance * 100)}%` }}
           />
+          {marcas.map((f) => (
+            <span
+              key={f}
+              aria-hidden
+              className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white"
+              style={{ left: `${f * 100}%` }}
+            />
+          ))}
         </div>
 
-        {/* Lo mismo, en texto, para quien no ve la barra ni los puntos. `polite` y no `assertive`:
-            avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
+        {/* El titular de lo que está en pantalla, para quien no ve la barra. `polite` y no
+            `assertive`: avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
         <p aria-live="polite" className="sr-only">
-          {actual
-            ? (actual.rotulo
-                ? `${actual.rotulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
-                : actual.indice > 0
-                ? `Escena ${actual.indice} de ${numeradas}: ${actual.titulo}. Paso ${actual.activo + 1} de ${actual.pasos}.`
-                : actual.indice === 0
-                  ? `Portada. ${actual.titulo}. La historia tiene ${numeradas} escenas.`
-                  : `Pausa. ${actual.titulo}`)
-            : titulo}
+          {actual ? actual.titulo : titulo}
         </p>
 
         {/* El método, a mano desde cualquier paso: el lector que duda de una cifra la está viendo
@@ -348,8 +359,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
  * que el resto del recorrido.
  *
  * No es una escena: no tiene pasos, no cuenta un hallazgo y no se numera. Ocupa una pantalla
- * exacta —el mismo alto que una escena— y su sección es un punto del imán, así que el primer
- * gesto la deja atrás entera.
+ * exacta, el mismo alto que una escena.
  *
  * **Lo de arriba lo pone la página; la invitación a avanzar la pone la portada**, porque es la que
  * sabe cuánto mide. La invitación es un botón y hace lo mismo que el gesto: con rueda o teclado el
@@ -378,7 +388,7 @@ export function Portada ({ raiz, titulo, children }: {
   }, [raiz])
 
   useEffect(() => {
-    informar?.({ indice: 0, titulo, pasos: 1, activo: 0, enVista })
+    informar?.({ indice: 0, titulo, enVista })
   }, [informar, titulo, enVista])
 
   const avanzar = () => {
@@ -389,8 +399,8 @@ export function Portada ({ raiz, titulo, children }: {
   }
 
   return (
-    // El alto de la capa va en la sección, igual que en el respiro: el imán alinea la sección con el
-    // borde del contenedor, bajo la barra, así que es ella la que tiene que medir la pantalla entera.
+    // El alto de la capa va en la sección, igual que en el respiro: su parada la deja en el borde
+    // del contenedor, bajo la barra, así que es ella la que tiene que medir la pantalla entera.
     <section
       ref={seccion}
       className="portada-recorrido relative"
@@ -477,15 +487,14 @@ function ArcosPortada () {
  * titular que ya no es el suyo.
  *
  * Es el mismo recurso que el puente de la escena 1 —la frase sola y centrada, sin nada más donde
- * mirar—, pero entre escenas en vez de dentro de una. Ocupa una pantalla exacta y su sección es un
- * punto del imán, así que se pasa con el mismo gesto que cualquier paso.
+ * mirar—, pero entre escenas en vez de dentro de una. Ocupa una pantalla exacta, y su parada (la
+ * sección llenando la pantalla) es una marca de la barra, igual que un paso.
  */
 export function Respiro ({ raiz, indice = -1, titulo, children }: {
   raiz: HTMLElement | null
   /**
-   * La clave con la que se registra en la barra. **Negativa**: la barra numera las escenas con los
-   * índices positivos, así que un respiro no entra en la cuenta. Va explícito para que dos
-   * respiros no se pisen entre sí.
+   * La clave con la que se registra en la capa. **Negativa**: los índices positivos son de las
+   * escenas y el 0 de la portada. Va explícito para que dos respiros no se pisen entre sí.
    */
   indice?: number
   /** La frase en texto plano, para el anuncio del lector de pantalla. */
@@ -509,12 +518,12 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
   }, [raiz])
 
   useEffect(() => {
-    informar?.({ indice, titulo, pasos: 1, activo: 0, enVista })
+    informar?.({ indice, titulo, enVista })
   }, [informar, indice, titulo, enVista])
 
   return (
-    // El alto de la capa va en la sección y no en la escena: el imán alinea la sección con el
-    // borde del contenedor, así que es ella la que tiene que medir la pantalla entera (ver
+    // El alto de la capa va en la sección y no en la escena: su parada la deja en el borde del
+    // contenedor, así que es ella la que tiene que medir la pantalla entera (ver
     // `.respiro-recorrido` en `index.css`). La variable igual llega a la escena por herencia.
     <section
       ref={seccion}
@@ -552,7 +561,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
  * movimiento ve todo, no una versión recortada.
  */
 export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, raiz, dosColumnas = false }: {
-  /** Qué número de escena es, para la barra de la capa. Va explícito y no contado solo: las
+  /** Qué número de escena es, la clave con que se registra en la capa. Va explícito y no contado solo: las
    *  escenas se escriben a mano en la página, y un contador implícito se desordena en silencio
    *  al mover una. */
   indice: number
@@ -619,8 +628,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   }, [raiz])
 
   useEffect(() => {
-    informar?.({ indice, titulo: encabezado, pasos: frases.length, activo, enVista })
-  }, [informar, indice, encabezado, frases.length, activo, enVista])
+    informar?.({ indice, titulo: encabezado, enVista })
+  }, [informar, indice, encabezado, enVista])
 
   // El alto mayor que la figura ya alcanzó. `useLayoutEffect` y no `useEffect`: se mide antes de
   // pintar, así que el lector no llega a ver el bloque en su alto chico.
@@ -742,9 +751,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
  * **Con movimiento reducido no se dibuja.** La pista existe para medir el scroll que enciende los
  * pasos, y con `prefers-reduced-motion` no hay pasos que encender: la escena se muestra entera
  * desde el primer píxel. Dejarla igual le cobraba al lector el costo de una animación que pidió no
- * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll, con el imán obligando a
- * parar en cada uno para no mostrar nada nuevo. Ahora cada escena cuesta su propio alto y el punto
- * del imán lo pone la sección.
+ * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll sin nada nuevo. Ahora
+ * cada escena cuesta su propio alto.
  */
 function Pista ({ cantidad, refs, alto, altoEscena }: {
   cantidad: number
@@ -798,8 +806,8 @@ function Pista ({ cantidad, refs, alto, altoEscena }: {
           ref={(el) => { refs.current[i] = el }}
           data-paso={i}
           className="paso-recorrido"
-          // El imán cae donde cambia la figura, no donde empieza el tramo: sin el margen de
-          // scroll, la pausa queda medio paso corrida respecto de lo que se está mirando.
+          // La parada (teclado, marca de la barra) cae donde cambia la figura, no donde empieza el
+          // tramo: sin el margen de scroll quedaría medio paso corrida.
           style={{
             ...(altoPaso ? { height: altoPaso } : {}),
             ...(colchon ? { scrollMarginTop: colchon } : {}),
@@ -819,9 +827,8 @@ function Pista ({ cantidad, refs, alto, altoEscena }: {
  * salida.
  *
  * Decidido el 15-09-2026 en `laboratorio/cierre-recorrido.html` (combinación «propuesta»), en
- * reemplazo de «Hasta acá el recorrido». **No es una escena y no se numera**, igual que la portada
- * y los respiros; a diferencia de ellos tiene pasos, así que la barra dice «Cierre» y lleva sus
- * puntos.
+ * reemplazo de «Hasta acá el recorrido». **No es una escena**, igual que la portada y los respiros;
+ * a diferencia de ellos tiene pasos, y cada uno es una marca en la barra de avance.
  *
  * - **Las frases leídas quedan en gris 500, no se esconden.** El cierre es un resumen: al final se
  *   leen todas juntas. Gris 500 y no más claro, que es el último tono con 4,5:1 sobre blanco.
@@ -861,10 +868,10 @@ export function Cierre ({ raiz, titulo, frases }: {
     return () => { observador.disconnect() }
   }, [raiz])
 
-  // Índice negativo para que no entre en la cuenta de escenas, y lejos de los de los respiros.
+  // Índice negativo, fuera de los de las escenas y lejos de los de los respiros.
   useEffect(() => {
-    informar?.({ indice: -99, rotulo: 'Cierre', titulo, pasos, activo, enVista })
-  }, [informar, titulo, pasos, activo, enVista])
+    informar?.({ indice: -99, titulo, enVista })
+  }, [informar, titulo, enVista])
 
   const alto = useAltoDe(raiz)
   const altoEscena = useAltoDe(escena.current, alto)

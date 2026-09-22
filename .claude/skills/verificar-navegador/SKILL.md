@@ -32,8 +32,7 @@ await page.goto('http://localhost:5180/#/')
 
 - `node scripts/mirar_recorrido.mjs <ancho> [carpeta]`: abre la capa, la recorre y mide por cambio de
   frase el píxel de scroll, **el costo respecto del anterior** (tienen que salir iguales), escenas a la
-  vista, ítems de leyenda y números rotulados. Deja capturas. **Apaga el imán** para no contaminar la
-  geometría: el snap se verifica con un script propio y `mouse.wheel`.
+  vista, ítems de leyenda y números rotulados. Deja capturas.
 - `node ~/.claude/bin/captura-web.mjs <url> --anchos 360,768,1512 [--completa]`: capturas por ancho y
   denuncia de desbordes medidos contra la caja de cada `<svg>` y el documento. Sirve para el explorador y
   los laboratorios.
@@ -64,11 +63,11 @@ del otro por veinte píxeles.
   relleno real.
 - **Consola sin errores** ni advertencias de React.
 - **Con movimiento reducido:** `page.emulateMedia({ reducedMotion: 'reduce' })`. La figura arranca
-  completa, las frases no se superponen, sin pista ni imán.
+  completa, las frases no se superponen, sin pista.
 - **Con teclado:** `PageDown` y flechas de punta a punta pasan por todos los pasos sin saltarse
   ninguno; `Tab` y `Shift+Tab` no escapan de la capa; `Escape` sale.
-- **El imán con gestos de verdad:** `page.mouse.wheel(0, dy)` y esperar a que el scroll se asiente.
-  `scrollTop = …` por código no dispara el snap igual que un gesto y contamina la medida.
+- **La rueda de verdad:** `page.mouse.wheel(0, dy)` en los dos sentidos. La capa no tiene imán desde
+  el 22-09-2026; si vuelve, `scrollTop = …` por código deja de servir para medir.
 - **Dos escenas seguidas, no una:** la superposición y el paso desparejo solo aparecen en la
   transición.
 
