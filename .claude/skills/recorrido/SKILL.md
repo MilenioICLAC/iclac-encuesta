@@ -207,9 +207,10 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 
 1. `npm run typecheck && npm run lint && npm test`. Verde no dice nada de lo que sigue.
 2. Anchos de la skill `verificar-navegador`: al menos 360×640, 390×844 táctil, 899, 901 y 1512.
-3. `node scripts/mirar_recorrido.mjs 360` y `768`: costos de paso iguales, una escena a la vista salvo
-   en la transición, una leyenda por figura. Abrir las capturas. Entra por `#/recorrido`, que hoy
-   redirige al menú: hay que apuntarlo a `#/historias/<id>`.
+3. `node scripts/mirar_recorrido.mjs 360` y `768` (las seis historias; un tercer argumento elige una):
+   costos de paso iguales, también del último paso a la pausa, una escena a la vista salvo en la
+   transición, una leyenda por figura. Abrir las capturas. Muestrea cada 40 px: los costos salen con
+   esa resolución.
 4. Medido: el bloque de la figura no se mueve entre pasos, y el **último hijo** de la escena queda
    dentro de la capa en 360×640 y 375×667.
 5. Pasando de una escena a la siguiente, no una sola: superposición y paso desparejo.

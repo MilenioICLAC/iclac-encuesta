@@ -45,7 +45,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican (skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
-| `scripts/mirar_recorrido.mjs` | Recorre la capa con Playwright y mide costo de paso, escenas y leyendas a la vista |
+| `scripts/mirar_recorrido.mjs` | Recorre cada historia (o la pedida) con Playwright y mide costo de paso, escenas y leyendas a la vista |
 | `scripts/laboratorio.mjs`, `laboratorio/` | Laboratorios de composición (skill `laboratorio`) |
 | Pruebas | `scripts/*.test.mjs` (`informe_2023`, `contrastes`, `descargas`, `guia_urdinez`, `historias`: vocabulario), `scripts/lib/*.test.mjs`, `src/nucleo/*.test.ts` |
 | `data/sources/` | Fuentes del cliente por oleada, la combinada y la metodología; su `README.md` dice cuál es canónica |

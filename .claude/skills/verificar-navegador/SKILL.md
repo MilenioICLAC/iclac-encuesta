@@ -30,9 +30,11 @@ await page.goto('http://localhost:5180/#/')
 
 ## Instrumentos que ya existen
 
-- `node scripts/mirar_recorrido.mjs <ancho> [carpeta]`: abre la capa, la recorre y mide por cambio de
-  frase el píxel de scroll, **el costo respecto del anterior** (tienen que salir iguales), escenas a la
-  vista, ítems de leyenda y números rotulados. Deja capturas.
+- `node scripts/mirar_recorrido.mjs <ancho> [carpeta] [historia]`: entra a cada historia por su ruta
+  (las seis, o la pedida), la recorre y mide por cambio de frase o de pausa el píxel de scroll, **el
+  costo respecto del anterior** (tienen que salir iguales dentro de una escena), escenas a la vista,
+  ítems de leyenda y números rotulados. Deja capturas `<historia>-<ancho>-NN.png`. Tarda unos minutos
+  con las seis.
 - `node ~/.claude/bin/captura-web.mjs <url> --anchos 360,768,1512 [--completa]`: capturas por ancho y
   denuncia de desbordes medidos contra la caja de cada `<svg>` y el documento. Sirve para el explorador y
   los laboratorios.
