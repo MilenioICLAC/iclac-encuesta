@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { HISTORIAS } from './indice'
-import { ContenidoTarjeta, TARJETA } from './TarjetaHistoria'
+import { ContenidoTarjeta, RELLENO, TARJETA } from './TarjetaHistoria'
 import { TransicionHistoria, type Eleccion } from './contextoTransicion'
 
 /**
@@ -339,7 +339,7 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         return (
           <div key={h.id} ref={(el) => { copias.current[i] = el }} className="absolute" style={caja}>
             <div ref={fondo} className="absolute inset-0 rounded-lg border border-gray-200 bg-white shadow-xl" />
-            <div className="relative flex h-full flex-col border border-transparent p-5">
+            <div className={`relative flex h-full flex-col border border-transparent ${RELLENO}`}>
               <ContenidoTarjeta h={h} i={i} />
             </div>
           </div>

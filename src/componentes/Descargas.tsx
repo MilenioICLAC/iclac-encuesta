@@ -54,7 +54,7 @@ export default function Descargas () {
   const docs = manifiesto.archivos.filter((a) => a.tipo === 'documentacion')
 
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-12">
+    <section className="mx-auto max-w-5xl px-4 pb-16 pt-10">
       <h2 className="font-display text-2xl font-semibold">Descargar los datos</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
         Las respuestas completas de las tres oleadas, para reanalizarlas. Van en CSV con codificación

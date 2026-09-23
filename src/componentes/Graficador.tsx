@@ -78,7 +78,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
       : 0
 
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-12">
+    <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
       <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
         Cualquier pregunta de la encuesta, una oleada a la vez. La oleada y el corte se eligen arriba.

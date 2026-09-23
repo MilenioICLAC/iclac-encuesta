@@ -170,7 +170,7 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
   useEffect(() => { if (!search) window.scrollTo(0, 0) }, [pathname, search])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+    <div className="flex min-h-[100dvh] flex-col bg-gray-50 text-gray-900">
       <Encabezado idioma={idioma} onIdioma={onIdioma} />
       {idioma !== 'es' && (
         <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
@@ -281,7 +281,7 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
   }
 
   return (
-    <section className="mx-auto max-w-5xl px-4 py-10 text-sm text-gray-600">
+    <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 text-sm text-gray-600">
       <h2 className="font-display text-2xl font-semibold text-gray-900">Sobre los datos</h2>
       <p className="mt-2 max-w-2xl">
         Lo que hay que saber antes de citar una cifra, y cómo se sostiene cada frase de las historias.
@@ -296,7 +296,7 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
       </nav>
 
       <h3 id="citar" tabIndex={-1} className="mt-8 outline-none font-display text-base font-semibold text-gray-900">Antes de citar una cifra</h3>
-      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
         {citar.map(([titulo, texto]) => (
           <li key={titulo} className="rounded-lg border border-gray-200 bg-white p-3">
             <p className="font-medium text-gray-900">{titulo}</p>
