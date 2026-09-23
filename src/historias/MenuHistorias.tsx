@@ -47,7 +47,7 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   }
 
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
+    <section className="mx-auto max-w-5xl px-4 pb-16 pt-10">
       <h1 className="font-display text-2xl font-semibold text-gray-900 sm:text-3xl">
         Percepciones sobre China en Chile
       </h1>
@@ -57,8 +57,10 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
       </p>
       {/* Durante la transición los originales quedan transparentes, no `invisible`: con
           `visibility: hidden` el enlace elegido perdía el foco y la lista salía del árbol
-          accesible (medido por Codex, 22-09-2026). Fuera del tabulador mientras dura. */}
-      <ol aria-busy={enCurso} className={`mt-8 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3 ${enCurso ? 'opacity-0' : ''}`}>
+          accesible (medido por Codex, 22-09-2026). Fuera del tabulador mientras dura.
+          La tarjeta responde al cursor con borde y sombra, no con `translate` ni `scale`: la
+          transición copia su caja en el clic, y una caja a medio mover saldría corrida. */}
+      <ol aria-busy={enCurso} className={`mt-8 grid list-none gap-4 p-0 md:grid-cols-2 md:gap-5 ${enCurso ? 'opacity-0' : ''}`}>
         {HISTORIAS.map((h, i) => (
           <li key={h.id} className="flex">
             <Link
@@ -66,7 +68,7 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
               to={`/historias/${h.id}`}
               tabIndex={enCurso ? -1 : undefined}
               onClick={(e) => { elegir(e, i) }}
-              className={`group ${TARJETA} transition-colors hover:border-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark`}
+              className={`group ${TARJETA} transition-[border-color,box-shadow] duration-200 ease-in-out hover:border-brand-dark hover:shadow-md hover:shadow-brand-dark/10 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark`}
             >
               <ContenidoTarjeta h={h} i={i} />
             </Link>
