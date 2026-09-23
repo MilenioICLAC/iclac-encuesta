@@ -4,6 +4,7 @@ import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from '../componentes/
 import Puntos from '../componentes/Puntos'
 import MapaRegiones from '../componentes/MapaRegiones'
 import { distribucion } from '../nucleo/agregar'
+import { corregido } from '../nucleo/prueba'
 import { EXPOSICION, NEUTRO, SEMANTICOS, pasosDeOrden, tintaSobre } from '../nucleo/paleta'
 import { decimal, numero, porcentaje } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
@@ -55,15 +56,6 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
   const ultimaOla = encuesta.olas[encuesta.olas.length - 1]
   const deOla = (ola: number) => encuesta.casos.filter((c) => Number(c.ola) === ola)
   const parejo = (s: NonNullable<typeof riesgo>) => s.consecutivas.every((c) => c.p >= 0.05) && (s.punta?.p ?? 0) >= 0.05
-  /** Holm sobre una familia `{ clave: p }`, igual que en `scripts/contrastes.test.mjs`. */
-  const holm = (familia: Record<string, number>) => {
-    const orden = Object.entries(familia).sort((a, b) => a[1] - b[1])
-    let previo = 0
-    return Object.fromEntries(orden.map(([k, p], i) => {
-      previo = Math.max(previo, Math.min(1, p * (orden.length - i)))
-      return [k, previo]
-    }))
-  }
 
   // ---------------------------------------------------------------- Escena 1: el mapa del diseño
   const regiones = [...encuesta.regiones].sort((a, b) => a.orden - b.orden).map((r) => {
@@ -84,8 +76,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
     { clave: 'acuerdo', etiqueta: 'De acuerdo', serie: riesgo, color: SEMANTICOS.Ninguna },
   ]
   const partesQuietas = PARTES.every((x) => parejo(x.serie!))
-  const holmNeto = holm(Object.fromEntries(netoRiesgo.porOla.map((o) => [String(o.ola), o.p])))
-  const masDesacuerdo = netoRiesgo.porOla.every((o) => o.diferencia > 0) && Object.values(holmNeto).every((p) => p < 0.05)
+  // Holm viene del ETL, por familia (`FAMILIAS` en `scripts/lib/contrastes.mjs`): un dato, un lugar.
+  const masDesacuerdo = netoRiesgo.porOla.every((o) => o.diferencia > 0 && corregido(o, 'neto-por-oleada') < 0.05)
   const titularRiesgo = masDesacuerdo
     ? 'Hay más desacuerdo que acuerdo con que el acercamiento con China haya traído más riesgos que oportunidades'
     : 'Qué contestan sobre si el acercamiento con China trajo más riesgos que oportunidades'
@@ -108,8 +100,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
   // ------------------------------------------- Escena 3: el mismo neto, según el nivel de exposición
   const neto = encuesta.contrastes?.grupos.find((g) => g.id === 'riesgo-neto-exposicion') ?? estrato
   const olasEstrato = neto.porOla.filter((o) => o.brecha)
-  const holmEstrato = holm(Object.fromEntries(olasEstrato.map((o) => [String(o.ola), o.brecha!.p])))
-  const noOrdena = Object.values(holmEstrato).every((p) => p >= 0.05)
+  const familiaNeto = neto.id === 'riesgo-neto-exposicion' ? 'neto-por-nivel' : 'estrato-por-oleada'
+  const noOrdena = olasEstrato.every((o) => corregido(o.brecha, familiaNeto) >= 0.05)
   const titularEstrato = noOrdena
     ? 'La exposición económica de la región a China no ordena las respuestas'
     : 'Las respuestas, según la exposición económica de la región a China'
@@ -134,16 +126,9 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
   const seriesRol = encuesta.olas.map((ola, i) => ({ clave: String(ola), etiqueta: String(ola), color: tonos[i] }))
   // «La más frecuente» se afirma contra cada una de las otras tres en cada oleada (nueve pruebas).
   const ventajas = brechas.filter((b) => b.id.startsWith('p8-proveedor-sobre-')).flatMap((b) => b.porOla)
-  const holmVentajas = holm(Object.fromEntries(ventajas.map((v, i) => [String(i), v.p])))
-  const proveedorPrimero = ventajas.length === 9 && ventajas.every((v) => v.diferencia > 0) && Object.values(holmVentajas).every((p) => p < 0.05)
+  const proveedorPrimero = ventajas.length === 9 && ventajas.every((v) => v.diferencia > 0 && corregido(v, 'proveedor-primero') < 0.05)
   // La caída de proveedor, corregida con su familia del bloque (el estrato de 2023, proveedor e inversor).
-  const inversor = serieDeMedida(encuesta, 'p8-inversor')
-  const holmBloque = holm({
-    estrato: estrato.porOla.find((o) => o.ola === primeraOla)?.brecha?.p ?? 1,
-    proveedor: proveedor.punta?.p ?? 1,
-    inversor: inversor?.punta?.p ?? 1,
-  })
-  const caidaFirme = (proveedor.punta?.diferencia ?? 0) < 0 && holmBloque.proveedor < 0.05
+  const caidaFirme = (proveedor.punta?.diferencia ?? 0) < 0 && corregido(proveedor.punta, 'guia-bloque-3') < 0.05
   const titularRol = proveedorPrimero
     ? 'Para su comuna, China es ante todo un proveedor, en las tres oleadas'
     : 'Qué es China para la comuna'

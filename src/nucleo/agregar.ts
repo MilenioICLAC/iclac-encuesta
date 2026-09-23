@@ -61,6 +61,19 @@ export function filtrar (encuesta: Encuesta, recorte: Recorte): Caso[] {
   })
 }
 
+/**
+ * Cuántas personas contestaron en más de una oleada. `olas_panelista` va por fila, así que quien
+ * contestó dos veces aporta dos filas con un 2: se cuentan filas y se divide por su propio valor.
+ */
+export function personasRepetidas (encuesta: Encuesta): number {
+  let personas = 0
+  for (const c of encuesta.casos) {
+    const olas = Number(c.olas_panelista ?? 1)
+    if (olas > 1) personas += 1 / olas
+  }
+  return Math.round(personas)
+}
+
 function categoriasDe (variable: Variable): Map<number, string> {
   const m = new Map<number, string>()
   for (const c of variable.categorias ?? []) m.set(c.codigo, c.etiqueta)

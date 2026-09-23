@@ -10,10 +10,18 @@ import Regresion from '../componentes/Regresion'
 import { figuraBalanza, figuraConfianza } from '../nucleo/confianza'
 import { figuraTermometro } from '../nucleo/termometro'
 import { escalaRedonda } from '../nucleo/escala'
+import { corregido } from '../nucleo/prueba'
 import { NEUTRO, SEMANTICOS, pasosDeOrden } from '../nucleo/paleta'
 import { decimal, numero, porcentaje } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
 import { cardinal, describir, filasDePalabras, lector, serieDeMedida } from './lectura'
+
+/**
+ * El titular de la escena de ideología, que el cierre repite. «De forma robusta» (Felipe, 23-09-2026):
+ * en 2023 la pendiente es distinta de cero y la sostienen treinta personas, así que «no ordena» a
+ * secas afirmaba de más.
+ */
+const TITULAR_IDEOLOGIA = 'La posición política no ordena la opinión sobre China de forma robusta'
 
 /**
  * Las historias de los bloques uno y dos de la guía de ICLAC, que antes eran un solo recorrido de
@@ -255,17 +263,10 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
   const nubeEeuu = encuesta.nubes.find((n) => n.id === 'p4_2')
   const palabras = ['palabra-trump', 'palabra-tecnologia', 'palabra-mall', 'palabra-buena'].map((id) => serieDeMedida(encuesta, id))
   const [trump, tecnologia] = palabras
-  const holmPalabras = (() => {
-    const ps = palabras.map((x) => x?.punta?.p ?? 1)
-    const orden = ps.map((p, i) => [p, i] as const).sort((a, b) => a[0] - b[0])
-    const out = new Array<number>(ps.length)
-    let previo = 0
-    orden.forEach(([p, i], k) => { previo = Math.max(previo, Math.min(1, p * (ps.length - k))); out[i] = previo })
-    return out
-  })()
   const saltoTrump = trump?.consecutivas.at(-1)
-  const trumpSube = Boolean(trump && holmPalabras[0] < 0.05 && saltoTrump && saltoTrump.ic[0] > 0)
-  const tecnologiaFirme = Boolean(tecnologia && holmPalabras[1] < 0.05 && (tecnologia.punta?.diferencia ?? 0) > 0)
+  // Holm de la familia de palabras, desde el ETL (`FAMILIAS` en `scripts/lib/contrastes.mjs`).
+  const trumpSube = Boolean(trump && corregido(trump.punta, 'palabras') < 0.05 && saltoTrump && saltoTrump.ic[0] > 0)
+  const tecnologiaFirme = Boolean(tecnologia && corregido(tecnologia.punta, 'palabras') < 0.05 && (tecnologia.punta?.diferencia ?? 0) > 0)
   const ultimoTrump = trump?.puntos.at(-1)?.valor ?? 0
   const titularPalabras = trumpSube && ultimoTrump >= 10
     ? `En ${trump!.puntos.at(-1)!.ola}, más de uno de cada diez escribe «Trump» cuando le nombran Estados Unidos`
@@ -468,7 +469,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 indice={2}
                 raiz={raiz}
                 dosColumnas
-                titulo="La posición política no ordena la opinión sobre China"
+                titulo={TITULAR_IDEOLOGIA}
                 cabecera={(activo) => (
                   <AnioDelPaso
                     olas={encuesta.olas}
@@ -499,7 +500,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   </>,
                   <>
                     Las otras oleadas dicen lo mismo: <strong>la posición política no ordena la
-                    opinión sobre China</strong>.
+                    opinión sobre China de forma robusta</strong>.
                   </>,
                 ]}
                 figura={(activo) => (
@@ -853,7 +854,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   titulo="La mirada"
                   frases={[
                     { escena: 1, texto: titularTermometro },
-                    ...(conExperimento ? [{ escena: 2, texto: 'La posición política no ordena la opinión sobre China' }] : []),
+                    ...(conExperimento ? [{ escena: 2, texto: TITULAR_IDEOLOGIA }] : []),
                     ...(trumpSube ? [{ escena: conExperimento && regresion ? 3 : 2, texto: titularPalabras }] : []),
                   ]}
                 />

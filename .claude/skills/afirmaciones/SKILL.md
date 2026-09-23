@@ -19,15 +19,23 @@ Las reglas que no caducan. Qué frase publicada estaba mal y cómo se midió cad
   «las personas encuestadas», nunca «los chilenos».
 - **Las cifras se calculan, no se transcriben.** Un número escrito a mano envejece con la oleada
   siguiente. Y un número que aparece en la frase y en la figura se redondea igual en las dos.
-- **Donde el intervalo cruza el cero se dice «parejos».** No se elige ganador por el signo del
-  promedio, y si la figura muestra promedios distintos, la nota dice de dónde sale «parejos».
+- **Una diferencia se afirma si pasa tres cosas:** p nominal bajo 0,05, el intervalo sin cruzar el
+  cero y, si la prueba es de una familia, Holm bajo 0,05 en cada familia (`firme` en
+  `src/nucleo/prueba.ts`; Felipe, 23-09-2026). Si no, se dice «parejos»: no se elige ganador por el
+  signo del promedio, y si la figura muestra promedios distintos, la nota dice de dónde sale. Las
+  historias y «Sobre los datos» leen el mismo criterio y no pueden contradecirse.
+- **Holm vive en el ETL, no en la historia.** Las familias están en `FAMILIAS`
+  (`scripts/lib/contrastes.mjs`) y cada prueba trae `holm: [{ familia, p }]`; se lee con `corregido`,
+  que devuelve `NaN` si falta y así no deja afirmar nada. Una familia nueva se declara ahí y en
+  `DECLARADAS` de `scripts/contrastes.test.mjs`, antes de mirar la cifra; si se fijó después, va
+  `exploratoria: true`.
 - **Una cifra que el lector no puede calibrar es relleno.** «Ninguno se distingue del ruido» en vez
   de «ninguno se movió más de 1,0 puntos».
 
 ## Cómo se contrasta una diferencia entre oleadas
 
 La maquinaria está en `scripts/lib/contraste.mjs` y las comparaciones publicadas en
-`scripts/lib/contrastes.mjs` (`MEDIDAS`, `BRECHAS`, `GRUPOS`, `REGRESIONES`, `TRANSVERSAL`). El ETL
+`scripts/lib/contrastes.mjs` (`MEDIDAS`, `BRECHAS`, `GRUPOS`, `REGRESIONES`, `TRANSVERSAL`, `FAMILIAS`). El ETL
 las deja en `public/data/encuesta.json`, bajo `contrastes`. Cada diferencia viaja con tres cosas:
 
 1. **El `p` de una permutación** de 10.000 rondas: se baraja la etiqueta de año. Solo supone que el

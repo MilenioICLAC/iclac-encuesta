@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
-import { filtrar } from './nucleo/agregar'
+import { filtrar, personasRepetidas } from './nucleo/agregar'
 import BarraEstado from './componentes/BarraEstado'
 import Graficador from './componentes/Graficador'
 import Descargas from './componentes/Descargas'
-import Contrastes from './componentes/Contrastes'
-import MetodoRecorrido from './componentes/MetodoRecorrido'
-import MetodoHistorias from './componentes/MetodoHistorias'
+import Contrastes, { ComoSeLee } from './componentes/Contrastes'
+import MetodoHistorias, { Plegable } from './componentes/MetodoHistorias'
 import Encabezado from './componentes/Encabezado'
 import { fijarIdioma, locale, numero, type Idioma } from './locale'
 import { TEXTOS } from './textos'
@@ -27,7 +26,7 @@ import { NumeroHistoria, Siguiente } from './componentes/siguiente'
  * en el monitor actual. Un solo control además impide cruzar dos variables, que es una regla del
  * producto y no una preferencia.
  *
- * Lo que falta está anotado en «Sobre los datos», a la vista y no en un comentario.
+ * Lo que falta está en `la documentación interna`, no en la interfaz.
  */
 
 export default function App () {
@@ -199,91 +198,136 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
 }
 
 /**
- * La vista «Sobre los datos»: lo que hay que saber antes de citar una cifra.
+ * La vista «Sobre los datos»: lo que hay que saber antes de citar una cifra, y el respaldo de cada
+ * historia (el destino de los enlaces «Cómo se hizo»).
  *
- * Era el pie de la página única. Como vista tiene destino propio en el nav y en el pie de
- * crédito, que es donde alguien la va a buscar cuando ya vio una figura y quiere saber sobre
- * qué está parada.
+ * **Arriba lo que necesita quien cita, abajo lo que necesita quien audita.** Lo primero va a la
+ * vista, en cinco tarjetas; lo segundo va plegado, historia por historia, para que la página entre en
+ * pocas pantallas y cada cosa se encuentre por su nombre. Una prueba se escribe una sola vez
+ * (`Evidencia`).
  */
+/** Abre la sección y cada sección que la contiene (`metodo-recta` vive dentro de `metodo-mirada`). */
+function abrir (nodo: HTMLElement) {
+  for (let n: HTMLElement | null = nodo; n; n = n.parentElement?.closest('details') ?? null) {
+    if (n instanceof HTMLDetailsElement) n.open = true
+  }
+}
+
+/**
+ * Lleva el foco al destino sin mover la vista: quien navega con teclado o lector de pantalla sigue
+ * desde ahí y no desde el enlace que tocó. En un `<details>` el foco va a su resumen, que ya es enfocable.
+ */
+function enfocar (nodo: HTMLElement) {
+  const destino = nodo instanceof HTMLDetailsElement ? nodo.querySelector('summary') : nodo
+  destino?.focus({ preventScroll: true })
+}
+
 function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
-  // `#/datos?foco=metodo-<id>` lleva la vista al bloque. Es lo que hace que el enlace desde una
-  // historia caiga en su sección y no al principio de la página.
+  // `#/datos?foco=<id>` abre la sección y lleva la vista hasta ella. Es lo que hace que el enlace desde
+  // una historia caiga en su método y no al principio de la página.
   const [parametros] = useSearchParams()
   const foco = parametros.get('foco')
   useEffect(() => {
     if (!foco) return
-    const nodo = document.getElementById(foco)
+    // `metodo-recorrido` es el ancla vieja de todos los enlaces: lleva al método de las historias.
+    const nodo = document.getElementById(foco === 'metodo-recorrido' ? 'historias' : foco)
     if (!nodo) return
-    // **El alto del encabezado se mide, no se escribe.** `scroll-margin-top` en clase fija un
-    // número que ya cambió dos veces (79 px en teléfono, 88 en escritorio), y el encabezado
-    // publica el suyo en `--alto-encabezado`. Con `scroll-margin` a mano el título quedaba
-    // debajo de la barra: 72 px de posición contra 79 de encabezado.
+    // Abrir antes de medir: cerrada, la sección mide lo que su resumen.
+    abrir(nodo)
+    // **El alto del encabezado se mide, no se escribe.** El encabezado publica el suyo en
+    // `--alto-encabezado` (79 px en teléfono, 88 en escritorio).
     const ir = (suave: boolean) => {
       const alto = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--alto-encabezado'), 10) || 0
       const destino = nodo.getBoundingClientRect().top + window.scrollY - alto - 16
       window.scrollTo({ top: Math.max(0, destino), behavior: suave ? 'smooth' : 'auto' })
     }
     ir(true)
-    // **Y otra vez cuando las fuentes terminen de cargar.** Raleway llega después del primer
-    // dibujo y cambia el alto de todo lo que está encima: medido, el destino se corría 40 px y el
-    // título terminaba debajo del encabezado. El segundo salto no es suave para que no compita
-    // con el primero si el lector ya empezó a moverse.
+    enfocar(nodo)
+    // **Y otra vez cuando las fuentes terminen de cargar.** Raleway llega después del primer dibujo y
+    // cambia el alto de lo que está encima; el segundo salto no es suave para no competir con el primero.
     let vivo = true
     void document.fonts?.ready.then(() => { if (vivo) requestAnimationFrame(() => { ir(false) }) })
     return () => { vivo = false }
   }, [foco])
 
+  // Lo plegado se imprime abierto: una sección cerrada no sale en papel.
+  useEffect(() => {
+    const abrir = () => { document.querySelectorAll('details.plegable').forEach((d) => { (d as HTMLDetailsElement).open = true }) }
+    window.addEventListener('beforeprint', abrir)
+    return () => { window.removeEventListener('beforeprint', abrir) }
+  }, [])
+
+  const c = encuesta.contrastes
+  const citar: [string, React.ReactNode][] = [
+    ['Tres oleadas, tres muestras.', <>{encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(personasRepetidas(encuesta))} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
+    ['Sin ponderar y sin margen de error.', 'Es un panel en línea por cuotas, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
+    ['Porcentajes sobre respuestas efectivas.', 'Sin los que no contestaron. Cada figura muestra su base, que suele ser menor que el total.'],
+    ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador marca cada una como comparable o no, según el diccionario de ICLAC.'],
+  ]
+
+  const indice: [string, string][] = [
+    ['citar', 'Antes de citar'],
+    ['historias', 'Qué sostiene cada historia'],
+    ['como-se-lee', 'Cómo se prueba una diferencia'],
+    ['todas', 'Todas las comparaciones'],
+  ]
+  const irA = (id: string) => {
+    const nodo = document.getElementById(id)
+    if (!nodo) return
+    abrir(nodo)
+    const alto = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--alto-encabezado'), 10) || 0
+    window.scrollTo({ top: Math.max(0, nodo.getBoundingClientRect().top + window.scrollY - alto - 16), behavior: 'smooth' })
+    enfocar(nodo)
+  }
+
   return (
-    <section className="mx-auto max-w-5xl px-4 py-10">
+    <section className="mx-auto max-w-5xl px-4 py-10 text-sm text-gray-600">
       <h2 className="font-display text-2xl font-semibold text-gray-900">Sobre los datos</h2>
-      <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Lo que hay que saber antes de citar una cifra de este sitio.
+      <p className="mt-2 max-w-2xl">
+        Lo que hay que saber antes de citar una cifra, y cómo se sostiene cada frase de las historias.
       </p>
-      <div className="mt-6 text-sm text-gray-600">
-        <h3 className="font-display text-base font-semibold text-gray-900">Cómo se leen las cifras</h3>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
-          <li>
-            {encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])} casos`).join(' · ')}. {encuesta.procedencia}
-          </li>
-          <li>
-            <strong>Las cifras de 2025 no coinciden con las del monitor anterior, y es esperable.</strong> Ese
-            sitio calcula sobre una submuestra de 662 casos que se armó con un script corrido dos veces sobre
-            hojas ordenadas distinto. Acá se usa la entrega completa de 1.228, así que la opinión sobre China
-            da 65,8 en vez de 67,0. Cuál de las dos se publica es decisión de ICLAC.
-          </li>
-          <li>
-            <strong>Sin ponderadores.</strong> Es un panel en línea por cuotas, así que la muestra no es
-            probabilística: los resultados van sin ponderar y no se declara margen de error.
-          </li>
-          <li>
-            <strong>No es un panel.</strong> Son tres cortes transversales. 159 personas participaron en
-            más de una oleada y se pueden excluir con el control del explorador.
-          </li>
-          <li>
-            <strong>Los porcentajes van sobre respuestas efectivas</strong>, sin perdidos. Cada figura
-            muestra su propia base, que suele ser menor que el total del recorte.
-          </li>
-        </ul>
+      <nav aria-label="En esta página" className="mt-4 flex flex-wrap gap-2">
+        {indice.map(([id, texto]) => (
+          <button key={id} type="button" onClick={() => { irA(id) }}
+            className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:border-brand-dark hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark">
+            {texto}
+          </button>
+        ))}
+      </nav>
 
-        {encuesta.contrastes && <Contrastes contrastes={encuesta.contrastes} olas={encuesta.olas} />}
-
-        {/* `metodo-recorrido` queda como ancla para los enlaces ya repartidos. */}
-        <div id="metodo-recorrido">
-          <MetodoRecorrido encuesta={encuesta} />
-        </div>
-        <MetodoHistorias encuesta={encuesta} />
-
-        <h3 className="mt-8 font-display text-base font-semibold text-gray-900">Qué falta en este borrador</h3>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-gray-500">
-          <li>Los textos de las historias viven en el código; tienen que salir a un archivo de contenido con los tres idiomas.</li>
-          <li>Las nubes de palabras no reproducen exactamente las del sitio: el monitor lematiza con Snowball y acá se normalizan los sufijos a mano.</li>
-          <li>
-            El sitio todavía no está en inglés ni en chino: el selector de idioma cambia el nav, los
-            títulos del encabezado y el formato de los números, pero las figuras, sus notas y las
-            historias siguen en español.
+      <h3 id="citar" tabIndex={-1} className="mt-8 outline-none font-display text-base font-semibold text-gray-900">Antes de citar una cifra</h3>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {citar.map(([titulo, texto]) => (
+          <li key={titulo} className="rounded-lg border border-gray-200 bg-white p-3">
+            <p className="font-medium text-gray-900">{titulo}</p>
+            <p className="mt-1 text-xs leading-snug">{texto}</p>
           </li>
-        </ul>
-      </div>
+        ))}
+      </ul>
+
+      {c && (
+        <>
+          <h3 id="historias" tabIndex={-1} className="mt-10 outline-none font-display text-base font-semibold text-gray-900">Qué sostiene cada historia</h3>
+          <p className="mt-2 max-w-2xl">
+            Cada frase que afirma un cambio o una diferencia depende de una de estas pruebas. En cada fila,
+            la raya vertical es el cero, el punto es la diferencia y la línea, su intervalo del 95 %. Si
+            la línea cruza el cero, la fila dice «parejo» y la historia no elige ganador.
+          </p>
+          <div className="mt-3">
+            <MetodoHistorias encuesta={encuesta} />
+          </div>
+
+          <h3 className="mt-10 font-display text-base font-semibold text-gray-900">Método</h3>
+          <div className="mt-3 rounded-lg border border-gray-200 bg-white px-4">
+            <Plegable id="como-se-lee" resumen={<><span className="font-medium text-gray-900">Cómo se prueba una diferencia</span><span className="block text-gray-500">El p, el intervalo, la composición fija y por qué no es margen de error</span></>}>
+              <ComoSeLee rondas={c.metodo.rondas} />
+            </Plegable>
+            <Plegable id="todas" resumen={<><span className="font-medium text-gray-900">Todas las comparaciones entre oleadas</span><span className="block text-gray-500">{numero(c.medidas.length)} medidas en una tabla, incluidas las que ninguna historia usa</span></>}>
+              <Contrastes contrastes={c} />
+            </Plegable>
+          </div>
+        </>
+      )}
     </section>
   )
 }

@@ -451,6 +451,146 @@ function comparar (casosA, casosB, medidaDeclarada, opciones) {
 }
 
 /**
+ * **Las familias de hipótesis, con su corrección de Holm.** Un dato, un lugar: antes cada familia
+ * vivía dos o tres veces (en `scripts/contrastes.test.mjs`, en `territorio.tsx`, en `recorrido.tsx`)
+ * y «Sobre los datos» no la veía, así que mostraba «baja» donde la historia decía que la caída no
+ * pasa la corrección. Ahora el artefacto trae el p corregido junto al nominal, y la historia, las
+ * pruebas y la página leen el mismo número (Felipe, 23-09-2026).
+ *
+ * Las de la guía se declararon antes de correr los contrastes (registro en
+ * `la documentación interna`); las marcadas `exploratoria` se fijaron
+ * después de ver la cifra. Una prueba puede estar en dos familias (el estrato de 2023): lleva las dos
+ * correcciones, y se afirma solo si pasa todas.
+ *
+ * Cada prueba se nombra por tipo: `medida` (entre `desde` y `hasta`), `brecha` (en `ola`, dentro de la
+ * persona) y `grupo` (la brecha entre puntas de un grupo, en `ola`).
+ */
+export const FAMILIAS = [
+  {
+    id: 'guia-bloque-1',
+    etiqueta: 'hipótesis del bloque 1 de la guía',
+    pruebas: [
+      { tipo: 'brecha', id: 'brecha-china-eeuu', ola: 2025 },
+      { tipo: 'brecha', id: 'brecha-japon-china', ola: 2025 },
+      { tipo: 'grupo', id: 'ideologia-china', ola: 2023 },
+      { tipo: 'medida', id: 'dispersion-china', desde: 2023, hasta: 2025 },
+    ],
+  },
+  {
+    id: 'guia-bloque-2',
+    etiqueta: 'hipótesis del bloque 2 de la guía',
+    pruebas: [
+      { tipo: 'medida', id: 'confia-china', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'confia-eeuu', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'no-alineamiento', desde: 2023, hasta: 2025 },
+      { tipo: 'brecha', id: 'ventaja-china-p26', ola: 2025 },
+    ],
+  },
+  {
+    id: 'guia-bloque-3',
+    etiqueta: 'hipótesis del bloque 3 de la guía',
+    pruebas: [
+      { tipo: 'grupo', id: 'riesgo-estrato', ola: 2023 },
+      { tipo: 'medida', id: 'p8-proveedor', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'p8-inversor', desde: 2023, hasta: 2025 },
+    ],
+  },
+  {
+    id: 'estrato-por-oleada',
+    etiqueta: 'el riesgo según la exposición, en las tres oleadas',
+    pruebas: [2023, 2024, 2025].map((ola) => ({ tipo: 'grupo', id: 'riesgo-estrato', ola })),
+  },
+  {
+    id: 'proveedor-primero',
+    etiqueta: '«proveedor» contra cada uno de los otros roles, en las tres oleadas',
+    exploratoria: true,
+    pruebas: ['inversor', 'comprador', 'competidor'].flatMap((rol) =>
+      [2023, 2024, 2025].map((ola) => ({ tipo: 'brecha', id: `p8-proveedor-sobre-${rol}`, ola }))),
+  },
+  {
+    id: 'neto-por-oleada',
+    etiqueta: 'más desacuerdo que acuerdo, en las tres oleadas',
+    pruebas: [2023, 2024, 2025].map((ola) => ({ tipo: 'brecha', id: 'riesgo-desacuerdo-sobre-acuerdo', ola })),
+  },
+  {
+    id: 'neto-por-nivel',
+    etiqueta: 'el neto según la exposición, en las tres oleadas',
+    pruebas: [2023, 2024, 2025].map((ola) => ({ tipo: 'grupo', id: 'riesgo-neto-exposicion', ola })),
+  },
+  {
+    id: 'electrica-sobre-banca',
+    etiqueta: 'distribución eléctrica sobre banca, en las dos oleadas en que se preguntó',
+    exploratoria: true,
+    pruebas: [2023, 2024].map((ola) => ({ tipo: 'brecha', id: 'electrica-sobre-banca', ola })),
+  },
+  {
+    id: 'cotidiana',
+    etiqueta: 'las cuatro puntas de China cotidiana',
+    pruebas: ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'racismo-visto']
+      .map((id) => ({ tipo: 'medida', id, desde: 2023, hasta: 2025 })),
+  },
+  {
+    id: 'guia-bloque-6',
+    etiqueta: 'hipótesis del bloque 6 de la guía',
+    pruebas: [
+      { tipo: 'medida', id: 'sinovac-buena', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'prefiere-pfizer', desde: 2023, hasta: 2025 },
+    ],
+  },
+  {
+    id: 'palabras',
+    etiqueta: 'las cuatro palabras de las respuestas abiertas',
+    exploratoria: true,
+    pruebas: [
+      { tipo: 'medida', id: 'palabra-trump', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'palabra-tecnologia', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'palabra-mall', desde: 2023, hasta: 2025 },
+      { tipo: 'medida', id: 'palabra-buena', desde: 2024, hasta: 2025 },
+    ],
+  },
+]
+
+/** Holm sobre una lista de p: el i-ésimo menor se multiplica por (m − i), y ninguno baja del anterior. */
+export function holm (ps) {
+  const orden = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0])
+  const salida = new Array(ps.length)
+  let previo = 0
+  orden.forEach(([p, i], k) => {
+    previo = Math.max(previo, Math.min(1, p * (ps.length - k)))
+    salida[i] = previo
+  })
+  return salida
+}
+
+/** El objeto del artefacto que una prueba de familia nombra, o `null` si no está. */
+function pruebaDe (resultado, prueba) {
+  if (prueba.tipo === 'medida') {
+    return resultado.medidas.find((m) => m.id === prueba.id)?.comparaciones
+      .find((c) => c.desde === prueba.desde && c.hasta === prueba.hasta) ?? null
+  }
+  if (prueba.tipo === 'brecha') return resultado.brechas.find((b) => b.id === prueba.id)?.porOla.find((o) => o.ola === prueba.ola) ?? null
+  if (prueba.tipo === 'grupo') return resultado.grupos.find((g) => g.id === prueba.id)?.porOla.find((o) => o.ola === prueba.ola)?.brecha ?? null
+  throw new Error(`tipo de prueba desconocido: ${prueba.tipo}`)
+}
+
+/**
+ * Deja en cada prueba de una familia su p corregido (`holm: [{ familia, p }]`). **Una familia
+ * incompleta no se corrige**: con una oleada menos, corregir sobre las que quedan daría un p más
+ * favorable que el declarado. Sin corrección, quien la lee no puede afirmar (ver `corregido`).
+ */
+function corregirFamilias (resultado) {
+  const aplicadas = []
+  for (const familia of FAMILIAS) {
+    const objetos = familia.pruebas.map((p) => pruebaDe(resultado, p))
+    if (objetos.some((o) => o === null)) continue
+    const corregidos = holm(objetos.map((o) => o.p))
+    objetos.forEach((o, i) => { o.holm = [...(o.holm ?? []), { familia: familia.id, p: corregidos[i] }] })
+    aplicadas.push({ id: familia.id, etiqueta: familia.etiqueta, exploratoria: Boolean(familia.exploratoria), pruebas: familia.pruebas.length })
+  }
+  return aplicadas
+}
+
+/**
  * Todos los contrastes del producto, listos para el artefacto.
  *
  * Se calculan las oleadas consecutivas y además la primera contra la última: el recorrido usa las
@@ -610,7 +750,7 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     })
     : []
 
-  return {
+  const resultado = {
     metodo: {
       prueba: 'permutación a dos colas',
       rondas,
@@ -626,4 +766,6 @@ export function contrastes (casos, { rondas = RONDAS, semilla = SEMILLA } = {}) 
     regresiones,
     transversal,
   }
+  resultado.familias = corregirFamilias(resultado)
+  return resultado
 }

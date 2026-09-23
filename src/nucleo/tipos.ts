@@ -81,6 +81,15 @@ export interface NubePalabras {
  * **No son margen de error**: la muestra no es probabilística y estos números comparan las oleadas
  * entre sí, no estiman a la población. El artefacto lo declara en `contrastes.metodo.alcance`.
  */
+/**
+ * El p corregido por Holm dentro de cada familia de hipótesis a la que pertenece la prueba
+ * (`FAMILIAS` en `scripts/lib/contrastes.mjs`). Sin el campo, la prueba no está en ninguna familia.
+ */
+export interface Correccion {
+  familia: string
+  p: number
+}
+
 export interface Comparacion {
   desde: number
   hasta: number
@@ -91,6 +100,7 @@ export interface Comparacion {
   ic: [number, number]
   p: number
   estandarizada: number | null
+  holm?: Correccion[]
 }
 
 export interface Medida {
@@ -113,7 +123,7 @@ export interface Brecha {
   id: string
   etiqueta: string
   unidad: string
-  porOla: { ola: number, n: number, diferencia: number, ic: [number, number], p: number }[]
+  porOla: { ola: number, n: number, diferencia: number, ic: [number, number], p: number, holm?: Correccion[] }[]
 }
 
 /**
@@ -129,7 +139,7 @@ export interface Grupo {
   porOla: {
     ola: number
     tramos: { nombre: string, media: number | null, n: number }[]
-    brecha: { entre: string[], diferencia: number, ic: [number, number], p: number } | null
+    brecha: { entre: string[], diferencia: number, ic: [number, number], p: number, holm?: Correccion[] } | null
   }[]
   entreOlas: { tramo: string, desde: number, hasta: number, n: [number, number], diferencia: number, ic: [number, number], p: number }[]
 }
@@ -191,6 +201,8 @@ export interface Contrastes {
   grupos: Grupo[]
   regresiones: Regresion[]
   transversal: Transversal[]
+  /** Las familias corregidas con Holm; `exploratoria` si se fijó después de ver la cifra. */
+  familias?: { id: string, etiqueta: string, exploratoria: boolean, pruebas: number }[]
 }
 
 export interface Encuesta {
