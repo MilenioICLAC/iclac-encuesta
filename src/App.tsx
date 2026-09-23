@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HashRouter, NavLink, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
-import { filtrar } from './nucleo/agregar'
+import { filtrar, personasRepetidas } from './nucleo/agregar'
 import BarraEstado from './componentes/BarraEstado'
 import Graficador from './componentes/Graficador'
 import Descargas from './componentes/Descargas'
 import Contrastes, { ComoSeLee } from './componentes/Contrastes'
-import MetodoRecorrido from './componentes/MetodoRecorrido'
 import MetodoHistorias, { Plegable } from './componentes/MetodoHistorias'
 import Encabezado from './componentes/Encabezado'
 import { fijarIdioma, locale, numero, type Idioma } from './locale'
@@ -230,10 +229,10 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
   const foco = parametros.get('foco')
   useEffect(() => {
     if (!foco) return
-    const nodo = document.getElementById(foco)
+    // `metodo-recorrido` es el ancla vieja de todos los enlaces: lleva al método de las historias.
+    const nodo = document.getElementById(foco === 'metodo-recorrido' ? 'historias' : foco)
     if (!nodo) return
-    // Abrir antes de medir: cerrada, la sección mide lo que su resumen. `metodo-recorrido` es el
-    // ancla vieja de todos los enlaces y sigue siendo la de las reglas de la animación.
+    // Abrir antes de medir: cerrada, la sección mide lo que su resumen.
     abrir(nodo)
     // **El alto del encabezado se mide, no se escribe.** El encabezado publica el suyo en
     // `--alto-encabezado` (79 px en teléfono, 88 en escritorio).
@@ -259,12 +258,10 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
   }, [])
 
   const c = encuesta.contrastes
-  const ultima = encuesta.olas.at(-1) ?? 0
   const citar: [string, React.ReactNode][] = [
-    ['Tres oleadas, tres muestras.', <>{encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(159)} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
+    ['Tres oleadas, tres muestras.', <>{encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(personasRepetidas(encuesta))} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
     ['Sin ponderar y sin margen de error.', 'Es un panel en línea por cuotas, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
     ['Porcentajes sobre respuestas efectivas.', 'Sin los que no contestaron. Cada figura muestra su base, que suele ser menor que el total.'],
-    ['Algunas cifras no calzan con el monitor anterior.', <>En {ultima}, ese sitio calcula sobre una submuestra de 662 casos; acá va la entrega completa de {numero(encuesta.n[ultima])}, y la opinión sobre China da 65,8 en vez de 67,0. Los conteos de palabras de las preguntas abiertas tampoco calzan: se agrupan las variantes de una palabra con otra regla.</>],
     ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador marca cada una como comparable o no, según el diccionario de ICLAC.'],
   ]
 
@@ -272,7 +269,6 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
     ['citar', 'Antes de citar'],
     ['historias', 'Qué sostiene cada historia'],
     ['como-se-lee', 'Cómo se prueba una diferencia'],
-    ['metodo-recorrido', 'Reglas de las animaciones'],
     ['todas', 'Todas las comparaciones'],
   ]
   const irA = (id: string) => {
@@ -325,9 +321,6 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
           <div className="mt-3 rounded-lg border border-gray-200 bg-white px-4">
             <Plegable id="como-se-lee" resumen={<><span className="font-medium text-gray-900">Cómo se prueba una diferencia</span><span className="block text-gray-500">El p, el intervalo, la composición fija y por qué no es margen de error</span></>}>
               <ComoSeLee rondas={c.metodo.rondas} />
-            </Plegable>
-            <Plegable id="metodo-recorrido" resumen={<><span className="font-medium text-gray-900">Qué puede y qué no puede hacer una animación</span><span className="block text-gray-500">Cuatro reglas que valen para todas las historias</span></>}>
-              <MetodoRecorrido />
             </Plegable>
             <Plegable id="todas" resumen={<><span className="font-medium text-gray-900">Todas las comparaciones entre oleadas</span><span className="block text-gray-500">{numero(c.medidas.length)} medidas en una tabla, incluidas las que ninguna historia usa</span></>}>
               <Contrastes contrastes={c} />

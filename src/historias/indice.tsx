@@ -34,7 +34,7 @@ export const HISTORIAS: Historia[] = [
     bloque: 1,
     nombre: 'La mirada',
     pregunta: '¿Qué opina la gente sobre China?',
-    hallazgo: 'En la última oleada China queda por primera vez sobre Estados Unidos, y la posición política no ordena la opinión.',
+    hallazgo: 'En la última oleada China queda por primera vez sobre Estados Unidos, y la posición política no ordena la opinión de forma robusta.',
     medidas: ['termometro-china', 'termometro-eeuu', 'termometro-japon', 'termometro-corea', 'termometro-francia', 'opinion-china', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china', 'ideologia-china', 'palabra-trump', 'palabra-tecnologia'],
     Componente: HistoriaMirada,
   },

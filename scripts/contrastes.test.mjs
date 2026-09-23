@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bootstrap, estandarizada, generador, media, permutacion, permutacionPareada } from './lib/contraste.mjs'
-import { contrastes } from './lib/contrastes.mjs'
+import { contrastes, FAMILIAS, holm } from './lib/contrastes.mjs'
 import { casosDe } from './lib/combinada.mjs'
 
 /**
@@ -617,5 +617,81 @@ describe('las hipótesis de la guía, bloque por bloque', () => {
     // Y no es la base: la medida solo cuenta a quienes recibieron Sinovac, así que 2023 y 2025
     // comparan a la misma clase de persona. Sin fijarla la caída se duplicaba.
     expect(Math.abs(entre('sinovac-buena', 2023, 2025).diferencia)).toBeLessThan(15)
+  })
+})
+
+/**
+ * **Holm vive en el ETL** (Felipe, 23-09-2026): las historias y «Sobre los datos» leen el p corregido
+ * del artefacto. Esto fija qué pruebas forman cada familia, tal como se declararon arriba, y que el
+ * número que trae el artefacto es el Holm de esas pruebas y no otro. Si alguien cambia una familia
+ * en `scripts/lib/contrastes.mjs` sin cambiar su registro, falla acá.
+ */
+describe('las familias de Holm que trae el artefacto', () => {
+  const casos = [...casosDe(2023), ...casosDe(2024), ...casosDe(2025)]
+  const calculado = contrastes(casos, RONDAS)
+  const DECLARADAS = {
+    'guia-bloque-1': ['brecha brecha-china-eeuu 2025', 'brecha brecha-japon-china 2025', 'grupo ideologia-china 2023', 'medida dispersion-china 2023-2025'],
+    'guia-bloque-2': ['medida confia-china 2023-2025', 'medida confia-eeuu 2023-2025', 'medida no-alineamiento 2023-2025', 'brecha ventaja-china-p26 2025'],
+    'guia-bloque-3': ['grupo riesgo-estrato 2023', 'medida p8-proveedor 2023-2025', 'medida p8-inversor 2023-2025'],
+    'estrato-por-oleada': ['grupo riesgo-estrato 2023', 'grupo riesgo-estrato 2024', 'grupo riesgo-estrato 2025'],
+    'proveedor-primero': ['inversor', 'comprador', 'competidor'].flatMap((r) => [2023, 2024, 2025].map((o) => `brecha p8-proveedor-sobre-${r} ${o}`)),
+    'neto-por-oleada': [2023, 2024, 2025].map((o) => `brecha riesgo-desacuerdo-sobre-acuerdo ${o}`),
+    'neto-por-nivel': [2023, 2024, 2025].map((o) => `grupo riesgo-neto-exposicion ${o}`),
+    'electrica-sobre-banca': ['brecha electrica-sobre-banca 2023', 'brecha electrica-sobre-banca 2024'],
+    cotidiana: ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'racismo-visto'].map((id) => `medida ${id} 2023-2025`),
+    'guia-bloque-6': ['medida sinovac-buena 2023-2025', 'medida prefiere-pfizer 2023-2025'],
+    palabras: ['medida palabra-trump 2023-2025', 'medida palabra-tecnologia 2023-2025', 'medida palabra-mall 2023-2025', 'medida palabra-buena 2024-2025'],
+  }
+  const nombrar = (p) => (p.tipo === 'medida' ? `medida ${p.id} ${p.desde}-${p.hasta}` : `${p.tipo} ${p.id} ${p.ola}`)
+  const objeto = (clave) => {
+    const [tipo, id, cuando] = clave.split(' ')
+    if (tipo === 'medida') {
+      const [desde, hasta] = cuando.split('-').map(Number)
+      return calculado.medidas.find((m) => m.id === id).comparaciones.find((c) => c.desde === desde && c.hasta === hasta)
+    }
+    if (tipo === 'brecha') return calculado.brechas.find((b) => b.id === id).porOla.find((o) => o.ola === Number(cuando))
+    return calculado.grupos.find((g) => g.id === id).porOla.find((o) => o.ola === Number(cuando)).brecha
+  }
+  /** Holm escrito de nuevo, a propósito: si el del ETL se rompe, este no se rompe con él. */
+  const holmAparte = (ps) => {
+    const orden = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0])
+    const salida = []
+    let previo = 0
+    orden.forEach(([p, i], k) => { previo = Math.max(previo, Math.min(1, p * (ps.length - k))); salida[i] = previo })
+    return salida
+  }
+
+  it('las familias del ETL son las declaradas, prueba por prueba', () => {
+    expect(Object.fromEntries(FAMILIAS.map((f) => [f.id, f.pruebas.map(nombrar)]))).toEqual(DECLARADAS)
+    expect(calculado.familias.map((f) => f.id)).toEqual(Object.keys(DECLARADAS))
+  })
+
+  it('cada prueba trae el Holm de su familia', () => {
+    for (const [familia, claves] of Object.entries(DECLARADAS)) {
+      const objetos = claves.map(objeto)
+      const esperado = holmAparte(objetos.map((o) => o.p))
+      objetos.forEach((o, i) => {
+        const h = o.holm.find((x) => x.familia === familia)
+        expect(h, `${familia}: ${claves[i]}`).toBeDefined()
+        expect(h.p).toBeCloseTo(esperado[i], 12)
+      })
+    }
+  })
+
+  it('fuera de las familias, ninguna prueba trae corrección', () => {
+    const conHolm = [
+      ...calculado.medidas.flatMap((m) => m.comparaciones.filter((c) => c.holm).map((c) => `medida ${m.id} ${c.desde}-${c.hasta}`)),
+      ...calculado.brechas.flatMap((b) => b.porOla.filter((o) => o.holm).map((o) => `brecha ${b.id} ${o.ola}`)),
+      ...calculado.grupos.flatMap((g) => g.porOla.filter((o) => o.brecha?.holm).map((o) => `grupo ${g.id} ${o.ola}`)),
+    ]
+    expect(new Set(conHolm)).toEqual(new Set(Object.values(DECLARADAS).flat()))
+  })
+
+  it('holm() del ETL coincide con el cálculo a mano en un caso conocido', () => {
+    // p = 0,01, 0,04, 0,03 → ordenados 0,01×3, 0,03×2, 0,04×1 = 0,03, 0,06, 0,06 (no baja del anterior).
+    const r = holm([0.01, 0.04, 0.03])
+    expect(r[0]).toBeCloseTo(0.03, 12)
+    expect(r[2]).toBeCloseTo(0.06, 12)
+    expect(r[1]).toBeCloseTo(0.06, 12)
   })
 })

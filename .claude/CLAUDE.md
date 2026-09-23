@@ -38,11 +38,11 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `SEMANTICOS` (color por etiqueta) |
 | `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro, hoy solo en «La mirada» |
 | `src/nucleo/` resto | `agregar.ts` (porcentajes), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
-| `src/componentes/` | Figuras: `BarrasPorOla` (series del explorador), `Distribucion`, `Menciones`, `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoRecorrido` (reglas de la animación) y `MetodoHistorias` (método por historia), `Contrastes`, `Descargas`, `Graficador` (el explorador), `BarraEstado` |
+| `src/componentes/` | Figuras: `BarrasPorOla` (series del explorador), `Distribucion`, `Menciones`, `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoHistorias` (método por historia, plegable), `Evidencia` (una prueba dibujada con su intervalo; la única forma de escribir un contraste en «Sobre los datos»), `MetodoRecorrido` (el caso de la recta), `Contrastes` (cómo se prueba y la tabla de medidas), `Descargas`, `Graficador` (el explorador), `BarraEstado` |
 | `src/textos.ts`, `src/locale.ts` | Cromo en tres idiomas; formato de números según idioma |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `bloques`, `variables`, `casos`, `contrastes`, …) |
-| `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican (skill `afirmaciones`) |
+| `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
 | `scripts/mirar_recorrido.mjs` | Recorre cada historia (o la pedida) con Playwright y mide costo de paso, escenas y leyendas a la vista |

@@ -1,6 +1,6 @@
 import type { Contrastes as Datos } from '../nucleo/tipos'
 import { decimal } from '../locale'
-import { cruzaCero, valorP } from '../nucleo/prueba'
+import { firme, nominal, valorP } from '../nucleo/prueba'
 
 /**
  * Qué diferencias entre oleadas superan el azar de la propia muestra.
@@ -25,8 +25,19 @@ export function ComoSeLee ({ rondas }: { rondas: number }) {
       </p>
       <p>
         <strong className="text-gray-900">El intervalo.</strong> Se remuestrean las respuestas (bootstrap)
-        y se toma el rango del 95 % de los remuestreos. <strong className="text-gray-900">Si contiene el
-        cero, la fila dice «parejo»</strong>, aunque el p quede apenas bajo 0,05.
+        y se toma el rango del 95 % de los remuestreos.
+      </p>
+      <p>
+        <strong className="text-gray-900">La corrección por familia.</strong> Las hipótesis que se
+        prueban juntas (las de un mismo bloque de la guía de ICLAC, o las cuatro palabras de las
+        respuestas abiertas) se corrigen con el método de Holm: probar varias a la vez aumenta la chance
+        de que alguna pase por azar, y la corrección lo compensa.
+      </p>
+      <p>
+        <strong className="text-gray-900">Qué se afirma.</strong> Una diferencia se afirma, en las historias
+        y en esta página, si su p queda bajo 0,05, su intervalo no contiene el cero y, cuando es parte de
+        una familia, también pasa la corrección. Si pasa lo primero pero no la corrección, la fila lo dice;
+        si no, dice «parejo».
       </p>
       <p>
         <strong className="text-gray-900">Edad y sexo fijos.</strong> Cada diferencia entre oleadas lleva
@@ -70,15 +81,16 @@ export default function Contrastes ({ contrastes }: { contrastes: Datos }) {
               {pares.map(([desde, hasta]) => {
                 const c = medida.comparaciones.find((x) => x.desde === desde && x.hasta === hasta)
                 if (!c) return <td key={`${desde}-${hasta}`} className="py-1.5 pr-3 text-gray-400">sin dato</td>
-                const parejo = cruzaCero(c.ic)
+                const afirma = firme(c)
                 return (
                   <td key={`${desde}-${hasta}`} className="py-1.5 pr-3 tabular-nums">
-                    <span className={parejo ? 'text-gray-500' : 'font-medium text-gray-900'}>
+                    <span className={afirma ? 'font-medium text-gray-900' : 'text-gray-500'}>
                       {c.diferencia > 0 ? '+' : ''}{decimal(c.diferencia, 1)}{medida.unidad === '%' ? ' pp' : ` ${medida.unidad}`}
-                      {parejo ? ' · parejo' : ''}
+                      {afirma ? '' : nominal(c) ? ' · no pasa la corrección' : ' · parejo'}
                     </span>
                     <span className="block text-[11px] text-gray-500">
                       [{decimal(c.ic[0], 1)}; {decimal(c.ic[1], 1)}] · {valorP(c.p)}
+                      {(c.holm ?? []).map((h) => ` · Holm ${valorP(h.p).replace('p ', '')}`).join('')}
                     </span>
                   </td>
                 )

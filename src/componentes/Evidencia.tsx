@@ -1,6 +1,6 @@
-import type { Contrastes } from '../nucleo/tipos'
+import type { Contrastes, Correccion } from '../nucleo/tipos'
 import { decimal, numero } from '../locale'
-import { cruzaCero, valorP } from '../nucleo/prueba'
+import { firme, nominal, valorP } from '../nucleo/prueba'
 
 /**
  * Una prueba del artefacto, dibujada: el único lugar donde se escribe un contraste en «Sobre los datos».
@@ -9,10 +9,8 @@ import { cruzaCero, valorP } from '../nucleo/prueba'
  * brechas, en el método de cada historia y en las afirmaciones de «La mirada», cada una con su
  * formato y su criterio. Ahora las historias piden sus contrastes por id y todos pasan por acá.
  *
- * **«Parejo» lo decide el intervalo, no el p.** Donde el intervalo cruza el cero la fila dice
- * «parejo» aunque el p quede bajo 0,05: permutación y bootstrap pueden discrepar en el borde
- * (`riesgo-estrato` en 2024: p = 0,0498 con el intervalo tocando +0,01), y la regla de las
- * historias es la del intervalo.
+ * **Una fila afirma lo que afirma la historia** (`firme`, en `src/nucleo/prueba.ts`): p nominal, intervalo
+ * y, si la prueba es de una familia, Holm. Lo que pasa el nominal pero no la corrección lo dice.
  *
  * **Una diferencia dentro de una oleada no «sube».** Entre oleadas se dice sube o baja; en una
  * brecha o entre grupos, cuál queda arriba; en una recta, hacia dónde se inclina.
@@ -25,6 +23,7 @@ interface Fila {
   diferencia: number
   ic: Intervalo
   lectura: string
+  firme: boolean
   detalle: string
 }
 
@@ -46,7 +45,15 @@ const deDiferencia = (unidad: string) => (unidad === '%' || unidad === 'puntos p
 const enumerar = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs.at(-1)}`)
 const deNivel = (v: number, unidad: string) => (unidad === '%' ? `${decimal(v, 1)} %` : decimal(v, 1))
 
+/** Qué se lee: la palabra si es firme, «no pasa la corrección» si solo pasa el nominal, y si no, parejo. */
+const leer = (x: { p: number, ic: Intervalo, holm?: Correccion[] }, si: string, parejo: string) =>
+  firme(x) ? si : nominal(x) ? 'no pasa la corrección' : parejo
+
 function bloques (c: Contrastes, id: string): Bloque[] {
+  const nombre = (familia: string) => c.familias?.find((f) => f.id === familia)?.etiqueta ?? familia
+  /** Cada corrección con su familia: «Holm (hipótesis del bloque 3 de la guía): p = 0,067». */
+  const holm = (x: { holm?: Correccion[] }) =>
+    (x.holm ?? []).map((h) => `Holm (${nombre(h.familia)}): ${valorP(h.p)}`)
   const salida: Bloque[] = []
 
   const m = c.medidas.find((x) => x.id === id)
@@ -61,11 +68,13 @@ function bloques (c: Contrastes, id: string): Bloque[] {
         rotulo: `${k.desde} → ${k.hasta}`,
         diferencia: k.diferencia,
         ic: k.ic,
-        lectura: cruzaCero(k.ic) ? 'parejo' : k.diferencia > 0 ? 'sube' : 'baja',
+        lectura: leer(k, k.diferencia > 0 ? 'sube' : 'baja', 'parejo'),
+        firme: firme(k),
         detalle: [
           `${deNivel(k.a, m.unidad)} → ${deNivel(k.b, m.unidad)}`,
           `IC ${rango(k.ic)}`,
           valorP(k.p),
+          ...holm(k),
           k.estandarizada !== null ? `con edad y sexo fijos ${signo(k.estandarizada)} ${deDiferencia(m.unidad)}` : null,
           `n = ${numero(k.n[0])} y ${numero(k.n[1])}`,
         ].filter(Boolean).join(' · '),
@@ -86,8 +95,9 @@ function bloques (c: Contrastes, id: string): Bloque[] {
         rotulo: String(o.ola),
         diferencia: o.diferencia,
         ic: o.ic,
-        lectura: cruzaCero(o.ic) ? 'pareja' : o.diferencia > 0 ? 'positiva' : 'negativa',
-        detalle: `IC ${rango(o.ic)} · ${valorP(o.p)} · n = ${numero(o.n)}`,
+        lectura: leer(o, o.diferencia > 0 ? 'positiva' : 'negativa', 'pareja'),
+        firme: firme(o),
+        detalle: [`IC ${rango(o.ic)}`, valorP(o.p), ...holm(o), `n = ${numero(o.n)}`].join(' · '),
       })),
     })
   }
@@ -105,8 +115,14 @@ function bloques (c: Contrastes, id: string): Bloque[] {
           rotulo: String(o.ola),
           diferencia: o.brecha!.diferencia,
           ic: o.brecha!.ic,
-          lectura: cruzaCero(o.brecha!.ic) ? 'parejos' : o.brecha!.diferencia > 0 ? `${uno} arriba` : `${otro} arriba`,
-          detalle: `${o.tramos.map((t) => `${t.nombre} ${t.media === null ? 'sin casos' : deNivel(t.media, g.unidad)} (n = ${numero(t.n)})`).join(', ')} · ${uno} menos ${otro}, IC ${rango(o.brecha!.ic)} · ${valorP(o.brecha!.p)}`,
+          lectura: leer(o.brecha!, o.brecha!.diferencia > 0 ? `${uno} arriba` : `${otro} arriba`, 'parejos'),
+          firme: firme(o.brecha!),
+          detalle: [
+            o.tramos.map((t) => `${t.nombre} ${t.media === null ? 'sin casos' : deNivel(t.media, g.unidad)} (n = ${numero(t.n)})`).join(', '),
+            `${uno} menos ${otro}, IC ${rango(o.brecha!.ic)}`,
+            valorP(o.brecha!.p),
+            ...holm(o.brecha!),
+          ].join(' · '),
         }
       }),
     })
@@ -122,7 +138,8 @@ function bloques (c: Contrastes, id: string): Bloque[] {
           rotulo: `${e.desde} → ${e.hasta}`,
           diferencia: e.diferencia,
           ic: e.ic,
-          lectura: cruzaCero(e.ic) ? 'parejo' : e.diferencia > 0 ? 'sube' : 'baja',
+          lectura: leer(e, e.diferencia > 0 ? 'sube' : 'baja', 'parejo'),
+          firme: firme(e),
           detalle: `IC ${rango(e.ic)} · ${valorP(e.p)} · n = ${numero(e.n[0])} y ${numero(e.n[1])}`,
         })),
       })
@@ -138,14 +155,15 @@ function bloques (c: Contrastes, id: string): Bloque[] {
       notas: [
         `Pendiente por punto de la escala (${r.rango[0]} izquierda, ${r.rango[1]} derecha).`,
         // Solo cuando sacar el punto da vuelta la conclusión: si no, contarlo es ruido (skill `afirmaciones`).
-        ...r.porOla.filter((o) => o.sostiene && !cruzaCero(o.recta.ic) && cruzaCero(o.sostiene.recta.ic)).map((o) =>
+        ...r.porOla.filter((o) => o.sostiene && firme(o.recta) && !firme(o.sostiene.recta)).map((o) =>
           `En ${o.ola} la inclinación la sostienen las ${numero(o.sostiene!.n)} personas del punto ${o.sostiene!.x}: sin ellas la pendiente queda en ${signo(o.sostiene!.recta.b, 2)} (IC ${rango(o.sostiene!.recta.ic, 2)}), plana. La inclinación de ${o.ola} no es robusta.`),
       ],
       filas: r.porOla.map((o) => ({
         rotulo: String(o.ola),
         diferencia: o.recta.b,
         ic: o.recta.ic,
-        lectura: cruzaCero(o.recta.ic) ? 'plana' : o.recta.b < 0 ? 'baja hacia la derecha' : 'sube hacia la derecha',
+        lectura: leer(o.recta, o.recta.b < 0 ? 'baja hacia la derecha' : 'sube hacia la derecha', 'plana'),
+        firme: firme(o.recta),
         detalle: `IC ${rango(o.recta.ic, 2)} · ${valorP(o.recta.p)} · n = ${numero(o.recta.n)}`,
       })),
     })
@@ -169,10 +187,9 @@ function bloques (c: Contrastes, id: string): Bloque[] {
 }
 
 /** El intervalo contra el cero. La escala es propia de cada contraste y simétrica: el cero queda al medio. */
-function Raya ({ diferencia, ic, tope }: { diferencia: number, ic: Intervalo, tope: number }) {
+function Raya ({ diferencia, ic, tope, firme }: { diferencia: number, ic: Intervalo, tope: number, firme: boolean }) {
   const ancho = 80
   const x = (v: number) => ancho / 2 + (v / tope) * (ancho / 2 - 5)
-  const firme = !cruzaCero(ic)
   return (
     <svg viewBox={`0 0 ${ancho} 14`} width={ancho} height={14} aria-hidden="true" className="shrink-0 overflow-visible">
       <line x1={ancho / 2} x2={ancho / 2} y1={0} y2={14} className="stroke-gray-300" strokeWidth={1} />
@@ -198,11 +215,11 @@ export default function Evidencia ({ contrastes, id }: { contrastes: Contrastes,
                 {b.filas.map((f) => (
                   <li key={f.rotulo} className="grid grid-cols-[5.5rem_5.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 max-sm:grid-cols-[5.25rem_5rem_minmax(0,1fr)] max-sm:gap-x-2">
                     <span className="whitespace-nowrap tabular-nums text-gray-600">{f.rotulo}</span>
-                    <Raya diferencia={f.diferencia} ic={f.ic} tope={tope} />
+                    <Raya diferencia={f.diferencia} ic={f.ic} tope={tope} firme={f.firme} />
                     <span className="tabular-nums">
                       <span className="font-medium text-gray-900">{signo(f.diferencia, b.decimales)}{'\u00a0'}{b.unidad}</span>
                       {/* En teléfono la lectura baja entera a su línea, en vez de cortarse en el punto medio. */}
-                      <span className={`max-sm:block ${cruzaCero(f.ic) ? 'text-gray-500' : 'text-brand-dark'}`}><span className="max-sm:hidden"> · </span>{f.lectura}</span>
+                      <span className={`max-sm:block ${f.firme ? 'text-brand-dark' : 'text-gray-500'}`}><span className="max-sm:hidden"> · </span>{f.lectura}</span>
                     </span>
                     <span className="col-span-3 tabular-nums text-[11px] leading-snug text-gray-500 sm:col-start-2">{f.detalle}</span>
                   </li>

@@ -2,34 +2,6 @@ import type { Encuesta } from '../nucleo/tipos'
 import { decimal, numero, porcentaje } from '../locale'
 
 /**
- * Qué puede y qué no puede hacer una figura mientras avanza el scroll, y el caso de la recta.
- *
- * **Existe porque las historias afirman** con una figura que cambia, un formato cómodo de leer y
- * difícil de auditar. Las pruebas de cada frase están en `MetodoHistorias`, que las pide por id a
- * `Evidencia`; acá quedan las reglas que valen para todas y el único caso que necesita explicación
- * aparte (un punto de la escala que sostiene la pendiente).
- */
-
-const REGLAS: [string, string][] = [
-  ['La escala no depende de lo que se muestra.', 'Se calcula sobre todos los datos: un valor no cambia de lugar al avanzar.'],
-  ['Ocultar no es borrar.', 'Lo apagado sigue en la página, para imprimir y para un lector de pantalla.'],
-  ['El último paso muestra todo.', 'Es también lo que ve quien pide menos movimiento.'],
-  ['Un eje recortado lo dice.', 'Si la figura no arranca en cero, el rótulo declara el tramo.'],
-]
-
-export default function MetodoRecorrido () {
-  return (
-    <ul className="flex flex-col gap-1.5">
-      {REGLAS.map(([titulo, texto]) => (
-        <li key={titulo}>
-          <strong className="text-gray-900">{titulo}</strong> <span className="text-gray-600">{texto}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
  * Por qué un puñado de respuestas puede inclinar una recta: el diagnóstico de la escena de ideología.
  *
  * **Las cifras salen del artefacto**: si una oleada nueva mueve la pendiente, este texto cambia solo.
