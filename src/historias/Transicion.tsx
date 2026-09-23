@@ -282,17 +282,20 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         const dx = (origen.left + origen.width / 2) - (destino.left + destino.width / 2)
         const dy = (origen.top + origen.height / 2) - (destino.top + destino.height / 2)
         await Promise.all([
+          // Un blur leve mientras las dos preguntas se cruzan: sin él se ven dos textos con cortes
+          // de línea distintos, uno encima del otro; con él se leen como uno que cambia de forma.
+          // Termina en cero: el tramo queda con `fill: 'forwards'`.
           tramo(el, [
-            { transform: t(dx, dy, 0, escala), opacity: 0 },
-            { opacity: 1, offset: 0.45 },
-            { transform: t(0, 0), opacity: 1 },
+            { transform: t(dx, dy, 0, escala), opacity: 0, filter: 'blur(2px)' },
+            { opacity: 1, offset: 0.45, filter: 'blur(2px)' },
+            { transform: t(0, 0), opacity: 1, filter: 'blur(0px)' },
           ], TITULAR, suave),
           // La pregunta de la tarjeta está dentro de la copia alzada: sus desplazamientos van en
           // la escala de la copia.
           tramo(pregunta, [
-            { transform: t(0, 0), opacity: 1 },
-            { opacity: 0, offset: 0.45 },
-            { transform: t(-dx / ALZADA, -dy / ALZADA, 0, 1 / escala), opacity: 0 },
+            { transform: t(0, 0), opacity: 1, filter: 'blur(0px)' },
+            { opacity: 0, offset: 0.45, filter: 'blur(2px)' },
+            { transform: t(-dx / ALZADA, -dy / ALZADA, 0, 1 / escala), opacity: 0, filter: 'blur(2px)' },
           ], TITULAR, suave),
         ])
         if (!vigente) return

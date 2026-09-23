@@ -289,7 +289,7 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
       <nav aria-label="En esta página" className="mt-4 flex flex-wrap gap-2">
         {indice.map(([id, texto]) => (
           <button key={id} type="button" onClick={() => { irA(id) }}
-            className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:border-brand-dark hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark">
+            className="presionable rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:border-brand-dark hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark">
             {texto}
           </button>
         ))}

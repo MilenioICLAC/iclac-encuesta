@@ -208,11 +208,14 @@ export default function Puntos ({
                 ))}
 
                 {/* El trazo entre el punto más chico y el más grande: es el rango de la fila, y
-                    sin él se lee como puntos sueltos en vez de como un recorrido. */}
+                    sin él se lee como puntos sueltos en vez de como un recorrido. Ocupa la fila
+                    entera y se recorta con `transform` (el porcentaje de `translateX` es del
+                    propio ancho, que es el de la fila): animar `left` y `width` rehacía el layout
+                    en cada cuadro. */}
                 {puntos.length > 1 && (
                   <span
-                    className="absolute top-1/2 h-px -translate-y-1/2 bg-gray-200 transition-all duration-500"
-                    style={{ left: `${min}%`, width: `${max - min}%` }}
+                    className="absolute inset-x-0 top-1/2 h-px origin-left bg-gray-200 transition-transform duration-500 motion-reduce:transition-none"
+                    style={{ transform: `translateX(${min}%) translateY(-50%) scaleX(${(max - min) / 100})` }}
                   />
                 )}
 

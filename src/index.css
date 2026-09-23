@@ -14,6 +14,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Un control que se presiona responde al presionarlo: se hunde un 3 % y vuelve. Curva ease-out
+   fuerte y 160 ms, porque es respuesta y no decoración. Solo en botones y píldoras que cambian
+   algo; no en las tarjetas del menú, cuya caja copia la transición en el clic. Reúne en una
+   `transition` el color y el `transform`, que por separado se pisarían. */
+.presionable {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+.presionable:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .presionable:active { transform: none; }
+}
+
 /*
  * Fila del gráfico de puntos.
  *

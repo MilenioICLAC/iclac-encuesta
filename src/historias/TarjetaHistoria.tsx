@@ -16,7 +16,7 @@ export function ContenidoTarjeta ({ h, i }: { h: Historia, i: number }) {
     <>
       <span data-desvanece className="flex items-baseline justify-between gap-4 text-sm font-semibold text-brand-dark">
         <span><span className="sr-only">Historia {i + 1}: </span>{h.nombre}</span>
-        <span aria-hidden className="text-lg leading-none transition-transform duration-300 ease-out group-hover:translate-x-1 motion-reduce:transition-none">→</span>
+        <span aria-hidden className="text-lg leading-none transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-1 motion-reduce:transition-none">→</span>
       </span>
       <span data-pregunta className="mt-2 font-display text-xl font-semibold leading-snug text-gray-900 sm:text-2xl">
         {h.pregunta}

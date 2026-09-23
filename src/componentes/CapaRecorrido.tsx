@@ -332,7 +332,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
           ref={cerrar}
           type="button"
           onClick={alCerrar}
-          className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
+          className="presionable flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
         >
           <span className="hidden sm:inline">{salida}</span>
           <span className="sm:hidden">Salir</span>
@@ -982,7 +982,7 @@ export function Cierre ({ raiz, titulo, frases }: {
             <Link
               to={siguiente ? siguiente.ruta : '/'}
               aria-label={siguiente ? `Leer la historia ${siguiente.numero}: ${siguiente.nombre}` : undefined}
-              className="boton-siguiente mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
+              className="boton-siguiente presionable mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
             >
               {siguiente ? 'Leer la historia' : 'Ver todas las historias'} <span aria-hidden>→</span>
             </Link>

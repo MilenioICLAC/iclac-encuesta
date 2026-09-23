@@ -107,7 +107,7 @@ export default function Graficador ({ encuesta, casos, corte, soloIndependientes
                 type="button"
                 aria-pressed={vista === id}
                 onClick={() => setVista(id)}
-                className={`px-3 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-300' : ''} ${
+                className={`presionable px-3 py-1.5 text-sm ${i > 0 ? 'border-l border-gray-300' : ''} ${
                   vista === id ? 'bg-brand-dark text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
                 } ${i === 0 ? 'rounded-l-md' : 'rounded-r-md'}`}
               >

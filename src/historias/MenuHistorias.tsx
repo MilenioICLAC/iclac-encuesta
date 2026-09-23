@@ -68,7 +68,7 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
               to={`/historias/${h.id}`}
               tabIndex={enCurso ? -1 : undefined}
               onClick={(e) => { elegir(e, i) }}
-              className={`group ${TARJETA} transition-[border-color,box-shadow] duration-300 ease-out hover:border-brand-dark hover:shadow-md hover:shadow-brand-dark/10 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark`}
+              className={`group ${TARJETA} transition-[border-color,box-shadow] duration-200 ease-in-out hover:border-brand-dark hover:shadow-md hover:shadow-brand-dark/10 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark`}
             >
               <ContenidoTarjeta h={h} i={i} />
             </Link>
