@@ -80,8 +80,9 @@
   <header>
     <h1>Decisiones de las historias, para aprobar</h1>
     <p>
-      Sexta ronda cerrada (22-09-2026): sin decisiones pendientes. Lo que ya cerraste está al final, en «Ya cerradas», sin
-      pedir aprobación otra vez. Cada tarjeta dice qué quedó, por qué, las alternativas y de dónde vino.
+      Séptima ronda (22-09-2026): la sección «Cómo se hizo» (<code>#/datos</code>), revisada con Codex. Cerrada
+      pasa de 21,5 pantallas a 2,6 en teléfono (390 px) y de 8.234 palabras a la vista a 422; abierta entera
+      tiene 7.822. Lo que ya cerraste está al final, en «Ya cerradas», sin pedir aprobación otra vez. Cada tarjeta dice qué quedó, por qué, las alternativas y de dónde vino.
       Las cifras se leen en vivo de <code>public/data/encuesta.json</code>. Los enlaces abren la historia en
       la app; todavía no hay enlace a un paso, así que hay que bajar hasta él.
     </p>
@@ -98,7 +99,7 @@
 
   <section class="seccion" id="cerradas">
     <h2>Ya cerradas en el JSON del 21-09</h2>
-    <details><summary style="cursor:pointer; font-size: 13.5px; color: var(--marca-oscura);">Ver las 30</summary>
+    <details><summary style="cursor:pointer; font-size: 13.5px; color: var(--marca-oscura);" id="ver-cerradas">Ver todas</summary>
       <ul id="lista-cerradas" style="font-size: 13.5px; color: var(--g700); padding-left: 18px;"></ul>
     </details>
   </section>
@@ -135,6 +136,7 @@
   const APP = './#';
 
   const SECCIONES = [
+    { id: 'como', titulo: 'Cómo se hizo', bajada: 'La vista «Sobre los datos», a la que llevan los enlaces «Cómo se hizo» de cada historia.', ruta: '/datos' },
     { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
     { id: 'mirada', titulo: 'Historia 1 · La mirada', bajada: 'Bloque 1 de la guía: cómo se mira a China.', ruta: '/historias/mirada' },
     { id: 'entre-potencias', titulo: 'Historia 2 · Entre dos potencias', bajada: 'Bloque 2: Chile entre Washington y Beijing.', ruta: '/historias/entre-potencias' },
@@ -144,8 +146,92 @@
     { id: 'vacuna', titulo: 'Historia 6 · La vacuna', bajada: 'Bloque 6: vacunas y memoria.', ruta: '/historias/vacuna' },
   ];
 
-  /* Sexta ronda (22-09-2026) cerrada entera: no queda nada pendiente. */
-  const D = [];
+  /* Séptima ronda (22-09-2026): «Cómo se hizo», con la revisión de Codex (dos pasadas, solo lectura). */
+  const D = [
+    { id: 'como-estructura', s: 'como', origen: 'Claude y Codex', titulo: 'Arriba lo que necesita quien cita; abajo, plegado, lo que necesita quien audita',
+      decidido: 'La página abre con un índice y cinco tarjetas «Antes de citar una cifra» (oleadas y N, sin ponderar ni margen de error, respuestas efectivas, diferencias con el monitor anterior, mismo nombre no es misma pregunta). Debajo, las seis historias plegadas y un bloque «Método» con tres plegables: cómo se prueba una diferencia, reglas de las animaciones y todas las comparaciones.',
+      porque: 'La página mezclaba guía para citar, auditoría y bitácora interna, sin índice y sin nada plegado: 18.136 px en teléfono. Cerrada queda en 2.185 px (390) y 1.491 (1512), sin desborde de 360 a 1512.',
+      alternativas: 'Pestañas (lo oculto no se imprime; lo plegado se imprime abierto y Chrome lo encuentra con Ctrl+F). Una página aparte para la auditoría.', ruta: '/datos' },
+    { id: 'como-plegables', s: 'como', origen: 'Codex', titulo: 'Una sección plegable por historia; el enlace «Cómo se hizo» la abre',
+      decidido: 'Cada historia es un desplegable cerrado con número, nombre, pregunta y cuántas pruebas la sostienen. Abierto: «Lo que afirma» (el hallazgo de su tarjeta) y sus pruebas. ?foco=metodo-<id> lo abre antes de desplazar; medido: la historia queda 16 px bajo el encabezado en 360, 390, 768 y 1512.',
+      porque: 'Quien llega desde una historia quiere esa historia, no las otras cinco. Las anclas no cambian: los enlaces ya repartidos siguen funcionando.',
+      alternativas: 'Todas abiertas (vuelve la página larga). Abrir también la primera por defecto.', ruta: '/datos?foco=metodo-vacuna' },
+    { id: 'como-evidencia', s: 'como', origen: 'Claude', titulo: 'Cada prueba es una fila con su intervalo dibujado contra el cero',
+      decidido: 'Fila: tramo (2023 → 2025), una raya de 80 px con el cero, el punto y el intervalo del 95 %, la diferencia con su unidad y la lectura. Debajo, en gris: niveles, IC, p, versión con edad y sexo fijos y n. Relleno verde oscuro si no cruza el cero; hueco gris si es parejo, y la palabra siempre escrita (el color nunca va solo).',
+      porque: 'Antes cada prueba era una línea de prosa numérica: para ver si algo se movió había que leer los números. Ahora se ve de un vistazo. La escala es propia de cada prueba y simétrica, así que comparar largos entre pruebas distintas no sirve (la página no lo dice).',
+      alternativas: 'Detalle plegado detrás de «Ver cifras», como proponía Codex (no lo hice: la página ya es de auditoría y el detalle cabe en una línea). Una escala común por historia (no sirve: mezcla puntos, pp y escalones).',
+      cifras: ['sinovac-buena'], ruta: '/datos?foco=metodo-vacuna' },
+    { id: 'como-un-renderer', s: 'como', origen: 'Codex', titulo: 'Una prueba se escribe una sola vez',
+      decidido: 'Todo contraste pasa por un único componente (Evidencia.tsx). Salen de la sección general el bloque de brechas y el de grupos (cada uno ya vivía en su historia), y sale la lista «Las afirmaciones de La mirada, en detalle», que repetía cuatro contrastes con otro formato.',
+      porque: 'La misma cifra aparecía hasta tres veces con criterios distintos: la tabla general marcaba «supera el ruido» por p y el método por historia decía «parejo» por intervalo.',
+      alternativas: 'Conservar las afirmaciones de La mirada como texto: era la única historia que las tenía.' },
+    { id: 'como-parejo-ic', s: 'como', origen: 'Codex', titulo: '«Parejo» lo decide el intervalo, no el p, en toda la página',
+      decidido: 'La tabla general era la excepción: marcaba por p < 0,05. Ahora todo usa el intervalo, que es la regla de las historias.',
+      porque: 'Hay un caso en que discrepan: la brecha de riesgo por estrato exportador en 2024, p = 0,0498 con el intervalo tocando +0,01. Antes salía «supera el ruido».',
+      cifras: ['riesgo-estrato'], ruta: '/datos?foco=metodo-territorio' },
+    { id: 'como-lecturas', s: 'como', origen: 'Codex', titulo: 'Dentro de una oleada nada «sube»',
+      decidido: 'Entre oleadas: sube, baja, parejo. En una brecha dentro de la persona: positiva, negativa, pareja. Entre grupos: «Izquierda arriba», «Conoce arriba», parejos. En la recta: «baja hacia la derecha» o «plana».',
+      porque: 'Antes brechas y grupos decían «sube» o «baja», que sugiere movimiento en el tiempo donde no lo hay.',
+      alternativas: '«Positiva/negativa» exige saber qué se resta de qué, y eso está en el título («China menos Estados Unidos»). Podría reescribirse como «China arriba».' },
+    { id: 'como-advertencias', s: 'como', origen: 'Claude y Codex', titulo: 'Las siete advertencias del artefacto se ven junto a su medida',
+      decidido: 'Racismo (orden del cuestionario desde 2024), las cuatro palabras exploratorias, limitar inversiones (bloque experimental de 2025) y Sinovac («No recuerdo» en 2025) llevan su aviso en ámbar, en su historia y en la tabla general.',
+      porque: 'El tipo exige que la advertencia viaje con la serie dondequiera que se publique, y en «Sobre los datos» no salía en ningún lado.',
+      cifras: ['racismo-visto'], ruta: '/datos?foco=metodo-china-cotidiana' },
+    { id: 'como-medidas-declaradas', s: 'como', origen: 'Claude y Codex', titulo: 'Cinco pruebas que las historias usan y no declaraban',
+      decidido: 'Se agregan al registro (indice.tsx): el termómetro de Japón, Corea y Francia y el recuento grupo por grupo en La mirada, que pasa a 12 pruebas, y «más confianza en EE. UU.» en Entre dos potencias, que pasa a 10.',
+      porque: 'La mirada dice que ninguno de los cinco países se mueve entre 2023 y 2024 y que el alza aparece en todos los niveles socioeconómicos; Entre dos potencias usa la caída de EE. UU. Sus pruebas no salían en el método.',
+      alternativas: 'pro-china, pro-eeuu, distancia-ambos, relacionarse-ambos y p8-comprador no sostienen ninguna frase: quedan solo en la tabla general.',
+      ruta: '/datos?foco=metodo-mirada' },
+    { id: 'como-recta', s: 'como', origen: 'Claude', titulo: 'El caso de la recta, plegado dentro de La mirada, con una nota junto a la fila de 2023',
+      decidido: 'La explicación del apalancamiento y su tabla pasan a un desplegable dentro de La mirada, más cortas. Junto a la fila de la pendiente se agrega, calculado: «En 2023 la inclinación la sostienen las 30 personas del punto 10: sin ellas la pendiente queda en −0,29, plana. La inclinación de 2023 no es robusta».',
+      porque: 'Sin la nota, la fila de 2023 dice «baja hacia la derecha» y la historia dice lo contrario. La nota solo aparece si sacar el punto da vuelta la conclusión.',
+      cifras: ['ideologia-china'], ruta: '/datos?foco=metodo-mirada' },
+    { id: 'como-no-ordena', s: 'como', origen: 'Codex', titulo: 'Sin cambio, para que lo decidas: «no ordena» o «no ordena de forma robusta»',
+      verbatim: ['Hallazgo de La mirada: «…y la posición política no ordena la opinión.»'],
+      decidido: 'No toqué el hallazgo ni la historia: es texto que ya aprobaste. En «Sobre los datos» la nota dice solo que la inclinación de 2023 no es robusta.',
+      porque: 'Codex objeta que la pendiente de 2023 sí da −1,42 con IC [−2,63; −0,21], y que sacar un punto después de verlo muestra fragilidad, no ausencia de relación. En 2024 y 2025 la recta es plana, y por tramos ninguna oleada se distingue.',
+      alternativas: '«…y la posición política no ordena la opinión de forma robusta.» O «…no la ordena en 2024 ni en 2025, y en 2023 la inclinación depende de 30 personas».',
+      cifras: ['ideologia-china'], ruta: '/historias/mirada' },
+    { id: 'como-tramos', s: 'como', origen: 'Codex', titulo: 'Cada tramo de un grupo, entre oleadas, con su intervalo',
+      decidido: 'En los cinco grupos (ideología, contacto, buses, estrato exportador, exposición), cada tramo consigo mismo entre oleadas es una fila con raya, sangrada bajo su grupo. Antes era una nota con solo los que se movían y sin intervalo.',
+      porque: 'La página promete una fila con intervalo por prueba, y esas pruebas dicen quién se movió.',
+      alternativas: 'Volver a la nota corta (menos filas: son tres tramos por tres tramos de años por grupo).', ruta: '/datos?foco=metodo-mirada' },
+    { id: 'como-tabla', s: 'como', origen: 'Claude', titulo: 'La tabla de todas las comparaciones se queda, plegada y solo con medidas',
+      decidido: '36 medidas por tres tramos, con «parejo» escrito donde el intervalo cruza el cero, unidades en pp y advertencias. Es el único lugar donde aparecen las cinco medidas que ninguna historia usa.',
+      porque: 'Para auditar hace falta ver también lo que no se contó.',
+      alternativas: 'Sacarla, como propuso Codex («no se conserva otra tabla global»). Ofrecerla como descarga CSV.' },
+    { id: 'como-reglas', s: 'como', origen: 'Claude', titulo: 'Las cuatro reglas de las animaciones, en una línea cada una',
+      decidido: 'Escala fija, ocultar no es borrar, el último paso muestra todo, un eje recortado lo dice. Plegadas bajo «Método».',
+      porque: 'Son la garantía de que la figura animada no engaña. «Ocultar no es borrar» le importa a quien imprime o usa lector de pantalla.',
+      alternativas: 'Reducirlas a dos (escala fija y figura completa al final), como propuso Codex.', ruta: '/datos?foco=metodo-recorrido' },
+    { id: 'como-monitor', s: 'como', origen: 'Codex', titulo: 'La diferencia con el monitor, sin el relato del script ni la decisión pendiente',
+      verbatim: ['Antes: «Ese sitio calcula sobre una submuestra de 662 casos que se armó con un script corrido dos veces sobre hojas ordenadas distinto. […] Cuál de las dos se publica es decisión de ICLAC.»'],
+      decidido: 'Queda: en 2025 el monitor usa 662 casos y acá la entrega completa, y la opinión sobre China da 65,8 en vez de 67,0. Se suma que los conteos de palabras tampoco calzan (antes estaba en «Qué falta»). El N de 2025 sale ahora del dato: 1.227, no el 1.228 que estaba escrito a mano.',
+      porque: 'La historia del script es nuestra procedencia y no cambia la decisión de quien cita; la decisión de ICLAC (C8) sigue abierta, y publicarla como pendiente es estado interno.',
+      alternativas: 'Conservar «cuál se publica es decisión de ICLAC» mientras C8 siga abierta.' },
+    { id: 'como-que-falta', s: 'como', origen: 'Codex', titulo: 'Sale «Qué falta en este borrador»',
+      verbatim: ['Los textos de las historias viven en el código…', 'Las nubes de palabras no reproducen exactamente las del sitio…', 'El sitio todavía no está en inglés ni en chino…'],
+      decidido: 'Se va de la interfaz. Lo de las palabras pasa a la tarjeta del monitor; el idioma ya lo declara la franja que aparece al cambiarlo; los textos en código ya están en estado.md.',
+      porque: 'Es estado del borrador, y su destinatario somos nosotros.',
+      alternativas: 'Dejarlo hasta el lanzamiento, porque el sitio sigue marcado BORRADOR.' },
+    { id: 'como-estandarizada', s: 'como', origen: 'Codex', titulo: 'La versión con edad y sexo fijos ya no dice que el cambio «es de opinión»',
+      verbatim: ['Antes: «si las dos se parecen, el cambio es de opinión y no de quién contestó».'],
+      decidido: '«Si las dos se parecen, la edad y el sexo de quienes contestaron no explican el cambio; otras diferencias de composición siguen posibles.»',
+      porque: 'Fijar edad y sexo no descarta otras diferencias entre las muestras.' },
+    { id: 'como-p', s: 'como', origen: 'Codex', titulo: 'La explicación del p cubre los cuatro tipos de prueba',
+      decidido: 'Entre oleadas se baraja el año; en una brecha dentro de la persona, el signo de cada diferencia; entre grupos, a qué grupo pertenece cada persona; en una recta, la opinión entre los puntos de la escala. Verificado en scripts/lib/contrastes.mjs.',
+      porque: 'Antes decía que en todas se barajaba el año, y eso solo vale entre oleadas.' },
+    { id: 'como-foco', s: 'como', origen: 'Codex', titulo: 'El salto lleva también el foco del teclado',
+      decidido: 'Al llegar por «Cómo se hizo» o por el índice de la página, el foco pasa al resumen de la sección abierta (o al título), sin mover la vista. ?foco=metodo-recta abre también La mirada, que la contiene.',
+      porque: 'Con teclado o lector de pantalla, el recorrido seguía desde el enlace anterior.' },
+    { id: 'como-holm', s: 'como', origen: 'Claude', titulo: 'Sin cambio, para que lo decidas: la página no menciona Holm',
+      decidido: 'Las filas muestran el p nominal. Los veredictos de las hipótesis (la tabla de abajo) se corrigen con Holm dentro de cada bloque, y eso no está en la app.',
+      porque: 'Agregarlo cambia qué filas se leen como firmes (p8-proveedor, palabra-tecnologia), y hoy el criterio de las filas es el intervalo.',
+      alternativas: 'Una línea en «Cómo se prueba una diferencia» que lo diga. Marcar en cada historia las pruebas que no sobreviven a Holm.' },
+    { id: 'como-a-mano', s: 'como', origen: 'Claude', titulo: 'Sin cambio: cuatro cifras siguen escritas a mano',
+      decidido: '159 personas repetidas, 662 casos del monitor, 65,8 y 67,0. No las toqué.',
+      porque: 'El artefacto no las trae; calcularlas es trabajo del ETL (olas_panelista y la derivada del monitor), fuera de esta ronda.' },
+  ];
 
   /* Lo que ya cerraste en los JSON del 21-09 y del 22-09-2026. Solo lectura: no vuelve a pedir aprobación. */
   const CERRADAS = [
@@ -321,6 +407,7 @@
       }
       main.appendChild(sec);
     }
+    $('ver-cerradas').textContent = `Ver las ${CERRADAS.length}`;
     $('lista-cerradas').innerHTML = CERRADAS.map(([sec, t]) => `<li><span style="color:var(--tinta-suave)">${esc(sec)} ·</span> ${esc(t)}</li>`).join('');
     const t = $('hipotesis');
     const nombres = { si: 'Se sostiene', parte: 'En parte', no: 'Descartada', explora: 'Exploratorio' };
@@ -351,7 +438,7 @@
   $('exportar').addEventListener('click', () => {
     const texto = JSON.stringify({
       laboratorio: 'decisiones',
-      ronda: 6,
+      ronda: 7,
       fecha: new Date().toISOString(),
       decisiones: D.map((d) => ({ id: d.id, seccion: d.s, titulo: d.titulo, estado: de(d.id).estado, comentario: de(d.id).comentario })),
       nota: estado.nota,

@@ -35,7 +35,7 @@ export const HISTORIAS: Historia[] = [
     nombre: 'La mirada',
     pregunta: '¿Qué opina la gente sobre China?',
     hallazgo: 'En la última oleada China queda por primera vez sobre Estados Unidos, y la posición política no ordena la opinión.',
-    medidas: ['termometro-china', 'termometro-eeuu', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china', 'ideologia-china', 'palabra-trump', 'palabra-tecnologia'],
+    medidas: ['termometro-china', 'termometro-eeuu', 'termometro-japon', 'termometro-corea', 'termometro-francia', 'opinion-china', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china', 'ideologia-china', 'palabra-trump', 'palabra-tecnologia'],
     Componente: HistoriaMirada,
   },
   {
@@ -44,7 +44,7 @@ export const HISTORIAS: Historia[] = [
     nombre: 'Entre dos potencias',
     pregunta: '¿Con quién se queda Chile?',
     hallazgo: 'La confianza en China se dispara, y en la última oleada cambia cuál potencia prefiere la minoría que elige.',
-    medidas: ['confia-china', 'confia-eeuu', 'confianza-china', 'confianza-eeuu', 'mas-confianza-china', 'empate-confianza', 'brecha-confianza', 'no-alineamiento', 'ventaja-china-p26'],
+    medidas: ['confia-china', 'confia-eeuu', 'confianza-china', 'confianza-eeuu', 'mas-confianza-china', 'mas-confianza-eeuu', 'empate-confianza', 'brecha-confianza', 'no-alineamiento', 'ventaja-china-p26'],
     Componente: HistoriaEntrePotencias,
   },
   {
