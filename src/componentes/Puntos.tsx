@@ -48,6 +48,9 @@ export interface SerieDePuntos {
   color: string
   /** Se muestra en gris al lado de la etiqueta en la leyenda. Suele ser la base. */
   nota?: string
+  /** Diámetro en px, cuando lo decide quien usa la figura (el explorador, por grupo y no por
+   *  posición: si falta un grupo, los demás no cambian de tamaño). Gana sobre `radioCreciente`. */
+  tamano?: number
 }
 
 export interface FilaDePuntos {
@@ -223,8 +226,16 @@ export default function Puntos ({
           // hay espacio. Sin ella, se rotulan los dos extremos cuando están separados.
           // Si la serie destacada todavía no está encendida, se rotulan los extremos: una fila
           // con puntos y sin ningún número obliga a leer el eje a ojo.
-          const destacado = typeof rotular === 'number'
-            ? puntos.find((p) => p.serie.clave === series[rotular]?.clave)
+          // En el explorador (`esquivar`), si la serie destacada no tiene dato en esta fila, se rotula
+          // la última anterior que sí: en `p4`, Boric no existe en 2025 y el número de los extremos
+          // (43 %, de 2023) se leía como el de hoy. Solo por dato nulo, no por punto apagado.
+          const indiceDestacado = typeof rotular !== 'number'
+            ? -1
+            : esquivar
+              ? [...fila.valores.slice(0, rotular + 1).keys()].reverse().find((i) => fila.valores[i] !== null) ?? -1
+              : rotular
+          const destacado = indiceDestacado >= 0
+            ? puntos.find((p) => p.serie.clave === series[indiceDestacado]?.clave)
             : undefined
           // Con una serie destacada y encendida va **solo** ella. Antes se le sumaba el otro
           // extremo si había espacio, y en el recorrido eso dejaba el número de una oleada vieja
@@ -305,7 +316,7 @@ export default function Puntos ({
                     se tapan: el número exacto está al pasar el cursor. No se desplazan, porque
                     desplazarlos sería dibujar un valor que no es. */}
                 {todos.map((p) => {
-                  const d = tamano(series.indexOf(p.serie))
+                  const d = p.serie.tamano ?? tamano(series.indexOf(p.serie))
                   return (
                   <span
                     key={p.serie.clave}

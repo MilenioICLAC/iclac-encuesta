@@ -21,7 +21,10 @@
  * - `orden: 'frecuencia'`: de mayor a menor, con `alFinal` siempre abajo («Otro»).
  * - `serie`: qué se compara «Entre oleadas». `olas` son las que hicieron la misma pregunta;
  *   `variable` y `categorias` permiten comparar con la derivada (`p9_rec`); `filtro` fija la
- *   población común (`p11`). `null` con `sinSerie` dice por qué no se ofrece.
+ *   población común (`p11`). `recodificar` lleva, por oleada, los códigos de esa oleada a los de
+ *   la serie (`p4`: en 2025 el 1 es Kast y el 2 Jara), y en esa oleada cada código va escrito; una categoría de la serie con un tercer
+ *   elemento, `[código, etiqueta, olas]`, existe solo en esas oleadas y en las demás no se dibuja
+ *   (no es 0 %). `null` con `sinSerie` dice por qué no se ofrece.
  * - `advertencia`: id de una medida de `contrastes`, cuya advertencia se muestra tal cual. El
  *   texto vive allá, en un solo lugar.
  */
@@ -389,9 +392,21 @@ export const PREGUNTAS = [
       2023: [[1, 'Boric'], [2, 'Kast'], [3, 'No votó o votó en blanco']],
       2024: [[1, 'Boric'], [2, 'Kast'], [3, 'No votó o votó en blanco']],
     },
+    // Felipe, undécima ronda: «unamos las preguntas en la comparación entre oleadas, aprovechando
+    // que ambas hablan de segunda vuelta y tienen a Kast». No es la misma pregunta (hecho 3): 2023 y
+    // 2024 recuerdan el voto de 2021 y 2025 pregunta por uno hipotético. La nota lo dice, y Boric y
+    // Jara solo aparecen en sus oleadas.
     serie: {
-      olas: [2023, 2024],
-      nota: 'Sin 2025, que pregunta por otra elección. 2023 y 2024 recuerdan el voto de la misma, la de 2021.',
+      olas: [2023, 2024, 2025],
+      recodificar: { 2025: { 1: 2, 2: 5, 3: 3, 4: 4 } },
+      categorias: [
+        [2, 'Kast'],
+        [1, 'Boric', [2023, 2024]],
+        [5, 'Jara', [2025]],
+        [3, 'No votó o no votaría, o en blanco'],
+        [4, 'Nulo'],
+      ],
+      nota: '2023 y 2024 preguntan por quién se votó en la segunda vuelta de 2021 (Boric o Kast); 2025, por quién se votaría en una segunda vuelta entre Kast y Jara. Boric y Jara aparecen solo en sus oleadas.',
     },
   },
 ]
@@ -472,6 +487,7 @@ export function validarPreguntas ({ variables, multiples, valores, casos, pregun
         const olasSerie = olasDe(p.serie.variable)
         comprobarCategorias(errores, `${donde} (serie)`, p.serie.variable, p.serie.categorias, undefined, olasSerie.filter((o) => p.serie.olas.includes(o)), codigosEn)
       }
+      if (p.serie.recodificar) comprobarRecodificacion(errores, `${donde} (serie)`, nombre, p.serie, codigosEn)
       if (p.serie.filtro && !variable(p.serie.filtro.variable)) errores.push(`${donde}: el filtro usa ${p.serie.filtro.variable}, que no existe`)
     } else if (olas.length > 1 && !p.sinSerie && !(v.serie === false)) {
       errores.push(`${donde}: está en ${olas.join(', ')} y no se compara; falta \`sinSerie\` con la razón`)
@@ -507,6 +523,29 @@ function comprobarCategorias (errores, donde, nombre, categorias, porOla, olas, 
   for (const c of declaradas) if (!vistos.has(c)) errores.push(`${donde}: el código ${c} no aparece en ninguna oleada`)
   for (const [ola, pares] of Object.entries(porOla ?? {})) {
     for (const [c] of pares) if (!declaradas.has(c)) errores.push(`${donde}: porOla ${ola} rotula ${c}, que no está en categorias`)
+  }
+}
+
+/**
+ * Una serie que recodifica: cada código de cada oleada, ya llevado al de la serie, tiene su
+ * categoría, y una categoría que declara sus oleadas no tiene respuestas fuera de ellas. Sin esto,
+ * un código mal llevado sumaría a Boric los votos de Jara, que es el error que ya se pagó en `p4`.
+ */
+function comprobarRecodificacion (errores, donde, nombre, serie, codigosEn) {
+  const categorias = serie.categorias ?? []
+  if (!categorias.length) { errores.push(`${donde}: recodifica y no declara las categorías de la serie`); return }
+  for (const ola of serie.olas) {
+    const mapa = serie.recodificar[ola]
+    for (const c of codigosEn(nombre, ola)) {
+      // En una oleada que recodifica, **cada** código va escrito, también los que no cambian: si
+      // no, un código olvidado se queda con su número y suma a otro candidato. Con `{ 1: 2 }` los
+      // 394 votos de Jara (código 2 en 2025) caían en Kast, que es el código 2 de la serie (Codex).
+      if (mapa && !(c in mapa)) { errores.push(`${donde}: el código ${c} de ${ola} no está en el mapa de recodificación`); continue }
+      const final = mapa ? mapa[c] : c
+      const cat = categorias.find(([k]) => k === final)
+      if (!cat) errores.push(`${donde}: el código ${c} de ${ola} queda como ${final}, que no tiene categoría`)
+      else if (cat[2] && !cat[2].includes(ola)) errores.push(`${donde}: «${cat[1]}» tiene respuestas en ${ola}, que no está entre sus oleadas`)
+    }
   }
 }
 
@@ -559,7 +598,8 @@ function publicar (p, { variable, olas }) {
       ? {
           olas: p.serie.olas,
           variable: p.serie.variable ?? variable,
-          ...(p.serie.categorias ? { categorias: p.serie.categorias.map(([codigo, etiqueta]) => ({ codigo, etiqueta })) } : {}),
+          ...(p.serie.categorias ? { categorias: p.serie.categorias.map(([codigo, etiqueta, olasCat]) => ({ codigo, etiqueta, ...(olasCat ? { olas: olasCat } : {}) })) } : {}),
+          ...(p.serie.recodificar ? { recodificar: p.serie.recodificar } : {}),
           ...(p.serie.filtro ? { filtro: p.serie.filtro } : {}),
           ...(p.serie.nota ? { nota: p.serie.nota } : {}),
         }

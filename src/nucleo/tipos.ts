@@ -53,6 +53,8 @@ export interface CategoriaPregunta {
   etiqueta: string
   /** La etiqueta de las oleadas donde el código significa otra cosa (`p4`, `p15`). */
   porOla?: Record<string, string>
+  /** Solo en la serie: las oleadas donde existe la categoría (Boric en `p4`, solo 2023 y 2024). */
+  olas?: number[]
 }
 
 export interface SeriePregunta {
@@ -63,6 +65,8 @@ export interface SeriePregunta {
   categorias?: CategoriaPregunta[]
   /** Población común a todas las oleadas (`p11`: solo quienes recibieron Sinovac). */
   filtro?: { variable: string, codigos: number[] }
+  /** Por oleada, código de esa oleada → código de la serie (`p4` en 2025). */
+  recodificar?: Record<string, Record<string, number>>
   nota?: string
 }
 
