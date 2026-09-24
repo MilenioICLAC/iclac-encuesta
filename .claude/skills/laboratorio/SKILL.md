@@ -81,3 +81,4 @@ inyectado. Las figuras, los textos y los anchos son los de verdad, sin copiar na
 | `laboratorio/recorrido.html` | `npm run lab` | escenas del recorrido; sin revisar desde el 08-09 |
 | `laboratorio/cierre-recorrido.html` | `npm run lab:cierre` | cerrado, falta podar |
 | `laboratorio/portada-recorrido.html` | `npm run lab:portada` | cerrado, falta podar |
+| `laboratorio/la-encuesta.html` | `npm run lab:la-encuesta` | cerrado, falta podar: JSON aplicado el 24-09-2026 en `FichaTecnica.tsx` (la pestaña es «Ficha técnica»); se hizo sin iframe porque la pestaña no existía |

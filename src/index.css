@@ -465,6 +465,13 @@
   }
 }
 
+/* En la «Ficha técnica» el mapa acompaña a la tabla de estratos y mide lo que ella, no la pantalla.
+   Dos clases le ganan a la media query de arriba, que fija `--alto-mapa-ancho` en la misma caja. */
+.ficha-mapa .mapa-regiones {
+  --alto-mapa: 26rem;
+  --alto-mapa-ancho: 26rem;
+}
+
 @media (max-height: 700px) {
 
   .capa-recorrido .escena {

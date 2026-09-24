@@ -85,4 +85,8 @@ describe('los archivos que se ofrecen para descargar', () => {
     }
     expect(archivos).toContain('Nota_metodologica_muestreo_ICLAC.docx')
   })
+
+  it('no publican la asignación muestral mientras traiga la población de Biobío y Ñuble cruzada (C25)', () => {
+    expect(manifiesto.archivos.map((a) => a.archivo)).not.toContain('Asignacion_muestral_por_region_y_estrato.xlsx')
+  })
 })

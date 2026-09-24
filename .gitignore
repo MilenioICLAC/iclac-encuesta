@@ -42,3 +42,5 @@ public/laboratorio-cotidiana.html
 .code-review-graph/
 # Y el dashboard de decisiones de las historias: `npm run lab:decisiones` a partir de `laboratorio/decisiones.html`.
 public/laboratorio-decisiones.html
+# Y el de la pestaña «La encuesta»: `npm run lab:la-encuesta` a partir de `laboratorio/la-encuesta.html`.
+public/laboratorio-la-encuesta.html

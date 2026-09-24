@@ -105,7 +105,7 @@ export default function BarraEstado ({
             onChange={(e) => onSoloIndependientes(e.target.checked)}
             className="rounded border-gray-300"
           />
-          Excluir panelistas repetidos
+          Sin quienes respondieron en más de una oleada
         </label>
 
         <p className="ml-auto text-sm tabular-nums text-gray-500">

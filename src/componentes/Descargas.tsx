@@ -86,8 +86,8 @@ export default function Descargas () {
           </li>
           <li>
             <strong>Mismo nombre de variable no siempre es la misma pregunta.</strong> El diccionario trae
-            la columna <code className="rounded bg-gray-100 px-1">uso_serie_longitudinal</code>, que marca
-            cuáles se pueden comparar entre oleadas y cuáles no.
+            la columna <code className="rounded bg-gray-100 px-1">uso_serie_longitudinal</code>, que da una
+            primera orientación; el explorador indica, pregunta por pregunta, qué se compara entre oleadas.
           </li>
           <li>
             <strong>Sin identificadores de panelista.</strong> Se retiraron{' '}

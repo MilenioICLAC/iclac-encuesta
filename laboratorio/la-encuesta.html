@@ -1,0 +1,512 @@
+<title>Laboratorio de la pestaña «La encuesta»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Los mismos dos pesos que carga la app (`src/index.css`). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /*
+   * La pestaña todavía no existe en la app, así que no hay iframe: se dibuja con las clases de la app
+   * traducidas a mano (`SobreLosDatos` en `src/App.tsx`, `Encabezado.tsx`, `Plegable`). Los textos son
+   * los de `la documentación interna`. Las cifras se calculan de
+   * `public/data/encuesta.json`; solo el índice, las fechas y las duraciones van escritos, con su fuente.
+   */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7; --superficie: #FFFFFF; --tinta: #101917; --tinta-suave: #6E7C79; --linea: #DFE4E2;
+    --marca: #00A89C; --marca-oscura: #00776E;
+    --g50: #F9FAFB; --g200: #E5E7EB; --g300: #D1D5DB; --g400: #9CA3AF; --g500: #6B7280;
+    --g600: #4B5563; --g700: #374151; --g900: #111827;
+    --display: "Raleway", system-ui, sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+  .envoltorio { max-width: 1600px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 95ch; }
+  .avisos li + li { margin-top: 4px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+  .textos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px 16px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .textos label { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tinta-suave); }
+  .textos textarea, .nota textarea { font: inherit; font-size: 13.5px; color: var(--tinta); border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; resize: vertical; }
+  .textos .cuenta.largo { color: #A3302A; font-weight: 600; }
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .barra-visor .mal { color: #A3302A; font-weight: 600; }
+  .deslizable { overflow-x: auto; padding-block: 16px; }
+  .nota { display: flex; flex-direction: column; gap: 8px; }
+  .nota .fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--g600); }
+
+  /* ---------------- La app, dentro del visor ---------------- */
+  #visor { position: relative; margin-inline: auto; background: var(--g50); overflow-y: auto; overscroll-behavior: contain; container-type: inline-size; box-shadow: 0 1px 3px rgba(0,0,0,.12); color: var(--g900); font-family: var(--cuerpo); }
+  .enc { position: sticky; top: 0; z-index: 40; background: #fff; padding: 12px 16px; box-shadow: 0 5px 10px 0 rgba(50,50,50,0.06); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .enc .marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .enc img { height: 36px; width: auto; }
+  .enc h1 { font-family: var(--display); font-size: 13px; font-weight: 600; line-height: 1.25; margin: 0; }
+  .enc .sub { margin-top: 2px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--g500); }
+  .enc .sub b { font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #92400E; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 999px; padding: 0 6px; }
+  .enc .sub span { display: none; }
+  .enc nav { display: none; align-items: center; gap: 16px; font-family: var(--display); font-size: 13px; }
+  .enc nav a { color: var(--g500); text-decoration: none; white-space: nowrap; }
+  .enc nav a.activa { color: var(--g900); font-weight: 600; }
+  .enc nav a.nueva { outline: 2px dashed var(--marca); outline-offset: 3px; border-radius: 4px; }
+  .enc nav a.hist { border: 1px solid var(--g300); border-radius: 999px; padding: 4px 10px; }
+  .enc .hamb { width: 36px; height: 36px; display: grid; place-items: center; color: var(--g700); font-size: 22px; border: 0; background: none; border-radius: 4px; padding: 0; cursor: pointer; }
+  @container (min-width: 640px) { .enc { padding-inline: 24px; } .enc h1 { font-size: 16px; } .enc img { height: 40px; } .enc .sub span { display: inline; } }
+  @container (min-width: 768px) { .enc { padding-block: 10px; } .enc img { height: 68px; } }
+  @container (min-width: 1024px) { .enc nav { display: flex; } .enc .hamb { display: none; } }
+  .menu-tel { display: none; }
+  .menu-tel.abierto { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px 12px; background: #fff; border-bottom: 1px solid var(--g200); font-family: var(--display); font-size: 14px; }
+  .menu-tel a { padding: 8px; color: var(--g700); text-decoration: none; border-radius: 4px; }
+  .menu-tel a.activa { font-weight: 600; color: var(--g900); }
+  .menu-tel a.nueva { outline: 2px dashed var(--marca); outline-offset: -2px; }
+  @container (min-width: 1024px) { .menu-tel.abierto { display: none; } }
+
+  .pag { max-width: 1024px; margin: 0 auto; padding: 40px 16px 64px; font-size: 14px; line-height: 1.43; color: var(--g600); }
+  .pag h2 { font-family: var(--display); font-size: 24px; font-weight: 600; color: var(--g900); margin: 0; line-height: 1.33; }
+  .pag .intro { margin: 8px 0 0; max-width: 672px; }
+  .pag .indice { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .pag .indice span { border: 1px solid var(--g300); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; color: var(--g700); }
+  .pag h3 { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--g900); margin: 40px 0 0; }
+  .pag p.cuerpo { margin: 8px 0 0; max-width: 672px; }
+  .pag .fuente { margin: 6px 0 0; font-size: 12px; color: var(--g500); max-width: 672px; }
+  .pag a { color: var(--marca-oscura); text-decoration: underline; }
+  .pag sup { font-size: 10px; color: var(--g500); }
+  .tabla-caja { margin-top: 12px; overflow-x: auto; }
+  .pag table { border-collapse: collapse; font-size: 13px; background: #fff; border: 1px solid var(--g200); }
+  .pag th, .pag td { padding: 5px 10px; border-bottom: 1px solid var(--g200); text-align: left; vertical-align: top; }
+  .pag th { font-size: 12px; font-weight: 600; color: var(--g500); background: var(--g50); }
+  .pag th, .pag td { padding: 5px 7px; }
+  @container (min-width: 640px) { .pag th, .pag td { padding: 5px 10px; } }
+  .pag tr.var td { background: var(--g50); color: var(--g900); font-weight: 600; font-size: 12px; }
+  .pag td .chip { display: none; }
+  @container (min-width: 640px) { .pag td .chip { display: inline-block; } }
+  @container (max-width: 399px) { .pag table { font-size: 12px; } .pag th, .pag td { padding: 4px 5px; } }
+  /* En teléfono la tabla se ajusta al ancho y reparte lo mínimo: sin esto crece a su ancho máximo. */
+  @container (max-width: 639px) { .pag table { width: 100%; } .plegable { padding: 0 12px; } .plegable .dentro { padding-left: 0; } .pag td.num.parte { white-space: normal; } }
+  @container (max-width: 399px) { .pag th, .pag td { padding: 4px 3px; } .pag th:first-child, .pag td:first-child { padding-left: 6px; } }
+  .q-largo { display: none; }
+  @container (min-width: 640px) { .q-largo { display: inline; } .q-corto { display: none; } }
+  .pag td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pag th.num { text-align: right; }
+  .pag tr.total td { font-weight: 600; color: var(--g900); border-bottom: 0; }
+  .pag .chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .ficha { margin-top: 20px; max-width: 760px; display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--g200); border-radius: 8px; background: #fff; font-size: 13px; }
+  .ficha div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; padding: 7px 12px; border-bottom: 1px solid var(--g200); }
+  .ficha div:last-child { border-bottom: 0; }
+  .ficha dt { color: var(--g500); font-size: 12px; }
+  .ficha dd { margin: 0; color: var(--g900); }
+  @container (min-width: 640px) { .ficha div { grid-template-columns: 180px minmax(0, 1fr); } }
+  .diseno { display: flex; gap: 20px; align-items: flex-start; margin-top: 12px; }
+  .diseno .tabla-caja { margin-top: 0; flex: 1 1 auto; min-width: 0; }
+  .mapa { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
+  .mapa svg { display: block; }
+  .mapa .ley { font-size: 11.5px; color: var(--g600); display: flex; flex-direction: column; gap: 3px; }
+  .solo-ancho { display: none; }
+  @container (min-width: 640px) { .solo-ancho { display: flex; } }
+  .plegable { margin-top: 12px; border: 1px solid var(--g200); border-radius: 8px; background: #fff; padding: 0 16px; }
+  .plegable summary { display: flex; gap: 8px; align-items: flex-start; padding: 12px 0; cursor: pointer; list-style: none; }
+  .plegable summary::-webkit-details-marker { display: none; }
+  .plegable summary .fl { color: var(--g400); display: inline-block; width: 12px; transition: transform .2s; }
+  .plegable[open] summary .fl { transform: rotate(90deg); }
+  .plegable summary b { font-weight: 500; color: var(--g900); display: block; }
+  .plegable .dentro { padding: 0 0 16px 20px; }
+  .fuentes { margin: 8px 0 0; padding-left: 0; list-style: none; font-size: 12.5px; max-width: 760px; }
+  .fuentes li + li { margin-top: 6px; }
+  .raiz { max-width: 1024px; margin: 0 auto; padding: 40px 16px 64px; }
+  .raiz h2 { font-family: var(--display); font-size: 24px; font-weight: 600; margin: 0; color: var(--g900); }
+  @container (min-width: 640px) { .raiz h2 { font-size: 30px; } }
+  .raiz p { margin: 8px 0 0; max-width: 672px; font-size: 14px; color: var(--g600); }
+  .raiz p a { color: var(--marca-oscura); }
+  .hueco { margin-top: 32px; border: 2px dashed var(--g300); border-radius: 12px; padding: 40px 16px; text-align: center; font-size: 13px; color: var(--g500); }
+  .no-existe { margin: 48px auto; max-width: 560px; border: 2px dashed var(--g300); border-radius: 12px; padding: 32px 16px; text-align: center; color: var(--g500); font-size: 14px; }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio de la pestaña «La encuesta»</h1>
+    <p>
+      La pestaña nueva que describe la encuesta en sí (quién la hizo, cómo se aplicó, diseño, muestra y
+      alcance), con el texto de la propuesta revisada. Las cifras se calculan en vivo de
+      <code>encuesta.json</code>. Las decisiones de contenido (la cifra de 2025 en la nota metodológica, el
+      Excel de Descargas, «personas» en la raíz) van en el dashboard de decisiones.
+    </p>
+  </header>
+
+  <ul class="avisos">
+    <li>Ya está decidido: pestaña aparte de «Sobre los datos», texto descriptivo y acotado, sin tasa de respuesta mientras no llegue de Netquest. Lo abierto está en los controles.</li>
+    <li>«Vista: Raíz» muestra el comienzo del menú de historias con la bajada y el enlace nuevos; las tarjetas no cambian y van como recuadro.</li>
+    <li>La pestaña nueva va marcada con un borde punteado en el encabezado. El nav completo aparece desde 1024 px; más angosto, toca el menú ☰.</li>
+    <li>Revísalo en el aparato donde se va a leer: en el teléfono, abre esta página directo y elige «Todo».</li>
+  </ul>
+
+  <div class="controles">
+    <div class="grupo"><span>Combinación</span><div class="seg" id="c-preset"></div></div>
+    <div class="grupo"><span>Vista</span><div class="seg" id="c-vista"></div></div>
+    <div class="grupo" data-solo-nueva><span>Nombre de la pestaña</span><div class="seg" id="c-nombre"></div></div>
+    <div class="grupo" data-solo-nueva><span>Lugar en el encabezado</span><div class="seg" id="c-posicion"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Ficha resumen arriba</span><div class="seg" id="c-ficha"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Índice «En esta página»</span><div class="seg" id="c-indice"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Estratos</span><div class="seg" id="c-mapa"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Rótulo del estrato</span><div class="seg" id="c-rotulo"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Composición</span><div class="seg" id="c-composicion"></div></div>
+    <div class="grupo" data-solo-nueva data-solo-pestana><span>Categorías de la composición</span><div class="seg" id="c-categorias"></div></div>
+    <div class="grupo"><span>Ventana simulada</span><div class="seg" id="c-ventana"></div></div>
+  </div>
+
+  <div class="textos" id="textos" data-solo-nueva></div>
+
+  <div class="marco">
+    <div class="barra-visor" id="info"></div>
+    <div class="deslizable"><div id="visor"></div></div>
+  </div>
+
+  <div class="nota">
+    <div class="fila"><strong style="color:var(--tinta)">Tu nota sobre esta combinación</strong></div>
+    <textarea id="nota" placeholder="Qué funciona, qué no, y por qué. También lo que cambiarías del texto."></textarea>
+    <div class="fila"><button class="accion" id="exportar">Copiar JSON</button><span id="copiado"></span></div>
+    <textarea id="json" readonly hidden></textarea>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ---------- Lo que no está en encuesta.json, con su fuente ---------- */
+  // Índice de impacto y estrato: nota metodológica de ICLAC (Aduanas, enero a agosto de 2023).
+  const REGIONES = [
+    [2, 'Antofagasta', 1, 25.55], [1, 'Tarapacá', 1, 8.34], [6, "O'Higgins", 1, 4.06], [3, 'Atacama', 1, 3.39],
+    [5, 'Valparaíso', 2, 1.71], [8, 'Biobío', 2, 1.18], [4, 'Coquimbo', 2, 1.12], [7, 'Maule', 2, 0.57],
+    [13, 'Metropolitana', 3, 0.32], [9, 'La Araucanía', 3, 0.16], [14, 'Los Ríos', 3, 0.07], [15, 'Arica y Parinacota', 3, 0.07],
+    [10, 'Los Lagos', 4, 0.07], [12, 'Magallanes', 4, 0.05], [16, 'Ñuble', 4, 0.01], [11, 'Aysén', 4, 0.00],
+  ];
+  // Hora de término (`endtime`) y mediana de `duration` en segundos, de la base combinada.
+  const CAMPO = { 2023: ['10 al 13 de octubre de 2023', 660], 2024: ['9 al 19 de octubre de 2024', 643], 2025: ['7 al 18 de octubre de 2025', 710] };
+  // `EXPOSICION` de `src/nucleo/paleta.ts`, de Bajo a Muy alto; el estrato 1 es el de mayor exposición.
+  const EXPOSICION = ['#EFA67A', '#D9733A', '#A84D17', '#6B2E0B'];
+  const colorEstrato = (q) => EXPOSICION[4 - q];
+  const NIVEL = { 1: 'Muy alta', 2: 'Alta', 3: 'Media', 4: 'Baja' };
+  const HISTORIAS = 6;
+
+  const TEXTOS_BASE = {
+    intro: 'Qué es la encuesta, cómo se aplicó y a quiénes describen sus cifras.',
+    bajadaRaiz: '{historias} historias contadas con la Encuesta de Percepciones sobre China en Chile, de ICLAC: {oleadas} oleadas ({desde} a {hasta}) y {respuestas} respuestas de {personas} personas, en un panel en línea.',
+    enlaceRaiz: 'Qué es la encuesta y a quiénes describe →',
+  };
+  const ROTULOS = {
+    intro: 'Bajada de la pestaña',
+    bajadaRaiz: 'Bajada de la raíz ({historias}, {oleadas}, {desde}, {hasta}, {respuestas} y {personas} se calculan)',
+    enlaceRaiz: 'Enlace de la raíz a la pestaña',
+  };
+
+  const P_BASE = {
+    modo: 'nueva', vista: 'pestana', nombre: 'la-encuesta', posicion: 'antes-datos', ficha: 'no', indice: 'si',
+    mapa: 'con-mapa', rotulo: 'ambos', composicion: 'plegada', categorias: 'agrupadas', ventana: '390',
+  };
+  const PRESETS = { propuesta: Object.assign({}, P_BASE), app: Object.assign({}, P_BASE, { modo: 'app' }) };
+  const NOMBRES_PRESET = { propuesta: 'Propuesta', app: 'Como está la app' };
+  const NOMBRES = { 'la-encuesta': 'La encuesta', 'sobre-la-encuesta': 'Sobre la encuesta', 'ficha-tecnica': 'Ficha técnica' };
+  const VENTANAS = { '360': [360, 640], '390': [390, 844], '768': [768, 1024], '1512': [1512, 945], todo: null };
+
+  const OPCIONES = {
+    modo: ['nueva', 'app'], vista: ['pestana', 'raiz'], nombre: Object.keys(NOMBRES), posicion: ['antes-datos', 'despues-datos', 'antes-descargas'],
+    ficha: ['no', 'si'], indice: ['si', 'no'], mapa: ['con-mapa', 'tabla'], rotulo: ['q', 'nivel', 'ambos'],
+    composicion: ['plegada', 'abierta', 'fuera'], categorias: ['agrupadas', 'originales'], ventana: Object.keys(VENTANAS),
+  };
+  const CLAVE = 'lab-la-encuesta-v1';
+  let E = Object.assign({}, P_BASE);
+  let T = Object.assign({}, TEXTOS_BASE);
+  let nota = '';
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    if (g && typeof g === 'object') {
+      // Por identificador, nunca por posición; un valor que ya no es opción se descarta.
+      Object.keys(P_BASE).forEach((k) => { if (g.p && typeof g.p[k] === 'string' && OPCIONES[k].includes(g.p[k])) E[k] = g.p[k]; });
+      Object.keys(TEXTOS_BASE).forEach((k) => { if (g.t && typeof g.t[k] === 'string') T[k] = g.t[k]; });
+      if (typeof g.nota === 'string') nota = g.nota;
+    }
+  } catch (e) { /* modo privado */ }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ p: E, t: T, nota: nota })); } catch (e) { /* modo privado */ } };
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = (v, d = 0) => new Intl.NumberFormat('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+  const pct = (a, b) => fmt(100 * a / b, 1);
+
+  let J = null; let GEO = null; let D = null;
+
+  /* ---------- Cifras, de encuesta.json ---------- */
+  function calcular (j) {
+    const olas = j.olas;
+    const de = (o) => j.casos.filter((c) => c.ola === o);
+    const n = Object.fromEntries(olas.map((o) => [o, de(o).length]));
+    const filas2 = j.casos.filter((c) => c.olas_panelista === 2).length;
+    const filas3 = j.casos.filter((c) => c.olas_panelista === 3).length;
+    const enDos = filas2 / 2; const enTres = filas3 / 3;
+    const repetidas = enDos + enTres;
+    const total = j.casos.length;
+    const personas = total - filas2 / 2 - 2 * filas3 / 3;
+    const region = Object.fromEntries(olas.map((o) => { const t = {}; de(o).forEach((c) => { t[c.region] = (t[c.region] || 0) + 1; }); return [o, t]; }));
+    const rm = olas.map((o) => 100 * (region[o][13] || 0) / n[o]);
+    const edad = Object.fromEntries(olas.map((o) => {
+      const a = de(o).map((c) => c.edad).filter((x) => x != null).sort((x, y) => x - y);
+      const k = a.length; const med = k % 2 ? a[(k - 1) / 2] : (a[k / 2 - 1] + a[k / 2]) / 2;
+      return [o, [a[0], a[k - 1], med]];
+    }));
+    const cats = (v) => (j.variables.find((x) => x.nombre === v) || { categorias: [] }).categorias;
+    const cuenta = (campo, valores) => valores.map(([etq, prueba]) => [etq, olas.map((o) => { const k = de(o).filter((c) => prueba(c[campo])).length; return [k, n[o]]; })]);
+    const porCodigo = (v, filtro) => cuenta(v, cats(v).filter((c) => !filtro || filtro(c)).map((c) => [c.etiqueta, (x) => x === c.codigo]));
+    const porValor = (campo, orden) => cuenta(campo, orden.map((v) => [v, (x) => x === v]));
+    const tramo = (e) => e.includes('+') ? e.replace('_+', ' años o más') : e.replace('_', ' a ') + ' años';
+    const originales = [
+      ['Sexo', porCodigo('sexo')],
+      ['Edad', porCodigo('edadr', (c) => c.codigo >= 2).map(([e, v]) => [tramo(e), v])],
+      ['Nivel socioeconómico', porCodigo('nse')],
+      ['Nivel educativo', porCodigo('educacion')],
+    ];
+    // Los grupos del explorador, en el orden de sus cortes.
+    const agrupadas = [
+      ['Sexo', porCodigo('sexo')],
+      ['Edad', porValor('edad_rec', ['18 a 34', '35 a 44', '45 a 54', '55 a 64', '65 o más']).map(([e, v]) => [e === '65 o más' ? '65 años o más' : e + ' años', v])],
+      ['Nivel socioeconómico', porValor('nse_rec', ['E', 'D', 'C3', 'C2', 'AB · C1'])],
+      ['Nivel educativo', porValor('educacion_rec', ['Media incompleta o menos', 'Media completa', 'Técnica o universitaria incompleta', 'Universitaria completa o más'])],
+    ];
+    return { olas, n, total, personas, repetidas, enDos, enTres, filasRepetidas: filas2 + filas3, region, rm, edad, originales, agrupadas };
+  }
+
+  /* ---------- Controles ---------- */
+  function seg (id, opciones, clave, alElegir) {
+    const nodo = $(id); nodo.innerHTML = '';
+    Object.keys(opciones).forEach((v) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = opciones[v];
+      b.setAttribute('aria-pressed', (clave ? E[clave] === v : alElegir.activo(v)) ? 'true' : 'false');
+      b.addEventListener('click', () => { if (clave) E[clave] = v; else alElegir.elegir(v); guardar(); pintarTodo(); });
+      nodo.appendChild(b);
+    });
+  }
+  const presetActivo = () => Object.keys(PRESETS).find((k) => Object.keys(P_BASE).every((c) => c === 'ventana' || c === 'vista' || PRESETS[k][c] === E[c]));
+
+  function pintarControles () {
+    seg('c-preset', NOMBRES_PRESET, null, { activo: (v) => presetActivo() === v, elegir: (v) => { const w = E.ventana; const vi = E.vista; E = Object.assign({}, PRESETS[v], { ventana: w, vista: vi }); } });
+    seg('c-vista', { pestana: 'Pestaña', raiz: 'Raíz' }, 'vista');
+    seg('c-nombre', NOMBRES, 'nombre');
+    seg('c-posicion', { 'antes-datos': 'Antes de «Sobre los datos»', 'despues-datos': 'Al final', 'antes-descargas': 'Antes de «Descargas»' }, 'posicion');
+    seg('c-ficha', { no: 'No', si: 'Sí' }, 'ficha');
+    seg('c-indice', { si: 'Sí', no: 'No' }, 'indice');
+    seg('c-mapa', { 'con-mapa': 'Tabla y mapa', tabla: 'Solo tabla' }, 'mapa');
+    seg('c-rotulo', { q: 'Q1 a Q4', nivel: 'Muy alta a baja', ambos: 'Q1 · muy alta' }, 'rotulo');
+    seg('c-composicion', { plegada: 'Plegada', abierta: 'Abierta', fuera: 'Fuera' }, 'composicion');
+    seg('c-categorias', { agrupadas: 'Las del explorador', originales: 'Las originales' }, 'categorias');
+    seg('c-ventana', { '360': '360×640', '390': '390×844', '768': '768', '1512': '1512', todo: 'Todo' }, 'ventana');
+    // Un parámetro que en la versión de hoy no significa nada se saca del panel.
+    document.querySelectorAll('[data-solo-nueva]').forEach((x) => { x.hidden = E.modo === 'app'; });
+    document.querySelectorAll('[data-solo-pestana]').forEach((x) => { if (E.modo !== 'app') x.hidden = E.vista !== 'pestana'; });
+    const cat = $('c-categorias').closest('.grupo'); if (E.modo !== 'app' && E.vista === 'pestana') cat.hidden = E.composicion === 'fuera';
+  }
+
+  function pintarTextos () {
+    const nodo = $('textos');
+    if (nodo.childElementCount) return;
+    Object.keys(TEXTOS_BASE).forEach((k) => {
+      const l = document.createElement('label');
+      const cab = document.createElement('span');
+      const cuenta = document.createElement('span'); cuenta.className = 'cuenta';
+      const campo = document.createElement('textarea'); campo.rows = k === 'bajadaRaiz' ? 3 : 1; campo.value = T[k];
+      const contar = () => { const largo = rellenar(T[k]).length; cuenta.textContent = ` · ${largo} caracteres`; cuenta.classList.toggle('largo', largo > 130); };
+      cab.textContent = ROTULOS[k]; cab.appendChild(cuenta);
+      campo.addEventListener('input', () => { T[k] = campo.value; contar(); guardar(); pintarVisor(true); });
+      l.appendChild(cab); l.appendChild(campo); nodo.appendChild(l); contar();
+    });
+  }
+
+  function rellenar (t) {
+    if (!D) return t;
+    return t.replace('{historias}', HISTORIAS).replace('{oleadas}', ['cero', 'una', 'dos', 'tres', 'cuatro'][D.olas.length] || D.olas.length)
+      .replace('{desde}', D.olas[0]).replace('{hasta}', D.olas[D.olas.length - 1])
+      .replace('{respuestas}', fmt(D.total)).replace('{personas}', fmt(D.personas));
+  }
+
+  /* ---------- La app ---------- */
+  function navItems () {
+    const base = [['Historias', 'hist'], ['Explorar', ''], ['Descargas', ''], ['Sobre los datos', '']];
+    if (E.modo === 'app') return base;
+    const nueva = [NOMBRES[E.nombre], 'nueva'];
+    if (E.posicion === 'antes-descargas') base.splice(2, 0, nueva);
+    else if (E.posicion === 'antes-datos') base.splice(3, 0, nueva);
+    else base.push(nueva);
+    return base;
+  }
+  function encabezado (activa) {
+    const items = navItems();
+    const a = (t, c) => `<a class="${c}${t === activa ? ' activa' : ''}">${esc(t)}</a>`;
+    return `<div class="enc">
+      <div class="marca"><img src="./icons/iclac.webp" alt="ICLAC"><div><h1>Encuesta de Percepciones sobre China en Chile</h1><p class="sub"><b>Borrador</b><span>Monitor de opinión pública · ICLAC</span></p></div></div>
+      <nav>${items.map(([t, c]) => a(t, c)).join('')}<span style="width:1px;height:20px;background:var(--g300)"></span><span style="font-family:var(--cuerpo);font-size:13px;color:var(--g700)">ES EN 中文</span></nav>
+      <button class="hamb" type="button" id="hamb" aria-label="Menú">☰</button>
+    </div>
+    <div class="menu-tel" id="menu-tel">${items.map(([t, c]) => a(t, c === 'hist' ? '' : c)).join('')}</div>`;
+  }
+
+  const rotuloQ = (q) => E.rotulo === 'q' ? `Q${q}` : E.rotulo === 'nivel' ? NIVEL[q] : `Q${q} · ${NIVEL[q].toLowerCase()}`;
+
+  function mapa (alto) {
+    if (!GEO) return '<div class="mapa" style="width:70px;font-size:11px;color:var(--g500)">Sin geometría</div>';
+    const [, , w, h] = GEO.viewBox.split(' ').map(Number);
+    const q = Object.fromEntries(REGIONES.map((r) => [r[0], r[2]]));
+    const ancho = Math.round(alto * w / h);
+    return `<div class="mapa solo-ancho"><svg viewBox="${GEO.viewBox}" width="${ancho}" height="${alto}" role="img" aria-label="Mapa de Chile por estrato">
+      ${GEO.regiones.map((r) => `<path d="${r.d}" fill="${colorEstrato(q[r.codigo])}" stroke="#fff" stroke-width="0.8" stroke-linejoin="round"><title>${esc(r.nombre)}</title></path>`).join('')}
+    </svg><div class="ley">${[1, 2, 3, 4].map((k) => `<span><i class="chip" style="background:${colorEstrato(k)}"></i>${esc(rotuloQ(k))}</span>`).join('')}</div></div>`;
+  }
+
+  function tablaEstratos () {
+    const cols = D.olas;
+    const filas = REGIONES.map(([cod, nom, q, ind]) => `<tr><td style="white-space:nowrap">${E.mapa === 'con-mapa' ? `<i class="chip" style="background:${colorEstrato(q)}"></i>` : ''}<span class="q-largo">${esc(rotuloQ(q))}</span><span class="q-corto">${esc(E.rotulo === 'nivel' ? NIVEL[q] : 'Q' + q)}</span></td><td>${esc(nom)}</td><td class="num">${fmt(ind, 2)}</td>${cols.map((o) => `<td class="num">${fmt(D.region[o][cod] || 0)}</td>`).join('')}</tr>`).join('');
+    return `<table><thead><tr><th>Estrato</th><th>Región</th><th class="num">Índice</th>${cols.map((o) => `<th class="num">${o}</th>`).join('')}</tr></thead>
+      <tbody>${filas}<tr class="total"><td></td><td>Total</td><td></td>${cols.map((o) => `<td class="num">${fmt(D.n[o])}</td>`).join('')}</tr></tbody></table>`;
+  }
+
+  function tablaComposicion () {
+    const grupos = E.categorias === 'originales' ? D.originales : D.agrupadas;
+    const filas = grupos.map(([v, cats]) => `<tr class="var"><td colspan="${D.olas.length + 1}">${esc(v)}</td></tr>` + cats.map(([etq, vals]) => `<tr><td>${esc(etq)}</td>${vals.map(([k, t]) => `<td class="num parte">${fmt(k)} (${pct(k, t)})</td>`).join('')}</tr>`).join('')).join('');
+    return `<div class="tabla-caja"><table><thead><tr><th></th>${D.olas.map((o) => `<th class="num">${o}<br><span style="font-weight:400">n (%)</span></th>`).join('')}</tr></thead><tbody>${filas}</tbody></table></div>
+      <p class="fuente">Fuente: base combinada <sup>[3]</sup>. ${E.categorias === 'agrupadas' ? 'Categorías agrupadas como en los cortes del explorador. ' : ''}Por redondeo, los porcentajes pueden no sumar 100.</p>`;
+  }
+
+  function pestana () {
+    if (E.modo === 'app') return `<div class="no-existe">La pestaña no existe en la app. Hoy la encuesta solo se describe en la bajada de la raíz y en el bloque «Antes de citar» de «Sobre los datos».</div>`;
+    const o = D.olas; const minRm = fmt(Math.min(...D.rm), 1); const maxRm = fmt(Math.max(...D.rm), 1);
+    const secciones = [['autoria', 'Autoría y propósito'], ['aplicacion', 'Aplicación'], ['diseno', 'Diseño muestral'], ['casos', 'Casos por oleada'], ...(E.composicion === 'fuera' ? [] : [['composicion', 'Composición']]), ['alcance', 'Alcance'], ['fuentes', 'Fuentes']];
+    const ficha = E.ficha === 'si' ? `<dl class="ficha">
+      <div><dt>Responsable</dt><dd>Núcleo Milenio ICLAC, Pontificia Universidad Católica de Chile</dd></div>
+      <div><dt>Financiamiento</dt><dd>ANID, Programa Iniciativa Científica Milenio, NCS2022_053</dd></div>
+      <div><dt>Aplicación</dt><dd>Cuestionario autoadministrado en línea, panel en línea de Netquest</dd></div>
+      <div><dt>Trabajo de campo</dt><dd>Octubre de cada año</dd></div>
+      <div><dt>Diseño</dt><dd>Estratificado por exposición económica regional a China, cuatro estratos</dd></div>
+      <div><dt>Casos</dt><dd>${o.map((x) => `${x}: ${fmt(D.n[x])}`).join(' · ')}</dd></div>
+      <div><dt>Ponderación</dt><dd>Sin factores de expansión; resultados sin ponderar</dd></div>
+      <div><dt>Informe de referencia</dt><dd>Policy Paper ICLAC 3 (2024)</dd></div>
+    </dl>` : '';
+    const tabla = `<div class="tabla-caja">${tablaEstratos()}</div>`;
+    const diseno = E.mapa === 'con-mapa' ? `<div class="diseno">${mapa(430)}${tabla}</div>` : tabla;
+    const composicion = E.composicion === 'fuera' ? '' : E.composicion === 'plegada'
+      ? `<h3 id="composicion">Composición de las muestras</h3>
+         <p class="cuerpo">Número de casos y porcentaje sobre el total de cada oleada, sin ponderar. Las edades observadas van de ${o.map((x) => `${D.edad[x][0]} a ${D.edad[x][1]} años en ${x}`).join(', ').replace(/, ([^,]+)$/, ' y $1')}, con medianas de ${o.map((x) => fmt(D.edad[x][2])).join(', ').replace(/, ([^,]+)$/, ' y $1')} años, respectivamente. <sup>[3]</sup></p>
+         <details class="plegable"><summary><span class="fl">▸</span><span><b>Sexo, edad, nivel socioeconómico y nivel educativo</b><span style="color:var(--g500)">Una tabla por oleada</span></span></summary><div class="dentro">${tablaComposicion()}</div></details>`
+      : `<h3 id="composicion">Composición de las muestras</h3>
+         <p class="cuerpo">Número de casos y porcentaje sobre el total de cada oleada, sin ponderar. Las edades observadas van de ${o.map((x) => `${D.edad[x][0]} a ${D.edad[x][1]} años en ${x}`).join(', ').replace(/, ([^,]+)$/, ' y $1')}, con medianas de ${o.map((x) => fmt(D.edad[x][2])).join(', ').replace(/, ([^,]+)$/, ' y $1')} años, respectivamente. <sup>[3]</sup></p>${tablaComposicion()}`;
+
+    return `<section class="pag">
+      <h2>${esc(NOMBRES[E.nombre])}</h2>
+      <p class="intro">${esc(T.intro)}</p>
+      ${E.indice === 'si' ? `<div class="indice">${secciones.map(([, t]) => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
+      ${ficha}
+
+      <h3>Autoría y propósito</h3>
+      <p class="cuerpo">La Encuesta de Percepciones sobre China en Chile es una encuesta de aplicación anual del Núcleo Milenio ICLAC, de la Pontificia Universidad Católica de Chile, financiada por ANID a través del Programa Iniciativa Científica Milenio, proyecto NCS2022_053. La serie disponible comprende las oleadas de ${o.join(', ').replace(/, ([^,]+)$/, ' y $1')}. <sup>[1]</sup></p>
+      <p class="cuerpo">La ficha técnica de la primera oleada declara que la encuesta se llevó a cabo «con el objetivo de analizar el impacto económico de China a nivel subnacional». Su informe de referencia es el <i>Monitor de Opinión Pública 2023</i>, publicado en 2024. <sup>[1]</sup></p>
+
+      <h3>Aplicación y cuestionario</h3>
+      <p class="cuerpo">El cuestionario es autoadministrado en línea y lo aplicó Netquest a miembros de su panel en línea. La selección de participantes es no probabilística. Las fechas de la tabla corresponden al período entre la primera y la última respuesta completada en cada oleada, según el registro de término de cada una. <sup>[1, 3]</sup></p>
+      <div class="tabla-caja"><table><thead><tr><th>Oleada</th><th>Fechas de aplicación</th><th class="num">Duración mediana</th></tr></thead>
+        <tbody>${o.map((x) => `<tr><td>${x}</td><td>${CAMPO[x][0]}</td><td class="num">${fmt(CAMPO[x][1] / 60, 1)} minutos</td></tr>`).join('')}</tbody></table></div>
+      <p class="fuente">Fuente: registro de las respuestas de cada oleada. <sup>[3]</sup></p>
+      <p class="cuerpo">El cuestionario de 2023 contenía alrededor de 30 preguntas. En 2025 se incorporaron bloques sobre marcas y empresas chinas, fuentes de información y transporte público eléctrico, además de un módulo experimental referido a Estados Unidos. <sup>[1, 2]</sup></p>
+
+      <h3>Diseño muestral</h3>
+      <p class="cuerpo">La muestra se estratificó según la exposición económica de cada región a China, y no en proporción a su población. El índice utilizado se construyó con las exportaciones regionales a China registradas por el Servicio Nacional de Aduanas entre enero y agosto de 2023, y combina, para cada región, su participación en el total exportado por Chile a China y el peso de China en las exportaciones totales de la región. <sup>[1, 2]</sup></p>
+      <p class="cuerpo">Las 16 regiones se ordenaron según el índice y se agruparon en cuatro estratos de cuatro regiones, equivalentes a sus cuartiles: Q1 reúne a las de mayor exposición y Q4 a las de menor. El tamaño objetivo fue de 660 casos. Según la nota metodológica de ICLAC, el diseño se mantuvo en las tres oleadas. Como consecuencia, la distribución regional de la muestra difiere de la de la población: la Región Metropolitana reúne entre el ${minRm}% y el ${maxRm}% de los casos, según la oleada. <sup>[1, 2, 3]</sup></p>
+      ${diseno}
+      <p class="fuente">Fuentes: estratos e índice, nota metodológica de ICLAC <sup>[2]</sup>; casos por región, base combinada <sup>[3]</sup>.</p>
+
+      <h3>Casos por oleada</h3>
+      <p class="cuerpo">La base utilizada en este sitio contiene ${o.map((x, i) => `${fmt(D.n[x])}${i === 0 ? ' casos' : ''} de ${x}`).join(', ').replace(/, ([^,]+)$/, ' y $1')}, que suman ${fmt(D.total)} registros. En 2025 se eliminó una respuesta duplicada de una misma persona y se conservó la primera. <sup>[3]</sup></p>
+      <p class="cuerpo">Las tres oleadas son cortes transversales: no se sigue a las personas entre una y otra. ${fmt(D.repetidas)} personas participaron en más de una (${fmt(D.enDos)} en dos y ${fmt(D.enTres)} en las tres), lo que corresponde a ${fmt(D.filasRepetidas)} registros. <sup>[3]</sup></p>
+
+      ${composicion}
+
+      <h3>Alcance de las cifras</h3>
+      <p class="cuerpo">Las cifras describen las respuestas de las personas participantes y no se extrapolan a la población de Chile ni de sus regiones. La selección es no probabilística y ninguna oleada dispone de factores de expansión. Por eso los resultados se presentan sin ponderar, sobre respuestas efectivas, con el número de casos indicado y sin margen de error. No se dispone de una tasa de respuesta documentada. <sup>[1, 2, 3]</sup></p>
+      <p class="cuerpo">Algunas preguntas cambiaron de enunciado o de categorías entre oleadas; solo se comparan entre oleadas las que se mantuvieron idénticas (ver <a>Sobre los datos</a>).</p>
+
+      <h3>Fuentes</h3>
+      <ol class="fuentes">
+        <li>[1] Jenne, N., Labarca, C., Montt, M. y Urdinez, F. (2024). <i>Monitor de Opinión Pública 2023: ¿Qué piensan los chilenos sobre China?</i> Policy Paper ICLAC 3. <a>https://doi.org/10.5281/zenodo.12700686</a></li>
+        <li>[2] ICLAC. <i>Nota metodológica: diseño muestral y composición de la muestra. Olas 2023, 2024 y 2025.</i> Disponible en <a>Descargas</a>.</li>
+        <li>[3] ICLAC. <i>Base combinada de la Encuesta de Percepciones sobre China en Chile, 2023 a 2025.</i> Disponible en <a>Descargas</a>.</li>
+      </ol>
+    </section>`;
+  }
+
+  function raiz () {
+    const hoy = `${HISTORIAS} historias contadas con la encuesta de ICLAC: ${D.olas.length} oleadas (${D.olas[0]} a ${D.olas[D.olas.length - 1]}), ${fmt(D.total)} personas encuestadas en un panel en línea.`;
+    const bajada = E.modo === 'app' ? esc(hoy) : `${esc(rellenar(T.bajadaRaiz))} <a>${esc(T.enlaceRaiz)}</a>`;
+    return `<section class="raiz"><h2>Percepciones sobre China en Chile</h2><p>${bajada}</p>
+      <div class="hueco">Las seis tarjetas de historias, sin cambio.</div></section>`;
+  }
+
+  function contarPalabras (nodo) {
+    return nodo ? nodo.querySelectorAll('p.cuerpo').length && [...nodo.querySelectorAll('p.cuerpo')].reduce((s, p) => s + p.textContent.trim().split(/\s+/).length, 0) : 0;
+  }
+
+  function pintarVisor (conservar) {
+    const visor = $('visor');
+    const antes = conservar ? visor.scrollTop : 0;
+    const m = VENTANAS[E.ventana];
+    const w = m ? m[0] : Math.min(window.innerWidth, 1600);
+    const h = m ? m[1] : window.innerHeight;
+    visor.style.width = `${w}px`; visor.style.height = `${h}px`;
+    if (!D) { visor.innerHTML = '<p style="padding:16px">Leyendo encuesta.json…</p>'; return; }
+    const activa = E.vista === 'raiz' ? 'Historias' : (E.modo === 'app' ? '' : NOMBRES[E.nombre]);
+    visor.innerHTML = encabezado(activa) + (E.vista === 'raiz' ? raiz() : pestana());
+    const hamb = $('hamb'); if (hamb) hamb.onclick = () => $('menu-tel').classList.toggle('abierto');
+    requestAnimationFrame(() => {
+      visor.scrollTop = antes;
+      const partes = [`Ventana ${visor.clientWidth}×${visor.clientHeight}`];
+      const pag = visor.querySelector('.pag');
+      if (pag) {
+        const alto = visor.scrollHeight;
+        partes.push(`Página: ${fmt(alto)} px, ${fmt(alto / visor.clientHeight, 1)} pantallas`);
+        partes.push(`Prosa: ${contarPalabras(pag)} palabras`);
+        const anchas = [...pag.querySelectorAll('.tabla-caja')].filter((c) => c.scrollWidth > c.clientWidth + 1).length;
+        partes.push(anchas ? `<span class="mal">${anchas} tabla(s) se deslizan de lado</span>` : 'Ninguna tabla se desliza de lado');
+      }
+      const enc = visor.querySelector('.enc nav');
+      if (enc && getComputedStyle(enc).display !== 'none') {
+        const r = enc.getBoundingClientRect(); const v = visor.getBoundingClientRect();
+        partes.push(r.right > v.right ? '<span class="mal">el nav no cabe</span>' : `Nav: ${Math.round(r.width)} px, sobran ${Math.round(v.right - r.right)}`);
+      }
+      $('info').innerHTML = partes.join(' · ');
+    });
+  }
+
+  $('nota').value = nota;
+  $('nota').addEventListener('input', (e) => { nota = e.target.value; guardar(); });
+  $('exportar').addEventListener('click', () => {
+    const texto = JSON.stringify({ laboratorio: 'la-encuesta', fecha: new Date().toISOString(), combinacion: presetActivo() || 'personalizada', parametros: E, textos: T, medida: $('info').textContent, nota: nota }, null, 2);
+    const caja = $('json'); caja.hidden = false; caja.value = texto;
+    const aMano = () => { caja.select(); $('copiado').textContent = 'Selecciónalo y cópialo a mano.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => { $('copiado').textContent = 'Copiado. Pégalo en el chat.'; }, aMano);
+    else aMano();
+  });
+
+  function pintarTodo () { pintarControles(); pintarTextos(); pintarVisor(true); }
+  let anchoVentana = window.innerWidth;
+  window.addEventListener('resize', () => { if (window.innerWidth === anchoVentana) return; anchoVentana = window.innerWidth; if (E.ventana === 'todo') pintarVisor(true); });
+
+  pintarTodo();
+  Promise.all([
+    fetch('./data/encuesta.json').then((r) => r.json()),
+    fetch('./data/chile-regiones.json').then((r) => r.json()).catch(() => null),
+  ]).then(([j, g]) => {
+    J = j; GEO = g; D = calcular(j);
+    $('textos').innerHTML = ''; pintarTodo();
+  }).catch(() => { $('visor').innerHTML = '<p style="padding:16px;color:#A3302A">No se pudo leer public/data/encuesta.json: corre npm run datos.</p>'; });
+})();
+</script>
