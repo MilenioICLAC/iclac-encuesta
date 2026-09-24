@@ -41,6 +41,8 @@ export interface Multiple {
   id: string
   titulo: string
   opciones: OpcionMultiple[]
+  /** En una pregunta abierta, la columna que marca quién contestó: sus palabras solo llevan el 1. */
+  respuesta?: string
 }
 
 /**
@@ -96,6 +98,8 @@ export interface Pregunta {
   nota?: string
   /** Id de una medida de `contrastes` cuya advertencia acompaña a la pregunta. */
   advertencia?: string
+  /** Pregunta abierta, como múltiple de palabras: cuántas muestra y el mínimo de menciones con corte (`ABIERTAS`). */
+  abierta?: { palabras: number, minimo: number }
 }
 
 export interface Region {

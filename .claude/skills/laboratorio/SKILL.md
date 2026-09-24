@@ -74,7 +74,18 @@ un registro de decisiones interno, en `la documentación interna`.
 
 Los de las frases y la pausa (22-09-2026) se cerraron y se borraron. Su técnica sirve de plantilla:
 la app real dentro de un `iframe` del mismo servidor, y cada opción aplicada sobre su DOM o como CSS
-inyectado. Las figuras, los textos y los anchos son los de verdad, sin copiar nada.
+inyectado. Las figuras, los textos y los anchos son los de verdad, sin copiar nada. El de la barra del
+explorador (24-09-2026) la usó así: ocultó los controles de la app y leyó de ellos, ocultos, los
+títulos por oleada y el N.
+
+Cuando lo que se decide es una figura con datos que la app todavía no tiene, sirve la otra técnica
+(laboratorio `abiertas`, 24-09-2026, cerrado y borrado; un registro de decisiones interno): un `laboratorio/<tema>.tsx` que
+importa el componente real de `src/` (Vite transforma cualquier `.tsx` bajo la raíz) y le arma el
+modelo con conteos agregados que genera un script aparte. La página necesita el preámbulo de
+`@vitejs/plugin-react` a mano (`/@react-refresh` y `__vite_plugin_react_preamble_installed__`), y el
+visor es la misma página con `?visor` dentro de un `iframe`, para que las media queries de la figura
+vean el ancho simulado y no el de la ventana. El `.tsx` no entra en `npm run typecheck`: se
+comprueba con un `tsconfig` temporal que lo incluya.
 
 | Fuente | Script | Estado |
 |---|---|---|

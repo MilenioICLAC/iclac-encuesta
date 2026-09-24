@@ -13,7 +13,7 @@ Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una
 - **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
   menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
   («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
-- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`), **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`) y **Sobre los datos** (`#/datos`, con
+- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas (un registro de decisiones interno); pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas (un registro de decisiones interno); el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`), **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`) y **Sobre los datos** (`#/datos`, con
   el método de cada historia en `?foco=metodo-<id>`).
 
 El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
@@ -44,6 +44,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
 | `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
+| `scripts/lib/abiertas.mjs` | Las preguntas abiertas (`ABIERTAS` en el catálogo) como múltiples de palabras: marca por persona si contestó y cada palabra candidata, sin el texto |
 | `scripts/lib/ficha.mjs` | Campo de cada oleada (`endtime`, `duration`) e índice de exposición del archivo de diseño, a `encuesta.ficha`; se detiene si el índice no cuadra con `impacto()` |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
