@@ -4,9 +4,6 @@ import { CORTES } from '../nucleo/modulos'
 import { enunciadoEn, formaDeFigura, modelo, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
 import FiguraExplorador from './FiguraExplorador'
 import { numero } from '../locale'
-import { enfocarRadio, radioSiguiente } from '../nucleo/teclado'
-
-const VISTAS: Vista[] = ['ola', 'serie']
 
 /**
  * El explorador: cualquier pregunta del instrumento, para consultar. Las historias afirman; esto no.
@@ -20,6 +17,8 @@ const VISTAS: Vista[] = ['ola', 'serie']
  * «Entre oleadas», que pone una fila por oleada **sin sumar ninguna** (Felipe, 22-09-2026). Entre
  * oleadas el corte no se aplica, y la barra de estado lo muestra apagado.
  *
+ * Los controles, pregunta incluida, y el título del explorador viven en `BarraEstado`, pegada arriba.
+ *
  * El estado vive en `App`, y la dirección lo refleja (`#/explorar?p=p7&vista=serie`): así sobrevive
  * al cambio de vista y se puede mandar un enlace a una pregunta en un estado exacto.
  */
@@ -27,9 +26,7 @@ const VISTAS: Vista[] = ['ola', 'serie']
 interface Props {
   encuesta: Encuesta
   pregunta: string
-  onPregunta: (id: string) => void
   vista: Vista
-  onVista: (v: Vista) => void
   ola: number
   onOla: (ola: number) => void
   corte: string | null
@@ -37,7 +34,7 @@ interface Props {
 }
 
 export default function Graficador ({
-  encuesta, pregunta: id, onPregunta, vista: pedida, onVista, ola, onOla, corte, soloIndependientes,
+  encuesta, pregunta: id, vista: pedida, ola, onOla, corte, soloIndependientes,
 }: Props) {
   const p = encuesta.preguntas.find((x) => x.id === id) ?? encuesta.preguntas[0]
   const vista = vistaPosible(p, pedida)
@@ -50,69 +47,7 @@ export default function Graficador ({
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
-      <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
-      <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se puede
-        comparar. La oleada y el corte se eligen arriba.
-      </p>
-
-      <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4">
-        <label className="flex min-w-[min(100%,16rem)] flex-1 flex-col gap-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Pregunta</span>
-          <select
-            value={p.id}
-            onChange={(e) => onPregunta(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
-          >
-            {/* El título de la oleada que se mira: `p21` en 2023 pregunta por la inversión china. */}
-            {encuesta.preguntas.map((x) => (
-              <option key={x.id} value={x.id}>{tituloEn(x, { vista: 'ola', ola })}</option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Ver</span>
-          <div
-            className="flex rounded-md border border-gray-300"
-            role="radiogroup"
-            aria-label="Ver"
-            onKeyDown={(e) => {
-              const i = radioSiguiente(e.key, VISTAS.indexOf(vista), [true, Boolean(p.serie)])
-              if (i === null) return
-              e.preventDefault()
-              onVista(VISTAS[i])
-              enfocarRadio(e.currentTarget, i)
-            }}
-          >
-            {([['ola', `En ${ola}`], ['serie', 'Entre oleadas']] as const).map(([v, texto], i) => {
-              const activa = vista === v
-              const apagada = v === 'serie' && !p.serie
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={activa}
-                  tabIndex={activa ? 0 : -1}
-                  disabled={apagada}
-                  onClick={() => onVista(v)}
-                  className={[
-                    'presionable px-3 py-1.5 text-sm',
-                    i > 0 ? 'rounded-r-md border-l border-gray-300' : 'rounded-l-md',
-                    activa ? 'bg-brand-dark text-white' : 'bg-white text-gray-600 enabled:hover:bg-gray-50',
-                    apagada ? 'cursor-not-allowed text-gray-300' : '',
-                  ].join(' ')}
-                >
-                  {texto}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      <article className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
+      <article className="rounded-lg border border-gray-200 bg-white p-4">
         <h3 className="font-display text-base font-semibold text-balance">{tituloEn(p, estado)}</h3>
         <p className="mt-1 max-w-3xl text-xs leading-snug text-gray-500">«{enunciadoEn(p, estado)}»</p>
 
