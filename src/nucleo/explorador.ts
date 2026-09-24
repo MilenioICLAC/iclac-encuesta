@@ -1,6 +1,7 @@
 import type { Caso, CategoriaPregunta, Encuesta, Pregunta, Variable } from './tipos'
 import { distribucion, filtrar, media, multirespuesta, porGrupo } from './agregar'
 import { CORTES } from './modulos'
+import { GENERO, IDENTIDAD, IDEOLOGIA, MACROZONA, NEUTRO, pasosDeGrupo, pasosDeOrden } from './paleta'
 
 /**
  * Qué dibuja el explorador para una pregunta, en cada uno de sus tres estados: una oleada, una
@@ -45,6 +46,8 @@ export type Modelo =
       /** Qué son las series: define el color (oleadas y cortes ordenados van en rampa). */
       color: 'uno' | 'orden' | 'identidad'
       compara: Compara
+      /** El corte de las series cuando `compara` es `grupos`; decide su paleta. */
+      corte: string | null
     }
   | {
       forma: 'medias'
@@ -52,6 +55,7 @@ export type Modelo =
       series: { clave: string, etiqueta: string }[]
       color: 'uno' | 'orden' | 'identidad'
       compara: Compara
+      corte: string | null
       /** Por fila, cuántos eligieron «Prefiero no responder» y sobre cuántos. */
       noResponde?: { clave: string, n: number, total: number }[]
     }
@@ -82,6 +86,34 @@ export function formaDeFigura (m: Modelo): 'barras' | 'mancuerna' | 'nada' {
   if (m.forma === 'vacia') return 'nada'
   if (m.forma === 'medias' || m.compara === 'nada') return 'barras'
   return m.escala === 'reparto' && m.bloques.length === 2 ? 'barras' : 'mancuerna'
+}
+
+/**
+ * Colores y tamaño de las series: oleadas en la rampa teal; grupos según su corte (`CORTES`). El
+ * punto crece solo con las oleadas y las rampas de grupos, que van de menos a más. Ideología,
+ * macrozona y género no crecen.
+ */
+export function paletaDeCorte (m: Exclude<Modelo, { forma: 'vacia' }>): { colores: string[], tamanos: number[] | null } {
+  const n = m.series.length
+  // 8, 10, 12… px: el escalón de `Puntos` con `radioCreciente`.
+  const escalon = (k: number) => 8 + 2 * k
+  if (m.compara === 'olas') return { colores: pasosDeOrden(n), tamanos: m.series.map((_, i) => escalon(i)) }
+  if (m.compara === 'nada') return { colores: [IDENTIDAD[0]], tamanos: null }
+  const corte = CORTES.find((c) => c.nombre === m.corte)
+  // **El color y el tamaño siguen al grupo, no a su posición:** se buscan en el `orden` del corte.
+  // Si un recorte dejara fuera a «Centro», «Derecha» no hereda su gris, y AB · C1 no se achica.
+  const orden = corte?.orden ?? m.series.map((s) => s.etiqueta)
+  const lugar = m.series.map((s, i) => {
+    const k = orden.indexOf(s.etiqueta)
+    return k >= 0 ? k : i
+  })
+  const porGrupo = (paleta: readonly string[]) => lugar.map((k) => paleta[k] ?? NEUTRO)
+  switch (corte?.paleta) {
+    case 'genero': return { colores: porGrupo(GENERO), tamanos: null }
+    case 'ideologia': return { colores: porGrupo(IDEOLOGIA), tamanos: null }
+    case 'macrozona': return { colores: porGrupo(MACROZONA), tamanos: null }
+    default: return { colores: porGrupo(pasosDeGrupo(orden.length)), tamanos: lugar.map((k) => escalon(k)) }
+  }
 }
 
 // --- Textos de la pregunta -------------------------------------------------------------------
@@ -148,7 +180,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
         })
       : undefined
     if (filas.every((f) => f.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
-    return { forma: 'medias', filas, series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, noResponde }
+    return { forma: 'medias', filas, series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null, noResponde }
   }
 
   if (p.tipo === 'multiple') {
@@ -170,7 +202,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
       }),
     }))
     if (porGrupo.every(({ r }) => r.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
-    return { forma: 'porcentajes', escala: 'menciones', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara }
+    return { forma: 'porcentajes', escala: 'menciones', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null }
   }
 
   // Elección única: la columna y las categorías de la vista (la serie puede usar la derivada).
@@ -195,10 +227,12 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
     etiqueta: etiquetaEn(c, olaDeEtiquetas),
     filas: agregados.map(({ g, d }) => {
       const s = d.segmentos.find((x) => x.codigo === Number(c.codigo))
-      return { clave: g.clave, etiqueta: g.etiqueta, valor: d.base > 0 ? s?.porcentaje ?? 0 : null, n: s?.n ?? 0, base: d.base }
+      // Una categoría de la serie que no existe en esta oleada no es 0 %: no se preguntó (`p4`).
+      const existe = !c.olas || c.olas.includes(g.ola)
+      return { clave: g.clave, etiqueta: g.etiqueta, valor: d.base > 0 && existe ? s?.porcentaje ?? 0 : null, n: s?.n ?? 0, base: d.base }
     }),
   }))
-  return { forma: 'porcentajes', escala: 'reparto', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara }
+  return { forma: 'porcentajes', escala: 'reparto', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null }
 }
 
 interface Serie { clave: string, etiqueta: string, casos: Caso[], ola: number }
@@ -209,14 +243,25 @@ function casosDeLaOla (encuesta: Encuesta, estado: Estado): Caso[] {
 
 function seriesDe (encuesta: Encuesta, p: Pregunta, estado: Estado): Serie[] {
   if (estado.vista === 'serie' && p.serie) {
-    const { filtro } = p.serie
-    return p.serie.olas.map((ola) => ({
-      clave: String(ola),
-      etiqueta: String(ola),
-      ola,
-      casos: filtrar(encuesta, { olas: [ola], soloIndependientes: estado.soloIndependientes })
-        .filter((c) => !filtro || filtro.codigos.includes(Number(c[filtro.variable]))),
-    }))
+    const { filtro, recodificar, variable } = p.serie
+    return p.serie.olas.map((ola) => {
+      const casos = filtrar(encuesta, { olas: [ola], soloIndependientes: estado.soloIndependientes })
+        .filter((c) => !filtro || filtro.codigos.includes(Number(c[filtro.variable])))
+      // Los códigos de esta oleada, llevados a los de la serie (en `p4` 2025, 1 es Kast y 2 Jara).
+      const mapa = recodificar?.[ola]
+      return {
+        clave: String(ola),
+        etiqueta: String(ola),
+        ola,
+        casos: mapa
+          ? casos.map((c) => {
+            const v = c[variable]
+            const final = v === null || v === undefined ? undefined : mapa[String(v)]
+            return final === undefined ? c : { ...c, [variable]: final }
+          })
+          : casos,
+      }
+    })
   }
   if (!corteAplicable(p, estado)) return []
   const orden = CORTES.find((c) => c.nombre === estado.corte)?.orden

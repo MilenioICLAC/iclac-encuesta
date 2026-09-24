@@ -1,6 +1,6 @@
 import type { Bloque, Fila, Modelo } from '../nucleo/explorador'
-import { BASE_MINIMA, formaDeFigura } from '../nucleo/explorador'
-import { GENERO, IDENTIDAD, SEMANTICOS, pasosDeGrupo, pasosDeOrden } from '../nucleo/paleta'
+import { BASE_MINIMA, formaDeFigura, paletaDeCorte } from '../nucleo/explorador'
+import { SEMANTICOS } from '../nucleo/paleta'
 import { topePorcentaje } from '../nucleo/escala'
 import { decimal, numero, porcentaje } from '../locale'
 import Puntos from './Puntos'
@@ -33,12 +33,7 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
     return <p className="py-4 text-sm italic text-gray-500">{modelo.motivo}</p>
   }
 
-  const n = modelo.series.length
-  const colores = modelo.compara === 'olas'
-    ? pasosDeOrden(n)
-    : modelo.compara === 'grupos'
-      ? modelo.color === 'identidad' ? [...GENERO] : pasosDeGrupo(n)
-      : [IDENTIDAD[0]]
+  const { colores, tamanos } = paletaDeCorte(modelo)
   const colorDe = (i: number) => colores[Math.min(i, colores.length - 1)]
 
   if (modelo.forma === 'medias') return <FiguraMedias modelo={modelo} colorDe={colorDe} />
@@ -58,7 +53,8 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
       <TablaAccesible
         cabeza={['', ...(compara === 'nada' ? ['%'] : series.map((s) => s.etiqueta))]}
         filas={[
-          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor === null ? '—' : porcentaje(f.valor, 0)))]),
+          // Con respuestas en la oleada y sin valor, la categoría no existía ahí (`p4`): se dice.
+          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor !== null ? porcentaje(f.valor, 0) : f.base > 0 ? 'No se preguntó' : '—'))]),
           ['Respuestas', ...bases.map((x) => numero(x))],
         ]}
       />
@@ -99,11 +95,13 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
 
   const valores = bloques.flatMap((b) => b.filas.map((f) => f.valor)).filter((v): v is number => v !== null)
   const tope = topePorcentaje(valores)
-  const puntosSeries = series.map((s, i) => ({ clave: s.clave, etiqueta: s.etiqueta, color: colorDe(i) }))
+  const puntosSeries = series.map((s, i) => ({ clave: s.clave, etiqueta: s.etiqueta, color: colorDe(i), ...(tamanos ? { tamano: tamanos[i] } : {}) }))
+  // El punto crece con la oleada y en las rampas de grupos: dos vecinos de la rampa quedan bajo el
+  // piso de separación con visión normal, y el tamaño los distingue sin color (`paletaDeCorte`).
   const filaDe = new Map(bloques.map((b) => [b.clave, b]))
   return (
     <figure className="mt-2">
-      <Leyenda series={series} colorDe={colorDe} bases={bases} forma={compara === 'olas' ? 'creciente' : 'punto'} />
+      <Leyenda series={series} colorDe={colorDe} bases={bases} forma="punto" tamanos={tamanos} />
       <Puntos
         series={puntosSeries}
         filas={bloques.map((b) => ({
@@ -126,7 +124,6 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
         rotular={compara === 'olas' ? series.length - 1 : 'extremos'}
         esquivar
         entrada={false}
-        radioCreciente={compara === 'olas'}
         unidadEje={escala === 'menciones'
           ? `Porcentaje que marcó cada opción${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`
           : `Porcentaje de respuestas${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`}
@@ -229,11 +226,11 @@ function FilaBarra ({
  * no solo al pasar el cursor. La marca imita a la figura: cuadrado para barras, punto para la
  * mancuerna, y entre oleadas un punto que crece con la oleada.
  */
-function Leyenda ({ series, colorDe, bases, forma }: { series: { clave: string, etiqueta: string }[], colorDe: (i: number) => string, bases: number[], forma: 'barra' | 'punto' | 'creciente' }) {
+function Leyenda ({ series, colorDe, bases, forma, tamanos }: { series: { clave: string, etiqueta: string }[], colorDe: (i: number) => string, bases: number[], forma: 'barra' | 'punto', tamanos?: number[] | null }) {
   return (
     <ul className="mb-2 flex flex-wrap items-center gap-x-3.5 gap-y-1">
       {series.map((s, i) => {
-        const d = forma === 'creciente' ? 8 + i * 2 : 10
+        const d = tamanos?.[i] ?? 10
         const escasa = (bases[i] ?? 0) > 0 && (bases[i] ?? 0) < BASE_MINIMA
         return (
           <li key={s.clave} className="flex items-center gap-1.5 text-[11px] text-gray-600">

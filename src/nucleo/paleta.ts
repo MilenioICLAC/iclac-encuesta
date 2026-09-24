@@ -49,14 +49,22 @@ export const ORDEN = ['#6ABDB4', '#2AA69B', '#008C81', '#006B62', '#004A44', '#0
 export const EXPOSICION = ['#EFA67A', '#D9733A', '#A84D17', '#6B2E0B'] as const
 
 /**
- * **Grupos de un corte ordenado** (edad, educación, NSE, ideología, macrozona) en el explorador: una
- * rampa propia, en violeta, porque el teal de `ORDEN` ya dice «oleada» y un lector que pasa de
- * «Entre oleadas» a un corte tiene que ver que cambió lo que se compara (Felipe, décima ronda:
- * «definir paletas diferentes para los grupos, para diferenciarlos de oleadas»). El naranja es de
- * `EXPOSICION` y el azul de `SEMANTICOS`. Validada el 24-09-2026 con `validate_palette.js
- * --ordinal`: un tono (6°), luminosidad monótona con saltos ≥ 0,06 y el extremo claro a 2,76:1.
+ * **Grupos de un corte ordenado** (edad, educación, NSE e impacto) en el explorador, de menos a más:
+ * en NSE, de E a AB · C1, que es el de más poder adquisitivo y el paso más oscuro (Felipe, duodécima y
+ * decimotercera ronda). No es teal, porque el teal de `ORDEN` dice «oleada» (Felipe, décima ronda: «definir
+ * paletas diferentes para los grupos, para diferenciarlos de oleadas»).
+ *
+ * **Varios tonos y no uno**, de ámbar a ciruela, oscureciendo de un extremo al otro. La primera
+ * versión era una rampa violeta de un solo tono, y en la mancuerna sus pasos oscuros no se
+ * distinguían (Felipe, undécima ronda); el validador de `dataviz` lo confirmaba: ΔE 8,0 entre
+ * vecinos con visión normal. Esta, generada en OKLCH con luminosidad de 0,76 a 0,35, da ΔE 13,0
+ * con visión normal y 9,2 bajo protanopía, y pasa las pruebas ordinales (luminosidad monótona,
+ * saltos ≥ 0,06, extremo claro a 2,11:1). **Sigue bajo el piso de 15 de visión normal**, y por eso
+ * la mancuerna agrega un segundo código: el punto crece con el grupo, como con las oleadas.
+ *
+ * Cinco pasos porque ningún corte del explorador tiene más de cinco grupos.
  */
-export const GRUPOS = ['#A98BDB', '#8F6BCF', '#7650BD', '#5E3C9E', '#462C7A', '#301E56'] as const
+export const GRUPOS = ['#DEA805', '#D76F04', '#BD413F', '#931E5A', '#5C086C'] as const
 
 /**
  * **Género**, que no tiene orden: dos colores de identidad sin teal, para que tampoco se lea como
@@ -64,6 +72,24 @@ export const GRUPOS = ['#A98BDB', '#8F6BCF', '#7650BD', '#5E3C9E', '#462C7A', '#
  * sobre 3:1 contra el fondo.
  */
 export const GENERO = ['#7650BD', '#C27C0E'] as const
+
+/**
+ * **Ideología** en tres tramos: divergente, de rojo (izquierda) a azul (derecha) con gris al centro
+ * (Felipe, duodécima ronda). Es el par divergente de la skill `dataviz` con el gris de `NEUTRO`, que
+ * se ve sobre blanco. Validado con `--pairs all`: ΔE 8,9 bajo deuteranopía y 17,8 con visión normal.
+ * El croma bajo del gris es a propósito: el centro no es de ningún lado. Sin tamaño creciente.
+ */
+export const IDEOLOGIA = ['#E34948', '#8A8A85', '#2A78D6'] as const
+
+/**
+ * **Macrozona**, de norte a sur: una rampa azul de un solo tono, de claro (Norte) a oscuro (Sur), sin
+ * tamaño creciente (Felipe, decimotercera ronda: «Macrozona necesita una paleta que tenga algún tipo
+ * de continuidad, dado que va de norte a sur»). Azul y no teal, que es de las oleadas, ni la rampa
+ * de `GRUPOS`. Generada en OKLCH (luminosidad 0,75 a 0,27) y validada con `validate_palette.js
+ * --ordinal`: monótona, saltos ≥ 0,06, extremo claro a 2,14:1; entre vecinos, ΔE 13,8 bajo
+ * deuteranopía y 15,9 con visión normal.
+ */
+export const MACROZONA = ['#50B7FE', '#2A7ED1', '#1C489F', '#15106D'] as const
 
 /** `n` pasos de `GRUPOS`, repartidos de punta a punta, con la misma regla que `pasosDeOrden`. */
 export function pasosDeGrupo (n: number): string[] {

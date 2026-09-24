@@ -52,8 +52,8 @@ export default function Graficador ({
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
       <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se hizo
-        igual. La oleada y el corte se eligen arriba.
+        Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se puede
+        comparar. La oleada y el corte se eligen arriba.
       </p>
 
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -119,6 +119,8 @@ export default function Graficador ({
         {vista === 'serie' && p.serie && (
           <p className="mt-2 text-xs text-gray-600">
             {formaDeFigura(m) === 'mancuerna' ? 'Un punto por oleada' : 'Una barra por oleada'}: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
+            {/* `p4`: Boric no existe en 2025 ni Jara antes. */}
+            {m.forma === 'porcentajes' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && ' Una categoría que no existía en una oleada no lleva punto ahí.'}
             {corte && ' El corte no se aplica entre oleadas.'}
           </p>
         )}

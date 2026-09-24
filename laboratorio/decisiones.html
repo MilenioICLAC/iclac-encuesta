@@ -80,9 +80,8 @@
   <header>
     <h1>Decisiones del visualizador, para aprobar</h1>
     <p>
-      Undécima ronda (24-09-2026): lo que pediste en la décima, aplicado (binarias y termómetro en barras,
-      paleta de grupos, nota de grupos chicos), y otra vez una tarjeta por pregunta con la forma que tiene
-      hoy y un enlace a cada estado. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
+      Sin decisiones abiertas del explorador (24-09-2026): la decimocuarta ronda cerró la paleta de cada
+      corte, y las 36 preguntas están aprobadas. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
       <code>public/data/encuesta.json</code>, el mismo que usa la app: lo que ves acá es lo que está ahí.
       Lo que ya cerraste en rondas anteriores está al final, en «Ya cerradas».
     </p>
@@ -131,13 +130,11 @@
 
 <script>
 (() => {
-  const CLAVE = 'lab-decisiones-v4';
+  const CLAVE = 'lab-decisiones-v7';
   const $ = (id) => document.getElementById(id);
   const APP = './#';
 
   const SECCIONES = [
-    { id: 'explorador', corto: 'Explorador', titulo: 'Explorador · lo que cambió con tu JSON', bajada: 'Lo que pediste en la décima ronda, aplicado: binarias y termómetro en barras, una paleta propia para los grupos y la nota de grupos chicos sin juicio. La paleta es la que más necesita tu mirada.', ruta: '/explorar' },
-    { id: 'preguntas', corto: 'Pregunta por pregunta', titulo: 'Explorador · pregunta por pregunta', bajada: 'Una tarjeta por pregunta, leída del catálogo publicado. «Antes» es el texto que mostraba el explorador; los enlaces abren la pregunta en cada estado.', ruta: '/explorar' },
     { id: 'como', titulo: 'Cómo se hizo', bajada: 'La vista «Sobre los datos», a la que llevan los enlaces «Cómo se hizo» de cada historia.', ruta: '/datos' },
     { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
     { id: 'mirada', titulo: 'Historia 1 · La mirada', bajada: 'Bloque 1 de la guía: cómo se mira a China.', ruta: '/historias/mirada' },
@@ -153,49 +150,6 @@
    * arman al leer `encuesta.json` (`tarjetasDePreguntas`), para no copiar a mano ni un título.
    */
   const D = [
-    {
-      s: 'explorador', id: 'r11-paleta', origen: 'Claude; validada con dataviz; Codex encontró el choque',
-      titulo: 'Los grupos se pintan en violeta y el género en violeta y ocre; las oleadas siguen en teal',
-      verbatim: ['Tu comentario: «Debemos definir paletas diferentes para los grupos, para diferenciarlos de oleadas»'],
-      rotuloVerbatim: 'Pediste',
-      decidido: 'Cortes ordenados (edad, educación, NSE, ideología, macrozona): una rampa violeta de seis pasos, de claro a oscuro. Género: violeta y ocre. Las oleadas no cambian (teal). Al comparar, la fila ya no lleva el cuadradito de color semántico (p24, p25, p26); en una oleada sin corte, sí, porque ahí pinta la barra.',
-      porque: 'El teal dice «oleada»; el naranja es de los estratos del mapa y el azul de «A favor de EE. UU.». La rampa pasa las cuatro pruebas ordinales del validador y el par de género separa ΔE 29 bajo daltonismo. Codex vio que el ocre de género y el naranja de «A favor de China» son casi iguales para un daltónico (ΔE 1,8), y el violeta y el azul de EE. UU. también (ΔE 4,1): por eso sale el cuadradito semántico de las comparaciones, que ponía un segundo color con otro significado en la misma figura.',
-      alternativas: 'Género en violeta y rosa (#C2477F): pasa contra el naranja de China (ΔE 15,4), pero queda a 13,8 del óxido de «Ninguna» en visión normal. Mantener el cuadradito semántico y cambiar los tonos de grupo.',
-      rutas: [['p7 por edad', '/explorar?p=p7&ola=2025&corte=edad_rec'], ['p7 entre oleadas', '/explorar?p=p7&vista=serie'], ['p26 por género', '/explorar?p=p26&ola=2025&corte=sexo'], ['p24 por NSE', '/explorar?p=p24&ola=2025&corte=nse_rec']],
-    },
-    {
-      s: 'explorador', id: 'r11-binarias', origen: 'Claude',
-      titulo: 'Las preguntas de dos categorías comparan en barras agrupadas',
-      verbatim: ['Tu comentario: «En estos casos podría ser mejor descartar las mancuernas y quedarnos con barras»'],
-      rotuloVerbatim: 'Pediste',
-      decidido: 'Entre oleadas y con corte, cada categoría es un bloque con una barra por oleada o por grupo, de 0 a 100: la figura de la novena ronda. Vale para toda pregunta con dos categorías que suman 100: p12, p13, p14, p18, p18e, p19 y p6a, y p9 entre oleadas (su derivada tiene dos). p9 con corte tiene cuatro y sigue en mancuerna.',
-      porque: 'La regla es «dos categorías que reparten el 100 %», no el tipo del catálogo: así p9 entre oleadas cae donde corresponde. Hay una prueba que la recorre pregunta por pregunta.',
-      alternativas: 'Una sola barra por oleada o grupo, la del «Sí», con la otra en el pie.',
-      rutas: [['p19 entre oleadas', '/explorar?p=p19&vista=serie'], ['p13 por edad', '/explorar?p=p13&ola=2025&corte=edad_rec'], ['p9 entre oleadas', '/explorar?p=p9&vista=serie']],
-    },
-    {
-      s: 'explorador', id: 'r11-termometro', origen: 'Claude',
-      titulo: 'El termómetro va en barras de 0 a 100 en todos sus estados',
-      verbatim: ['Tu comentario: «Esto queda mejor en barras»'],
-      rotuloVerbatim: 'Pediste',
-      decidido: 'Una barra por oleada, una por grupo, o una sola, sobre 0 a 100 y sin recorte. «La mirada» sigue con su figura de puntos.',
-      porque: 'Es una excepción a la regla de CLAUDE.md «una figura por pregunta» (la misma pregunta en dos vistas pasa por el mismo código): quedó escrita como decisión tuya en CLAUDE.md y en el comentario de termometro.ts.',
-      rutas: [['China entre oleadas', '/explorar?p=p5_1_val&vista=serie'], ['China por edad', '/explorar?p=p5_1_val&ola=2025&corte=edad_rec']],
-    },
-    {
-      s: 'explorador', id: 'r11-nota', origen: 'Claude',
-      titulo: 'La nota de grupos chicos dice solo el dato',
-      verbatim: ['Tu comentario: «El promedio dice poco me parece innecesario agregarlo, queremos entregar información en esta sección más que dar conclusiones»'],
-      rotuloVerbatim: 'Pediste',
-      decidido: '«* Menos de 30 respuestas en ese grupo.» Con oleadas, «en esa oleada»; en una oleada sin corte, «en esa fila». Sin «el porcentaje dice poco» en ningún estado.',
-      porque: 'Leí el comentario como regla de la sección y no solo para el termómetro: también saqué «el porcentaje dice poco», que habías aprobado en la novena ronda. Si lo querías solo para el promedio, se vuelve a poner.',
-    },
-    {
-      s: 'explorador', id: 'r11-revision', origen: 'Codex (quinta pasada)',
-      titulo: 'Qué se tomó de la revisión de Codex',
-      decidido: 'Aplicado: el pie de «Entre oleadas» decía «Una fila por oleada» también en las mancuernas; ahora dice «Un punto por oleada» o «Una barra por oleada». La nota de grupos chicos decía «en esa fila» con corte. Y el choque de colores de la tarjeta de la paleta.',
-      porque: 'Cada hallazgo se verificó en el código o con el validador. Después: 249 pruebas en verde y 606 estados de 320 a 1920 px sin desbordes, figuras vacías ni rótulos sobre puntos.',
-    },
   ];
 
   /* Por qué cada pregunta quedó como quedó, cuando no es obvio. El resto sale del catálogo. */
@@ -222,9 +176,12 @@
   const TIPOS = { ordinal: 'escala', nominal: 'elección única', binaria: 'sí o no', multiple: 'marcar varias', numerica: 'número de 0 a 100' };
   const lista = (xs) => xs.join(', ').replace(/, ([^,]+)$/, ' y $1');
 
+  const PENDIENTES = [];
+
   /** Una tarjeta por pregunta del catálogo publicado. Nada escrito a mano salvo `NOTAS_PREGUNTA`. */
   function tarjetasDePreguntas (j) {
-    return j.preguntas.map((p) => {
+    // Undécima ronda: aprobaste 35 de las 36; queda p4.
+    return j.preguntas.filter((p) => PENDIENTES.includes(p.id)).map((p) => {
       const v = j.variables.find((x) => x.nombre === p.variable);
       const m = j.multiples.find((x) => x.id === p.id);
       const antes = p.tipo === 'multiple'
@@ -373,6 +330,10 @@
     ['Explorador', 'Entre oleadas el corte sigue apagado (décima ronda)'],
     ['Explorador', 'Binarias y termómetro vuelven a barras; paleta de grupos y nota de grupos chicos: aplicadas, arriba (décima ronda)'],
     ['Datos del cliente', 'Texto de C19 a C23 aprobado y commiteado en correcciones_cliente.md (décima ronda)'],
+    ['Explorador', 'Binarias en barras agrupadas; termómetro en barras de 0 a 100; nota de grupos chicos con solo el dato; lo tomado de Codex (undécima ronda)'],
+    ['Explorador', '35 de las 36 preguntas, con su título, orden, comparación y forma (undécima ronda)'],
+    ['Explorador', 'p4 entre las tres oleadas, por candidato; rótulo de la última oleada con dato; lo tomado de Codex; y la pregunta p4 (duodécima ronda)'],
+    ['Explorador', 'La paleta de cada corte: rampa ámbar a ciruela con punto creciente (edad, educación, NSE de E a AB · C1, impacto), ideología de rojo a azul y macrozona en rampa azul de norte a sur, sin tamaño (decimocuarta ronda)'],
   ];
 
   /* La tabla de hipótesis: el texto es del registro; las cifras, del artefacto. */

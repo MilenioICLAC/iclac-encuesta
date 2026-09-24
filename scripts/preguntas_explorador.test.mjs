@@ -43,6 +43,27 @@ describe('catálogo del explorador', () => {
     expect(() => validarPreguntas({ ...base, variables })).toThrow(/p99 tiene categorías y no está/)
   })
 
+  it('ataja una serie que recodifica un código a una categoría que no existe (p4)', () => {
+    const p4 = PREGUNTAS.find((p) => p.id === 'p4')
+    const serie = { ...p4.serie, recodificar: { 2025: { 1: 2, 2: 9, 3: 3, 4: 4 } } }
+    expect(() => validarPreguntas({ ...base, preguntas: con('p4', { serie }) }))
+      .toThrow(/p4 \(serie\): el código 2 de 2025 queda como 9/)
+  })
+
+  it('ataja una categoría de la serie con respuestas fuera de sus oleadas (p4 sin recodificar)', () => {
+    const p4 = PREGUNTAS.find((p) => p.id === 'p4')
+    const serie = { ...p4.serie, recodificar: { 2025: { 1: 1, 2: 2, 3: 3, 4: 4 } } }
+    expect(() => validarPreguntas({ ...base, preguntas: con('p4', { serie }) }))
+      .toThrow(/«Boric» tiene respuestas en 2025/)
+  })
+
+  it('ataja una recodificación a medias, que sumaría los votos de Jara a Kast (p4)', () => {
+    const p4 = PREGUNTAS.find((p) => p.id === 'p4')
+    const serie = { ...p4.serie, recodificar: { 2025: { 1: 2 } } }
+    expect(() => validarPreguntas({ ...base, preguntas: con('p4', { serie }) }))
+      .toThrow(/el código 2 de 2025 no está en el mapa/)
+  })
+
   it('ataja títulos con restos del diccionario', () => {
     expect(() => validarPreguntas({ ...base, preguntas: con('p7', { titulo: 'China_¿Cuál es tu opinión?' }) }))
       .toThrow(/restos del diccionario/)

@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { Encuesta } from './tipos'
 import { CORTES } from './modulos'
-import { formaDeFigura, modelo, tituloEn, type Estado, type Modelo } from './explorador'
+import { formaDeFigura, modelo, paletaDeCorte, tituloEn, type Estado, type Modelo } from './explorador'
+import { GENERO, GRUPOS, IDEOLOGIA, MACROZONA } from './paleta'
 import { topePorcentaje } from './escala'
 
 /*
@@ -105,7 +106,17 @@ describe('los casos que estaban rotos', () => {
     const m25 = una('p4', 2025)
     expect(m23.forma === 'porcentajes' && m23.bloques.map((b) => b.etiqueta)).toContain('Boric')
     expect(m25.forma === 'porcentajes' && m25.bloques.map((b) => b.etiqueta)).toContain('Jara')
-    expect(p('p4').serie!.olas).toEqual([2023, 2024])
+  })
+
+  it('p4 entre oleadas sigue a Kast por candidato, no por código, y Boric y Jara solo en sus oleadas', () => {
+    const m = serie('p4')
+    if (m.forma !== 'porcentajes') throw new Error('esperaba porcentajes')
+    const fila = (etiqueta: string) => m.bloques.find((b) => b.etiqueta === etiqueta)!.filas.map((f) => (f.valor === null ? null : Math.round(f.valor * 10) / 10))
+    // 182 de 664, 171 de 668 y 482 de 1.227: en 2025 Kast es el código 1, antes el 2.
+    expect(fila('Kast')).toEqual([27.4, 25.6, 39.3])
+    expect(fila('Boric')).toEqual([43.4, 39.5, null])
+    expect(fila('Jara')).toEqual([null, null, 32.1])
+    expect(m.series.map((s) => s.clave)).toEqual(['2023', '2024', '2025'])
   })
 
   it('p7 entre oleadas muestra la escala completa, no la primera categoría', () => {
@@ -174,5 +185,44 @@ describe('los casos de la décima ronda', () => {
     expect(formaDeFigura(serie('p9'))).toBe('barras')
     expect(formaDeFigura(serie('p7'))).toBe('mancuerna')
     expect(formaDeFigura(serie('p26'))).toBe('mancuerna')
+  })
+})
+
+describe('la paleta de cada corte (duodécima ronda)', () => {
+  const p = (id: string) => encuesta.preguntas.find((x) => x.id === id)!
+  const con = (corte: string) => {
+    const m = modelo(encuesta, p('p7'), { vista: 'ola', ola: 2025, corte, soloIndependientes: false })
+    if (m.forma === 'vacia') throw new Error('vacía')
+    return { m, ...paletaDeCorte(m) }
+  }
+  it('NSE va de E a AB · C1, como los otros cortes: AB · C1 al final, el más oscuro y el más grande', () => {
+    const { m, colores, tamanos } = con('nse_rec')
+    expect(m.series.map((x) => x.etiqueta)).toEqual(['E', 'D', 'C3', 'C2', 'AB · C1'])
+    expect(colores[4]).toBe(GRUPOS[4])
+    expect(tamanos).toEqual([8, 10, 12, 14, 16])
+  })
+  it('ideología va de rojo a azul, sin tamaño', () => {
+    const { colores, tamanos } = con('p3_3')
+    expect(colores).toEqual([...IDEOLOGIA])
+    expect(tamanos).toBeNull()
+  })
+  it('macrozona va en su rampa azul de norte a sur, sin tamaño', () => {
+    const { colores, tamanos } = con('region_macrozona')
+    expect(colores).toEqual([...MACROZONA])
+    expect(tamanos).toBeNull()
+  })
+  it('edad sigue en la rampa, con punto creciente', () => {
+    const { colores, tamanos } = con('edad_rec')
+    expect(colores[0]).toBe(GRUPOS[0])
+    expect(tamanos).toEqual([8, 10, 12, 14, 16])
+  })
+  it('el color y el tamaño siguen al grupo aunque falte uno', () => {
+    const ideo = con('p3_3').m
+    expect(paletaDeCorte({ ...ideo, series: ideo.series.filter((s) => s.etiqueta !== 'Centro') }).colores).toEqual([IDEOLOGIA[0], IDEOLOGIA[2]])
+    const nse = con('nse_rec').m
+    const sinE = paletaDeCorte({ ...nse, series: nse.series.filter((s) => s.etiqueta !== 'E') })
+    expect(sinE.tamanos![sinE.tamanos!.length - 1]).toBe(16)
+    const genero = con('sexo').m
+    expect(paletaDeCorte({ ...genero, series: genero.series.filter((s) => s.etiqueta !== 'Masculino') }).colores).toEqual([GENERO[1]])
   })
 })

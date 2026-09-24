@@ -75,12 +75,12 @@ describe('los grupos no se pintan como oleadas', () => {
   it('ningún color de grupo o de género es de la rampa de oleadas', () => {
     for (const c of [...GRUPOS, ...GENERO]) expect(ORDEN as readonly string[]).not.toContain(c)
   })
-  it('pasosDeGrupo reparte de punta a punta sin repetir hasta seis', () => {
-    for (let n = 2; n <= 6; n++) {
+  it('pasosDeGrupo reparte de punta a punta sin repetir hasta cinco', () => {
+    for (let n = 2; n <= 5; n++) {
       const pasos = pasosDeGrupo(n)
       expect(new Set(pasos).size).toBe(n)
       expect(pasos[0]).toBe(GRUPOS[0])
-      expect(pasos[n - 1]).toBe(GRUPOS[5])
+      expect(pasos[n - 1]).toBe(GRUPOS[4])
     }
   })
 })

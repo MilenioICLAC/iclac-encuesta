@@ -35,7 +35,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/componentes/CapaRecorrido.tsx` | La capa: `CapaRecorrido` (87, props `metodo` y `salida`), `Portada` (353), `Respiro` (478), `Escena` (549), `Pista` (759), `Cierre` (843) |
 | `src/nucleo/pasos.ts` | `usePasoActivo`, `pasoActivo`, `useMovimientoReducido` |
 | `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
-| `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `GRUPOS`, `pasosDeGrupo` y `GENERO` (grupos de un corte en el explorador, que no se pintan como oleadas), `SEMANTICOS` (color por etiqueta) |
+| `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `GRUPOS`, `pasosDeGrupo`, `GENERO`, `IDEOLOGIA` y `MACROZONA` (grupos de un corte en el explorador, que no se pintan como oleadas; cada corte declara la suya en `CORTES` y `paletaDeCorte` la aplica por grupo), `SEMANTICOS` (color por etiqueta) |
 | `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro de «La mirada» (el explorador lo muestra en barras de 0 a 100) |
 | `src/nucleo/explorador.ts` | Qué dibuja el explorador en sus tres estados (una oleada, con corte, entre oleadas), leído del catálogo `encuesta.preguntas` |
 | `src/nucleo/` resto | `agregar.ts` (porcentajes), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
@@ -90,7 +90,10 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
    de candidato), `P21` (inversión de China → extranjera), `P17` (escala → abierta), `P15` y `P9`
    (categorías), y `P6` cambió redacción. La combinada trae `p4_voto`, `p9_rec`, `p15_rec` y
    `uso_serie_longitudinal`. **Solo se comparan entre oleadas las preguntas con enunciado y categorías
-   idénticas**; `P4` y `P21` no, ni con derivada. Un validador de datos no ve este fallo.
+   idénticas**; `P21` no, ni con derivada. **Excepción decidida por Felipe (undécima ronda): `P4`** se
+   compara en el explorador **por candidato, no por código** (Kast en las tres; Boric solo en 2023-2024,
+   Jara solo en 2025), con la nota de que 2023-2024 recuerdan el voto de 2021 y 2025 pregunta por uno
+   hipotético (`recodificar` en el catálogo). Un validador de datos no ve este fallo.
 4. **Los libros de códigos no cuadran con sus datos.** Se verifica contra los datos, nunca contra el
    libro. Los `.dta` de 2023 están en utf-8: cortar en el primer NUL **antes** de decodificar; los de
    2024 no traen value labels. A las etiquetas de `comuna` de 2023 les falta la sílaba «vi» («ña del
