@@ -5,6 +5,7 @@ import { filtrar, personasRepetidas } from './nucleo/agregar'
 import BarraEstado from './componentes/BarraEstado'
 import Graficador from './componentes/Graficador'
 import Descargas from './componentes/Descargas'
+import FichaTecnica from './componentes/FichaTecnica'
 import Contrastes, { ComoSeLee } from './componentes/Contrastes'
 import MetodoHistorias, { Plegable } from './componentes/MetodoHistorias'
 import Encabezado from './componentes/Encabezado'
@@ -61,8 +62,8 @@ export default function App () {
         <h1 className="font-display text-xl font-semibold">No se pudieron cargar los datos</h1>
         <p className="mt-2 text-sm text-gray-600">{error}</p>
         <p className="mt-4 text-sm text-gray-600">
-          El artefacto se genera con <code className="rounded bg-gray-100 px-1">npm run etl:combinada</code>,
-          que lee la base canónica de <code className="rounded bg-gray-100 px-1">data/sources/combinada/</code>.
+          Recarga la página. Si el problema sigue, escríbenos a través de{' '}
+          <a href="https://iclac.cl/" className="text-brand-dark underline">iclac.cl</a>.
         </p>
       </main>
     )
@@ -111,6 +112,7 @@ export default function App () {
             element={<RutaExplorador encuesta={encuesta} recordada={busquedaExplorador} onRecordar={setBusquedaExplorador} />}
           />
           <Route path="descargas" element={<Descargas />} />
+          <Route path="ficha" element={<FichaTecnica encuesta={encuesta} />} />
           <Route path="datos" element={<SobreLosDatos encuesta={encuesta} />} />
           {/* Un hash escrito a mano o un enlace viejo no dejan al lector en una página en blanco. */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -307,9 +309,9 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
   const c = encuesta.contrastes
   const citar: [string, React.ReactNode][] = [
     ['Tres oleadas, tres muestras.', <>{encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(personasRepetidas(encuesta))} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
-    ['Sin ponderar y sin margen de error.', 'Es un panel en línea por cuotas, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
+    ['Sin ponderar y sin margen de error.', 'Es un panel en línea, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
     ['Porcentajes sobre respuestas efectivas.', 'Sin los que no contestaron. Cada figura muestra su base, que suele ser menor que el total.'],
-    ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador marca cada una como comparable o no, según el diccionario de ICLAC.'],
+    ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador indica, pregunta por pregunta, si se puede comparar entre oleadas.'],
   ]
 
   const indice: [string, string][] = [
@@ -351,6 +353,9 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
           </li>
         ))}
       </ul>
+      <p className="mt-3 text-xs">
+        <NavLink to="/ficha" className="text-brand-dark underline hover:no-underline">Más sobre la encuesta →</NavLink>
+      </p>
 
       {c && (
         <>

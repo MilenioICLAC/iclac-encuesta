@@ -481,7 +481,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 )}
                 frases={[
                   <>
-                    El monitor traza una recta y encuentra inclinación:{' '}
+                    Una recta sobre los tramos encuentra inclinación:{' '}
                     <strong>{decimal(Math.abs(primeraDeLaSerie?.recta.b ?? 0))} puntos menos por cada paso
                     hacia la derecha</strong>.
                   </>,

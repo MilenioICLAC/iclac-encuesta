@@ -27,7 +27,6 @@ export const TEXTOS = {
     'Public opinion monitor · ICLAC',
     '公众舆论监测 · ICLAC',
   ),
-  borrador: cadena('Borrador', 'Draft', '草稿'),
   menu: cadena('Menú', 'Menu', '菜单'),
   cerrarMenu: cadena('Cerrar el menú', 'Close menu', '关闭菜单'),
   idioma: cadena('Idioma', 'Language', '语言'),
@@ -42,6 +41,7 @@ export const TEXTOS = {
     recorrido: cadena('Historias', 'Stories', '故事'),
     explorar: cadena('Explorar', 'Explore', '自由探索'),
     descargas: cadena('Descargas', 'Downloads', '数据下载'),
+    ficha: cadena('Ficha técnica', 'Survey details', '调查说明'),
     datos: cadena('Sobre los datos', 'About the data', '关于数据'),
   },
 } as const

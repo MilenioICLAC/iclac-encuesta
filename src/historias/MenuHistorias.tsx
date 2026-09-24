@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
 import { numero } from '../locale'
+import { participacion } from '../nucleo/agregar'
+
+const EN_PALABRAS: Record<number, string> = { 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco' }
 import { HISTORIAS } from './indice'
 import { ContenidoTarjeta, TARJETA } from './TarjetaHistoria'
 import { useTransicionHistoria } from './contextoTransicion'
@@ -19,7 +22,7 @@ import { useTransicionHistoria } from './contextoTransicion'
  */
 export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   const olas = encuesta.olas
-  const n = encuesta.casos.length
+  const p = participacion(encuesta)
   const navegar = useNavigate()
   const { iniciar, enCurso, volviendoDe } = useTransicionHistoria()
   const tarjetas = useRef<(HTMLAnchorElement | null)[]>([])
@@ -52,8 +55,11 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
         Percepciones sobre China en Chile
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        {HISTORIAS.length} historias contadas con la encuesta de ICLAC: {olas.length} oleadas ({olas[0]} a {olas[olas.length - 1]}),{' '}
-        {numero(n)} personas encuestadas en un panel en línea.
+        {/* Respuestas y personas no son lo mismo: 159 personas contestaron en más de una oleada. */}
+        {HISTORIAS.length} historias contadas con la Encuesta de Percepciones sobre China en Chile, de
+        ICLAC: {EN_PALABRAS[olas.length] ?? numero(olas.length)} oleadas ({olas[0]} a {olas[olas.length - 1]}) y {numero(p.respuestas)} respuestas
+        de {numero(p.personas)} personas, en un panel en línea.{' '}
+        <Link to="/ficha" className="text-brand-dark underline hover:no-underline">Más sobre la encuesta →</Link>
       </p>
       {/* Durante la transición los originales quedan transparentes, no `invisible`: con
           `visibility: hidden` el enlace elegido perdía el foco y la lista salía del árbol

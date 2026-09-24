@@ -53,6 +53,15 @@ export function decimal (valor: number, decimales = 1): string {
   }).format(valor))
 }
 
+/**
+ * Un rango de días, «10–13 de octubre de 2023». Las fechas llegan como «AAAA-MM-DD», que `Date` lee
+ * como medianoche UTC: se formatean en UTC, o en Chile el 10 de octubre saldría 9.
+ */
+export function rangoDeFechas (desde: string, hasta: string): string {
+  return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .formatRange(new Date(desde), new Date(hasta))
+}
+
 export function fecha (iso: string): string {
   return new Intl.DateTimeFormat(locale(), { dateStyle: 'long' }).format(new Date(iso))
 }

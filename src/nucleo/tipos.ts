@@ -277,4 +277,14 @@ export interface Encuesta {
   variables: Variable[]
   casos: Caso[]
   contrastes?: Contrastes
+  ficha?: Ficha
+}
+
+/** Lo que la «Ficha técnica» describe y no está en los casos (`scripts/lib/ficha.mjs`). */
+export interface Ficha {
+  /** Primer y último día con respuestas terminadas, y mediana de la duración en segundos. */
+  campo: Record<string, { desde: string, hasta: string, duracionMediana: number }>
+  /** Índice de exposición económica a China, por código de región, de mayor a menor. */
+  indice: { codigo: number, indice: number }[]
+  fuenteIndice: string
 }

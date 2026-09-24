@@ -29,8 +29,8 @@ export function ComoSeLee ({ rondas }: { rondas: number }) {
       </p>
       <p>
         <strong className="text-gray-900">La corrección por familia.</strong> Las hipótesis que se
-        prueban juntas (las de un mismo bloque de la guía de ICLAC, o las cuatro palabras de las
-        respuestas abiertas) se corrigen con el método de Holm: probar varias a la vez aumenta la chance
+        prueban juntas (las de una misma historia, o las cuatro palabras de las respuestas
+        abiertas) se corrigen con el método de Holm: probar varias a la vez aumenta la chance
         de que alguna pase por azar, y la corrección lo compensa.
       </p>
       <p>
@@ -48,7 +48,7 @@ export function ComoSeLee ({ rondas }: { rondas: number }) {
       <p>
         <strong className="text-gray-900">Nada de esto es margen de error.</strong> La muestra no es
         probabilística: estos números comparan las oleadas entre sí y no estiman a la población de Chile.
-        Semilla fija, así que la misma base da siempre el mismo número.
+        Los cálculos son reproducibles: la misma base da siempre el mismo número.
       </p>
     </div>
   )

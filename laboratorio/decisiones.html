@@ -80,8 +80,8 @@
   <header>
     <h1>Decisiones del visualizador, para aprobar</h1>
     <p>
-      Sin decisiones abiertas del explorador (24-09-2026): la decimocuarta ronda cerró la paleta de cada
-      corte, y las 36 preguntas están aprobadas. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
+      Sin decisiones abiertas (24-09-2026): la decimoctava ronda cerró la revisión de voz y de la «Ficha técnica»; todo figura en «Ya cerradas». La «Ficha técnica» está aplicada (<a href="./#/ficha" target="_blank" rel="noopener">verla</a>) y figura en «Ya cerradas».
+      El explorador no tiene decisiones abiertas: la decimocuarta ronda cerró la paleta de cada corte. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
       <code>public/data/encuesta.json</code>, el mismo que usa la app: lo que ves acá es lo que está ahí.
       Lo que ya cerraste en rondas anteriores está al final, en «Ya cerradas».
     </p>
@@ -130,11 +130,13 @@
 
 <script>
 (() => {
-  const CLAVE = 'lab-decisiones-v7';
+  const CLAVE = 'lab-decisiones-v8';
   const $ = (id) => document.getElementById(id);
   const APP = './#';
 
   const SECCIONES = [
+    { id: 'voz', titulo: 'La voz de ICLAC · Ficha técnica', bajada: 'Segunda pasada, sobre la ficha, como pediste en la nota de la decimoséptima ronda. Dos son de voz y dos de exactitud. La decimoséptima ronda está aplicada y figura en «Ya cerradas».', ruta: '/ficha' },
+    { id: 'encuesta', titulo: 'Ficha técnica', bajada: 'La pestaña nueva que describe la encuesta en sí, ya en la app con lo que elegiste en el laboratorio. Propuesta y procedencia en la documentación interna', ruta: '/ficha' },
     { id: 'como', titulo: 'Cómo se hizo', bajada: 'La vista «Sobre los datos», a la que llevan los enlaces «Cómo se hizo» de cada historia.', ruta: '/datos' },
     { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
     { id: 'mirada', titulo: 'Historia 1 · La mirada', bajada: 'Bloque 1 de la guía: cómo se mira a China.', ruta: '/historias/mirada' },
@@ -333,6 +335,25 @@
     ['Explorador', 'Binarias en barras agrupadas; termómetro en barras de 0 a 100; nota de grupos chicos con solo el dato; lo tomado de Codex (undécima ronda)'],
     ['Explorador', '35 de las 36 preguntas, con su título, orden, comparación y forma (undécima ronda)'],
     ['Explorador', 'p4 entre las tres oleadas, por candidato; rótulo de la última oleada con dato; lo tomado de Codex; y la pregunta p4 (duodécima ronda)'],
+    ['Ficha técnica', 'Aplicado: «En 2025 la muestra se amplió para aplicar un módulo experimental; por eso esa oleada tiene cerca del doble de casos que las anteriores» (de la guía de contexto de Urdinez; decimosexta ronda; sin «Según ICLAC» desde la decimoséptima)'],
+    ['Ficha técnica', 'Aprobados: el texto, la tasa como no disponible, «Antes de citar» sin «por cuotas» y con enlace, el encabezado tal cual y C25 (decimoquinta ronda)'],
+    ['Ficha técnica', 'Aplicado con cambio: «El cuestionario, autoadministrado, fue aplicado por Netquest a miembros de su panel en línea, y la selección de participantes fue no probabilística» (tu versión, con «autoadministrado» y sin «siendo»)'],
+    ['Ficha técnica', 'Aplicado con cambio: «El objetivo de la encuesta es analizar el impacto económico de China a nivel subnacional» (tu versión; la atribución salió en la decimoséptima ronda)'],
+    ['Ficha técnica', 'La asignación muestral sale de Descargas, y la carpeta se vacía antes de escribirse para que no quede servida; tablas y figuras centradas (decimoquinta ronda)'],
+    ['Ficha técnica', 'Laboratorio aplicado: «Ficha técnica» antes de «Sobre los datos», sin ficha resumen ni índice, mapa con la tabla, «Q1 · muy alta», composición abierta con categorías originales (decimoquinta ronda)'],
+    ['Ficha técnica', 'Raíz: «… 2.559 respuestas de 2.380 personas, en un panel en línea. Más sobre la encuesta →» (del laboratorio, decimoquinta ronda)'],
+    ['Ficha técnica', 'Pestaña propia, aparte de «Sobre los datos»; Policy Paper 03 como fuente; lo de Netquest a la cola con prioridad baja (decisión en el chat, 24-09)'],
+    ['La voz de ICLAC', 'Aplicado: sin «según ICLAC» ni la frase del duplicado en la ficha; las fuentes van con referencia numerada (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Aplicado: la pantalla de error pide recargar o escribir a través de iclac.cl, sin script ni carpeta (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Aplicado: «El explorador indica, pregunta por pregunta, si se puede comparar entre oleadas», sin «según el diccionario de ICLAC» (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Aplicado: las familias de Holm se nombran por historia («hipótesis de «La mirada»»), no por bloque de la guía; «las de una misma historia» en el método; «los cuatro cambios de «China cotidiana» entre 2023 y 2025» (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Aplicado: «Una recta sobre los tramos encuentra inclinación» en La mirada (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Se mantienen: «, de ICLAC» en la raíz, «No se dispone de una tasa de respuesta documentada» y «La base utilizada en este sitio» (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Aplicado: «Los cálculos son reproducibles…»; el filtro dice «Sin quienes respondieron en más de una oleada»; uso_serie_longitudinal «da una primera orientación» y manda el explorador (decimoséptima ronda)'],
+    ['La voz de ICLAC', 'Sale el distintivo «Borrador» del encabezado (decimoséptima ronda, rechazada con «sacarlo»)'],
+    ['Ficha técnica', 'Aplicado: las fechas «van de la primera a la última respuesta completada de cada oleada»; la serie se cita [1, 3] (decimoctava ronda)'],
+    ['Ficha técnica', 'Aplicado: se comparan las idénticas «salvo la intención de voto, que se compara por candidato y con una nota» (decimoctava ronda)'],
+    ['Ficha técnica', 'Aplicado: «módulo experimental sobre Estados Unidos y una inversión china en telecomunicaciones», con la fuente nueva [4] Cuestionario 2025, porque la nota [2] no nombra las telecomunicaciones (decimoctava ronda)'],
     ['Explorador', 'La paleta de cada corte: rampa ámbar a ciruela con punto creciente (edad, educación, NSE de E a AB · C1, impacto), ideología de rojo a azul y macrozona en rampa azul de norte a sur, sin tamaño (decimocuarta ronda)'],
   ];
 
@@ -438,6 +459,7 @@
             </div>
             ${d.ruta ? `<a href="${APP}${d.ruta}" target="_blank" rel="noopener">Ver en la app</a>` : ''}
             ${(d.rutas || []).map(([texto, ruta]) => `<a href="${APP}${ruta}" target="_blank" rel="noopener">${esc(texto)}</a>`).join('')}
+            ${(d.enlaces || []).map(([texto, url]) => `<a href="${url}" target="_blank" rel="noopener">${esc(texto)}</a>`).join('')}
           </div>
           <textarea aria-label="Comentario" placeholder="Comentario (opcional)">${esc(e.comentario)}</textarea>`;
         art.querySelectorAll('.estado button').forEach((b) => b.addEventListener('click', () => {
@@ -488,7 +510,7 @@
   $('exportar').addEventListener('click', () => {
     const texto = JSON.stringify({
       laboratorio: 'decisiones',
-      ronda: 9,
+      ronda: 18,
       fecha: new Date().toISOString(),
       decisiones: D.map((d) => ({ id: d.id, seccion: d.s, titulo: d.titulo, estado: de(d.id).estado, comentario: de(d.id).comentario })),
       nota: estado.nota,

@@ -191,7 +191,7 @@ export default function BarraEstado ({
             onChange={(e) => { onSoloIndependientes(e.target.checked) }}
             className="rounded border-gray-300"
           />
-          Excluir panelistas repetidos
+          Sin quienes respondieron en más de una oleada
         </label>
 
         <p className="w-full pb-1.5 text-sm tabular-nums text-gray-500 sm:ml-auto sm:w-auto">{estadoN}</p>

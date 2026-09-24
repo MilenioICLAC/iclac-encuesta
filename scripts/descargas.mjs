@@ -14,9 +14,9 @@
 // Qué NO se saca: comuna, región, edad y las respuestas abiertas. Son los datos del estudio y
 // ICLAC ya los publica hoy. Sacarlos dejaría un archivo que no sirve para reanalizar nada.
 
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { basename, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { registros } from './lib/xlsx.mjs'
 
@@ -41,7 +41,8 @@ const DOCUMENTOS = [
   { archivo: 'data/sources/combinada/ICLAC_libro_de_codigos_2024.xlsx', titulo: 'Libro de códigos 2024' },
   { archivo: 'data/sources/combinada/ICLAC_libro_de_codigos_2025.xlsx', titulo: 'Libro de códigos 2025' },
   { archivo: 'data/sources/metodologia/Nota_metodologica_muestreo_ICLAC.docx', titulo: 'Nota metodológica del muestreo' },
-  { archivo: 'data/sources/metodologia/Asignacion_muestral_por_region_y_estrato.xlsx', titulo: 'Asignación muestral por región y estrato' },
+  // Fuera desde el 24-09-2026 (Felipe): `Asignacion_muestral_por_region_y_estrato.xlsx` trae la población
+  // de Biobío y Ñuble cruzada. Vuelve cuando ICLAC confirme el cruce (C25).
   { archivo: 'data/sources/metodologia/Diseno_indice_impacto_China_por_region.xlsx', titulo: 'Diseño del índice de impacto de China por región' },
   { archivo: 'data/sources/metodologia/Cuestionario_ICLAC_2023.docx', titulo: 'Cuestionario 2023' },
   { archivo: 'data/sources/metodologia/Cuestionario_ICLAC_2024.docx', titulo: 'Cuestionario 2024' },
@@ -74,7 +75,11 @@ function huella (ruta) {
 }
 
 export function preparar (destino) {
+  // Se vacía antes de escribir: un archivo que sale de la lista tiene que dejar de estar servido, no
+  // quedar a un enlace de distancia (pasó con la asignación muestral, 24-09-2026). Se vacía el
+  // contenido y no la carpeta: si se borra la carpeta, Vite en marcha deja de servirla entera.
   mkdirSync(destino, { recursive: true })
+  for (const nombre of readdirSync(destino)) rmSync(join(destino, nombre), { recursive: true, force: true })
   const salida = []
 
   const { columnas, datos } = registros(COMBINADA, 'datos')

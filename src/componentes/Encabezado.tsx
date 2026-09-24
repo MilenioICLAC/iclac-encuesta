@@ -18,7 +18,7 @@ import { TEXTOS } from '../textos'
  * **Queda pegado arriba**, y por eso publica su alto medido en `--alto-encabezado`: la barra de
  * controles del explorador también es pegajosa y tiene que pegarse **debajo** de este, no debajo
  * del borde de la pantalla. El alto no se escribe a mano en ninguna de las dos, porque cambia
- * con el ancho (79 px en teléfono, 88 en escritorio) y dos números a mano se desincronizan.
+ * con el ancho (60 px en teléfono, 88 en escritorio) y dos números a mano se desincronizan.
  */
 
 interface Props {
@@ -51,6 +51,7 @@ const NAV: { a: string, clave: keyof typeof TEXTOS.nav }[] = [
   { a: '/', clave: 'recorrido' },
   { a: '/explorar', clave: 'explorar' },
   { a: '/descargas', clave: 'descargas' },
+  { a: '/ficha', clave: 'ficha' },
   { a: '/datos', clave: 'datos' },
 ]
 
@@ -119,16 +120,8 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
             <h1 className="font-display text-[0.8125rem] font-semibold leading-tight text-gray-900 sm:text-base">
               {TEXTOS.titulo[idioma]}
             </h1>
-            {/* El distintivo va en la línea de abajo y no al lado del título: al lado le quitaba
-                70 px de los 360 del teléfono y el nombre salía en cuatro líneas. La bajada se
-                esconde en teléfono, el distintivo no: que esto es un borrador tiene que verse
-                en todos los anchos. */}
-            <p className="mt-0.5 flex items-center gap-2 text-xs text-gray-500">
-              <span className="shrink-0 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-amber-800">
-                {TEXTOS.borrador[idioma]}
-              </span>
-              <span className="hidden truncate sm:inline">{TEXTOS.bajada[idioma]}</span>
-            </p>
+            {/* La bajada se esconde en teléfono. */}
+            <p className="mt-0.5 hidden truncate text-xs text-gray-500 sm:block">{TEXTOS.bajada[idioma]}</p>
           </div>
         </div>
 

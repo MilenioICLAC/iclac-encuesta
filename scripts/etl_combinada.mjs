@@ -23,6 +23,7 @@ import { contar, etiquetas as etiquetasDePalabras, palabrasDe } from './lib/text
 import { contrastes } from './lib/contrastes.mjs'
 import { PREGUNTAS, validarPreguntas } from './lib/preguntas_explorador.mjs'
 import { conAbiertas, marcarAbiertas } from './lib/abiertas.mjs'
+import { campo, indiceRegional, FUENTE_INDICE } from './lib/ficha.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -271,6 +272,9 @@ export function procesar () {
     // la aplicación porque son diez mil permutaciones por comparación: es trabajo del artefacto,
     // no del navegador de nadie. Ver `lib/contraste.mjs` para el método y su alcance.
     contrastes: comparaciones,
+    // Lo que la «Ficha técnica» describe y no está en los casos: el campo de cada oleada (de `endtime`
+    // y `duration`, que no viajan) y el índice con que se estratificó la muestra.
+    ficha: { campo: campo(filas), indice: indiceRegional(), fuenteIndice: FUENTE_INDICE },
   }
 }
 

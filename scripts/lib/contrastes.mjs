@@ -468,7 +468,7 @@ function comparar (casosA, casosB, medidaDeclarada, opciones) {
 export const FAMILIAS = [
   {
     id: 'guia-bloque-1',
-    etiqueta: 'hipótesis del bloque 1 de la guía',
+    etiqueta: 'hipótesis de «La mirada»',
     pruebas: [
       { tipo: 'brecha', id: 'brecha-china-eeuu', ola: 2025 },
       { tipo: 'brecha', id: 'brecha-japon-china', ola: 2025 },
@@ -478,7 +478,7 @@ export const FAMILIAS = [
   },
   {
     id: 'guia-bloque-2',
-    etiqueta: 'hipótesis del bloque 2 de la guía',
+    etiqueta: 'hipótesis de «Entre dos potencias»',
     pruebas: [
       { tipo: 'medida', id: 'confia-china', desde: 2023, hasta: 2025 },
       { tipo: 'medida', id: 'confia-eeuu', desde: 2023, hasta: 2025 },
@@ -488,7 +488,7 @@ export const FAMILIAS = [
   },
   {
     id: 'guia-bloque-3',
-    etiqueta: 'hipótesis del bloque 3 de la guía',
+    etiqueta: 'hipótesis de «Donde uno vive»',
     pruebas: [
       { tipo: 'grupo', id: 'riesgo-estrato', ola: 2023 },
       { tipo: 'medida', id: 'p8-proveedor', desde: 2023, hasta: 2025 },
@@ -525,13 +525,13 @@ export const FAMILIAS = [
   },
   {
     id: 'cotidiana',
-    etiqueta: 'las cuatro puntas de China cotidiana',
+    etiqueta: 'los cuatro cambios de «China cotidiana» entre 2023 y 2025',
     pruebas: ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'racismo-visto']
       .map((id) => ({ tipo: 'medida', id, desde: 2023, hasta: 2025 })),
   },
   {
     id: 'guia-bloque-6',
-    etiqueta: 'hipótesis del bloque 6 de la guía',
+    etiqueta: 'hipótesis de «La vacuna»',
     pruebas: [
       { tipo: 'medida', id: 'sinovac-buena', desde: 2023, hasta: 2025 },
       { tipo: 'medida', id: 'prefiere-pfizer', desde: 2023, hasta: 2025 },

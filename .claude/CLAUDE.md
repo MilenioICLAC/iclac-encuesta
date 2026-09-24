@@ -13,7 +13,7 @@ Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una
 - **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
   menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
   («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
-- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas (un registro de decisiones interno); pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas (un registro de decisiones interno); el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`) y **Sobre los datos** (`#/datos`, con
+- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas (un registro de decisiones interno); pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas (un registro de decisiones interno); el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`), **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`) y **Sobre los datos** (`#/datos`, con
   el método de cada historia en `?foco=metodo-<id>`).
 
 El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
@@ -38,13 +38,14 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `GRUPOS`, `pasosDeGrupo`, `GENERO`, `IDEOLOGIA` y `MACROZONA` (grupos de un corte en el explorador, que no se pintan como oleadas; cada corte declara la suya en `CORTES` y `paletaDeCorte` la aplica por grupo), `SEMANTICOS` (color por etiqueta) |
 | `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro de «La mirada» (el explorador lo muestra en barras de 0 a 100) |
 | `src/nucleo/explorador.ts` | Qué dibuja el explorador en sus tres estados (una oleada, con corte, entre oleadas), leído del catálogo `encuesta.preguntas` |
-| `src/nucleo/` resto | `agregar.ts` (porcentajes), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
+| `src/nucleo/` resto | `agregar.ts` (porcentajes; `participacion`: respuestas no son personas), `ficha.ts` (cifras de la «Ficha técnica»), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
 | `src/componentes/` | Figuras: `FiguraExplorador` (la única del explorador: barras sin comparar, en el termómetro y en las de dos categorías; mancuerna con `Puntos` en las demás comparaciones; `formaDeFigura` en `explorador.ts` decide), `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoHistorias` (método por historia, plegable), `Evidencia` (una prueba dibujada con su intervalo; la única forma de escribir un contraste en «Sobre los datos»), `MetodoRecorrido` (el caso de la recta), `Contrastes` (cómo se prueba y la tabla de medidas), `Descargas`, `Graficador` (el explorador), `BarraEstado` |
 | `src/textos.ts`, `src/locale.ts` | Cromo en tres idiomas; formato de números según idioma |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
 | `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
 | `scripts/lib/abiertas.mjs` | Las preguntas abiertas (`ABIERTAS` en el catálogo) como múltiples de palabras: marca por persona si contestó y cada palabra candidata, sin el texto |
+| `scripts/lib/ficha.mjs` | Campo de cada oleada (`endtime`, `duration`) e índice de exposición del archivo de diseño, a `encuesta.ficha`; se detiene si el índice no cuadra con `impacto()` |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
@@ -144,7 +145,7 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
   Por qué, y lo que no se aplicó de las skills de diseño externas: un registro de decisiones interno.
 - **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** El selector de
   idioma cubre el cromo y una franja lo declara.
-- **El encabezado replica el de iclac.cl** (88 px escritorio, 79 teléfono, sombra y no borde; nav
+- **El encabezado replica el de iclac.cl** (88 px escritorio, 60 teléfono, sombra y no borde; nav
   completo desde `lg`). El estado del explorador vive en `App` y sobrevive al cambio de vista.
 - **Commits** en español, en presente y describiendo el efecto («El recorrido estrena cierre y
   portada»). Solo cuando Felipe lo pide.

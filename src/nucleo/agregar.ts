@@ -66,12 +66,23 @@ export function filtrar (encuesta: Encuesta, recorte: Recorte): Caso[] {
  * contestó dos veces aporta dos filas con un 2: se cuentan filas y se divide por su propio valor.
  */
 export function personasRepetidas (encuesta: Encuesta): number {
-  let personas = 0
+  return participacion(encuesta).repetidas
+}
+
+/**
+ * Filas y personas: `respuestas` son filas de la base; `personas`, gente distinta. Quien contestó en
+ * dos oleadas aporta dos respuestas y una persona.
+ */
+export function participacion (encuesta: Encuesta): { respuestas: number, personas: number, repetidas: number, enDos: number, enTres: number, filasRepetidas: number } {
+  const filas = { 2: 0, 3: 0 }
   for (const c of encuesta.casos) {
     const olas = Number(c.olas_panelista ?? 1)
-    if (olas > 1) personas += 1 / olas
+    if (olas === 2 || olas === 3) filas[olas] += 1
   }
-  return Math.round(personas)
+  const enDos = Math.round(filas[2] / 2)
+  const enTres = Math.round(filas[3] / 3)
+  const respuestas = encuesta.casos.length
+  return { respuestas, personas: respuestas - enDos - 2 * enTres, repetidas: enDos + enTres, enDos, enTres, filasRepetidas: filas[2] + filas[3] }
 }
 
 function categoriasDe (variable: Variable): Map<number, string> {
