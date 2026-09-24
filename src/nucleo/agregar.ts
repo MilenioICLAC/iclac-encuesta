@@ -178,7 +178,11 @@ export function multirespuesta (casos: Caso[], grupo: Multiple, ola?: number): M
     ? grupo.opciones
     : grupo.opciones.filter((o) => o.olas.includes(ola))
 
-  const respondieron = casos.filter((c) => opciones.some((o) => c[o.columna] !== null && c[o.columna] !== undefined))
+  // En una abierta la base es quien escribió algo, marcado aparte: sus palabras solo guardan el 1.
+  const marca = grupo.respuesta
+  const respondieron = marca
+    ? casos.filter((c) => c[marca] !== null && c[marca] !== undefined)
+    : casos.filter((c) => opciones.some((o) => c[o.columna] !== null && c[o.columna] !== undefined))
 
   const menciones = opciones.map((o) => {
     const n = respondieron.filter((c) => Number(c[o.columna]) === 1).length

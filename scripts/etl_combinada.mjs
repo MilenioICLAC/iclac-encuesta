@@ -21,7 +21,8 @@ import { registros } from './lib/xlsx.mjs'
 import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
 import { contar, etiquetas as etiquetasDePalabras, palabrasDe } from './lib/texto.mjs'
 import { contrastes } from './lib/contrastes.mjs'
-import { validarPreguntas } from './lib/preguntas_explorador.mjs'
+import { PREGUNTAS, validarPreguntas } from './lib/preguntas_explorador.mjs'
+import { conAbiertas, marcarAbiertas } from './lib/abiertas.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -238,7 +239,10 @@ export function procesar () {
 
   // Qué pregunta muestra el explorador y cómo: el catálogo, cruzado con los datos. Si no cuadra,
   // el ETL se detiene antes de escribir nada.
-  const preguntas = validarPreguntas({ variables, multiples, valores, casos })
+  // Las preguntas abiertas entran como múltiples de palabras: marcas por persona, sin el texto.
+  const deAbiertas = marcarAbiertas(filas, casos)
+  multiples.push(...deAbiertas.multiples)
+  const preguntas = validarPreguntas({ variables, multiples, valores, casos, preguntas: conAbiertas(PREGUNTAS, deAbiertas.preguntas) })
   const comparaciones = contrastes(casos)
   const conAdvertencia = new Set(comparaciones.medidas.filter((m) => m.advertencia).map((m) => m.id))
   for (const p of preguntas) {

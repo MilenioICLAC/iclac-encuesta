@@ -10,7 +10,7 @@
  *
  * `validarPreguntas` la cruza con los datos en cada corrida del ETL y **falla** si un código de
  * los datos no tiene etiqueta, si una etiqueta cambia de sentido entre oleadas sin que la entrada
- * lo declare, o si una variable con categorías no está ni acá ni en `FUERA`. Así una oleada nueva
+ * lo declare, o si una variable publicada no está ni acá ni en `FUERA`. Así una oleada nueva
  * no puede colarse con los rótulos de la anterior, que es lo que le pasaba a `p4`: en 2023 la
  * barra «Kast» eran los votantes de Boric.
  *
@@ -424,6 +424,78 @@ export const FUERA = {
   p5_5: 'marca de «Prefiero no responder» de p5_5_val',
   p9_rec: 'derivada: la serie de p9', p15_rec: 'derivada de p15 con límites distintos en 2023: no se compara',
   p6a_1: 'el «No» de p6a', p6a_3: 'solo dice si se llenó la segunda casilla de p6a', p6a_4: 'solo dice si se llenó la tercera casilla de p6a',
+  edad: 'caracterización continua: el corte son sus tramos (edad_rec)',
+  p4_voto: 'derivada de p4 en texto, sin 2024: el explorador compara p4 por candidato',
+  p23: '2023, escala de 1 a 5 sin enunciado ni etiquetas en ninguna fuente del cliente',
+  // El monitor la muestra como la viñeta de inversión china en telecomunicaciones, con etiquetas
+  // «Muy negativa … Muy positiva» que no vienen del cliente. `p28_size` reparte 2023 en tres
+  // tercios exactos: si son tres versiones de la viñeta, agregada mezcla tratamientos. Queda fuera
+  // hasta que ICLAC diga qué es (24-09-2026).
+  p28: '2023, viñeta de telecomunicaciones sin etiquetas del cliente; pendiente de ICLAC qué es p28_size',
+}
+
+/**
+ * Las preguntas abiertas, que el explorador muestra como una múltiple de palabras (Felipe,
+ * laboratorio `abiertas`, 24-09-2026): una barra por palabra con el porcentaje de **personas** que
+ * la escribieron, sobre las que escribieron algo. Barras y no columnas apiladas, porque una persona
+ * nombra varias cosas y los porcentajes no reparten un total.
+ *
+ * - `palabras`: cuántas muestra la figura. Sin corte y con corte, las más dichas en esa oleada;
+ *   entre oleadas, las de mayor porcentaje promedio entre oleadas.
+ * - `minimo`: con corte, una palabra que menos de estas personas nombraron en un grupo no lleva
+ *   punto en ese grupo. Con las preguntas por país en 2023 casi no quedan puntos: es lo que hay.
+ * - `propia`: palabras que no se cuentan, el nombre del propio país (como «china» en «La mirada»).
+ * - `despuesDe`: dónde entra en el selector.
+ *
+ * `scripts/lib/abiertas.mjs` las cuenta en el ETL con el tokenizador de las nubes (`lib/texto.mjs`)
+ * y deja por persona solo una marca por palabra de las que pueden salir en la figura. El texto
+ * no viaja.
+ */
+export const ABIERTAS = {
+  palabras: 10,
+  minimo: 10,
+  nota: 'Pregunta abierta: se cuentan las palabras que la gente escribió, agrupadas por raíz.',
+  preguntas: [
+    ...[
+      ['p4_1', 'China', ['china', 'chino'], 'p5_5_val'],
+      ['p4_2', 'Estados Unidos', ['eeuu', 'estados', 'unidos', 'usa', 'norteamérica', 'gringo'], 'p4_1'],
+      ['p4_3', 'Corea del Sur', ['corea', 'coreano', 'sur'], 'p4_2'],
+      ['p4_4', 'Francia', ['francia', 'francés'], 'p4_3'],
+      ['p4_5', 'Japón', ['japón', 'japonés'], 'p4_4'],
+    ].map(([id, pais, propia, despuesDe]) => ({
+      id,
+      columnas: [id],
+      titulo: `Lo primero que se viene a la cabeza con ${pais}`,
+      enunciado: `¿Qué es lo primero que se le viene a la cabeza cuando le dicen «${pais}»?`,
+      propia,
+      despuesDe,
+    })),
+    {
+      id: 'p16',
+      columnas: ['p16'],
+      titulo: 'Dónde se tiene contacto con personas de China',
+      enunciado: '¿En qué contexto(s) tienes contacto o interacción con personas de China o de ascendencia china?',
+      propia: [],
+      despuesDe: 'p17_escala',
+    },
+    {
+      id: 'p17_texto',
+      columnas: ['p17_texto'],
+      titulo: 'Cómo han sido las interacciones con personas de China',
+      enunciado: '¿Cómo han sido tus interacciones con personas de China o de ascendencia china?',
+      propia: [],
+      despuesDe: 'p16',
+    },
+    {
+      id: 'p6a_marcas',
+      columnas: ['p6a_2_txt', 'p6a_3_txt', 'p6a_4_txt'],
+      titulo: 'Marcas chinas que se mencionan',
+      enunciado: '¿Puedes mencionar al menos tres empresas o marcas chinas?',
+      poblacion: 'Solo quienes dijeron poder mencionar alguna.',
+      propia: [],
+      despuesDe: 'p6a',
+    },
+  ],
 }
 
 /** Compara etiquetas sin tildes, mayúsculas, puntuación ni orden de palabras: «1 Muy de Izquierda» = «Muy de Izquierda 1». */
@@ -495,15 +567,20 @@ export function validarPreguntas ({ variables, multiples, valores, casos, pregun
     publicadas.push(publicar(p, { variable: nombre, olas }))
   }
 
-  // Toda variable con categorías tiene que estar en una de las dos listas.
+  // **Toda variable publicada** tiene que estar en una de las listas, tenga o no categorías.
+  // Hasta el 24-09-2026 la regla miraba solo las con categorías, y así `p23` y `p28`, categóricas
+  // a las que el cliente no les puso etiquetas, llegaban sin categorías y nadie las clasificaba.
+  // Las columnas de texto de `ABIERTAS` cuentan como ubicadas aunque el catálogo no las traiga
+  // armadas: sus entradas las pone el ETL (`abiertas.mjs`).
   const cubiertas = new Set([
     ...preguntas.map((p) => p.variable ?? p.id),
     ...multiples.flatMap((m) => m.opciones.map((o) => o.columna)),
+    ...ABIERTAS.preguntas.flatMap((a) => a.columnas),
     ...Object.keys(FUERA),
   ])
   for (const v of variables) {
-    if (v.categorias && v.categorias.length > 0 && !cubiertas.has(v.nombre)) {
-      errores.push(`explorador: ${v.nombre} tiene categorías y no está ni en PREGUNTAS ni en FUERA`)
+    if (!cubiertas.has(v.nombre)) {
+      errores.push(`explorador: ${v.nombre} se publica y no está ni en PREGUNTAS ni en FUERA`)
     }
   }
 
@@ -610,5 +687,6 @@ function publicar (p, { variable, olas }) {
     ...(p.poblacionPorOla ? { poblacionPorOla: p.poblacionPorOla } : {}),
     ...(p.nota ? { nota: p.nota } : {}),
     ...(p.advertencia ? { advertencia: p.advertencia } : {}),
+    ...(p.abierta ? { abierta: p.abierta } : {}),
   }
 }

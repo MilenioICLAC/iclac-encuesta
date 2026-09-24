@@ -138,6 +138,16 @@ export function menciona (respuestas, palabra) {
   return raicesDe(respuestas).has(raiz(corregir(palabra)))
 }
 
+/** Las raíces de lo que escribió una persona, sin repetir: con esto marca `abiertas.mjs` cada palabra. */
+export function claves (respuestas) {
+  return [...raicesDe(respuestas).keys()]
+}
+
+/** La raíz de una palabra dada, con las mismas correcciones que el conteo. */
+export function claveDe (palabra) {
+  return raiz(corregir(palabra))
+}
+
 /**
  * La forma visible de cada raíz, **decidida una sola vez sobre todas las respuestas**.
  *

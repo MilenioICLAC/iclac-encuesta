@@ -226,3 +226,61 @@ describe('la paleta de cada corte (duodécima ronda)', () => {
     expect(paletaDeCorte({ ...genero, series: genero.series.filter((s) => s.etiqueta !== 'Masculino') }).colores).toEqual([GENERO[1]])
   })
 })
+
+describe('las preguntas abiertas (laboratorio abiertas, 24-09-2026)', () => {
+  const abiertas = encuesta.preguntas.filter((p) => p.abierta)
+  const estado = (e: Partial<Estado>): Estado => ({ vista: 'ola', ola: 2025, corte: null, soloIndependientes: false, ...e })
+  const porcentajes = (m: Modelo) => {
+    if (m.forma !== 'porcentajes') throw new Error(`esperaba porcentajes, llegó ${m.forma}`)
+    return m
+  }
+
+  it('son las ocho de las nubes', () => {
+    expect(abiertas.map((p) => p.id).sort()).toEqual(['p16', 'p17_texto', 'p4_1', 'p4_2', 'p4_3', 'p4_4', 'p4_5', 'p6a_marcas'])
+  })
+
+  for (const p of abiertas) {
+    it(`${p.id}: sin corte, diez palabras con las mismas cifras que su nube`, () => {
+      // La nube se cuenta por otro camino (`contar` sobre el texto, en el ETL): si las marcas por
+      // persona se desalinean, esto lo ve.
+      const nube = encuesta.nubes.find((n) => n.id === (p.id === 'p6a_marcas' ? 'p6a' : p.id))!
+      for (const ola of p.olas) {
+        const m = porcentajes(modelo(encuesta, p, estado({ ola })))
+        expect(m.bloques).toHaveLength(10)
+        expect(m.escala).toBe('palabras')
+        expect(m.bloques[0].filas[0].base, `${ola}: base`).toBe(nube.baseOla?.[ola])
+        for (const b of m.bloques) {
+          expect(b.filas[0].n, `${ola} · ${b.etiqueta}`).toBe(nube.porOla[ola].find((x) => x.palabra === b.etiqueta)?.n)
+        }
+      }
+    })
+
+    it(`${p.id}: con corte, las mismas palabras y ningún punto bajo el mínimo`, () => {
+      const ola = p.olas[p.olas.length - 1]
+      const sin = porcentajes(modelo(encuesta, p, estado({ ola }))).bloques.map((b) => b.etiqueta).sort()
+      for (const corte of cortes.filter((c): c is string => c !== null)) {
+        const m = porcentajes(modelo(encuesta, p, estado({ ola, corte })))
+        expect(m.bloques.map((b) => b.etiqueta).sort(), corte).toEqual(sin)
+        for (const f of m.bloques.flatMap((b) => b.filas)) {
+          if (f.valor !== null) expect(f.n, `${corte} · ${f.etiqueta}`).toBeGreaterThanOrEqual(p.abierta!.minimo)
+          else expect(f.n).toBeLessThan(p.abierta!.minimo)
+        }
+      }
+    })
+  }
+
+  it('entre oleadas, diez palabras y un punto por oleada', () => {
+    for (const p of abiertas) {
+      const m = porcentajes(modelo(encuesta, p, estado({ vista: 'serie' })))
+      expect(m.bloques).toHaveLength(10)
+      expect(m.series.map((s) => Number(s.clave))).toEqual(p.olas)
+      expect(m.bloques.every((b) => b.filas.every((f) => f.valor !== null))).toBe(true)
+    }
+  })
+
+  it('el nombre del propio país no cuenta', () => {
+    const etiquetas = (id: string) => encuesta.preguntas.find((x) => x.id === id)!.categorias!.map((c) => c.etiqueta)
+    expect(etiquetas('p4_1')).not.toContain('china')
+    expect(etiquetas('p4_4')).not.toContain('francia')
+  })
+})

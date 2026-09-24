@@ -40,7 +40,12 @@ describe('catálogo del explorador', () => {
 
   it('ataja una variable con categorías que nadie ubicó', () => {
     const variables = [...encuesta.variables, { nombre: 'p99', categorias: [{ codigo: 1, etiqueta: 'Sí' }] }]
-    expect(() => validarPreguntas({ ...base, variables })).toThrow(/p99 tiene categorías y no está/)
+    expect(() => validarPreguntas({ ...base, variables })).toThrow(/p99 se publica y no está/)
+  })
+
+  it('ataja también una sin categorías, como llegaban p23 y p28 sin etiquetas del cliente', () => {
+    const variables = [...encuesta.variables, { nombre: 'p98', categorias: [] }]
+    expect(() => validarPreguntas({ ...base, variables })).toThrow(/p98 se publica y no está/)
   })
 
   it('ataja una serie que recodifica un código a una categoría que no existe (p4)', () => {

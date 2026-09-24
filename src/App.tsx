@@ -159,18 +159,25 @@ function RutaExplorador ({ encuesta, recordada, onRecordar }: { encuesta: Encues
     setParams(siguiente, { replace: true })
   }
 
-  const serie = vista === 'serie' && encuesta.preguntas.find((x) => x.id === pregunta)?.serie != null
+  const p = encuesta.preguntas.find((x) => x.id === pregunta) ?? encuesta.preguntas[0]
+  const serie = vista === 'serie' && p.serie != null
 
   return (
     <>
       <BarraEstado
         olas={encuesta.olas}
+        preguntas={encuesta.preguntas}
+        pregunta={p}
+        // Una pregunta que no se compara deja la vista de una oleada también en la dirección: si
+        // no, `vista=serie` quedaba latente y reaparecía con la siguiente pregunta (Codex).
+        onPregunta={(id) => cambiar({ p: id, vista: vista === 'serie' && encuesta.preguntas.find((x) => x.id === id)?.serie ? 'serie' : null })}
+        vista={serie ? 'serie' : 'ola'}
+        onVista={(v) => cambiar({ vista: v === 'serie' ? 'serie' : null })}
         ola={ola}
         // Elegir una oleada es pedir verla: sale de «Entre oleadas».
         onOla={(o) => cambiar({ ola: String(o), vista: null })}
         corte={corte}
         onCorte={(c) => cambiar({ corte: c })}
-        corteApagado={serie ? 'El corte no se aplica entre oleadas' : undefined}
         soloIndependientes={soloIndependientes}
         onSoloIndependientes={(v) => cambiar({ independientes: v ? '1' : null })}
         // Entre oleadas los casos de una oleada no describen la figura: sus bases van en ella.
@@ -179,11 +186,7 @@ function RutaExplorador ({ encuesta, recordada, onRecordar }: { encuesta: Encues
       <Graficador
         encuesta={encuesta}
         pregunta={pregunta}
-        // Una pregunta que no se compara deja la vista de una oleada también en la dirección: si
-        // no, `vista=serie` quedaba latente y reaparecía con la siguiente pregunta (Codex).
-        onPregunta={(id) => cambiar({ p: id, vista: vista === 'serie' && encuesta.preguntas.find((x) => x.id === id)?.serie ? 'serie' : null })}
         vista={vista}
-        onVista={(v) => cambiar({ vista: v === 'serie' ? 'serie' : null })}
         ola={ola}
         onOla={(o) => cambiar({ ola: String(o), vista: null })}
         corte={corte}
