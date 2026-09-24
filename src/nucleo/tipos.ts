@@ -43,6 +43,57 @@ export interface Multiple {
   opciones: OpcionMultiple[]
 }
 
+/**
+ * Una pregunta del explorador, como la publica el catálogo curado
+ * (`scripts/lib/preguntas_explorador.mjs`, validado contra los datos en cada ETL). Es el único
+ * lugar de donde el explorador saca título, orden de categorías y qué se compara entre oleadas.
+ */
+export interface CategoriaPregunta {
+  codigo: number | string
+  etiqueta: string
+  /** La etiqueta de las oleadas donde el código significa otra cosa (`p4`, `p15`). */
+  porOla?: Record<string, string>
+}
+
+export interface SeriePregunta {
+  /** Las oleadas que hicieron la misma pregunta con las mismas categorías. */
+  olas: number[]
+  /** La columna que se compara: la de la pregunta o su derivada (`p9_rec`). */
+  variable: string
+  categorias?: CategoriaPregunta[]
+  /** Población común a todas las oleadas (`p11`: solo quienes recibieron Sinovac). */
+  filtro?: { variable: string, codigos: number[] }
+  nota?: string
+}
+
+export interface Pregunta {
+  id: string
+  /** La columna de la vista de una oleada; en una múltiple, el id del grupo. */
+  variable: string
+  titulo: string
+  tituloPorOla?: Record<string, string>
+  enunciado: string
+  enunciadoPorOla?: Record<string, string>
+  tipo: 'ordinal' | 'nominal' | 'binaria' | 'multiple' | 'numerica'
+  olas: number[]
+  /** En orden de lectura. En una múltiple el código es la columna. */
+  categorias?: CategoriaPregunta[]
+  orden: 'fijo' | 'frecuencia'
+  alFinal?: (number | string)[]
+  /** En un termómetro, la marca de «Prefiero no responder», que no tiene número. */
+  noResponde?: { variable: string, codigo: number }
+  serie: SeriePregunta | null
+  /** Por qué no se compara, cuando se hizo en más de una oleada. */
+  sinSerie?: string
+  /** Cortes que no tienen sentido sobre esta pregunta (ideología sobre la ideología). */
+  sinCortes?: string[]
+  poblacion?: string
+  poblacionPorOla?: Record<string, string>
+  nota?: string
+  /** Id de una medida de `contrastes` cuya advertencia acompaña a la pregunta. */
+  advertencia?: string
+}
+
 export interface Region {
   codigo: number
   etiqueta: string
@@ -212,6 +263,7 @@ export interface Encuesta {
   olas: number[]
   n: Record<string, number>
   multiples: Multiple[]
+  preguntas: Pregunta[]
   nubes: NubePalabras[]
   regiones: Region[]
   variables: Variable[]

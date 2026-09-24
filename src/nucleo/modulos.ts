@@ -22,9 +22,10 @@ export const TERMOMETRO = [
  * cambian de significado entre oleadas, y `p26`, porque cruzar dos preguntas de opinión no
  * es un corte de caracterización.
  */
-export const CORTES = [
+export const CORTES: { nombre: string | null, etiqueta: string, orden?: string[], nominal?: boolean }[] = [
   { nombre: null, etiqueta: 'Sin corte', orden: undefined },
-  { nombre: 'sexo', etiqueta: 'Género', orden: undefined },
+  // El único sin orden: va con colores de identidad, no con la rampa (`paleta.ts`).
+  { nombre: 'sexo', etiqueta: 'Género', orden: undefined, nominal: true },
   // Los tres van agrupados, no con sus categorías originales. Educación venía con diez
   // niveles y su grupo más chico tenía siete casos; nivel socioeconómico con siete. Un
   // porcentaje sobre siete personas no dice nada, y la rampa de color no distingue más de

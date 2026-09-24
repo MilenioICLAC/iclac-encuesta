@@ -13,7 +13,7 @@ Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una
 - **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
   menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
   («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
-- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; «Entre oleadas» pone una barra por oleada), **Descargas** (`#/descargas`) y **Sobre los datos** (`#/datos`, con
+- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; «Entre oleadas» abre cada categoría en una fila por oleada, solo entre las oleadas con la misma pregunta; el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`) y **Sobre los datos** (`#/datos`, con
   el método de cada historia en `?foco=metodo-<id>`).
 
 El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
@@ -37,17 +37,20 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `SEMANTICOS` (color por etiqueta) |
 | `src/nucleo/termometro.ts` | Escala, orden y rótulo del termómetro, hoy solo en «La mirada» |
+| `src/nucleo/explorador.ts` | Qué dibuja el explorador en sus tres estados (una oleada, con corte, entre oleadas), leído del catálogo `encuesta.preguntas` |
 | `src/nucleo/` resto | `agregar.ts` (porcentajes), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
-| `src/componentes/` | Figuras: `BarrasPorOla` (series del explorador), `Distribucion`, `Menciones`, `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoHistorias` (método por historia, plegable), `Evidencia` (una prueba dibujada con su intervalo; la única forma de escribir un contraste en «Sobre los datos»), `MetodoRecorrido` (el caso de la recta), `Contrastes` (cómo se prueba y la tabla de medidas), `Descargas`, `Graficador` (el explorador), `BarraEstado` |
+| `src/componentes/` | Figuras: `FiguraExplorador` (la única del explorador: categoría arriba, una fila por grupo u oleada), `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoHistorias` (método por historia, plegable), `Evidencia` (una prueba dibujada con su intervalo; la única forma de escribir un contraste en «Sobre los datos»), `MetodoRecorrido` (el caso de la recta), `Contrastes` (cómo se prueba y la tabla de medidas), `Descargas`, `Graficador` (el explorador), `BarraEstado` |
 | `src/textos.ts`, `src/locale.ts` | Cromo en tres idiomas; formato de números según idioma |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
-| `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `bloques`, `variables`, `casos`, `contrastes`, …) |
+| `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
+| `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
 | `scripts/mirar_recorrido.mjs` | Recorre cada historia (o la pedida) con Playwright y mide costo de paso, escenas y leyendas a la vista |
+| `scripts/mirar_explorador.mjs` | Recorre cada pregunta del explorador en sus tres estados y anchos; mide desbordes, títulos, valores cortados y consola |
 | `scripts/laboratorio.mjs`, `laboratorio/` | Laboratorios de composición (skill `laboratorio`) |
-| Pruebas | `scripts/*.test.mjs` (`informe_2023`, `contrastes`, `descargas`, `guia_urdinez`, `historias`: vocabulario), `scripts/lib/*.test.mjs`, `src/nucleo/*.test.ts` |
+| Pruebas | `scripts/*.test.mjs` (`informe_2023`, `contrastes`, `descargas`, `guia_urdinez`, `historias`: vocabulario, `preguntas_explorador`: el catálogo contra los datos), `scripts/lib/*.test.mjs`, `src/nucleo/*.test.ts` (`explorador`: cada pregunta en cada estado) |
 | `data/sources/` | Fuentes del cliente por oleada, la combinada y la metodología; su `README.md` dice cuál es canónica |
 
 ## Comandos

@@ -1,5 +1,6 @@
 import { CORTES } from '../nucleo/modulos'
 import { numero } from '../locale'
+import { enfocarRadio, radioSiguiente } from '../nucleo/teclado'
 
 /**
  * El estado del explorador, en un solo lugar y siempre visible.
@@ -24,15 +25,18 @@ interface Props {
   onOla: (ola: number) => void
   corte: string | null
   onCorte: (corte: string | null) => void
+  /** Si el corte no se aplica en este momento, por qué. Se muestra apagado y lo dice, no se ignora en silencio. */
+  corteApagado?: string
   soloIndependientes: boolean
   onSoloIndependientes: (v: boolean) => void
-  n: number
+  /** Casos del recorte, o `null` entre oleadas, donde la figura muestra la base de cada una. */
+  n: number | null
 }
 
 export default function BarraEstado ({
-  olas, ola: elegida, onOla, corte, onCorte, soloIndependientes, onSoloIndependientes, n,
+  olas, ola: elegida, onOla, corte, onCorte, corteApagado, soloIndependientes, onSoloIndependientes, n,
 }: Props) {
-  const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta ?? 'Sin corte'
+  const etiquetaCorte = corteApagado ? 'Sin corte' : CORTES.find((c) => c.nombre === corte)?.etiqueta ?? 'Sin corte'
 
   return (
     // El `top` sale del alto que el encabezado publica al medirse: pegada a `top-0` quedaba
@@ -42,7 +46,18 @@ export default function BarraEstado ({
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Oleada</span>
-          <div role="radiogroup" aria-label="Oleada" className="flex rounded-md border border-gray-300">
+          <div
+            role="radiogroup"
+            aria-label="Oleada"
+            className="flex rounded-md border border-gray-300"
+            onKeyDown={(e) => {
+              const i = radioSiguiente(e.key, olas.indexOf(elegida), olas.map(() => true))
+              if (i === null) return
+              e.preventDefault()
+              onOla(olas[i])
+              enfocarRadio(e.currentTarget, i)
+            }}
+          >
             {olas.map((ola, i) => {
               const activa = ola === elegida
               return (
@@ -51,6 +66,7 @@ export default function BarraEstado ({
                   type="button"
                   role="radio"
                   aria-checked={activa}
+                  tabIndex={activa ? 0 : -1}
                   onClick={() => onOla(ola)}
                   className={[
                     'px-3 py-1 text-sm tabular-nums transition-colors',
@@ -72,7 +88,9 @@ export default function BarraEstado ({
           <select
             value={corte ?? ''}
             onChange={(e) => onCorte(e.target.value === '' ? null : e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+            disabled={Boolean(corteApagado)}
+            title={corteApagado}
+            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
           >
             {CORTES.map((c) => (
               <option key={c.etiqueta} value={c.nombre ?? ''}>{c.etiqueta}</option>
@@ -91,7 +109,7 @@ export default function BarraEstado ({
         </label>
 
         <p className="ml-auto text-sm tabular-nums text-gray-500">
-          {numero(n)} casos · {etiquetaCorte.toLowerCase()}
+          {n === null ? 'Entre oleadas' : `${numero(n)} casos · ${etiquetaCorte.toLowerCase()}`}
         </p>
       </div>
     </div>

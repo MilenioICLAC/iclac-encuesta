@@ -1,227 +1,193 @@
-import { useMemo, useState } from 'react'
-import type { Caso, Encuesta, Variable } from '../nucleo/tipos'
-import { distribucion, media, multirespuesta, porGrupo, serie } from '../nucleo/agregar'
+import { useMemo } from 'react'
+import type { Encuesta, Pregunta } from '../nucleo/tipos'
 import { CORTES } from '../nucleo/modulos'
-import Distribucion from './Distribucion'
-import Menciones from './Menciones'
-import BarrasPorOla from './BarrasPorOla'
+import { enunciadoEn, modelo, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
+import FiguraExplorador from './FiguraExplorador'
 import { numero } from '../locale'
+import { enfocarRadio, radioSiguiente } from '../nucleo/teclado'
+
+const VISTAS: Vista[] = ['ola', 'serie']
 
 /**
  * El explorador: cualquier pregunta del instrumento, para consultar. Las historias afirman; esto no.
  *
- * **La oleada y el corte vienen de la barra de estado**, y la oleada es una sola: nada suma
- * oleadas (Felipe, 22-09-2026). La distribución es la de esa oleada. La vista «Entre oleadas»
- * (y las numéricas, que solo tienen esa) pone una barra por oleada sin sumar nada, y por eso no
- * usa la oleada elegida: lo dice debajo de la figura.
+ * **Qué pregunta se ofrece y cómo se muestra lo decide el catálogo** (`encuesta.preguntas`, armado
+ * en `scripts/lib/preguntas_explorador.mjs` y validado contra los datos en cada ETL): título
+ * legible, orden de las categorías, y en qué oleadas se hizo la misma pregunta. Acá no se infiere
+ * nada del diccionario.
  *
- * Lo único que agrega es qué pregunta mirar y cómo: en una oleada o comparando oleadas.
+ * Tres estados, una sola figura (`nucleo/explorador.ts`): una oleada; una oleada con corte; y
+ * «Entre oleadas», que pone una fila por oleada **sin sumar ninguna** (Felipe, 22-09-2026). Entre
+ * oleadas el corte no se aplica, y la barra de estado lo muestra apagado.
+ *
+ * El estado vive en `App`, y la dirección lo refleja (`#/explorar?p=p7&vista=serie`): así sobrevive
+ * al cambio de vista y se puede mandar un enlace a una pregunta en un estado exacto.
  */
-
-type Vista = 'distribucion' | 'serie'
 
 interface Props {
   encuesta: Encuesta
-  casos: Caso[]
+  pregunta: string
+  onPregunta: (id: string) => void
+  vista: Vista
+  onVista: (v: Vista) => void
+  ola: number
+  onOla: (ola: number) => void
   corte: string | null
   soloIndependientes: boolean
-  /** La oleada de la barra de estado. */
-  ola: number
 }
 
-/** Las de caracterización no se grafican: son los cortes, no las preguntas. */
-const CARACTERIZACION = new Set([
-  'sexo', 'edad', 'edadr', 'educacion', 'region', 'nse', 'region_macrozona', 'region_impacto',
-  'p3_3', 'edad_rec', 'educacion_rec', 'nse_rec',
-  'olas_panelista', 'ola',
-])
+export default function Graficador ({
+  encuesta, pregunta: id, onPregunta, vista: pedida, onVista, ola, onOla, corte, soloIndependientes,
+}: Props) {
+  const p = encuesta.preguntas.find((x) => x.id === id) ?? encuesta.preguntas[0]
+  const vista = vistaPosible(p, pedida)
+  const estado = { vista, ola, corte, soloIndependientes }
+  const m: Modelo = useMemo(() => modelo(encuesta, p, estado), [encuesta, p, vista, ola, corte, soloIndependientes]) // eslint-disable-line react-hooks/exhaustive-deps
 
-export default function Graficador ({ encuesta, casos, corte, soloIndependientes, ola }: Props) {
-  const opciones = useMemo(() => {
-    const categoricas = encuesta.variables
-      .filter((v) => !CARACTERIZACION.has(v.nombre))
-      .filter((v) => v.categorias !== null && v.categorias.length > 0)
-      .map((v) => ({ clave: v.nombre, etiqueta: v.etiqueta ?? v.nombre, tipo: 'variable' as const }))
-
-    const numericas = encuesta.variables
-      .filter((v) => v.nombre.endsWith('_val'))
-      .map((v) => ({ clave: v.nombre, etiqueta: v.etiqueta ?? v.nombre, tipo: 'numerica' as const }))
-
-    const multiples = encuesta.multiples
-      .map((m) => ({ clave: m.id, etiqueta: m.titulo, tipo: 'multiple' as const }))
-
-    return [...categoricas, ...numericas, ...multiples]
-      .sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, 'es'))
-  }, [encuesta])
-
-  const [clave, setClave] = useState('p26')
-  const [vista, setVista] = useState<Vista>('distribucion')
-
-  const elegida = opciones.find((o) => o.clave === clave) ?? opciones[0]
-  const variable = encuesta.variables.find((v) => v.nombre === elegida?.clave)
-  const grupo = encuesta.multiples.find((m) => m.id === elegida?.clave)
-
-  if (!elegida) return null
-
-  const olas = grupo
-    ? [...new Set(grupo.opciones.flatMap((o) => o.olas))].sort()
-    : variable?.olas ?? []
-
-  // Qué dibuja la figura: la oleada elegida, o una barra por oleada.
-  const entreOlas = !grupo && (elegida.tipo === 'numerica' || vista === 'serie')
-  const sinOla = !entreOlas && !olas.includes(ola)
-
-  const base = grupo
-    ? multirespuesta(casos, grupo).base
-    : variable
-      ? (elegida.tipo === 'numerica' ? media(casos, variable.nombre).base : distribucion(casos, variable).base)
-      : 0
+  const noEnOla = vista === 'ola' && !p.olas.includes(ola)
+  const corteFuera = vista === 'ola' && corte !== null && (p.sinCortes ?? []).includes(corte)
+  const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta.toLowerCase()
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-12">
       <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
-        Cualquier pregunta de la encuesta, una oleada a la vez. La oleada y el corte se eligen arriba.
+        Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se hizo
+        igual. La oleada y el corte se eligen arriba.
       </p>
 
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4">
         <label className="flex min-w-[min(100%,16rem)] flex-1 flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Pregunta</span>
           <select
-            value={elegida.clave}
-            onChange={(e) => setClave(e.target.value)}
-            className="w-full truncate rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
+            value={p.id}
+            onChange={(e) => onPregunta(e.target.value)}
+            className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
           >
-            {opciones.map((o) => (
-              <option key={o.clave} value={o.clave}>{o.etiqueta}</option>
+            {/* El título de la oleada que se mira: `p21` en 2023 pregunta por la inversión china. */}
+            {encuesta.preguntas.map((x) => (
+              <option key={x.id} value={x.id}>{tituloEn(x, { vista: 'ola', ola })}</option>
             ))}
           </select>
         </label>
 
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">Ver</span>
-          <div className="flex rounded-md border border-gray-300">
-            {([['distribucion', `En ${ola}`], ['serie', 'Entre oleadas']] as const).map(([id, texto], i) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={vista === id}
-                onClick={() => setVista(id)}
-                className={`px-3 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-300' : ''} ${
-                  vista === id ? 'bg-brand-dark text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
-                } ${i === 0 ? 'rounded-l-md' : 'rounded-r-md'}`}
-              >
-                {texto}
-              </button>
-            ))}
+          <div
+            className="flex rounded-md border border-gray-300"
+            role="radiogroup"
+            aria-label="Ver"
+            onKeyDown={(e) => {
+              const i = radioSiguiente(e.key, VISTAS.indexOf(vista), [true, Boolean(p.serie)])
+              if (i === null) return
+              e.preventDefault()
+              onVista(VISTAS[i])
+              enfocarRadio(e.currentTarget, i)
+            }}
+          >
+            {([['ola', `En ${ola}`], ['serie', 'Entre oleadas']] as const).map(([v, texto], i) => {
+              const activa = vista === v
+              const apagada = v === 'serie' && !p.serie
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={activa}
+                  tabIndex={activa ? 0 : -1}
+                  disabled={apagada}
+                  onClick={() => onVista(v)}
+                  className={[
+                    'px-3 py-1.5 text-sm transition-[background-color,color,transform] duration-150 ease-out enabled:active:scale-[0.97]',
+                    i > 0 ? 'rounded-r-md border-l border-gray-300' : 'rounded-l-md',
+                    activa ? 'bg-brand-dark text-white' : 'bg-white text-gray-600 enabled:hover:bg-gray-50',
+                    apagada ? 'cursor-not-allowed text-gray-300' : '',
+                  ].join(' ')}
+                >
+                  {texto}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
 
       <article className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="font-display text-base font-semibold">{elegida.etiqueta}</h3>
+        <h3 className="font-display text-base font-semibold text-balance">{tituloEn(p, estado)}</h3>
+        <p className="mt-1 max-w-3xl text-xs leading-snug text-gray-500">«{enunciadoEn(p, estado)}»</p>
 
-        {sinOla
+        {vista === 'serie' && p.serie && (
+          <p className="mt-2 text-xs text-gray-600">
+            Una fila por oleada: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
+            {corte && ' El corte no se aplica entre oleadas.'}
+          </p>
+        )}
+        {corteFuera && (
+          <p className="mt-2 text-xs text-gray-600">El corte por {etiquetaCorte} no se aplica: es esta misma pregunta en tres tramos.</p>
+        )}
+
+        {noEnOla
           ? (
-            <p className="mt-3 text-sm text-gray-600">
-              Esta pregunta no se hizo en {ola}. Está en {olas.join(' y ')}: elige {olas.length > 1 ? 'una de esas oleadas' : 'esa oleada'} arriba
-              {variable?.serie && olas.length > 1 ? ', o mírala entre oleadas' : ''}.
-            </p>
+            <div className="mt-3 text-sm text-gray-600">
+              <p>Esta pregunta no se hizo en {ola}.</p>
+              <p className="mt-2 flex flex-wrap items-center gap-2">
+                Se hizo en
+                {p.olas.map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => onOla(o)}
+                    className="rounded-md border border-gray-300 px-2 py-0.5 tabular-nums text-brand-dark transition-transform duration-150 ease-out hover:bg-gray-50 active:scale-[0.97]"
+                  >
+                    {o}
+                  </button>
+                ))}
+              </p>
+            </div>
             )
-          : <Figura
-          encuesta={encuesta}
-          casos={casos}
-          corte={corte}
-          soloIndependientes={soloIndependientes}
-          vista={vista}
-          variable={variable}
-          grupo={grupo}
-          esNumerica={elegida.tipo === 'numerica'}
-        />}
+          : <FiguraExplorador modelo={m} />}
 
-        <footer className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 pt-2 text-xs text-gray-500">
-          {/* La base efectiva de la figura, no el tamaño del recorte: en una pregunta que se
-              hizo en una sola oleada las dos cifras difieren mucho, y la que importa es esta. */}
-          {!sinOla && (
-            <>
-              {entreOlas
-                ? <span>Una barra por oleada; no usa la oleada ni el corte elegidos arriba</span>
-                : <span className="tabular-nums">n = {numero(base)} · {ola}</span>}
-              <span aria-hidden>·</span>
-            </>
-          )}
-          <span className={olas.length < 3 ? 'text-amber-700' : undefined}>
-            {olas.length === 0 ? 'Sin oleadas' : olas.length === 1 ? `Solo ${olas[0]}` : olas.length < 3 ? `Solo ${olas.join(' y ')}` : 'Las tres oleadas'}
-          </span>
-          {/* En una pregunta de una sola oleada no hay nada que comparar, así que afirmar que
-              es comparable sería una contradicción impresa en la figura. */}
-          {variable && olas.length > 1 && (
-            <>
-              <span aria-hidden>·</span>
-              <span className={variable.serie ? undefined : 'text-amber-700'}>
-                {variable.serie ? 'Comparable entre oleadas' : 'No comparable entre oleadas'}
-              </span>
-            </>
-          )}
-          {variable?.nota && <p className="w-full pt-1 leading-snug">{variable.nota}</p>}
-        </footer>
+        <Pie p={p} vista={vista} ola={ola} modelo={m} encuesta={encuesta} noEnOla={noEnOla} />
       </article>
     </section>
   )
 }
 
-function Figura ({
-  encuesta, casos, corte, soloIndependientes, vista, variable, grupo, esNumerica,
-}: {
-  encuesta: Encuesta
-  casos: Caso[]
-  corte: string | null
-  soloIndependientes: boolean
-  vista: Vista
-  variable?: Variable
-  grupo?: Encuesta['multiples'][number]
-  esNumerica: boolean
-}) {
-  if (grupo) {
-    const datos = multirespuesta(casos, grupo)
-    const orden = CORTES.find((c) => c.nombre === corte)?.orden
-    const grupos = corte ? porGrupo(casos, corte, encuesta.variables, orden) : []
-    const contraste = grupos.length > 0
-      ? { etiqueta: grupos[0].etiqueta, datos: multirespuesta(grupos[0].casos, grupo) }
-      : undefined
-    return <Menciones datos={datos} contraste={contraste} />
-  }
+function Pie ({ p, vista, ola, modelo: m, encuesta, noEnOla }: { p: Pregunta, vista: Vista, ola: number, modelo: Modelo, encuesta: Encuesta, noEnOla: boolean }) {
+  const advertencia = p.advertencia ? encuesta.contrastes?.medidas.find((x) => x.id === p.advertencia)?.advertencia : undefined
+  const poblacion = (vista === 'ola' ? p.poblacionPorOla?.[ola] : undefined) ?? p.poblacion
+  const base = !noEnOla && vista === 'ola' ? baseDe(m) : null
 
-  if (!variable) return null
+  const olasSerie = p.serie?.olas.join(', ').replace(/, (\d+)$/, ' y $1')
+  // Si la oleada que se mira no entra en la comparación (`p4` en 2025), se dice, con la razón.
+  const fueraDeLaSerie = Boolean(p.serie) && vista === 'ola' && !p.serie!.olas.includes(ola)
+  const comparacion = p.serie
+    ? fueraDeLaSerie ? `Entre oleadas se compara ${olasSerie}; ${ola} no entra.` : `Se compara entre ${olasSerie}.`
+    : p.olas.length === 1
+      ? `Solo se preguntó en ${p.olas[0]}.`
+      : p.sinSerie ?? 'No se compara entre oleadas.'
 
-  if (esNumerica) {
-    // Una media no tiene distribución de categorías, así que la única vista útil es la serie.
-    const puntos = serie(encuesta, variable, (c) => media(c, variable.nombre).media, { soloIndependientes })
-    return <BarrasPorOla puntos={puntos} unidad="media" etiqueta="Promedio de 0 a 100" />
-  }
+  const notas = [
+    poblacion,
+    vista === 'serie' || fueraDeLaSerie ? p.serie?.nota : undefined,
+    p.nota,
+    advertencia,
+  ].filter((x): x is string => Boolean(x))
 
-  if (vista === 'serie') {
-    // Entre oleadas se sigue la primera categoría de la variable: seguir todas a la vez daría
-    // cuatro o cinco líneas cruzándose, que es exactamente lo que el monitor actual produce.
-    const primera = variable.categorias?.[0]
-    if (!primera) return null
-    const puntos = serie(
-      encuesta,
-      variable,
-      (c) => distribucion(c, variable).segmentos.find((s) => s.codigo === primera.codigo)?.porcentaje ?? 0,
-      { soloIndependientes },
-    )
-    return <BarrasPorOla puntos={puntos} unidad="porcentaje" etiqueta={primera.etiqueta} />
-  }
+  return (
+    <footer className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
+      <p className="flex flex-wrap gap-x-2 gap-y-1">
+        {base !== null && <span className="tabular-nums">{numero(base)} respuestas en {ola}.</span>}
+        <span className={p.serie ? undefined : 'text-amber-700'}>{comparacion}</span>
+      </p>
+      {notas.map((n) => <p key={n} className="mt-1 max-w-3xl leading-snug">{n}</p>)}
+    </footer>
+  )
+}
 
-  const agregado = distribucion(casos, variable)
-  const orden = CORTES.find((c) => c.nombre === corte)?.orden
-  const grupos = corte
-    ? porGrupo(casos, corte, encuesta.variables, orden).map((g) => ({
-        etiqueta: g.etiqueta,
-        agregado: distribucion(g.casos, variable),
-      }))
-    : undefined
-
-  return <Distribucion agregado={agregado} grupos={grupos} />
+/** Respuestas efectivas de la figura de una oleada: sin corte es la de la única fila; con corte, la suma de los grupos. */
+function baseDe (m: Modelo): number | null {
+  if (m.forma === 'vacia') return null
+  if (m.forma === 'medias') return m.filas.reduce((s, f) => s + f.base, 0)
+  return m.bloques[0]?.filas.reduce((s, f) => s + f.base, 0) ?? null
 }
