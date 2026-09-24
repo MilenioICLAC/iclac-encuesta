@@ -23,5 +23,10 @@ export default {
       }
     }
   },
-  plugins: []
+  plugins: [],
+  future: {
+    // Los `hover:` solo con puntero fino (`@media (hover: hover) and (pointer: fine)`). En un
+    // teléfono el toque dispara el hover y lo deja pegado hasta tocar otra cosa.
+    hoverOnlyWhenSupported: true
+  }
 }

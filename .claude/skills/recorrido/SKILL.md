@@ -49,7 +49,10 @@ pila, hace crecer el fondo de la elegida hasta cubrir la pantalla (se desvanece 
 pregunta), navega y lleva la pregunta hasta el `.pregunta-portada` **medido** en la capa ya montada;
 después se destapa la portada. Vive en `src/historias/Transicion.tsx`, fuera de las rutas. **Si
 cambia la clase o el estilo del título de la portada, la transición lo sigue sola** (copia el
-estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existiendo en las seis.
+estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existiendo en las seis. El relleno de la
+tarjeta es `RELLENO` (`TarjetaHistoria.tsx`), el mismo en el menú y en la copia elegida: escrito a
+mano en las dos, la pregunta arranca corrida. Las dos preguntas se cruzan con un blur de 2 px que
+termina en cero (un registro de decisiones interno).
 
 ## Editorial
 

@@ -121,13 +121,21 @@ interface Props {
    * porque ahí un rótulo que salta de lado al encender un punto se lee como un cambio del dato.
    */
   esquivar?: boolean
+  /**
+   * La emanata con que entra cada punto («esto acaba de llegar»). Es un gesto del recorrido, donde
+   * un paso enciende un dato; en el explorador, que cambia de pregunta decenas de veces por visita,
+   * se apaga: ahí lo aprobado es que solo el largo de las barras se mueva (novena ronda). Apagada,
+   * tampoco se desliza el trazo: los puntos saltan en seco y un trazo que llega 500 ms después se
+   * lee desparejo.
+   */
+  entrada?: boolean
 }
 
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
   anchoEtiqueta = '5.5rem', rotular = 'extremos', visible, compacto = false,
   altoFila = ALTO_FILA, radioCreciente = false, unidadEje, leyenda = true, rotulosLargos = false,
-  esquivar = false,
+  esquivar = false, entrada = true,
 }: Props) {
   // El lienzo de la primera fila, guardado en estado y no en una ref: si la primera fila cambia
   // (otra pregunta en la misma vista), el observador tiene que pasar al nodo nuevo (Codex).
@@ -282,11 +290,14 @@ export default function Puntos ({
                 ))}
 
                 {/* El trazo entre el punto más chico y el más grande: es el rango de la fila, y
-                    sin él se lee como puntos sueltos en vez de como un recorrido. */}
+                    sin él se lee como puntos sueltos en vez de como un recorrido. Ocupa la fila
+                    entera y se recorta con `transform` (el porcentaje de `translateX` es del
+                    propio ancho, que es el de la fila): animar `left` y `width` rehacía el layout
+                    en cada cuadro. */}
                 {puntos.length > 1 && (
                   <span
-                    className="absolute top-1/2 h-px -translate-y-1/2 bg-gray-200 transition-all duration-500"
-                    style={{ left: `${min}%`, width: `${max - min}%` }}
+                    className={`absolute inset-x-0 top-1/2 h-px origin-left bg-gray-200 ${entrada ? 'transition-transform duration-500 motion-reduce:transition-none' : ''}`}
+                    style={{ transform: `translateX(${min}%) translateY(-50%) scaleX(${(max - min) / 100})` }}
                   />
                 )}
 
@@ -299,7 +310,7 @@ export default function Puntos ({
                   <span
                     key={p.serie.clave}
                     className={`punto absolute top-1/2 rounded-full ring-2 ring-white transition-opacity duration-500 ${
-                      puntos.includes(p) ? 'opacity-100 dato-nuevo dato-emanata' : 'opacity-0'
+                      puntos.includes(p) ? `opacity-100 ${entrada ? 'dato-nuevo dato-emanata' : ''}` : 'opacity-0'
                     }`}
                     style={{
                       left: `${x(p.valor)}%`,

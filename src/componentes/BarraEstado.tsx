@@ -69,7 +69,7 @@ export default function BarraEstado ({
                   tabIndex={activa ? 0 : -1}
                   onClick={() => onOla(ola)}
                   className={[
-                    'px-3 py-1 text-sm tabular-nums transition-colors',
+                    'presionable px-3 py-1 text-sm tabular-nums',
                     i > 0 ? 'border-l border-gray-300' : '',
                     i === 0 ? 'rounded-l-md' : '',
                     i === olas.length - 1 ? 'rounded-r-md' : '',

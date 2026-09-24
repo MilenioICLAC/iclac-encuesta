@@ -134,6 +134,10 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
   `--barra-capa`), nunca literales.
 - **Una familia declarada no es una familia cargada:** Raleway se importa en `src/index.css`, pesos 400
   y 600.
+- **Un control que se presiona se hunde** (`.presionable` en `src/index.css`, 0,97 en 160 ms), salvo las
+  tarjetas del menú, cuya caja copia la transición en el clic. **Los `hover:` solo existen con puntero
+  fino** (`hoverOnlyWhenSupported` en `tailwind.config.js`): nada que solo se descubra con el cursor.
+  Por qué, y lo que no se aplicó de las skills de diseño externas: un registro de decisiones interno.
 - **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** El selector de
   idioma cubre el cromo y una franja lo declara.
 - **El encabezado replica el de iclac.cl** (88 px escritorio, 79 teléfono, sombra y no borde; nav

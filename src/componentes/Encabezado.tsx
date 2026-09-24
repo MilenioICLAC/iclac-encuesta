@@ -142,7 +142,7 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
                 <NavLink
                   key={n.a}
                   to={n.a}
-                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors ${
+                  className={`presionable flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
                     enRecorrido
                       ? 'border-brand-dark bg-brand-dark font-semibold text-white'
                       : 'border-brand-dark/40 text-brand-dark hover:bg-brand hover:text-gray-900'

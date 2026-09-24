@@ -49,7 +49,7 @@ export default function Graficador ({
   const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta.toLowerCase()
 
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-12">
+    <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
       <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
         Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se hizo
@@ -98,7 +98,7 @@ export default function Graficador ({
                   disabled={apagada}
                   onClick={() => onVista(v)}
                   className={[
-                    'px-3 py-1.5 text-sm transition-[background-color,color,transform] duration-150 ease-out enabled:active:scale-[0.97]',
+                    'presionable px-3 py-1.5 text-sm',
                     i > 0 ? 'rounded-r-md border-l border-gray-300' : 'rounded-l-md',
                     activa ? 'bg-brand-dark text-white' : 'bg-white text-gray-600 enabled:hover:bg-gray-50',
                     apagada ? 'cursor-not-allowed text-gray-300' : '',

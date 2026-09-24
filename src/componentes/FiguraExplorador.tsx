@@ -125,6 +125,7 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
         // Entre oleadas manda dónde está cada categoría hoy; entre grupos ninguno pesa más que otro.
         rotular={compara === 'olas' ? series.length - 1 : 'extremos'}
         esquivar
+        entrada={false}
         radioCreciente={compara === 'olas'}
         unidadEje={escala === 'menciones'
           ? `Porcentaje que marcó cada opción${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`
