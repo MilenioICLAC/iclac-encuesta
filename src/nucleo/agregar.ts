@@ -148,24 +148,6 @@ export function media (casos: Caso[], nombre: string): Resumen {
   }
 }
 
-/**
- * La misma variable, ola por ola. Devuelve `null` en las oleadas donde la pregunta no se
- * hizo, que **no es lo mismo que cero**: es la única señal de que ahí no hubo pregunta, y
- * por eso la serie tiene que poder distinguirlas.
- */
-export function serie (
-  encuesta: Encuesta,
-  variable: Variable,
-  calcular: (casos: Caso[]) => number,
-  recorte: Omit<Recorte, 'olas'> = {},
-): { ola: number, valor: number | null, base: number }[] {
-  return encuesta.olas.map((ola) => {
-    if (!variable.olas.includes(ola)) return { ola, valor: null, base: 0 }
-    const casos = filtrar(encuesta, { ...recorte, olas: [ola] })
-    return { ola, valor: calcular(casos), base: casos.length }
-  })
-}
-
 export interface Mencion {
   columna: string
   opcion: string
@@ -244,7 +226,12 @@ export function porGrupo (
   }))
 
   if (orden) {
-    return filas.sort((a, b) => orden.indexOf(a.etiqueta) - orden.indexOf(b.etiqueta))
+    // Un valor fuera de `orden` va al final, no al principio: `indexOf` da -1 y lo subía.
+    const posicion = (etiqueta: string) => {
+      const i = orden.indexOf(etiqueta)
+      return i === -1 ? orden.length : i
+    }
+    return filas.sort((a, b) => posicion(a.etiqueta) - posicion(b.etiqueta))
   }
   return filas.sort((a, b) => Number(a.clave) - Number(b.clave))
 }

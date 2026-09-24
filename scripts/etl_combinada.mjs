@@ -21,6 +21,7 @@ import { registros } from './lib/xlsx.mjs'
 import { impacto, macrozona, nombreCorto, orden } from './lib/regiones.mjs'
 import { contar, etiquetas as etiquetasDePalabras, palabrasDe } from './lib/texto.mjs'
 import { contrastes } from './lib/contrastes.mjs'
+import { validarPreguntas } from './lib/preguntas_explorador.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -235,6 +236,17 @@ export function procesar () {
   const porOla = {}
   for (const c of casos) porOla[c.ola] = (porOla[c.ola] ?? 0) + 1
 
+  // Qué pregunta muestra el explorador y cómo: el catálogo, cruzado con los datos. Si no cuadra,
+  // el ETL se detiene antes de escribir nada.
+  const preguntas = validarPreguntas({ variables, multiples, valores, casos })
+  const comparaciones = contrastes(casos)
+  const conAdvertencia = new Set(comparaciones.medidas.filter((m) => m.advertencia).map((m) => m.id))
+  for (const p of preguntas) {
+    if (p.advertencia && !conAdvertencia.has(p.advertencia)) {
+      throw new Error(`explorador · ${p.id}: la advertencia «${p.advertencia}» no es una medida con advertencia en contrastes`)
+    }
+  }
+
   return {
     generado: new Date().toISOString(),
     fuente: FUENTE,
@@ -242,6 +254,7 @@ export function procesar () {
     olas: Object.keys(porOla).map(Number).sort(),
     n: porOla,
     multiples,
+    preguntas,
     nubes,
     // Regiones de norte a sur, con el número romano fuera del nombre: ocupa eje y no aporta.
     regiones: (etiquetas.get('region') ? [...etiquetas.get('region').values()] : [])
@@ -253,7 +266,7 @@ export function procesar () {
     // Qué diferencias entre oleadas superan el azar de la propia muestra. Se calcula acá y no en
     // la aplicación porque son diez mil permutaciones por comparación: es trabajo del artefacto,
     // no del navegador de nadie. Ver `lib/contraste.mjs` para el método y su alcance.
-    contrastes: contrastes(casos),
+    contrastes: comparaciones,
   }
 }
 
@@ -268,6 +281,7 @@ if (esEjecutable) {
   console.log(`\nOleadas: ${datos.olas.map((o) => `${o} (${datos.n[o]})`).join(' · ')}`)
   console.log(`Variables publicadas: ${datos.variables.length}`)
   console.log(`Grupos de selección múltiple: ${datos.multiples.map((m) => `${m.id} (${m.opciones.length})`).join(' · ')}`)
+  console.log(`Preguntas del explorador: ${datos.preguntas.length} (${datos.preguntas.filter((p) => p.serie).length} se comparan entre oleadas)`)
   console.log(`Nubes de palabras: ${datos.nubes.map((n) => `${n.id} (${n.olas.join(", ")})`).join(' · ')}`)
   console.log(`En serie longitudinal: ${datos.variables.filter((v) => v.serie).length}`)
   const comparaciones = datos.contrastes.medidas.flatMap((m) => m.comparaciones)

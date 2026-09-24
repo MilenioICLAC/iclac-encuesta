@@ -78,11 +78,13 @@
 
 <div class="envoltorio">
   <header>
-    <h1>Decisiones de las historias, para aprobar</h1>
+    <h1>Decisiones del visualizador, para aprobar</h1>
     <p>
-      Octava ronda cerrada (23-09-2026): sin decisiones pendientes. Lo que ya cerraste está al final, en «Ya cerradas», sin pedir aprobación otra vez. Cada tarjeta dice qué quedó, por qué, las alternativas y de dónde vino.
-      Las cifras se leen en vivo de <code>public/data/encuesta.json</code>. Los enlaces abren la historia en
-      la app; todavía no hay enlace a un paso, así que hay que bajar hasta él.
+      Undécima ronda (24-09-2026): lo que pediste en la décima, aplicado (binarias y termómetro en barras,
+      paleta de grupos, nota de grupos chicos), y otra vez una tarjeta por pregunta con la forma que tiene
+      hoy y un enlace a cada estado. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
+      <code>public/data/encuesta.json</code>, el mismo que usa la app: lo que ves acá es lo que está ahí.
+      Lo que ya cerraste en rondas anteriores está al final, en «Ya cerradas».
     </p>
     <p id="error-datos"></p>
   </header>
@@ -96,7 +98,7 @@
   <main id="secciones"></main>
 
   <section class="seccion" id="cerradas">
-    <h2>Ya cerradas en el JSON del 21-09</h2>
+    <h2>Ya cerradas</h2>
     <details><summary style="cursor:pointer; font-size: 13.5px; color: var(--marca-oscura);" id="ver-cerradas">Ver todas</summary>
       <ul id="lista-cerradas" style="font-size: 13.5px; color: var(--g700); padding-left: 18px;"></ul>
     </details>
@@ -129,11 +131,13 @@
 
 <script>
 (() => {
-  const CLAVE = 'lab-decisiones-v1';
+  const CLAVE = 'lab-decisiones-v4';
   const $ = (id) => document.getElementById(id);
   const APP = './#';
 
   const SECCIONES = [
+    { id: 'explorador', corto: 'Explorador', titulo: 'Explorador · lo que cambió con tu JSON', bajada: 'Lo que pediste en la décima ronda, aplicado: binarias y termómetro en barras, una paleta propia para los grupos y la nota de grupos chicos sin juicio. La paleta es la que más necesita tu mirada.', ruta: '/explorar' },
+    { id: 'preguntas', corto: 'Pregunta por pregunta', titulo: 'Explorador · pregunta por pregunta', bajada: 'Una tarjeta por pregunta, leída del catálogo publicado. «Antes» es el texto que mostraba el explorador; los enlaces abren la pregunta en cada estado.', ruta: '/explorar' },
     { id: 'como', titulo: 'Cómo se hizo', bajada: 'La vista «Sobre los datos», a la que llevan los enlaces «Cómo se hizo» de cada historia.', ruta: '/datos' },
     { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
     { id: 'mirada', titulo: 'Historia 1 · La mirada', bajada: 'Bloque 1 de la guía: cómo se mira a China.', ruta: '/historias/mirada' },
@@ -144,10 +148,148 @@
     { id: 'vacuna', titulo: 'Historia 6 · La vacuna', bajada: 'Bloque 6: vacunas y memoria.', ruta: '/historias/vacuna' },
   ];
 
-  /* Octava ronda (23-09-2026) cerrada: no queda nada pendiente. */
-  const D = [];
+  /*
+   * Novena ronda (24-09-2026): el explorador. Las tarjetas de diseño van acá; las de cada pregunta se
+   * arman al leer `encuesta.json` (`tarjetasDePreguntas`), para no copiar a mano ni un título.
+   */
+  const D = [
+    {
+      s: 'explorador', id: 'r11-paleta', origen: 'Claude; validada con dataviz; Codex encontró el choque',
+      titulo: 'Los grupos se pintan en violeta y el género en violeta y ocre; las oleadas siguen en teal',
+      verbatim: ['Tu comentario: «Debemos definir paletas diferentes para los grupos, para diferenciarlos de oleadas»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Cortes ordenados (edad, educación, NSE, ideología, macrozona): una rampa violeta de seis pasos, de claro a oscuro. Género: violeta y ocre. Las oleadas no cambian (teal). Al comparar, la fila ya no lleva el cuadradito de color semántico (p24, p25, p26); en una oleada sin corte, sí, porque ahí pinta la barra.',
+      porque: 'El teal dice «oleada»; el naranja es de los estratos del mapa y el azul de «A favor de EE. UU.». La rampa pasa las cuatro pruebas ordinales del validador y el par de género separa ΔE 29 bajo daltonismo. Codex vio que el ocre de género y el naranja de «A favor de China» son casi iguales para un daltónico (ΔE 1,8), y el violeta y el azul de EE. UU. también (ΔE 4,1): por eso sale el cuadradito semántico de las comparaciones, que ponía un segundo color con otro significado en la misma figura.',
+      alternativas: 'Género en violeta y rosa (#C2477F): pasa contra el naranja de China (ΔE 15,4), pero queda a 13,8 del óxido de «Ninguna» en visión normal. Mantener el cuadradito semántico y cambiar los tonos de grupo.',
+      rutas: [['p7 por edad', '/explorar?p=p7&ola=2025&corte=edad_rec'], ['p7 entre oleadas', '/explorar?p=p7&vista=serie'], ['p26 por género', '/explorar?p=p26&ola=2025&corte=sexo'], ['p24 por NSE', '/explorar?p=p24&ola=2025&corte=nse_rec']],
+    },
+    {
+      s: 'explorador', id: 'r11-binarias', origen: 'Claude',
+      titulo: 'Las preguntas de dos categorías comparan en barras agrupadas',
+      verbatim: ['Tu comentario: «En estos casos podría ser mejor descartar las mancuernas y quedarnos con barras»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Entre oleadas y con corte, cada categoría es un bloque con una barra por oleada o por grupo, de 0 a 100: la figura de la novena ronda. Vale para toda pregunta con dos categorías que suman 100: p12, p13, p14, p18, p18e, p19 y p6a, y p9 entre oleadas (su derivada tiene dos). p9 con corte tiene cuatro y sigue en mancuerna.',
+      porque: 'La regla es «dos categorías que reparten el 100 %», no el tipo del catálogo: así p9 entre oleadas cae donde corresponde. Hay una prueba que la recorre pregunta por pregunta.',
+      alternativas: 'Una sola barra por oleada o grupo, la del «Sí», con la otra en el pie.',
+      rutas: [['p19 entre oleadas', '/explorar?p=p19&vista=serie'], ['p13 por edad', '/explorar?p=p13&ola=2025&corte=edad_rec'], ['p9 entre oleadas', '/explorar?p=p9&vista=serie']],
+    },
+    {
+      s: 'explorador', id: 'r11-termometro', origen: 'Claude',
+      titulo: 'El termómetro va en barras de 0 a 100 en todos sus estados',
+      verbatim: ['Tu comentario: «Esto queda mejor en barras»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Una barra por oleada, una por grupo, o una sola, sobre 0 a 100 y sin recorte. «La mirada» sigue con su figura de puntos.',
+      porque: 'Es una excepción a la regla de CLAUDE.md «una figura por pregunta» (la misma pregunta en dos vistas pasa por el mismo código): quedó escrita como decisión tuya en CLAUDE.md y en el comentario de termometro.ts.',
+      rutas: [['China entre oleadas', '/explorar?p=p5_1_val&vista=serie'], ['China por edad', '/explorar?p=p5_1_val&ola=2025&corte=edad_rec']],
+    },
+    {
+      s: 'explorador', id: 'r11-nota', origen: 'Claude',
+      titulo: 'La nota de grupos chicos dice solo el dato',
+      verbatim: ['Tu comentario: «El promedio dice poco me parece innecesario agregarlo, queremos entregar información en esta sección más que dar conclusiones»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: '«* Menos de 30 respuestas en ese grupo.» Con oleadas, «en esa oleada»; en una oleada sin corte, «en esa fila». Sin «el porcentaje dice poco» en ningún estado.',
+      porque: 'Leí el comentario como regla de la sección y no solo para el termómetro: también saqué «el porcentaje dice poco», que habías aprobado en la novena ronda. Si lo querías solo para el promedio, se vuelve a poner.',
+    },
+    {
+      s: 'explorador', id: 'r11-revision', origen: 'Codex (quinta pasada)',
+      titulo: 'Qué se tomó de la revisión de Codex',
+      decidido: 'Aplicado: el pie de «Entre oleadas» decía «Una fila por oleada» también en las mancuernas; ahora dice «Un punto por oleada» o «Una barra por oleada». La nota de grupos chicos decía «en esa fila» con corte. Y el choque de colores de la tarjeta de la paleta.',
+      porque: 'Cada hallazgo se verificó en el código o con el validador. Después: 249 pruebas en verde y 606 estados de 320 a 1920 px sin desbordes, figuras vacías ni rótulos sobre puntos.',
+    },
+  ];
 
-  /* Lo que ya cerraste en los JSON del 21-09, del 22-09 y del 23-09-2026. Solo lectura: no vuelve a pedir aprobación. */
+  /* Por qué cada pregunta quedó como quedó, cuando no es obvio. El resto sale del catálogo. */
+  const NOTAS_PREGUNTA = {
+    p4: ['Los códigos cambian de candidato en 2025. Antes, 2023 y 2024 salían con Kast y Jara.', 'Dos entradas separadas (voto recordado 2021 y voto hipotético 2025), como propuso un subagente.'],
+    p9: ['«No recuerdo» existe solo en 2025, así que entre oleadas se compara la derivada de ICLAC (al menos una dosis o ninguna), la misma de la historia.', 'No compararla (Codex).'],
+    p11: ['Entre oleadas, solo quienes recibieron Sinovac: en 2023 solo a ellos se les preguntó.', 'Comparar solo 2024 y 2025 sobre toda la muestra (Codex).'],
+    p15: ['2023 ofrecía otros tramos; 2024 ya usa los de 2025 (hoja Labels de la base 2024).', 'La derivada p15_rec en las tres oleadas, con una nota.'],
+    p18a: ['2024 preguntó sobre China y 2025 sobre asuntos internacionales. El título cambia con la oleada.', 'Compararlas igual, con aviso (Codex la daba por comparable según el libro 2024).'],
+    p21: ['2023 preguntó por la inversión de China; 2024 y 2025, por la extranjera en general.', 'No compararla en ninguna oleada, por el bloque experimental de 2025.'],
+    p6a: ['Es una sola pregunta de sí o no: p6a_1 y p6a_2 son complementarias en los 1.895 casos; p6a_3 y p6a_4 solo dicen si se llenó la segunda y la tercera casilla.', null],
+    p3: ['No se corta por ideología: el corte es esta misma pregunta en tres tramos. Se muestra la escala de 1 a 10: el 5 concentra alrededor del 40 %, y un promedio lo escondería.', 'Mostrarla como promedio.'],
+    p37: ['Codificada al revés que p27 (1 es «Muy de acuerdo»): se lee en el mismo sentido que ella.', null],
+    p24: ['De «Ninguna» a «Mucha», el orden de la historia, con los colores de cada categoría.', 'El divergente de la historia.'],
+    p25: ['Igual que p24.', 'El divergente de la historia.'],
+    p26: ['Los dos alineamientos en los extremos, como en la historia.', 'La barra de reparto de la historia.'],
+    p6: ['Cambió la redacción entre 2023 y 2024; se compara con esa nota.', 'Comparar solo 2024 y 2025.'],
+    p20: ['Solo a quienes dijeron que el Estado debería poder limitar inversiones.', null],
+    p6b: ['Ver la tarjeta de p6b en «lo que encontramos en los datos del cliente».', null],
+    p1: ['De mayor a menor, con «Otra área» al final aunque sea la más grande (más del 60 %).', 'Por código.'],
+  };
+
+  const CORTES = [['sexo', 'Género'], ['edad_rec', 'Edad'], ['educacion_rec', 'Educación'], ['nse_rec', 'NSE'], ['p3_3', 'Ideología'], ['region_macrozona', 'Macrozona'], ['region_impacto', 'Impacto']];
+  const TIPOS = { ordinal: 'escala', nominal: 'elección única', binaria: 'sí o no', multiple: 'marcar varias', numerica: 'número de 0 a 100' };
+  const lista = (xs) => xs.join(', ').replace(/, ([^,]+)$/, ' y $1');
+
+  /** Una tarjeta por pregunta del catálogo publicado. Nada escrito a mano salvo `NOTAS_PREGUNTA`. */
+  function tarjetasDePreguntas (j) {
+    return j.preguntas.map((p) => {
+      const v = j.variables.find((x) => x.nombre === p.variable);
+      const m = j.multiples.find((x) => x.id === p.id);
+      const antes = p.tipo === 'multiple'
+        ? [`${m ? m.titulo : p.id} (y cada opción aparecía además como pregunta suelta, con categorías «0» y «1»)`]
+        : p.id === 'p6a'
+          ? ['p6a_1..p6a_4: cuatro preguntas sueltas («No - ¿Puedes mencionar…», «Si, ¿Cuáles? - …», «¿La Segunda? - …», «¿La Tercera? - …»), todas con «0» y «1»']
+          : [v && v.etiqueta ? v.etiqueta : `${p.variable}: sin etiqueta`];
+      const cats = (p.categorias || []).map((c) => c.etiqueta + (c.porOla ? ` (${Object.entries(c.porOla).map(([o, e]) => `${o}: ${e}`).join('; ')})` : '')).join(' · ');
+      const titulosOla = p.tituloPorOla ? ` En cada oleada: ${Object.entries(p.tituloPorOla).map(([o, t]) => `${o}, «${t}»`).join('; ')}.` : '';
+      const dos = (k) => p.tipo !== 'multiple' && p.tipo !== 'numerica' && k === 2;
+      const corte = p.tipo === 'numerica'
+        ? 'una barra por grupo con su promedio, de 0 a 100'
+        : dos((p.categorias || []).length)
+          ? 'barras agrupadas, una por grupo en cada categoría'
+          : `mancuerna, una fila por ${p.tipo === 'multiple' ? 'opción' : 'categoría'} y un punto por grupo`;
+      const forma = p.tipo === 'numerica' || dos(((p.serie && p.serie.categorias) || p.categorias || []).length)
+        ? 'barras, una por oleada. '
+        : 'mancuerna, un punto por oleada. ';
+      const serie = p.serie
+        ? `${forma}Se compara entre ${lista(p.serie.olas.map(String))}${p.serie.variable !== p.variable ? ` con ${p.serie.variable}` : ''}.${p.serie.nota ? ` ${p.serie.nota}` : ''}`
+        : p.olas.length === 1 ? `solo se preguntó en ${p.olas[0]}, no hay comparación.` : `no se compara. ${p.sinSerie || ''}`;
+      const chicos = gruposChicos(j, p);
+      const nota = NOTAS_PREGUNTA[p.id] || [];
+      const ultima = p.olas[p.olas.length - 1];
+      return {
+        s: 'preguntas', id: `pregunta-${p.id}`, origen: `${p.id} · ${TIPOS[p.tipo]} · ${lista(p.olas.map(String))}`,
+        titulo: p.titulo,
+        verbatim: antes,
+        rotuloVerbatim: 'Antes',
+        decidido: [
+          `Título «${p.titulo}».${titulosOla}`,
+          cats ? `Categorías, en este orden${p.orden === 'frecuencia' ? ' (de mayor a menor, con la última al final)' : ''}: ${cats}.` : null,
+          `Entre oleadas: ${serie}`,
+          `Con corte: ${corte}${p.sinCortes ? ', salvo ideología' : ''}. ${chicos}`,
+          [p.poblacion, p.nota].filter(Boolean).join(' '),
+        ].filter(Boolean).join(' '),
+        porque: nota[0] || 'Enunciado y categorías revisados contra los datos de cada oleada; Claude y Codex coinciden.',
+        alternativas: nota[1] || null,
+        rutas: [
+          [`En ${ultima}`, `/explorar?p=${p.id}&ola=${ultima}`],
+          [`Con corte por edad`, `/explorar?p=${p.id}&ola=${ultima}&corte=edad_rec`],
+          [`Por género`, `/explorar?p=${p.id}&ola=${ultima}&corte=sexo`],
+          ...(p.serie ? [['Entre oleadas', `/explorar?p=${p.id}&vista=serie`]] : []),
+        ],
+      };
+    });
+  }
+
+  /** Grupos de algún corte con menos de 30 respuestas, calculados de `casos` en cada oleada. */
+  function gruposChicos (j, p) {
+    const columnas = p.tipo === 'multiple' ? (j.multiples.find((m) => m.id === p.id)?.opciones || []).map((o) => o.columna) : [p.variable];
+    const hallados = [];
+    for (const ola of p.olas) {
+      const casos = j.casos.filter((c) => c.ola === ola && columnas.some((k) => c[k] !== null && c[k] !== undefined));
+      for (const [corte, nombre] of CORTES) {
+        if ((p.sinCortes || []).includes(corte)) continue;
+        const n = {};
+        for (const c of casos) if (c[corte] !== null && c[corte] !== undefined) n[c[corte]] = (n[c[corte]] || 0) + 1;
+        for (const [g, k] of Object.entries(n)) if (k < 30) hallados.push(`${nombre} ${corte === 'sexo' ? (g === '1' ? 'masculino' : 'femenino') : g} en ${ola} (${k})`);
+      }
+    }
+    return hallados.length ? `Grupos con menos de 30 respuestas: ${lista(hallados)}.` : 'Ningún grupo baja de 30 respuestas.';
+  }
+
+  /* Lo que ya cerraste en los JSON del 21-09 al 24-09-2026. Solo lectura: no vuelve a pedir aprobación. */
   const CERRADAS = [
     ['General', 'La raíz es un menú de tarjetas: pregunta y hallazgo, sin cifras'],
     ['General', 'Las frases de hallazgo de las tarjetas'],
@@ -216,6 +358,21 @@
     ['Cómo se hizo', 'El 159 se calcula de olas_panelista; las otras tres cifras a mano salieron con la tarjeta del monitor (séptima ronda)'],
     ['La mirada', 'Aplicado: «la posición política no ordena la opinión sobre China de forma robusta», en el titular, la escena, el cierre y la tarjeta (séptima ronda)'],
     ['Cómo se hizo', 'Opción C: una diferencia se afirma con p, intervalo y Holm; las familias pasan al ETL y la historia y la página leen el mismo número (octava ronda)'],
+    ['Explorador', 'Un catálogo curado decide título, orden y comparabilidad, y el ETL lo valida (novena ronda)'],
+    ['Explorador', '«Entre oleadas» muestra la escala completa, no la primera categoría (novena ronda)'],
+    ['Explorador', 'Solo se comparan las oleadas con la misma pregunta y las mismas categorías (novena ronda)'],
+    ['Explorador', 'Entre oleadas el corte se apaga y se ve apagado; «podría cambiar» con la mancuerna (novena ronda)'],
+    ['Explorador', 'Grupos con menos de 30 respuestas: se muestran con * y la nota (novena ronda)'],
+    ['Explorador', 'Títulos en tuteo, enunciado literal debajo; selector en el orden del catálogo (novena ronda)'],
+    ['Explorador', 'El estado vive en la dirección; 200 ms de movimiento y nada más; género con colores de identidad (novena ronda)'],
+    ['Explorador', 'Los seis hallazgos de la segunda pasada de Codex (novena ronda)'],
+    ['Explorador', 'Una figura para los tres estados: reemplazada por la mancuerna en las comparaciones (novena ronda; ver arriba)'],
+    ['Datos del cliente', 'p11, p18a, notas de p6 y p4, p6b y el filtro de p20 pasan a la cola de correcciones como C19 a C23 (novena ronda)'],
+    ['Explorador', 'Las comparaciones son mancuernas; eje de 0 al múltiplo de 20, declarado; rótulo de la última oleada o de los extremos (décima ronda)'],
+    ['Explorador', 'Grupos cercanos amontonados y categoría dominante: sin cambio; base de p10 sin cambio (décima ronda)'],
+    ['Explorador', 'Entre oleadas el corte sigue apagado (décima ronda)'],
+    ['Explorador', 'Binarias y termómetro vuelven a barras; paleta de grupos y nota de grupos chicos: aplicadas, arriba (décima ronda)'],
+    ['Datos del cliente', 'Texto de C19 a C23 aprobado y commiteado en correcciones_cliente.md (décima ronda)'],
   ];
 
   /* La tabla de hipótesis: el texto es del registro; las cifras, del artefacto. */
@@ -254,8 +411,14 @@
   try {
     const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
     // Leído por identificador: una decisión que ya no existe se ignora, una nueva arranca pendiente.
+    // Las tarjetas por pregunta nacen después de leer los datos, así que se guarda todo lo leído y
+    // la exportación filtra por las que existen.
     if (g && typeof g === 'object') {
-      if (g.decisiones && typeof g.decisiones === 'object') for (const d of D) if (g.decisiones[d.id]) estado.decisiones[d.id] = g.decisiones[d.id];
+      if (g.decisiones && typeof g.decisiones === 'object') {
+        for (const [id, v] of Object.entries(g.decisiones)) {
+          if (v && typeof v === 'object' && ['pendiente', 'aprobada', 'rechazada'].includes(v.estado)) estado.decisiones[id] = { estado: v.estado, comentario: String(v.comentario ?? '') };
+        }
+      }
       if (typeof g.nota === 'string') estado.nota = g.nota;
     }
   } catch (e) { /* almacenamiento bloqueado o viejo */ }
@@ -301,7 +464,7 @@
         art.innerHTML = `
           <div class="cabeza"><h3>${esc(d.titulo)}</h3><span class="origen ${origenClase}">${esc(d.origen)}</span></div>
           <dl>
-            ${d.verbatim ? `<dt>En la app hoy</dt><dd>${d.verbatim.map((v) => `<div class="verbatim">${esc(v)}</div>`).join('')}</dd>` : ''}
+            ${d.verbatim ? `<dt>${esc(d.rotuloVerbatim || 'En la app hoy')}</dt><dd>${d.verbatim.map((v) => `<div class="verbatim">${esc(v)}</div>`).join('')}</dd>` : ''}
             <dt>Qué se decidió</dt><dd>${esc(d.decidido)}</dd>
             <dt>Por qué</dt><dd>${esc(d.porque)}</dd>
             ${d.alternativas ? `<dt>Alternativas</dt><dd>${esc(d.alternativas)}</dd>` : ''}
@@ -313,6 +476,7 @@
               <button type="button" data-v="rechazada" aria-pressed="${e.estado === 'rechazada'}">Rechazar</button>
             </div>
             ${d.ruta ? `<a href="${APP}${d.ruta}" target="_blank" rel="noopener">Ver en la app</a>` : ''}
+            ${(d.rutas || []).map(([texto, ruta]) => `<a href="${APP}${ruta}" target="_blank" rel="noopener">${esc(texto)}</a>`).join('')}
           </div>
           <textarea aria-label="Comentario" placeholder="Comentario (opcional)">${esc(e.comentario)}</textarea>`;
         art.querySelectorAll('.estado button').forEach((b) => b.addEventListener('click', () => {
@@ -349,7 +513,7 @@
     $('cuenta').textContent = `${pend} pendientes · ${ok} aprobadas · ${no} rechazadas, de ${D.length}`;
     $('indice').innerHTML = SECCIONES.filter((x) => D.some((d) => d.s === x.id)).map((s) => {
       const n = D.filter((d) => d.s === s.id && de(d.id).estado === 'pendiente').length;
-      return `<a href="#sec-${s.id}">${esc(s.titulo.replace(/^Historia \d · /, ''))}${n ? `<span class="n">${n}</span>` : ''}</a>`;
+      return `<a href="#sec-${s.id}">${esc(s.corto || s.titulo.replace(/^Historia \d · /, ''))}${n ? `<span class="n">${n}</span>` : ''}</a>`;
     }).join('') + '<a href="#cerradas">Cerradas</a><a href="#tabla">Hipótesis</a>';
   };
 
@@ -363,7 +527,7 @@
   $('exportar').addEventListener('click', () => {
     const texto = JSON.stringify({
       laboratorio: 'decisiones',
-      ronda: 8,
+      ronda: 9,
       fecha: new Date().toISOString(),
       decisiones: D.map((d) => ({ id: d.id, seccion: d.s, titulo: d.titulo, estado: de(d.id).estado, comentario: de(d.id).comentario })),
       nota: estado.nota,
@@ -375,7 +539,12 @@
   });
 
   pintar();
-  fetch('./data/encuesta.json').then((r) => r.json()).then((j) => { datos = j; pintar(); })
+  fetch('./data/encuesta.json').then((r) => r.json()).then((j) => {
+    datos = j;
+    if (Array.isArray(j.preguntas)) D.push(...tarjetasDePreguntas(j));
+    else $('error-datos').textContent = 'El encuesta.json no trae el catálogo del explorador: corre npm run datos.';
+    pintar();
+  })
     .catch(() => { $('error-datos').textContent = 'No se pudieron leer las cifras de public/data/encuesta.json: las tarjetas se ven sin ellas.'; });
 })();
 </script>

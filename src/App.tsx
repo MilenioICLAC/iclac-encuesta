@@ -14,6 +14,8 @@ import { HISTORIAS } from './historias/indice'
 import MenuHistorias from './historias/MenuHistorias'
 import { ProveedorTransicion } from './historias/Transicion'
 import { NumeroHistoria, Siguiente } from './componentes/siguiente'
+import { CORTES } from './nucleo/modulos'
+import type { Vista } from './nucleo/explorador'
 
 /**
  * Borrador del visualizador.
@@ -33,10 +35,9 @@ export default function App () {
   const [encuesta, setEncuesta] = useState<Encuesta | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // **Una oleada a la vez** (Felipe, 22-09-2026): nada suma oleadas. Arranca en la última.
-  const [ola, setOla] = useState<number | null>(null)
-  const [corte, setCorte] = useState<string | null>(null)
-  const [soloIndependientes, setSoloIndependientes] = useState(false)
+  // El recorte del explorador vive en su dirección (`RutaExplorador`); acá solo se recuerda la
+  // última, para que quien lee una historia y vuelve a explorar lo encuentre como lo dejó.
+  const [busquedaExplorador, setBusquedaExplorador] = useState('')
 
   // El idioma vive acá arriba y no en el encabezado: además de los textos del cromo gobierna el
   // formato de los números, que se resuelve en `locale.ts` y lo usa toda la página.
@@ -50,14 +51,9 @@ export default function App () {
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/encuesta.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: Encuesta) => { setEncuesta(d); setOla(d.olas[d.olas.length - 1]) })
+      .then((d: Encuesta) => setEncuesta(d))
       .catch((e: Error) => setError(e.message))
   }, [])
-
-  const casos = useMemo(
-    () => (encuesta && ola !== null ? filtrar(encuesta, { olas: [ola], soloIndependientes }) : []),
-    [encuesta, ola, soloIndependientes],
-  )
 
   if (error) {
     return (
@@ -72,22 +68,9 @@ export default function App () {
     )
   }
 
-  if (!encuesta || ola === null) {
+  if (!encuesta) {
     return <main className="mx-auto max-w-2xl p-8 text-sm text-gray-500">Cargando…</main>
   }
-
-  const barra = (
-    <BarraEstado
-      olas={encuesta.olas}
-      ola={ola}
-      onOla={setOla}
-      corte={corte}
-      onCorte={setCorte}
-      soloIndependientes={soloIndependientes}
-      onSoloIndependientes={setSoloIndependientes}
-      n={casos.length}
-    />
-  )
 
   return (
     // **Rutas por hash y no por ruta limpia.** El sitio todavía no tiene servidor elegido, y
@@ -125,18 +108,7 @@ export default function App () {
           <Route path="tablero" element={<Navigate to="/explorar" replace />} />
           <Route
             path="explorar"
-            element={(
-              <>
-                {barra}
-                <Graficador
-                  encuesta={encuesta}
-                  casos={casos}
-                  corte={corte}
-                  soloIndependientes={soloIndependientes}
-                  ola={ola}
-                />
-              </>
-            )}
+            element={<RutaExplorador encuesta={encuesta} recordada={busquedaExplorador} onRecordar={setBusquedaExplorador} />}
           />
           <Route path="descargas" element={<Descargas />} />
           <Route path="datos" element={<SobreLosDatos encuesta={encuesta} />} />
@@ -146,6 +118,78 @@ export default function App () {
       </Routes>
       </ProveedorTransicion>
     </HashRouter>
+  )
+}
+
+/**
+ * El explorador con su estado en la dirección: `#/explorar?p=p7&vista=serie&ola=2024&corte=edad_rec`.
+ *
+ * **La dirección es la única fuente**, no una copia de un estado de React: con dos fuentes, el
+ * primer render escribía los valores por omisión encima del enlace que se acababa de abrir. Un
+ * enlace lleva a una pregunta en un estado exacto (lo usa el dashboard de decisiones), el botón de
+ * atrás no se llena de pasos porque se reemplaza la entrada, y al volver al explorador desde otra
+ * vista se retoma la última búsqueda, que `App` recuerda.
+ *
+ * **Una oleada a la vez** (Felipe, 22-09-2026): nada suma oleadas. Sin `ola`, la última.
+ */
+function RutaExplorador ({ encuesta, recordada, onRecordar }: { encuesta: Encuesta, recordada: string, onRecordar: (b: string) => void }) {
+  const [params, setParams] = useSearchParams()
+  const busqueda = params.toString()
+  useEffect(() => { if (busqueda) onRecordar(busqueda) }, [busqueda, onRecordar])
+
+  const olaPedida = Number(params.get('ola'))
+  const ola = encuesta.olas.includes(olaPedida) ? olaPedida : encuesta.olas[encuesta.olas.length - 1]
+  const cortePedido = params.get('corte')
+  const corte = CORTES.some((c) => c.nombre !== null && c.nombre === cortePedido) ? cortePedido : null
+  const soloIndependientes = params.get('independientes') === '1'
+  const pregunta = encuesta.preguntas.some((x) => x.id === params.get('p')) ? params.get('p')! : 'p26'
+  const vista: Vista = params.get('vista') === 'serie' ? 'serie' : 'ola'
+
+  const casos = useMemo(() => filtrar(encuesta, { olas: [ola], soloIndependientes }), [encuesta, ola, soloIndependientes])
+
+  if (!busqueda && recordada) return <Navigate to={`/explorar?${recordada}`} replace />
+
+  const cambiar = (cambios: Record<string, string | null>) => {
+    const siguiente = new URLSearchParams(params)
+    if (!siguiente.has('p')) siguiente.set('p', pregunta)
+    for (const [k, v] of Object.entries(cambios)) {
+      if (v === null) siguiente.delete(k)
+      else siguiente.set(k, v)
+    }
+    setParams(siguiente, { replace: true })
+  }
+
+  const serie = vista === 'serie' && encuesta.preguntas.find((x) => x.id === pregunta)?.serie != null
+
+  return (
+    <>
+      <BarraEstado
+        olas={encuesta.olas}
+        ola={ola}
+        // Elegir una oleada es pedir verla: sale de «Entre oleadas».
+        onOla={(o) => cambiar({ ola: String(o), vista: null })}
+        corte={corte}
+        onCorte={(c) => cambiar({ corte: c })}
+        corteApagado={serie ? 'El corte no se aplica entre oleadas' : undefined}
+        soloIndependientes={soloIndependientes}
+        onSoloIndependientes={(v) => cambiar({ independientes: v ? '1' : null })}
+        // Entre oleadas los casos de una oleada no describen la figura: sus bases van en ella.
+        n={serie ? null : casos.length}
+      />
+      <Graficador
+        encuesta={encuesta}
+        pregunta={pregunta}
+        // Una pregunta que no se compara deja la vista de una oleada también en la dirección: si
+        // no, `vista=serie` quedaba latente y reaparecía con la siguiente pregunta (Codex).
+        onPregunta={(id) => cambiar({ p: id, vista: vista === 'serie' && encuesta.preguntas.find((x) => x.id === id)?.serie ? 'serie' : null })}
+        vista={vista}
+        onVista={(v) => cambiar({ vista: v === 'serie' ? 'serie' : null })}
+        ola={ola}
+        onOla={(o) => cambiar({ ola: String(o), vista: null })}
+        corte={corte}
+        soloIndependientes={soloIndependientes}
+      />
+    </>
   )
 }
 
