@@ -1,5 +1,5 @@
 import type { Caso, CategoriaPregunta, Encuesta, Pregunta, Variable } from './tipos'
-import { distribucion, filtrar, media, multirespuesta, porGrupo } from './agregar'
+import { distribucion, filtrar, media, multirespuesta, porGrupo, type Multirespuesta } from './agregar'
 import { CORTES } from './modulos'
 import { GENERO, IDENTIDAD, IDEOLOGIA, MACROZONA, NEUTRO, pasosDeGrupo, pasosDeOrden } from './paleta'
 
@@ -38,8 +38,11 @@ export interface Bloque {
 export type Modelo =
   | {
       forma: 'porcentajes'
-      /** `reparto` suma 100 dentro de cada fila; `menciones` no, porque se marca más de una. */
-      escala: 'reparto' | 'menciones'
+      /** `reparto` suma 100 dentro de cada fila; `menciones` no, porque se marca más de una;
+       * `palabras` tampoco: una abierta, donde cada persona nombra varias cosas. */
+      escala: 'reparto' | 'menciones' | 'palabras'
+      /** En `palabras` con corte, bajo cuántas menciones un grupo no lleva punto. */
+      minimo?: number
       bloques: Bloque[]
       /** Grupos u oleadas; vacío cuando hay una sola serie y cada bloque tiene una fila. */
       series: { clave: string, etiqueta: string }[]
@@ -193,16 +196,30 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
       return o && olasFigura.every((ola) => o.olas.includes(ola))
     })
     const porGrupo = grupos.map((g) => ({ g, r: multirespuesta(g.casos, grupo, g.ola) }))
-    const bloques = opciones.map((c) => ({
+    const abierta = p.abierta
+    const elegidas = abierta ? palabrasDe(abierta.palabras, opciones, porGrupo.map(({ r }) => r), vista === 'serie' ? null : multirespuesta(casosDeLaOla(encuesta, estado), grupo, estado.ola)) : opciones
+    const bloques = elegidas.map((c) => ({
       clave: String(c.codigo),
       etiqueta: c.etiqueta,
       filas: porGrupo.map(({ g, r }) => {
         const m = r.menciones.find((x) => x.columna === c.codigo)
-        return { clave: g.clave, etiqueta: g.etiqueta, valor: r.base > 0 ? m?.porcentaje ?? 0 : null, n: m?.n ?? 0, base: r.base }
+        const n = m?.n ?? 0
+        // Con corte, una palabra que casi nadie nombró en un grupo no lleva punto ahí (`ABIERTAS`).
+        const bajoMinimo = abierta !== undefined && compara === 'grupos' && n < abierta.minimo
+        return { clave: g.clave, etiqueta: g.etiqueta, valor: r.base > 0 && !bajoMinimo ? m?.porcentaje ?? 0 : null, n, base: r.base }
       }),
     }))
     if (porGrupo.every(({ r }) => r.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
-    return { forma: 'porcentajes', escala: 'menciones', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null }
+    return {
+      forma: 'porcentajes',
+      escala: abierta ? 'palabras' : 'menciones',
+      ...(abierta ? { minimo: abierta.minimo } : {}),
+      bloques: ordenar(p, bloques),
+      series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })),
+      color,
+      compara,
+      corte: compara === 'grupos' ? estado.corte : null,
+    }
   }
 
   // Elección única: la columna y las categorías de la vista (la serie puede usar la derivada).
@@ -233,6 +250,19 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
     }),
   }))
   return { forma: 'porcentajes', escala: 'reparto', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null }
+}
+
+/**
+ * Las palabras de una abierta que entran en la figura. En una oleada, con o sin corte, las más
+ * nombradas en esa oleada entera (`unaOla`), así el corte muestra las mismas palabras que sin él;
+ * entre oleadas, las de mayor porcentaje promedio, para que 2025 no pese el doble. A igualdad,
+ * alfabético. El ETL marca a cada persona justo para estos órdenes (`scripts/lib/abiertas.mjs`).
+ */
+function palabrasDe <T extends { codigo: number | string, etiqueta: string }> (cuantas: number, opciones: T[], porOla: Multirespuesta[], unaOla: Multirespuesta | null): T[] {
+  const puntaje = (c: T) => unaOla
+    ? unaOla.menciones.find((m) => m.columna === c.codigo)?.n ?? 0
+    : porOla.reduce((s, r) => s + (r.menciones.find((m) => m.columna === c.codigo)?.porcentaje ?? 0), 0) / porOla.length
+  return [...opciones].sort((a, b) => puntaje(b) - puntaje(a) || a.etiqueta.localeCompare(b.etiqueta, 'es')).slice(0, cuantas)
 }
 
 interface Serie { clave: string, etiqueta: string, casos: Caso[], ola: number }

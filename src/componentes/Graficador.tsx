@@ -56,8 +56,12 @@ export default function Graficador ({
             {formaDeFigura(m) === 'mancuerna' ? 'Un punto por oleada' : 'Una barra por oleada'}: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
             {/* `p4`: Boric no existe en 2025 ni Jara antes. */}
             {m.forma === 'porcentajes' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && ' Una categoría que no existía en una oleada no lleva punto ahí.'}
+            {p.abierta && ` Las ${p.abierta.palabras === 10 ? 'diez' : p.abierta.palabras} palabras más dichas en promedio entre oleadas.`}
             {corte && ' El corte no se aplica entre oleadas.'}
           </p>
+        )}
+        {p.abierta && m.forma === 'porcentajes' && m.compara === 'grupos' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && (
+          <p className="mt-2 text-xs text-gray-600">Sin punto: menos de {p.abierta.minimo} personas la mencionaron en ese grupo.</p>
         )}
         {corteFuera && (
           <p className="mt-2 text-xs text-gray-600">El corte por {etiquetaCorte} no se aplica: es esta misma pregunta en tres tramos.</p>

@@ -49,12 +49,18 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
           Se puede marcar más de una opción, así que los porcentajes suman más de 100.
         </p>
       )}
+      {escala === 'palabras' && (
+        <p className="mt-2 text-xs text-gray-500">
+          Cada persona puede nombrar varias cosas, así que los porcentajes suman más de 100.
+        </p>
+      )}
       {escasa && <NotaEscasa donde={compara === 'olas' ? 'en esa oleada' : compara === 'grupos' ? 'en ese grupo' : 'en esa fila'} />}
       <TablaAccesible
         cabeza={['', ...(compara === 'nada' ? ['%'] : series.map((s) => s.etiqueta))]}
         filas={[
           // Con respuestas en la oleada y sin valor, la categoría no existía ahí (`p4`): se dice.
-          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor !== null ? porcentaje(f.valor, 0) : f.base > 0 ? 'No se preguntó' : '—'))]),
+          // En una abierta con corte, sin valor es que pocos la nombraron en ese grupo, no que no se preguntara.
+          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor !== null ? porcentaje(f.valor, 0) : f.base > 0 ? (escala === 'palabras' ? `Menos de ${modelo.minimo ?? 0} menciones` : 'No se preguntó') : '—'))]),
           ['Respuestas', ...bases.map((x) => numero(x))],
         ]}
       />
@@ -124,9 +130,7 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
         rotular={compara === 'olas' ? series.length - 1 : 'extremos'}
         esquivar
         entrada={false}
-        unidadEje={escala === 'menciones'
-          ? `Porcentaje que marcó cada opción${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`
-          : `Porcentaje de respuestas${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`}
+        unidadEje={`${escala === 'menciones' ? 'Porcentaje que marcó cada opción' : escala === 'palabras' ? 'Porcentaje que la mencionó' : 'Porcentaje de respuestas'}${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`}
         leyenda={false}
         rotulosLargos
       />

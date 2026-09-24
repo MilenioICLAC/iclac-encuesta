@@ -44,6 +44,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
 | `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
+| `scripts/lib/abiertas.mjs` | Las preguntas abiertas (`ABIERTAS` en el catálogo) como múltiples de palabras: marca por persona si contestó y cada palabra candidata, sin el texto |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
