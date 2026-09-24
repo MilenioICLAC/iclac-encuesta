@@ -57,7 +57,19 @@ for (const ancho of anchos) {
           lineasTitulo: Math.round(h3.getBoundingClientRect().height / lh),
           valores,
           rotulos,
-          filas: art.querySelectorAll('figure .grid').length,
+          // Barras (una oleada, sin corte) o filas de la mancuerna con al menos un punto.
+          filas: art.querySelectorAll('figure .grid').length
+            + [...art.querySelectorAll('figure .fila-puntos')].filter((f) => f.querySelector('.punto')).length,
+          // Un número de la mancuerna encima de un punto: el rótulo se lee como de otra serie.
+          choques: [...art.querySelectorAll('figure .fila-puntos')].flatMap((f) => {
+            const puntos = [...f.querySelectorAll('.punto')].map((p) => p.getBoundingClientRect())
+            return [...f.querySelectorAll('span.absolute.tabular-nums')]
+              .filter((r) => {
+                const a = r.firstChild ? (() => { const g = document.createRange(); g.selectNodeContents(r); return g.getBoundingClientRect() })() : r.getBoundingClientRect()
+                return puntos.some((p) => a.left < p.right - 1 && a.right > p.left + 1 && a.top < p.bottom - 1 && a.bottom > p.top + 1)
+              })
+              .map((r) => `${f.firstElementChild?.textContent ?? ''}: ${r.textContent}`)
+          }),
           titulo: h3.textContent,
         }
       })
@@ -69,6 +81,7 @@ for (const ancho of anchos) {
       if (m.valores.length) problemas.push(`${donde}: valores cortados ${m.valores.join(', ')}`)
       if (m.rotulos.length) problemas.push(`${donde}: rótulos fuera de la tarjeta ${m.rotulos.join(', ')}`)
       if (m.filas === 0 && nombre !== 'ola') problemas.push(`${donde}: la figura quedó vacía`)
+      if (m.choques.length) problemas.push(`${donde}: rótulo sobre un punto (${m.choques.join('; ')})`)
       for (const e of errores) problemas.push(`${donde}: consola: ${e}`)
       await page.locator('article').screenshot({ path: `${carpeta}/${p.id}-${nombre}-${ancho}.png` })
     }

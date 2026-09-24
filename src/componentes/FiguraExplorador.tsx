@@ -1,21 +1,29 @@
 import type { Bloque, Fila, Modelo } from '../nucleo/explorador'
-import { BASE_MINIMA } from '../nucleo/explorador'
-import { IDENTIDAD, SEMANTICOS, pasosDeOrden } from '../nucleo/paleta'
+import { BASE_MINIMA, formaDeFigura } from '../nucleo/explorador'
+import { GENERO, IDENTIDAD, SEMANTICOS, pasosDeGrupo, pasosDeOrden } from '../nucleo/paleta'
+import { topePorcentaje } from '../nucleo/escala'
 import { decimal, numero, porcentaje } from '../locale'
+import Puntos from './Puntos'
 
 /**
- * La figura del explorador, la única: barras horizontales de 0 a 100.
+ * La figura del explorador, la única, en dos formas según lo que compare.
  *
- * Reemplaza a tres (`Distribucion`, `Menciones`, `BarrasPorOla`) que dibujaban la misma pregunta
- * de tres maneras según el estado. Ahora la comparación por grupo y la comparación entre oleadas
- * se leen igual: cada categoría es un bloque, y dentro del bloque va una fila por grupo o por
- * oleada, con su nombre escrito. Sin corte y en una oleada, cada categoría es una sola fila.
+ * **Barras de 0 a 100**: una oleada sin corte; el termómetro en todos sus estados; y las
+ * comparaciones de preguntas con **dos categorías**, donde la segunda fila de una mancuerna es
+ * 100 menos la primera (Felipe, décima ronda: «en estos casos podría ser mejor descartar las
+ * mancuernas y quedarnos con barras»; y del termómetro, «esto queda mejor en barras»). Comparando,
+ * cada categoría es un bloque con una barra por oleada o por grupo. Las menciones también van sobre
+ * 100, y una categoría con 0 % no lleva barra.
  *
- * **Todas las barras van sobre 0 a 100**, también las menciones: normalizarlas contra la más
- * frecuente hacía que un 50 % llenara el ancho. Una categoría con 0 % no lleva barra.
+ * **Mancuerna**, con `Puntos`, en las demás comparaciones (entre oleadas o con un corte): una fila
+ * por categoría y un punto por oleada o por grupo, y la distancia entre puntos es el cambio (Felipe,
+ * novena ronda: «quiero que los gráficos que comparan entre oleadas sean gráficos de mancuernas»).
  *
- * El largo cambia con `transform: scaleX`, no con `width`, y en 200 ms: al pasar de una oleada a
- * otra la barra se estira desde donde estaba, que es justo el cambio que se quiere ver.
+ * **El color dice qué se compara:** oleadas en la rampa teal (`ORDEN`), grupos de un corte ordenado
+ * en la violeta (`GRUPOS`), género en violeta y ocre (`GENERO`).
+ *
+ * El largo de las barras cambia con `transform: scaleX`, no con `width`, y en 200 ms: al pasar
+ * de una oleada a otra la barra se estira desde donde estaba, que es justo el cambio que se quiere ver.
  */
 
 const TRANSICION = 'motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.23,1,0.32,1)]'
@@ -25,105 +33,153 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
     return <p className="py-4 text-sm italic text-gray-500">{modelo.motivo}</p>
   }
 
-  const colores = modelo.color === 'orden'
-    ? pasosDeOrden(modelo.series.length)
-    : modelo.color === 'identidad'
-      ? [...IDENTIDAD]
+  const n = modelo.series.length
+  const colores = modelo.compara === 'olas'
+    ? pasosDeOrden(n)
+    : modelo.compara === 'grupos'
+      ? modelo.color === 'identidad' ? [...GENERO] : pasosDeGrupo(n)
       : [IDENTIDAD[0]]
+  const colorDe = (i: number) => colores[Math.min(i, colores.length - 1)]
 
-  if (modelo.forma === 'medias') {
-    const escasa = modelo.filas.some((f) => f.base > 0 && f.base < BASE_MINIMA)
-    return (
-      <figure className="mt-2">
-        {modelo.series.length > 1 && <Leyenda series={modelo.series} colores={colores} bases={modelo.filas.map((f) => f.base)} />}
-        <p className="mb-1 text-xs text-gray-500">Promedio de 0 a 100</p>
-        <div className="flex flex-col gap-[3px]">
-          {modelo.filas.map((f, i) => (
-            <FilaBarra
-              key={f.clave}
-              fila={f}
-              etiqueta={f.etiqueta}
-              color={colores[Math.min(i, colores.length - 1)]}
-              texto={(v) => decimal(v)}
-            />
-          ))}
-        </div>
-        {modelo.noResponde && (
-          <p className="mt-2 text-xs text-gray-500">
-            Prefirieron no responder:{' '}
-            {modelo.noResponde.map((r, i) => (
-              <span key={r.clave} className="tabular-nums">
-                {i > 0 && ' · '}
-                {modelo.filas.length > 1 && `${modelo.filas[i].etiqueta}: `}
-                {r.total > 0 ? porcentaje((100 * r.n) / r.total, 0) : '—'}
-              </span>
-            ))}
-            . Quedan fuera del promedio.
-          </p>
-        )}
-        {escasa && <NotaEscasa />}
-        <TablaAccesible filas={modelo.filas.map((f) => [f.etiqueta, f.valor === null ? '—' : decimal(f.valor), numero(f.base)])} cabeza={['', 'Promedio', 'Respuestas']} />
-      </figure>
-    )
-  }
+  if (modelo.forma === 'medias') return <FiguraMedias modelo={modelo} colorDe={colorDe} />
 
-  const { bloques, series, escala } = modelo
-  const agrupada = series.length > 0
+  const { bloques, series, escala, compara } = modelo
   const escasa = bloques.some((b) => b.filas.some((f) => f.base > 0 && f.base < BASE_MINIMA))
-
-  return (
-    <figure className="mt-2">
-      {agrupada && <Leyenda series={series} colores={colores} bases={bloques[0]?.filas.map((f) => f.base) ?? []} />}
-      <div className={`flex flex-col ${agrupada ? 'gap-3' : 'gap-[3px]'}`}>
-        {bloques.map((b) => agrupada
-          ? <BloqueAgrupado key={b.clave} bloque={b} colores={colores} />
-          : (
-            <FilaBarra
-              key={b.clave}
-              fila={b.filas[0]}
-              etiqueta={b.etiqueta}
-              // Sin corte hay una serie: un color, salvo las categorías con polaridad propia.
-              color={SEMANTICOS[b.etiqueta] ?? colores[0]}
-              texto={(v) => porcentaje(v, 0)}
-            />
-            ))}
-      </div>
+  const bases = bloques[0]?.filas.map((f) => f.base) ?? []
+  const enBarras = formaDeFigura(modelo) === 'barras'
+  const pie = (
+    <>
       {escala === 'menciones' && (
         <p className="mt-2 text-xs text-gray-500">
           Se puede marcar más de una opción, así que los porcentajes suman más de 100.
         </p>
       )}
-      {escasa && <NotaEscasa />}
+      {escasa && <NotaEscasa donde={compara === 'olas' ? 'en esa oleada' : compara === 'grupos' ? 'en ese grupo' : 'en esa fila'} />}
       <TablaAccesible
-        cabeza={['', ...(agrupada ? series.map((s) => s.etiqueta) : ['%'])]}
+        cabeza={['', ...(compara === 'nada' ? ['%'] : series.map((s) => s.etiqueta))]}
         filas={[
           ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor === null ? '—' : porcentaje(f.valor, 0)))]),
-          ['Respuestas', ...(bloques[0]?.filas.map((f) => numero(f.base)) ?? [])],
+          ['Respuestas', ...bases.map((x) => numero(x))],
         ]}
       />
+    </>
+  )
+
+  if (compara === 'nada') {
+    return (
+      <figure className="mt-2">
+        <div className="flex flex-col gap-[3px]">
+          {bloques.map((b) => (
+            <FilaBarra
+              key={b.clave}
+              fila={b.filas[0]}
+              etiqueta={b.etiqueta}
+              // Una serie: un color, salvo las categorías con polaridad propia.
+              color={SEMANTICOS[b.etiqueta] ?? colores[0]}
+              texto={(v) => porcentaje(v, 0)}
+            />
+          ))}
+        </div>
+        {pie}
+      </figure>
+    )
+  }
+
+  if (enBarras) {
+    return (
+      <figure className="mt-2">
+        <Leyenda series={series} colorDe={colorDe} bases={bases} forma="barra" />
+        <div className="flex flex-col gap-3">
+          {bloques.map((b) => <BloqueAgrupado key={b.clave} bloque={b} colorDe={colorDe} />)}
+        </div>
+        {pie}
+      </figure>
+    )
+  }
+
+  const valores = bloques.flatMap((b) => b.filas.map((f) => f.valor)).filter((v): v is number => v !== null)
+  const tope = topePorcentaje(valores)
+  const puntosSeries = series.map((s, i) => ({ clave: s.clave, etiqueta: s.etiqueta, color: colorDe(i) }))
+  const filaDe = new Map(bloques.map((b) => [b.clave, b]))
+  return (
+    <figure className="mt-2">
+      <Leyenda series={series} colorDe={colorDe} bases={bases} forma={compara === 'olas' ? 'creciente' : 'punto'} />
+      <Puntos
+        series={puntosSeries}
+        filas={bloques.map((b) => ({
+          clave: b.clave,
+          etiqueta: b.etiqueta,
+          valores: b.filas.map((f) => f.valor),
+          // Sin la muestra de color semántico: los puntos ya llevan el color de la oleada o del
+          // grupo, y un segundo color con otro significado en la misma figura se confunde (el
+          // violeta de grupos contra el azul de «A favor de EE. UU.», ΔE 4,1 bajo deuteranopía).
+        }))}
+        escala={{ min: 0, max: tope }}
+        marcas={tope / 20 + 1}
+        formato={(v) => porcentaje(v, 0)}
+        titulo={(fila, serie, v) => {
+          const f = filaDe.get(fila.clave)?.filas.find((x) => x.clave === serie.clave)
+          return `${serie.etiqueta} · ${fila.etiqueta}: ${porcentaje(v, 1)}${f ? ` (${numero(f.n)} de ${numero(f.base)})` : ''}`
+        }}
+        anchoEtiqueta="13rem"
+        // Entre oleadas manda dónde está cada categoría hoy; entre grupos ninguno pesa más que otro.
+        rotular={compara === 'olas' ? series.length - 1 : 'extremos'}
+        esquivar
+        radioCreciente={compara === 'olas'}
+        unidadEje={escala === 'menciones'
+          ? `Porcentaje que marcó cada opción${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`
+          : `Porcentaje de respuestas${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`}
+        leyenda={false}
+        rotulosLargos
+      />
+      {pie}
     </figure>
   )
 }
 
-function BloqueAgrupado ({ bloque, colores }: { bloque: Bloque, colores: string[] }) {
-  const polaridad = SEMANTICOS[bloque.etiqueta]
+/**
+ * El termómetro, en barras de 0 a 100: una por oleada, una por grupo, o una sola (Felipe, décima
+ * ronda: «esto queda mejor en barras»). Sobre la escala entera no hay recorte que declarar.
+ */
+function FiguraMedias ({ modelo, colorDe }: { modelo: Extract<Modelo, { forma: 'medias' }>, colorDe: (i: number) => string }) {
+  const { filas, series } = modelo
+  const escasa = filas.some((f) => f.base > 0 && f.base < BASE_MINIMA)
+  return (
+    <figure className="mt-2">
+      {series.length > 1 && <Leyenda series={series} colorDe={colorDe} bases={filas.map((f) => f.base)} forma="barra" />}
+      <p className="mb-1 text-xs text-gray-500">Promedio de 0 a 100</p>
+      <div className="flex flex-col gap-[3px]">
+        {filas.map((f, i) => (
+          <FilaBarra key={f.clave} fila={f} etiqueta={f.etiqueta} color={colorDe(i)} texto={(v) => decimal(v)} corta />
+        ))}
+      </div>
+      {modelo.noResponde && (
+        <p className="mt-2 text-xs text-gray-500">
+          Prefirieron no responder:{' '}
+          {modelo.noResponde.map((r, i) => (
+            <span key={r.clave} className="tabular-nums">
+              {i > 0 && ' · '}
+              {filas.length > 1 && `${filas[i].etiqueta}: `}
+              {r.total > 0 ? porcentaje((100 * r.n) / r.total, 0) : '—'}
+            </span>
+          ))}
+          . Quedan fuera del promedio.
+        </p>
+      )}
+      {escasa && <NotaEscasa donde={modelo.compara === 'olas' ? 'en esa oleada' : modelo.compara === 'grupos' ? 'en ese grupo' : 'en esa fila'} />}
+      <TablaAccesible filas={filas.map((f) => [f.etiqueta, f.valor === null ? '—' : decimal(f.valor), numero(f.base)])} cabeza={['', 'Promedio', 'Respuestas']} />
+    </figure>
+  )
+}
+
+/** Una categoría con una barra por oleada o por grupo. Sin color semántico, por lo mismo que la mancuerna. */
+function BloqueAgrupado ({ bloque, colorDe }: { bloque: Bloque, colorDe: (i: number) => string }) {
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-xs font-medium text-gray-800">
-        {/* La categoría con color propio lo muestra en el rótulo: las filas ya usan el color del grupo. */}
-        {polaridad && <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: polaridad }} />}
-        {bloque.etiqueta}
-      </p>
-      <div className="mt-1 flex flex-col gap-[3px]">
+      <p className="text-xs font-medium text-gray-800">{bloque.etiqueta}</p>
+      <div className="mt-1 flex flex-col gap-[3px] pl-3">
         {bloque.filas.map((f, i) => (
-          <FilaBarra
-            key={f.clave}
-            fila={f}
-            etiqueta={f.etiqueta}
-            color={colores[Math.min(i, colores.length - 1)]}
-            texto={(v) => porcentaje(v, 0)}
-            sangria
-          />
+          <FilaBarra key={f.clave} fila={f} etiqueta={f.etiqueta} color={colorDe(i)} texto={(v) => porcentaje(v, 0)} corta />
         ))}
       </div>
     </div>
@@ -131,14 +187,14 @@ function BloqueAgrupado ({ bloque, colores }: { bloque: Bloque, colores: string[
 }
 
 function FilaBarra ({
-  fila, etiqueta, color, texto, sangria = false,
-}: { fila: Fila, etiqueta: string, color: string, texto: (v: number) => string, sangria?: boolean }) {
+  fila, etiqueta, color, texto, corta = false,
+}: { fila: Fila, etiqueta: string, color: string, texto: (v: number) => string, corta?: boolean }) {
   const escasa = fila.base > 0 && fila.base < BASE_MINIMA
   const valor = fila.valor
   // En teléfono, una categoría (rótulo largo) va en su propia línea sobre la barra: al lado, la
   // columna de 12rem dejaba la barra en 40 px. Un grupo o una oleada (rótulo corto) sigue al lado.
-  const columnas = sangria
-    ? 'grid-cols-[minmax(0,6rem)_minmax(0,1fr)_3.25rem] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3.25rem] pl-3'
+  const columnas = corta
+    ? 'grid-cols-[minmax(0,6rem)_minmax(0,1fr)_3.25rem] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3.25rem]'
     : 'grid-cols-[minmax(0,1fr)_3.25rem] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3.25rem]'
   return (
     <div
@@ -146,7 +202,7 @@ function FilaBarra ({
       title={valor === null ? undefined : `${etiqueta ? `${etiqueta}: ` : ''}${numero(fila.n)} de ${numero(fila.base)} respuestas`}
     >
       {/* Rótulos completos, en dos líneas si hace falta: truncados, las opciones largas no se leían. */}
-      <span className={`text-xs leading-snug text-gray-600 ${sangria ? '' : 'col-span-2 sm:col-span-1'}`}>{etiqueta}</span>
+      <span className={`text-xs leading-snug text-gray-600 ${corta ? '' : 'col-span-2 sm:col-span-1'}`}>{etiqueta}</span>
       {valor === null
         ? <span className="col-span-2 text-xs italic text-gray-400">No se preguntó</span>
         : (
@@ -169,25 +225,34 @@ function FilaBarra ({
 /**
  * Qué color es qué grupo u oleada, **con su número de respuestas**: sin muestra probabilística ni
  * margen de error, el N es lo único que dice cuánto pesa cada fila, y tiene que estar a la vista,
- * no solo al pasar el cursor.
+ * no solo al pasar el cursor. La marca imita a la figura: cuadrado para barras, punto para la
+ * mancuerna, y entre oleadas un punto que crece con la oleada.
  */
-function Leyenda ({ series, colores, bases }: { series: { clave: string, etiqueta: string }[], colores: string[], bases: number[] }) {
+function Leyenda ({ series, colorDe, bases, forma }: { series: { clave: string, etiqueta: string }[], colorDe: (i: number) => string, bases: number[], forma: 'barra' | 'punto' | 'creciente' }) {
   return (
-    <ul className="mb-2 flex flex-wrap gap-x-3.5 gap-y-1">
-      {series.map((s, i) => (
-        <li key={s.clave} className="flex items-center gap-1.5 text-[11px] text-gray-600">
-          <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: colores[Math.min(i, colores.length - 1)] }} />
-          {s.etiqueta}
-          <span className="tabular-nums text-gray-400">({numero(bases[i] ?? 0)})</span>
-        </li>
-      ))}
+    <ul className="mb-2 flex flex-wrap items-center gap-x-3.5 gap-y-1">
+      {series.map((s, i) => {
+        const d = forma === 'creciente' ? 8 + i * 2 : 10
+        const escasa = (bases[i] ?? 0) > 0 && (bases[i] ?? 0) < BASE_MINIMA
+        return (
+          <li key={s.clave} className="flex items-center gap-1.5 text-[11px] text-gray-600">
+            <span aria-hidden className={`inline-block shrink-0 ${forma === 'barra' ? 'rounded-sm' : 'rounded-full'}`} style={{ width: d, height: d, backgroundColor: colorDe(i) }} />
+            {s.etiqueta}
+            <span className="tabular-nums text-gray-400">({numero(bases[i] ?? 0)}){escasa ? '*' : ''}</span>
+          </li>
+        )
+      })}
       <li className="text-[11px] text-gray-400">entre paréntesis, respuestas</li>
     </ul>
   )
 }
 
-function NotaEscasa () {
-  return <p className="mt-1 text-xs text-gray-500">* Menos de {BASE_MINIMA} respuestas en esa fila: el porcentaje dice poco.</p>
+/**
+ * Solo el dato, sin juicio sobre él (Felipe, décima ronda: «queremos entregar información en esta
+ * sección más que dar conclusiones»). Hasta ahí decía además «el porcentaje dice poco».
+ */
+function NotaEscasa ({ donde }: { donde: string }) {
+  return <p className="mt-1 text-xs text-gray-500">* Menos de {BASE_MINIMA} respuestas {donde}.</p>
 }
 
 function TablaAccesible ({ cabeza, filas }: { cabeza: string[], filas: string[][] }) {

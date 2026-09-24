@@ -13,7 +13,8 @@ import { numero } from '../locale'
  *
  * Acá viven qué escala, en qué orden van las filas y qué dice el eje. El tablero salió de la app
  * (22-09-2026) y hoy solo la usa «La mirada», pero la regla sigue: si otra vista vuelve a dibujar
- * el termómetro, pasa por acá y **no elige su propia escala**.
+ * el termómetro con escala recortada, pasa por acá y **no elige su propia escala**. El explorador no
+ * la usa: por decisión de Felipe (décima ronda) lo muestra en barras de 0 a 100, sin recorte.
  */
 
 export interface FilaMedia {

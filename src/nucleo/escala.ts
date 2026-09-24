@@ -31,3 +31,16 @@ export function topeDeBarras (valores: number[]): number {
   if (limpios.length === 0) return 100
   return Math.min(100, Math.ceil((Math.max(...limpios) * 1.1) / 5) * 5)
 }
+
+/**
+ * El tope del eje de porcentajes: el múltiplo de 20 sobre el mayor valor, nunca más de 100.
+ *
+ * **Empieza siempre en cero.** Los puntos no codifican largo, así que un eje que parte más arriba
+ * no miente por sí solo, pero en una figura con muchas categorías cerca de cero cortarlo las
+ * esconde, y un recorte que cambia de pregunta en pregunta obliga a leer el eje cada vez. Lo que sí
+ * se ajusta es el tope: en `p1` nada pasa de 60 y con 0 a 100 las diferencias se juntaban.
+ */
+export function topePorcentaje (valores: number[]): number {
+  const max = Math.max(0, ...valores.filter((v) => Number.isFinite(v)))
+  return Math.min(100, Math.max(20, Math.ceil(max / 20) * 20))
+}

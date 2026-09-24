@@ -49,6 +49,29 @@ export const ORDEN = ['#6ABDB4', '#2AA69B', '#008C81', '#006B62', '#004A44', '#0
 export const EXPOSICION = ['#EFA67A', '#D9733A', '#A84D17', '#6B2E0B'] as const
 
 /**
+ * **Grupos de un corte ordenado** (edad, educación, NSE, ideología, macrozona) en el explorador: una
+ * rampa propia, en violeta, porque el teal de `ORDEN` ya dice «oleada» y un lector que pasa de
+ * «Entre oleadas» a un corte tiene que ver que cambió lo que se compara (Felipe, décima ronda:
+ * «definir paletas diferentes para los grupos, para diferenciarlos de oleadas»). El naranja es de
+ * `EXPOSICION` y el azul de `SEMANTICOS`. Validada el 24-09-2026 con `validate_palette.js
+ * --ordinal`: un tono (6°), luminosidad monótona con saltos ≥ 0,06 y el extremo claro a 2,76:1.
+ */
+export const GRUPOS = ['#A98BDB', '#8F6BCF', '#7650BD', '#5E3C9E', '#462C7A', '#301E56'] as const
+
+/**
+ * **Género**, que no tiene orden: dos colores de identidad sin teal, para que tampoco se lea como
+ * oleada. Validado con `--pairs all`: ΔE 29,1 bajo protanopía y 30,1 con visión normal, los dos
+ * sobre 3:1 contra el fondo.
+ */
+export const GENERO = ['#7650BD', '#C27C0E'] as const
+
+/** `n` pasos de `GRUPOS`, repartidos de punta a punta, con la misma regla que `pasosDeOrden`. */
+export function pasosDeGrupo (n: number): string[] {
+  if (n <= 1) return [GRUPOS[2]]
+  return Array.from({ length: n }, (_, i) => GRUPOS[n > GRUPOS.length ? Math.min(i, GRUPOS.length - 1) : Math.round((i * (GRUPOS.length - 1)) / (n - 1))])
+}
+
+/**
  * Toma `n` pasos de la rampa, repartidos de punta a punta.
  *
  * Con menos de seis grupos no se usan los primeros seis colores sin más: se estiran para que

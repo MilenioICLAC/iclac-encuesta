@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { IDENTIDAD, ORDEN, SEMANTICOS, pasosDeOrden } from './paleta'
+import { GENERO, GRUPOS, IDENTIDAD, ORDEN, SEMANTICOS, pasosDeGrupo, pasosDeOrden } from './paleta'
 
 /**
  * La paleta pasó por el validador de la skill `dataviz`, que no se puede correr desde acá.
@@ -68,5 +68,19 @@ describe('la paleta', () => {
     // Y los dos lados no comparten tono: el canal rojo separa el óxido del verde azulado.
     const rojo = (hex: string) => parseInt(hex.slice(1, 3), 16)
     expect(rojo(SEMANTICOS.Poca)).toBeGreaterThan(rojo(SEMANTICOS.Algo) + 80)
+  })
+})
+
+describe('los grupos no se pintan como oleadas', () => {
+  it('ningún color de grupo o de género es de la rampa de oleadas', () => {
+    for (const c of [...GRUPOS, ...GENERO]) expect(ORDEN as readonly string[]).not.toContain(c)
+  })
+  it('pasosDeGrupo reparte de punta a punta sin repetir hasta seis', () => {
+    for (let n = 2; n <= 6; n++) {
+      const pasos = pasosDeGrupo(n)
+      expect(new Set(pasos).size).toBe(n)
+      expect(pasos[0]).toBe(GRUPOS[0])
+      expect(pasos[n - 1]).toBe(GRUPOS[5])
+    }
   })
 })

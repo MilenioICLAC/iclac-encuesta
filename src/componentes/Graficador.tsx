@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { Encuesta, Pregunta } from '../nucleo/tipos'
 import { CORTES } from '../nucleo/modulos'
-import { enunciadoEn, modelo, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
+import { enunciadoEn, formaDeFigura, modelo, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
 import FiguraExplorador from './FiguraExplorador'
 import { numero } from '../locale'
 import { enfocarRadio, radioSiguiente } from '../nucleo/teclado'
@@ -118,7 +118,7 @@ export default function Graficador ({
 
         {vista === 'serie' && p.serie && (
           <p className="mt-2 text-xs text-gray-600">
-            Una fila por oleada: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
+            {formaDeFigura(m) === 'mancuerna' ? 'Un punto por oleada' : 'Una barra por oleada'}: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
             {corte && ' El corte no se aplica entre oleadas.'}
           </p>
         )}

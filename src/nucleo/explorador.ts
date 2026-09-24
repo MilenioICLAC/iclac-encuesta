@@ -44,16 +44,24 @@ export type Modelo =
       series: { clave: string, etiqueta: string }[]
       /** Qué son las series: define el color (oleadas y cortes ordenados van en rampa). */
       color: 'uno' | 'orden' | 'identidad'
+      compara: Compara
     }
   | {
       forma: 'medias'
       filas: Fila[]
       series: { clave: string, etiqueta: string }[]
       color: 'uno' | 'orden' | 'identidad'
+      compara: Compara
       /** Por fila, cuántos eligieron «Prefiero no responder» y sobre cuántos. */
       noResponde?: { clave: string, n: number, total: number }[]
     }
   | { forma: 'vacia', motivo: string }
+
+/**
+ * Qué compara la figura: oleadas entre sí, grupos de un corte, o nada (una oleada sin corte).
+ * Decide la forma: sin comparación van barras; con ella, puntos en la fila de cada categoría.
+ */
+export type Compara = 'olas' | 'grupos' | 'nada'
 
 export interface Estado {
   vista: Vista
@@ -64,6 +72,17 @@ export interface Estado {
 
 /** Con menos de estos casos una fila se muestra marcada: el porcentaje dice poco. */
 export const BASE_MINIMA = 30
+
+/**
+ * Con qué se dibuja: barras o mancuerna. Barras sin comparación, en el termómetro siempre, y al
+ * comparar preguntas de **dos categorías que reparten el 100 %**, donde la mancuerna dibujaría la
+ * misma distancia dos veces (Felipe, décima ronda). Mancuerna en las demás comparaciones.
+ */
+export function formaDeFigura (m: Modelo): 'barras' | 'mancuerna' | 'nada' {
+  if (m.forma === 'vacia') return 'nada'
+  if (m.forma === 'medias' || m.compara === 'nada') return 'barras'
+  return m.escala === 'reparto' && m.bloques.length === 2 ? 'barras' : 'mancuerna'
+}
 
 // --- Textos de la pregunta -------------------------------------------------------------------
 
@@ -113,6 +132,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
       ? 'orden'
       : CORTES.find((c) => c.nombre === estado.corte)?.nominal ? 'identidad' : 'orden'
 
+  const compara: Compara = series.length === 0 ? 'nada' : vista === 'serie' ? 'olas' : 'grupos'
   const unaSola = series.length === 0
   const grupos = unaSola ? [{ clave: 'todas', etiqueta: '', casos: casosDeLaOla(encuesta, estado), ola: estado.ola }] : series
 
@@ -128,7 +148,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
         })
       : undefined
     if (filas.every((f) => f.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
-    return { forma: 'medias', filas, series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, noResponde }
+    return { forma: 'medias', filas, series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, noResponde }
   }
 
   if (p.tipo === 'multiple') {
@@ -150,7 +170,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
       }),
     }))
     if (porGrupo.every(({ r }) => r.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
-    return { forma: 'porcentajes', escala: 'menciones', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color }
+    return { forma: 'porcentajes', escala: 'menciones', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara }
   }
 
   // Elección única: la columna y las categorías de la vista (la serie puede usar la derivada).
@@ -178,7 +198,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
       return { clave: g.clave, etiqueta: g.etiqueta, valor: d.base > 0 ? s?.porcentaje ?? 0 : null, n: s?.n ?? 0, base: d.base }
     }),
   }))
-  return { forma: 'porcentajes', escala: 'reparto', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color }
+  return { forma: 'porcentajes', escala: 'reparto', bloques: ordenar(p, bloques), series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara }
 }
 
 interface Serie { clave: string, etiqueta: string, casos: Caso[], ola: number }

@@ -80,9 +80,9 @@
   <header>
     <h1>Decisiones del visualizador, para aprobar</h1>
     <p>
-      Novena ronda (24-09-2026): el explorador de preguntas. Arriba, lo que vale para todas; después, una
-      tarjeta por pregunta con lo que muestra en una oleada, con corte y entre oleadas, y un enlace a cada
-      estado. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
+      Undécima ronda (24-09-2026): lo que pediste en la décima, aplicado (binarias y termómetro en barras,
+      paleta de grupos, nota de grupos chicos), y otra vez una tarjeta por pregunta con la forma que tiene
+      hoy y un enlace a cada estado. Los títulos, categorías y reglas se leen en vivo del catálogo publicado en
       <code>public/data/encuesta.json</code>, el mismo que usa la app: lo que ves acá es lo que está ahí.
       Lo que ya cerraste en rondas anteriores está al final, en «Ya cerradas».
     </p>
@@ -98,7 +98,7 @@
   <main id="secciones"></main>
 
   <section class="seccion" id="cerradas">
-    <h2>Ya cerradas en el JSON del 21-09</h2>
+    <h2>Ya cerradas</h2>
     <details><summary style="cursor:pointer; font-size: 13.5px; color: var(--marca-oscura);" id="ver-cerradas">Ver todas</summary>
       <ul id="lista-cerradas" style="font-size: 13.5px; color: var(--g700); padding-left: 18px;"></ul>
     </details>
@@ -131,13 +131,12 @@
 
 <script>
 (() => {
-  const CLAVE = 'lab-decisiones-v2';
+  const CLAVE = 'lab-decisiones-v4';
   const $ = (id) => document.getElementById(id);
   const APP = './#';
 
   const SECCIONES = [
-    { id: 'explorador', corto: 'Explorador', titulo: 'Explorador · lo que vale para todas', bajada: 'Cómo se muestra cualquier pregunta en una oleada, con corte y entre oleadas. Revisión de las 36 preguntas por tres subagentes de Claude y una pasada independiente de Codex; las discrepancias se resolvieron contra los datos.', ruta: '/explorar' },
-    { id: 'correcciones', corto: 'Datos del cliente', titulo: 'Explorador · lo que encontramos en los datos del cliente', bajada: 'Problemas de las fuentes que salieron pregunta por pregunta. Se documentan, no se parchean: la propuesta es sumarlos a la cola de correcciones.', ruta: null },
+    { id: 'explorador', corto: 'Explorador', titulo: 'Explorador · lo que cambió con tu JSON', bajada: 'Lo que pediste en la décima ronda, aplicado: binarias y termómetro en barras, una paleta propia para los grupos y la nota de grupos chicos sin juicio. La paleta es la que más necesita tu mirada.', ruta: '/explorar' },
     { id: 'preguntas', corto: 'Pregunta por pregunta', titulo: 'Explorador · pregunta por pregunta', bajada: 'Una tarjeta por pregunta, leída del catálogo publicado. «Antes» es el texto que mostraba el explorador; los enlaces abren la pregunta en cada estado.', ruta: '/explorar' },
     { id: 'como', titulo: 'Cómo se hizo', bajada: 'La vista «Sobre los datos», a la que llevan los enlaces «Cómo se hizo» de cada historia.', ruta: '/datos' },
     { id: 'general', titulo: 'General', bajada: 'Datos, método y lo que vale para todas las historias.', ruta: '/' },
@@ -155,128 +154,47 @@
    */
   const D = [
     {
-      s: 'explorador', id: 'exp-una-figura', origen: 'Claude',
-      titulo: 'Una sola figura para los tres estados: la categoría arriba, una fila por grupo o por oleada',
-      verbatim: ['Antes: tres figuras distintas (distribución, menciones, barras por oleada) según el estado'],
-      decidido: 'Cada categoría es un bloque y, dentro, una fila por grupo del corte o por oleada, con su nombre escrito. Sin corte y en una oleada, una fila por categoría. Todas las barras de 0 a 100, también las menciones. Una categoría con 0 % no lleva barra.',
-      porque: 'Así «con corte» y «entre oleadas» se leen igual. Las menciones estaban normalizadas contra la más frecuente: un 50 % llenaba el ancho (hallazgo de Codex). Y el 0 % llevaba una barra mínima que no era cero.',
-      alternativas: 'Para p24, p25 y p26, la figura de la historia (divergente y barra de reparto): cumpliría «una figura por pregunta» a costa de tener dos formas en el explorador. Barra apilada al 100 % por oleada: segmentos chicos sin rótulo.',
-      rutas: [['p7 entre oleadas', '/explorar?p=p7&vista=serie'], ['p22 con corte', '/explorar?p=p22&ola=2024&corte=edad_rec']],
+      s: 'explorador', id: 'r11-paleta', origen: 'Claude; validada con dataviz; Codex encontró el choque',
+      titulo: 'Los grupos se pintan en violeta y el género en violeta y ocre; las oleadas siguen en teal',
+      verbatim: ['Tu comentario: «Debemos definir paletas diferentes para los grupos, para diferenciarlos de oleadas»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Cortes ordenados (edad, educación, NSE, ideología, macrozona): una rampa violeta de seis pasos, de claro a oscuro. Género: violeta y ocre. Las oleadas no cambian (teal). Al comparar, la fila ya no lleva el cuadradito de color semántico (p24, p25, p26); en una oleada sin corte, sí, porque ahí pinta la barra.',
+      porque: 'El teal dice «oleada»; el naranja es de los estratos del mapa y el azul de «A favor de EE. UU.». La rampa pasa las cuatro pruebas ordinales del validador y el par de género separa ΔE 29 bajo daltonismo. Codex vio que el ocre de género y el naranja de «A favor de China» son casi iguales para un daltónico (ΔE 1,8), y el violeta y el azul de EE. UU. también (ΔE 4,1): por eso sale el cuadradito semántico de las comparaciones, que ponía un segundo color con otro significado en la misma figura.',
+      alternativas: 'Género en violeta y rosa (#C2477F): pasa contra el naranja de China (ΔE 15,4), pero queda a 13,8 del óxido de «Ninguna» en visión normal. Mantener el cuadradito semántico y cambiar los tonos de grupo.',
+      rutas: [['p7 por edad', '/explorar?p=p7&ola=2025&corte=edad_rec'], ['p7 entre oleadas', '/explorar?p=p7&vista=serie'], ['p26 por género', '/explorar?p=p26&ola=2025&corte=sexo'], ['p24 por NSE', '/explorar?p=p24&ola=2025&corte=nse_rec']],
     },
     {
-      s: 'explorador', id: 'exp-serie-completa', origen: 'Claude + Codex + subagentes',
-      titulo: '«Entre oleadas» muestra la escala completa, no la primera categoría',
-      verbatim: ['Antes: seguía solo el primer código. p7 mostraba «Muy en desacuerdo» y p26 «A favor de China»; las columnas 0/1 mostraban el «0»'],
-      decidido: 'Todas las categorías, con una fila por oleada.',
-      porque: 'En p7, «Muy en desacuerdo» sube de 6,9 a 10,0 % mientras el desacuerdo total se queda en 39,5, 39,2 y 39,1 %: seguir una categoría contaba un cambio que no existe. En p24 y p25 es el corte que `confianza.ts` prohíbe fijar en silencio.',
-      rutas: [['p7', '/explorar?p=p7&vista=serie'], ['p24', '/explorar?p=p24&vista=serie']],
+      s: 'explorador', id: 'r11-binarias', origen: 'Claude',
+      titulo: 'Las preguntas de dos categorías comparan en barras agrupadas',
+      verbatim: ['Tu comentario: «En estos casos podría ser mejor descartar las mancuernas y quedarnos con barras»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Entre oleadas y con corte, cada categoría es un bloque con una barra por oleada o por grupo, de 0 a 100: la figura de la novena ronda. Vale para toda pregunta con dos categorías que suman 100: p12, p13, p14, p18, p18e, p19 y p6a, y p9 entre oleadas (su derivada tiene dos). p9 con corte tiene cuatro y sigue en mancuerna.',
+      porque: 'La regla es «dos categorías que reparten el 100 %», no el tipo del catálogo: así p9 entre oleadas cae donde corresponde. Hay una prueba que la recorre pregunta por pregunta.',
+      alternativas: 'Una sola barra por oleada o grupo, la del «Sí», con la otra en el pie.',
+      rutas: [['p19 entre oleadas', '/explorar?p=p19&vista=serie'], ['p13 por edad', '/explorar?p=p13&ola=2025&corte=edad_rec'], ['p9 entre oleadas', '/explorar?p=p9&vista=serie']],
     },
     {
-      s: 'explorador', id: 'exp-catalogo', origen: 'Claude',
-      titulo: 'Un catálogo curado decide título, orden y comparabilidad de cada pregunta, y el ETL lo valida',
-      verbatim: ['Antes: el título era la etiqueta del diccionario («China_¿Cuál es tu opinión…», cortada a 255 caracteres) y cualquier variable con categorías era una pregunta'],
-      decidido: '36 preguntas en `scripts/lib/preguntas_explorador.mjs`. El ETL falla si un código de los datos no tiene etiqueta, si una etiqueta cambia de sentido entre oleadas sin declararlo, si una variable con categorías no está ubicada o si un título trae restos del diccionario. El diccionario del cliente no se toca.',
-      porque: 'Así cayó p4: en 2023 la barra «Kast» eran los 288 votantes de Boric, porque el ETL se quedaba con la etiqueta de 2025. Salen del selector las 30 columnas 0/1 sueltas y las cinco marcas 1/999 del termómetro.',
-      rutas: [['p4 en 2023', '/explorar?p=p4&ola=2023']],
+      s: 'explorador', id: 'r11-termometro', origen: 'Claude',
+      titulo: 'El termómetro va en barras de 0 a 100 en todos sus estados',
+      verbatim: ['Tu comentario: «Esto queda mejor en barras»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: 'Una barra por oleada, una por grupo, o una sola, sobre 0 a 100 y sin recorte. «La mirada» sigue con su figura de puntos.',
+      porque: 'Es una excepción a la regla de CLAUDE.md «una figura por pregunta» (la misma pregunta en dos vistas pasa por el mismo código): quedó escrita como decisión tuya en CLAUDE.md y en el comentario de termometro.ts.',
+      rutas: [['China entre oleadas', '/explorar?p=p5_1_val&vista=serie'], ['China por edad', '/explorar?p=p5_1_val&ola=2025&corte=edad_rec']],
     },
     {
-      s: 'explorador', id: 'exp-comparables', origen: 'Claude + Codex + subagentes',
-      titulo: 'Solo se comparan las oleadas con la misma pregunta y las mismas categorías',
-      decidido: 'p4: 2023 y 2024 (voto recordado de 2021). p15: 2024 y 2025. p21: 2024 y 2025. p27 y p20/p22: 2023 y 2024. p9: con la derivada p9_rec. p11: solo quienes recibieron Sinovac. No se comparan p18a (2024 pregunta sobre China, 2025 sobre asuntos internacionales) ni las de una oleada. Cuando no se compara, el botón queda apagado y el pie dice por qué.',
-      porque: 'Hecho 3 de CLAUDE.md. p18a lo verificamos en la base 2024 (hoja Variables); el libro 2024 heredó el enunciado de 2025. Las etiquetas de 2024 de p4 y p15, en la hoja Labels, alineada por key.',
-      alternativas: 'p15 con p15_rec en las tres oleadas: junta los tramos del medio, pero en 2023 los límites eran otros (20 a 50 y 100 a 150 mil) y Codex la rechaza. p9 con sus cuatro categorías: «No recuerdo» existe solo en 2025. p11 sobre toda la muestra: mezcla poblaciones (55,0 % en 2023 solo vacunados contra 39,1 % en 2024 sobre todos).',
-      rutas: [['p18a', '/explorar?p=p18a&ola=2025'], ['p11 entre oleadas', '/explorar?p=p11&vista=serie'], ['p15 entre oleadas', '/explorar?p=p15&vista=serie']],
+      s: 'explorador', id: 'r11-nota', origen: 'Claude',
+      titulo: 'La nota de grupos chicos dice solo el dato',
+      verbatim: ['Tu comentario: «El promedio dice poco me parece innecesario agregarlo, queremos entregar información en esta sección más que dar conclusiones»'],
+      rotuloVerbatim: 'Pediste',
+      decidido: '«* Menos de 30 respuestas en ese grupo.» Con oleadas, «en esa oleada»; en una oleada sin corte, «en esa fila». Sin «el porcentaje dice poco» en ningún estado.',
+      porque: 'Leí el comentario como regla de la sección y no solo para el termómetro: también saqué «el porcentaje dice poco», que habías aprobado en la novena ronda. Si lo querías solo para el promedio, se vuelve a poner.',
     },
     {
-      s: 'explorador', id: 'exp-corte-serie', origen: 'Claude',
-      titulo: 'Entre oleadas el corte se apaga, y se ve apagado',
-      verbatim: ['Antes: se ignoraba en silencio (el pie decía «no usa el corte elegido arriba»)'],
-      decidido: 'El selector de corte queda deshabilitado, con «El corte no se aplica entre oleadas» sobre la figura. Elegir una oleada en la barra sale de «Entre oleadas».',
-      porque: 'Un corte a la vez y la muestra chica: grupo por oleada daría hasta 15 filas por categoría.',
-      alternativas: 'Grupo × oleada: cada bloque con una fila por grupo y oleada, o un grupo elegido seguido entre oleadas.',
-      rutas: [['Probar', '/explorar?p=p26&vista=serie&corte=edad_rec']],
-    },
-    {
-      s: 'explorador', id: 'exp-grupos-chicos', origen: 'Claude',
-      titulo: 'Los grupos con menos de 30 respuestas se muestran, marcados con * y explicados',
-      decidido: 'Se muestran en gris con un asterisco, y bajo la figura va «Menos de 30 respuestas en esa fila: el porcentaje dice poco». Hoy pasa en muy pocas celdas: cada tarjeta de pregunta lista las suyas, calculadas en vivo.',
-      porque: 'El asterisco existía sin explicación (hallazgo de Codex). Esconder la fila sería peor que mostrarla con su aviso.',
-      alternativas: 'Ocultar la fila bajo cierto n. Otro umbral.',
-    },
-    {
-      s: 'explorador', id: 'exp-voz', origen: 'Claude',
-      titulo: 'Los títulos tutean, como el resto de la interfaz; el enunciado va literal debajo',
-      verbatim: ['El cuestionario mezcla «tú» y «usted» según la pregunta'],
-      decidido: 'Título corto en tuteo («¿Conoces personalmente a alguien de China…?») y, debajo, el enunciado como se preguntó, entre comillas. Máximo 80 caracteres por título (la prueba lo vigila).',
-      porque: 'La interfaz ya habla en tú («elige una de esas oleadas»). Codex propuso usted en todos.',
-      alternativas: 'Usted en todos. Títulos impersonales («Opinión sobre China, de 0 a 100»), como ya van el termómetro y la confianza.',
-    },
-    {
-      s: 'explorador', id: 'exp-lista', origen: 'Claude',
-      titulo: 'El selector lista las preguntas en el orden del catálogo, sin grupos visibles',
-      decidido: 'Por tema, en el orden del catálogo: cómo se mira a China, economía, vida cotidiana, vacunas y política. Sin rótulos de grupo.',
-      porque: 'Los bloques temáticos salieron del ETL el 22-09 (sexta ronda). Ordenados alfabéticamente, los títulos que parten con «¿» quedaban revueltos.',
-      alternativas: 'Grupos con rótulo en el selector (optgroup), que vuelven a meter los temas.',
-    },
-    {
-      s: 'explorador', id: 'exp-direccion', origen: 'Claude',
-      titulo: 'El estado del explorador vive en la dirección, y un enlace abre una pregunta en un estado exacto',
-      decidido: '`#/explorar?p=p7&vista=serie&ola=2024&corte=edad_rec&independientes=1`. Se reemplaza la entrada del historial, así que atrás no se llena de pasos. Al volver desde otra vista se retoma la última búsqueda.',
-      porque: 'Lo necesita este dashboard, y lo pide estado.md: «a dónde manda cada escena… el explorador con P18 ya filtrada».',
-    },
-    {
-      s: 'explorador', id: 'exp-movimiento', origen: 'Claude (pautas de Emil Kowalski)',
-      titulo: 'Las barras cambian de largo en 200 ms, y nada más se mueve',
-      decidido: 'Al cambiar de oleada o de corte, cada barra se estira desde donde estaba (transform, curva de salida rápida, 200 ms). Los botones se hunden al presionar. Sin movimiento si el sistema pide movimiento reducido.',
-      porque: 'Es un control que se usa decenas de veces por visita: la regla es animar poco y rápido, y solo lo que explica un cambio.',
-      alternativas: 'Sin animación.',
-      rutas: [['Probar cambiando la oleada', '/explorar?p=p26&ola=2023']],
-    },
-    {
-      s: 'explorador', id: 'exp-genero', origen: 'Claude',
-      titulo: 'El corte por género va con colores de identidad, no con la rampa de orden',
-      decidido: 'Masculino y Femenino con los dos primeros colores de identidad; los cortes ordenados (edad, educación, NSE, ideología, macrozona, impacto) siguen con la rampa.',
-      porque: 'La rampa dice «más o menos de algo»; entre géneros no hay orden. Es la regla de `paleta.ts`.',
-      rutas: [['p14 por género', '/explorar?p=p14&corte=sexo']],
-    },
-    {
-      s: 'explorador', id: 'exp-codex-2', origen: 'Codex, segunda pasada',
-      titulo: 'Qué se tomó de la revisión del diff de Codex: los seis hallazgos, verificados y aplicados',
-      decidido: '1) El orden por frecuencia cuenta personas, no porcentajes de grupos sumados (en p18a 2025 por edad, la televisión quedaba sobre las redes: 795 contra 803). 2) El selector usa el título de la oleada que se mira (p21 en 2023 dice «inversión china»). 3) Cambiar a una pregunta que no se compara borra la vista de la dirección; antes quedaba latente. 4) Entre oleadas la barra ya no muestra los casos de una oleada: la leyenda trae las respuestas de cada grupo u oleada, a la vista y en la tabla accesible. 5) Las flechas, Inicio y Fin mueven la oleada y la vista; un solo botón tabulable por grupo. 6) p20 en 2024 se preguntó en singular («¿Cuál sector…?»), aunque 302 de 488 marcaron dos o más: el enunciado de 2024 lo dice.',
-      porque: 'Cada uno se verificó contra el código o los datos antes de aplicarlo, y tiene su prueba o su medida. Después: 245 pruebas en verde y 606 estados medidos (36 preguntas, tres estados, de 320 a 1920 px) sin desbordes, títulos largos, valores cortados ni errores de consola.',
-      rutas: [['p18a por edad', '/explorar?p=p18a&ola=2025&corte=edad_rec'], ['p20 en 2024', '/explorar?p=p20&ola=2024']],
-    },
-    {
-      s: 'correcciones', id: 'cc-p11', origen: 'Subagente + verificado',
-      titulo: 'p11 cambia de población entre 2023 y 2024, y el diccionario la marca «Comparable» sin nota',
-      decidido: 'Proponer sumarlo a `correcciones_cliente.md`. En el explorador ya se compara solo entre quienes recibieron Sinovac, como en la historia.',
-      porque: 'En 2023 contestaron 507 (los que no marcaron «No, ninguna» en p9); en 2024 y 2025, toda la muestra. «Muy buena + Buena»: 55,0 / 39,1 / 35,2 % sobre todos; 55,0 / 45,8 / 44,6 % solo vacunados.',
-    },
-    {
-      s: 'correcciones', id: 'cc-p18a', origen: 'Subagente + verificado',
-      titulo: 'p18a: el libro 2024 trae el enunciado de 2025; en la base 2024 se preguntó cómo te informas sobre China',
-      decidido: 'Proponer sumarlo a la cola. En el explorador no se compara, y el título cambia con la oleada.',
-      porque: '«No me informo» es 26,2 % en 2024 y 5,6 % en 2025: es otra pregunta.',
-    },
-    {
-      s: 'correcciones', id: 'cc-notas', origen: 'Subagentes + verificado',
-      titulo: 'Notas del diccionario que no cuadran con los datos: p6 y p4',
-      decidido: 'Proponer sumarlas a la cola. El explorador muestra nuestra nota, no la del diccionario.',
-      porque: 'p6: el cambio de redacción es entre 2023 y 2024, no entre 2023 y 2025 como dice la nota. p4: la nota dice que las etiquetas de 2024 no se pudieron verificar, y la hoja Labels de la base 2024 las trae (1 = Boric, 2 = Kast).',
-    },
-    {
-      s: 'correcciones', id: 'cc-p6b', origen: 'Subagente + verificado',
-      titulo: 'p6b no ofrecía «Ninguno», y «Otro(s)» es la barra más larga (69 %)',
-      decidido: 'Se muestra con una nota: muchas de las personas que marcaron «Otro(s)» escribieron que no habían visitado ninguno, así que esa barra no mide viajes a otros países. Recodificar es decisión de ICLAC.',
-      porque: 'De 849 que marcaron «Otro(s)», 434 escribieron algo como «ninguno», «no» o «nada» (conteo aproximado con una expresión regular sobre el texto libre, que no viaja al navegador).',
-      alternativas: 'Sacar p6b del explorador hasta que ICLAC decida. Mostrarla sin «Otro(s)».',
-      rutas: [['p6b', '/explorar?p=p6b&ola=2025']],
-    },
-    {
-      s: 'correcciones', id: 'cc-filtros', origen: 'Subagente + verificado',
-      titulo: 'p20 se preguntó solo a quienes querían poder limitar inversiones (p19 = 1), y en 2024 en singular',
-      decidido: 'El explorador lo dice bajo la figura y muestra el enunciado de cada oleada. Proponer sumarlo a la cola.',
-      porque: 'Solo hay respuestas donde p19 = 1: 491 en 2023 y 488 en 2024. En 2024 el enunciado dice «¿Cuál sector…?» (hoja Variables de la base 2024), y aun así 302 de 488 marcaron dos o más.',
+      s: 'explorador', id: 'r11-revision', origen: 'Codex (quinta pasada)',
+      titulo: 'Qué se tomó de la revisión de Codex',
+      decidido: 'Aplicado: el pie de «Entre oleadas» decía «Una fila por oleada» también en las mancuernas; ahora dice «Un punto por oleada» o «Una barra por oleada». La nota de grupos chicos decía «en esa fila» con corte. Y el choque de colores de la tarjeta de la paleta.',
+      porque: 'Cada hallazgo se verificó en el código o con el validador. Después: 249 pruebas en verde y 606 estados de 320 a 1920 px sin desbordes, figuras vacías ni rótulos sobre puntos.',
     },
   ];
 
@@ -316,10 +234,18 @@
           : [v && v.etiqueta ? v.etiqueta : `${p.variable}: sin etiqueta`];
       const cats = (p.categorias || []).map((c) => c.etiqueta + (c.porOla ? ` (${Object.entries(c.porOla).map(([o, e]) => `${o}: ${e}`).join('; ')})` : '')).join(' · ');
       const titulosOla = p.tituloPorOla ? ` En cada oleada: ${Object.entries(p.tituloPorOla).map(([o, t]) => `${o}, «${t}»`).join('; ')}.` : '';
+      const dos = (k) => p.tipo !== 'multiple' && p.tipo !== 'numerica' && k === 2;
+      const corte = p.tipo === 'numerica'
+        ? 'una barra por grupo con su promedio, de 0 a 100'
+        : dos((p.categorias || []).length)
+          ? 'barras agrupadas, una por grupo en cada categoría'
+          : `mancuerna, una fila por ${p.tipo === 'multiple' ? 'opción' : 'categoría'} y un punto por grupo`;
+      const forma = p.tipo === 'numerica' || dos(((p.serie && p.serie.categorias) || p.categorias || []).length)
+        ? 'barras, una por oleada. '
+        : 'mancuerna, un punto por oleada. ';
       const serie = p.serie
-        ? `se compara entre ${lista(p.serie.olas.map(String))}${p.serie.variable !== p.variable ? ` con ${p.serie.variable}` : ''}.${p.serie.nota ? ` ${p.serie.nota}` : ''}`
+        ? `${forma}Se compara entre ${lista(p.serie.olas.map(String))}${p.serie.variable !== p.variable ? ` con ${p.serie.variable}` : ''}.${p.serie.nota ? ` ${p.serie.nota}` : ''}`
         : p.olas.length === 1 ? `solo se preguntó en ${p.olas[0]}, no hay comparación.` : `no se compara. ${p.sinSerie || ''}`;
-      const corte = p.tipo === 'numerica' ? 'promedio por grupo' : p.tipo === 'multiple' ? 'menciones por grupo' : 'reparto por grupo';
       const chicos = gruposChicos(j, p);
       const nota = NOTAS_PREGUNTA[p.id] || [];
       const ultima = p.olas[p.olas.length - 1];
@@ -340,6 +266,7 @@
         rutas: [
           [`En ${ultima}`, `/explorar?p=${p.id}&ola=${ultima}`],
           [`Con corte por edad`, `/explorar?p=${p.id}&ola=${ultima}&corte=edad_rec`],
+          [`Por género`, `/explorar?p=${p.id}&ola=${ultima}&corte=sexo`],
           ...(p.serie ? [['Entre oleadas', `/explorar?p=${p.id}&vista=serie`]] : []),
         ],
       };
@@ -362,7 +289,7 @@
     return hallados.length ? `Grupos con menos de 30 respuestas: ${lista(hallados)}.` : 'Ningún grupo baja de 30 respuestas.';
   }
 
-  /* Lo que ya cerraste en los JSON del 21-09, del 22-09 y del 23-09-2026. Solo lectura: no vuelve a pedir aprobación. */
+  /* Lo que ya cerraste en los JSON del 21-09 al 24-09-2026. Solo lectura: no vuelve a pedir aprobación. */
   const CERRADAS = [
     ['General', 'La raíz es un menú de tarjetas: pregunta y hallazgo, sin cifras'],
     ['General', 'Las frases de hallazgo de las tarjetas'],
@@ -431,6 +358,21 @@
     ['Cómo se hizo', 'El 159 se calcula de olas_panelista; las otras tres cifras a mano salieron con la tarjeta del monitor (séptima ronda)'],
     ['La mirada', 'Aplicado: «la posición política no ordena la opinión sobre China de forma robusta», en el titular, la escena, el cierre y la tarjeta (séptima ronda)'],
     ['Cómo se hizo', 'Opción C: una diferencia se afirma con p, intervalo y Holm; las familias pasan al ETL y la historia y la página leen el mismo número (octava ronda)'],
+    ['Explorador', 'Un catálogo curado decide título, orden y comparabilidad, y el ETL lo valida (novena ronda)'],
+    ['Explorador', '«Entre oleadas» muestra la escala completa, no la primera categoría (novena ronda)'],
+    ['Explorador', 'Solo se comparan las oleadas con la misma pregunta y las mismas categorías (novena ronda)'],
+    ['Explorador', 'Entre oleadas el corte se apaga y se ve apagado; «podría cambiar» con la mancuerna (novena ronda)'],
+    ['Explorador', 'Grupos con menos de 30 respuestas: se muestran con * y la nota (novena ronda)'],
+    ['Explorador', 'Títulos en tuteo, enunciado literal debajo; selector en el orden del catálogo (novena ronda)'],
+    ['Explorador', 'El estado vive en la dirección; 200 ms de movimiento y nada más; género con colores de identidad (novena ronda)'],
+    ['Explorador', 'Los seis hallazgos de la segunda pasada de Codex (novena ronda)'],
+    ['Explorador', 'Una figura para los tres estados: reemplazada por la mancuerna en las comparaciones (novena ronda; ver arriba)'],
+    ['Datos del cliente', 'p11, p18a, notas de p6 y p4, p6b y el filtro de p20 pasan a la cola de correcciones como C19 a C23 (novena ronda)'],
+    ['Explorador', 'Las comparaciones son mancuernas; eje de 0 al múltiplo de 20, declarado; rótulo de la última oleada o de los extremos (décima ronda)'],
+    ['Explorador', 'Grupos cercanos amontonados y categoría dominante: sin cambio; base de p10 sin cambio (décima ronda)'],
+    ['Explorador', 'Entre oleadas el corte sigue apagado (décima ronda)'],
+    ['Explorador', 'Binarias y termómetro vuelven a barras; paleta de grupos y nota de grupos chicos: aplicadas, arriba (décima ronda)'],
+    ['Datos del cliente', 'Texto de C19 a C23 aprobado y commiteado en correcciones_cliente.md (décima ronda)'],
   ];
 
   /* La tabla de hipótesis: el texto es del registro; las cifras, del artefacto. */

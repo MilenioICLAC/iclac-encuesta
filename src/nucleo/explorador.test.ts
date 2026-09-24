@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { Encuesta } from './tipos'
 import { CORTES } from './modulos'
-import { modelo, tituloEn, type Estado, type Modelo } from './explorador'
+import { formaDeFigura, modelo, tituloEn, type Estado, type Modelo } from './explorador'
+import { topePorcentaje } from './escala'
 
 /*
  * Cada pregunta del explorador, en cada uno de sus estados: una oleada (las tres), cada corte, y
@@ -50,6 +51,14 @@ describe('el explorador, pregunta por pregunta', () => {
             expect(p.olas.includes(e.ola) && e.vista === 'ola', donde).toBe(false)
             continue
           }
+
+          // La forma sigue a lo que se compara: mancuerna con oleadas o grupos, barras sin nada.
+          const esperado = e.vista === 'serie' && p.serie ? 'olas' : m.series.length > 0 ? 'grupos' : 'nada'
+          expect(m.compara, donde).toBe(esperado)
+          // Barras sin comparar, en el termómetro y en las de dos categorías; mancuerna en el resto.
+          const dos = m.forma === 'porcentajes' && m.escala === 'reparto' && m.bloques.length === 2
+          expect(formaDeFigura(m), donde).toBe(esperado === 'nada' || m.forma === 'medias' || dos ? 'barras' : 'mancuerna')
+          if (['binaria'].includes(p.tipo) && m.forma === 'porcentajes') expect(formaDeFigura(m), `${donde}: binaria`).toBe('barras')
 
           if (e.vista === 'serie' && p.serie) {
             // Entre oleadas: exactamente las oleadas que el catálogo compara.
@@ -142,5 +151,28 @@ describe('los casos que estaban rotos', () => {
     if (m.forma !== 'porcentajes') throw new Error('esperaba porcentajes')
     expect(m.escala).toBe('menciones')
     expect(m.bloques[m.bloques.length - 1].clave).toBe('p6b_98')
+  })
+})
+
+describe('el eje de la mancuerna de porcentajes', () => {
+  it('parte en cero y sube al múltiplo de 20 sobre el mayor valor, sin pasar de 100', () => {
+    expect(topePorcentaje([3.2, 58.1])).toBe(60)
+    expect(topePorcentaje([60])).toBe(60)
+    expect(topePorcentaje([60.4])).toBe(80)
+    expect(topePorcentaje([99.9])).toBe(100)
+    expect(topePorcentaje([1, 4])).toBe(20)
+    expect(topePorcentaje([])).toBe(20)
+  })
+})
+
+describe('los casos de la décima ronda', () => {
+  const p = (id: string) => encuesta.preguntas.find((x) => x.id === id)!
+  const serie = (id: string) => modelo(encuesta, p(id), { vista: 'serie', ola: 2025, corte: null, soloIndependientes: false })
+  it('el termómetro y las de sí o no van en barras; p7 y p26 en mancuerna', () => {
+    expect(formaDeFigura(serie('p5_1_val'))).toBe('barras')
+    expect(formaDeFigura(serie('p19'))).toBe('barras')
+    expect(formaDeFigura(serie('p9'))).toBe('barras')
+    expect(formaDeFigura(serie('p7'))).toBe('mancuerna')
+    expect(formaDeFigura(serie('p26'))).toBe('mancuerna')
   })
 })

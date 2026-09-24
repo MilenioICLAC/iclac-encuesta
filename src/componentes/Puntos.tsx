@@ -1,4 +1,5 @@
 import type React from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Gráfico de puntos: una fila por entidad, un punto por grupo sobre esa misma fila.
@@ -26,6 +27,20 @@ const ALTO_FILA = 22
 /** Separación mínima entre el punto más chico y el más grande, en porcentaje del lienzo, para
  *  rotular los dos extremos. Bajo eso los dos rótulos se pisan y va solo el del máximo. */
 const SEPARACION_MINIMA = 22
+
+/**
+ * Ancho en px de un rótulo de punto, medido con la familia que de verdad lo pinta (la del lienzo,
+ * a 10 px); si no hay `canvas`, estimado.
+ */
+let medidor: CanvasRenderingContext2D | null | undefined
+function anchoRotulo (texto: string, familia: string): number {
+  if (medidor === undefined) {
+    medidor = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d')
+  }
+  if (!medidor) return texto.length * 6.5
+  medidor.font = `10px ${familia || 'sans-serif'}`
+  return medidor.measureText(texto).width
+}
 
 export interface SerieDePuntos {
   clave: string
@@ -92,13 +107,40 @@ interface Props {
   /** La leyenda al pie. Se apaga cuando quien usa la figura pone la suya, como el recorrido, que
    *  la necesita arriba y como rampa: dos leyendas de lo mismo es peor que ninguna. */
   leyenda?: boolean
+  /**
+   * Nombres de fila en dos líneas en vez de cortados. Para el explorador, donde una fila es una
+   * categoría del cuestionario («Debería poder limitarlas en sectores estratégicos») y cortada no
+   * se lee. Las historias tienen nombres cortos y siguen con el corte de una línea.
+   */
+  rotulosLargos?: boolean
+  /**
+   * Con una serie destacada, su número va al lado donde no hay otro punto, y si los dos lados
+   * están ocupados sale por fuera del extremo más cercano. Sin esto el número va siempre a la
+   * derecha y en el explorador caía encima del punto de otra oleada (`p3`, fila «2»: 2,4 y 5,0).
+   * Mide el lienzo en píxeles, así que el lado puede cambiar con el ancho; el recorrido no lo usa
+   * porque ahí un rótulo que salta de lado al encender un punto se lee como un cambio del dato.
+   */
+  esquivar?: boolean
 }
 
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
   anchoEtiqueta = '5.5rem', rotular = 'extremos', visible, compacto = false,
-  altoFila = ALTO_FILA, radioCreciente = false, unidadEje, leyenda = true,
+  altoFila = ALTO_FILA, radioCreciente = false, unidadEje, leyenda = true, rotulosLargos = false,
+  esquivar = false,
 }: Props) {
+  // El lienzo de la primera fila, guardado en estado y no en una ref: si la primera fila cambia
+  // (otra pregunta en la misma vista), el observador tiene que pasar al nodo nuevo (Codex).
+  const [lienzo, setLienzo] = useState<HTMLDivElement | null>(null)
+  const [anchoLienzo, setAnchoLienzo] = useState(0)
+  const [familia, setFamilia] = useState('')
+  useEffect(() => {
+    if (!esquivar || !lienzo) return
+    setFamilia(getComputedStyle(lienzo).fontFamily)
+    const observador = new ResizeObserver(([e]) => setAnchoLienzo(e.contentRect.width))
+    observador.observe(lienzo)
+    return () => observador.disconnect()
+  }, [esquivar, lienzo])
   // Tres oleadas dan 8, 10 y 12 px. El escalón es de 2 px porque con 1 no se distingue y con 3
   // el punto más nuevo empieza a tapar a su vecino.
   const tamano = (i: number) => (radioCreciente ? PUNTO - 2 + i * 2 : PUNTO)
@@ -180,12 +222,43 @@ export default function Puntos ({
           // extremo si había espacio, y en el recorrido eso dejaba el número de una oleada vieja
           // pegado al lado del de la última: dos números, y solo uno era del que hablaba el paso.
           const porExtremos = destacado === undefined
-          const aIzquierda = porExtremos
+          let aIzquierda = porExtremos
             ? (separados ? enMin : undefined)
             : (destacado === enMin ? destacado : undefined)
-          const aDerecha = porExtremos
+          let aDerecha = porExtremos
             ? enMax
             : (destacado === enMin ? undefined : destacado)
+          // Dónde se ancla cada rótulo: por defecto, en su propio punto.
+          let anclaIzquierda = aIzquierda?.valor
+          let anclaDerecha = aDerecha?.valor
+          if (esquivar && destacado && puntos.length === 1) {
+            // Un punto solo: siempre a la derecha, para que la columna de números no alterne.
+            aIzquierda = undefined
+            aDerecha = destacado
+          } else if (esquivar && destacado && anchoLienzo > 0) {
+            const px = (v: number) => (x(v) / 100) * anchoLienzo
+            // 10 px de separación (pl-2.5) más el texto, medido.
+            const largo = 10 + anchoRotulo(formato(destacado.valor), familia)
+            const otros = puntos.filter((p) => p !== destacado).map((p) => px(p.valor) - px(destacado.valor))
+            // El radio del punto vecino más grande posible (12 px con tres oleadas) más un px de aire.
+            const libreDerecha = otros.every((d) => d <= 0 || d > largo + PUNTO / 2 + 2)
+            const libreIzquierda = otros.every((d) => d >= 0 || -d > largo + PUNTO / 2 + 2)
+            // En un extremo, hacia afuera; en medio, al lado libre; sin lado libre, por fuera
+            // del extremo más cercano.
+            const lado = destacado === enMax
+              ? 'derecha'
+              : destacado === enMin
+                ? 'izquierda'
+                : libreDerecha
+                  ? 'derecha'
+                  : libreIzquierda
+                    ? 'izquierda'
+                    : max - x(destacado.valor) <= x(destacado.valor) - min ? 'fueraDerecha' : 'fueraIzquierda'
+            aIzquierda = lado === 'izquierda' || lado === 'fueraIzquierda' ? destacado : undefined
+            aDerecha = lado === 'derecha' || lado === 'fueraDerecha' ? destacado : undefined
+            anclaIzquierda = lado === 'fueraIzquierda' ? enMin.valor : destacado.valor
+            anclaDerecha = lado === 'fueraDerecha' ? enMax.valor : destacado.valor
+          }
 
           return (
             // En pantalla angosta el nombre va sobre su fila y no al lado: la columna de texto
@@ -195,11 +268,12 @@ export default function Puntos ({
               className={`${rejilla} items-center ${compacto ? '' : 'pb-1 sm:pb-0'}`}
               style={ancho}
             >
-              <span className={`truncate text-xs text-gray-700 sm:text-right ${fila.color ? 'flex items-center gap-1.5 sm:justify-end' : ''}`} title={fila.etiqueta}>
+              <span className={`${rotulosLargos ? 'leading-snug' : 'truncate'} text-xs text-gray-700 sm:text-right ${fila.color ? 'flex items-center gap-1.5 sm:justify-end' : ''}`} title={fila.etiqueta}>
                 {fila.color && <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: fila.color }} />}
                 {fila.etiqueta}
               </span>
               <div
+                ref={fila === filas[0] ? setLienzo : undefined}
                 className="relative"
                 style={{ height: 'var(--alto-fila-ancho, var(--alto-fila))', marginLeft: MARGEN, marginRight: MARGEN }}
               >
@@ -248,7 +322,7 @@ export default function Puntos ({
                 {aIzquierda && (
                   <span
                     className="absolute inset-y-0 flex items-center justify-end pr-2.5 text-[10px] tabular-nums text-gray-500"
-                    style={{ right: `${100 - x(aIzquierda.valor)}%` }}
+                    style={{ right: `${100 - x(anclaIzquierda ?? aIzquierda.valor)}%` }}
                   >
                     {formato(aIzquierda.valor)}
                   </span>
@@ -256,7 +330,7 @@ export default function Puntos ({
                 {aDerecha && (
                   <span
                     className="absolute inset-y-0 flex items-center pl-2.5 text-[10px] tabular-nums text-gray-500"
-                    style={{ left: `${x(aDerecha.valor)}%` }}
+                    style={{ left: `${x(anclaDerecha ?? aDerecha.valor)}%` }}
                   >
                     {formato(aDerecha.valor)}
                   </span>
