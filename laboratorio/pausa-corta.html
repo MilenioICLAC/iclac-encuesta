@@ -1,0 +1,399 @@
+<title>Laboratorio de la pausa corta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo va en claro: la app no tiene modo oscuro y la capa del recorrido es blanca. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca-oscura: #00776E;
+    --g600: #4B5563;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+
+  .envoltorio { max-width: 1960px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 96ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  .combinaciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; }
+  .combinacion { text-align: left; border: 1px solid var(--linea); background: var(--superficie); border-radius: 12px; padding: 10px 12px; font: inherit; cursor: pointer; color: var(--tinta); }
+  .combinacion strong { display: block; font-family: var(--display); font-weight: 600; font-size: 14px; }
+  .combinacion span { display: block; font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
+  .combinacion[aria-pressed="true"] { border-color: var(--marca-oscura); box-shadow: inset 0 0 0 1px var(--marca-oscura); }
+
+  /* La barra de la app, copiada cuadro a cuadro y a dos veces su tamaño: es donde se siente el largo. */
+  .lupa { padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); overflow: hidden; }
+  .lupa > span { display: block; font-size: 11.5px; color: var(--tinta-suave); margin-bottom: 8px; }
+  .lupa-lienzo { overflow: hidden; }
+  .lupa-lienzo svg { display: block; }
+
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .barra-visor b { color: var(--tinta); font-weight: 600; }
+  .barra-visor .corto { color: #B42318; }
+  .lienzo { padding-block: 16px; display: flex; justify-content: center; }
+  .caja { position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); background: #fff; }
+  .caja iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+
+  .exportar { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .exportar textarea { font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; min-height: 64px; }
+  .exportar pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--papel); border-radius: 8px; padding: 8px; user-select: all; }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fila small { color: var(--tinta-suave); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>La pausa: segunda ronda</h1>
+    <p>La app real, en un marco. Fijo desde la primera ronda: la pausa tiene su pantalla propia, queda quieta un paso y los cortes de la barra miden 4 px. Lo que se decide: cuánto sube la escena siguiente. Con la subida entera, en escritorio la pausa cuesta 1,4 pantallas (3,5 pasos): la subida es una pantalla completa y es lo que alarga su tramo en la barra.</p>
+  </header>
+
+  <ul class="avisos">
+    <li>La barra dice cuánto scroll falta, así que su tramo se acorta acortando el scroll, no dibujándolo más chico.</li>
+    <li>Con una subida menor que una pantalla, la escena siguiente arranca más arriba: al terminar lo quieto aparece con un fundido, ya subiendo, y la frase de la pausa se va hacia arriba. La pausa cuesta lo quieto más la subida.</li>
+    <li>Las marcas de la barra se calculan acá con la misma regla que la app (el borde de cada paso y cada pausa menos su margen de scroll), porque la app no las rehace cuando cambia un margen.</li>
+    <li>La entrada a la pausa, la portada, el cierre y los pasos no cambian. Movimiento reducido no se simula: en la app, con esa preferencia no hay fundidos.</li>
+    <li>Para mover el marco con la rueda, el puntero tiene que estar encima.</li>
+  </ul>
+
+  <div class="combinaciones">
+    <button class="combinacion" data-combinacion="app" aria-pressed="false"><strong>Como está la app</strong><span>Pausa quieta 0,75 de pantalla, la escena siguiente sube una pantalla desde abajo, cortes de 2 px.</span></button>
+    <button class="combinacion" data-combinacion="elegida" aria-pressed="false"><strong>La elegida en la primera ronda</strong><span>Pausa quieta un paso, la escena siguiente sube una pantalla, cortes de 4 px. En escritorio la pausa cuesta 3,5 pasos.</span></button>
+    <button class="combinacion" data-combinacion="segunda" aria-pressed="false"><strong>La de la segunda ronda</strong><span>La escena siguiente arranca más arriba y sube 0,4 de pantalla mientras aparece. En escritorio la pausa cuesta 2 pasos; en el teléfono, 1,5.</span></button>
+    <button class="combinacion" data-combinacion="propuesta" aria-pressed="false"><strong>Propuesta</strong><span>Lo mismo, y en escritorio la frase de la pausa entra desde abajo y sube con el scroll, como las frases de los pasos.</span></button>
+  </div>
+
+  <div class="controles">
+    <div class="grupo"><span>Historia</span><div class="seg" data-parametro="historia"></div></div>
+    <div class="grupo"><span>Pantalla</span><div class="seg" data-parametro="pantalla"></div></div>
+    <div class="grupo"><span>Cuánto sube la escena siguiente después de la pausa</span><div class="seg" data-parametro="subida"></div></div>
+    <div class="grupo"><span>La frase de la pausa, en escritorio (desde 900 px)</span><div class="seg" data-parametro="texto"></div></div>
+  </div>
+
+  <div class="lupa">
+    <span>La barra de la capa, ×2</span>
+    <div class="lupa-lienzo" id="lupa"></div>
+  </div>
+
+  <div class="marco">
+    <div class="barra-visor" id="medidas" aria-live="off"></div>
+    <div class="lienzo"><div class="caja" id="caja"><iframe id="visor" title="La app con la pausa elegida"></iframe></div></div>
+  </div>
+
+  <div class="exportar">
+    <label for="nota" style="font-size:11.5px;color:var(--tinta-suave)">Nota (qué te gustó, qué no, qué dispositivo usaste)</label>
+    <textarea id="nota"></textarea>
+    <div class="fila"><button class="accion" id="copiar">Copiar JSON</button><small id="copiado"></small></div>
+    <pre id="json" hidden></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  // v2: segunda ronda. Lo guardado por la primera (`quieta`, `salida`, `corte`) no se lee.
+  const CLAVE = 'lab-pausa-corta-v2'
+
+  // «Un paso» es el de la app en ese ancho: 0,4 de pantalla con el texto que corre (desde 900 px)
+  // y 0,75 en el resto (`PASO_TEXTO_CORRE` y `Pista` en CapaRecorrido.tsx).
+  const OPCIONES = {
+    historia: [
+      ['mirada', 'La mirada'], ['entre-potencias', 'Entre dos potencias'], ['territorio', 'Donde uno vive'],
+      ['inversion', 'Inversión y Estado'], ['china-cotidiana', 'China cotidiana'], ['vacuna', 'La vacuna'],
+    ],
+    pantalla: [['360x640', '360×640'], ['390x844', '390×844'], ['768x1024', '768'], ['1512x860', '1512'], ['todo', 'Todo']],
+    // Cuánto sube la escena siguiente después de lo quieto, en pantallas. Con 1 sube desde abajo
+    // (la elegida en la primera ronda); con menos arranca más arriba y aparece con un fundido; con 0
+    // aparece en el lugar.
+    subida: [['1', 'una pantalla, desde abajo (1.ª ronda)'], ['0.6', '0,6 de pantalla'], ['0.4', '0,4'], ['0.2', '0,2'], ['0', 'no sube: fundido en el lugar']],
+    // Solo en escritorio: en el teléfono la frase de la pausa ya entra como las de los pasos
+    // (fundido y 20 px desde abajo), porque allá las frases no corren.
+    texto: [['quieto', 'aparece en el centro (hoy)'], ['corre', 'sube desde abajo, como las frases']],
+  }
+
+  // Decidido en la primera ronda (25-09-2026): la pausa queda quieta un paso y los cortes miden
+  // 4 px. «Como está la app» los muestra como estaban (0,75, subida entera, 2 px) para comparar.
+  const PRESETS = {
+    app: { quieta: '0.75', subida: '1', corte: '2', texto: 'quieto' },
+    elegida: { quieta: 'paso', subida: '1', corte: '4', texto: 'quieto' },
+    segunda: { quieta: 'paso', subida: '0.4', corte: '4', texto: 'quieto' },
+    propuesta: { quieta: 'paso', subida: '0.4', corte: '4', texto: 'corre' },
+  }
+
+  const inicial = { combinacion: 'propuesta', historia: 'entre-potencias', pantalla: '1512x860', ...PRESETS.propuesta }
+  const FIJOS = { quieta: ['0.75', 'paso'], corte: ['2', '4'] }
+
+  // Leído por identificador y validado contra las opciones: un valor guardado por una versión
+  // anterior que ya no existe cae al inicial en vez de romper.
+  const estado = { ...inicial }
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE) || '{}')
+    for (const k of Object.keys(inicial)) {
+      const v = guardado[k]
+      if (k === 'combinacion' ? Object.keys(PRESETS).includes(v) : FIJOS[k] ? FIJOS[k].includes(v) : OPCIONES[k]?.some(([id]) => id === v)) estado[k] = v
+    }
+    if (typeof guardado.nota === 'string') document.getElementById('nota').value = guardado.nota
+  } catch { /* sin almacenamiento, se usa el inicial */ }
+  const guardar = () => {
+    try { localStorage.setItem(CLAVE, JSON.stringify({ ...estado, nota: document.getElementById('nota').value })) } catch { /* nada */ }
+  }
+
+  // ---- Controles -----------------------------------------------------------------------------
+
+  for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+    const k = grupo.dataset.parametro
+    for (const [id, rotulo] of OPCIONES[k]) {
+      const b = document.createElement('button')
+      b.type = 'button'; b.dataset.valor = id; b.textContent = rotulo
+      b.addEventListener('click', () => { estado[k] = id; estado.combinacion = combinacionDe(); cambio(k) })
+      grupo.append(b)
+    }
+  }
+  // Una combinación con nombre se marca solo si los parámetros son exactamente los suyos.
+  const combinacionDe = () => Object.entries(PRESETS).find(([, p]) => Object.entries(p).every(([k, v]) => estado[k] === v))?.[0] ?? 'propia'
+  for (const b of document.querySelectorAll('[data-combinacion]')) {
+    b.addEventListener('click', () => {
+      estado.combinacion = b.dataset.combinacion
+      Object.assign(estado, PRESETS[estado.combinacion])
+      cambio('combinacion')
+    })
+  }
+  document.getElementById('nota').addEventListener('input', guardar)
+
+  function pintarControles () {
+    for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+      for (const b of grupo.children) b.setAttribute('aria-pressed', String(b.dataset.valor === estado[grupo.dataset.parametro]))
+    }
+    for (const b of document.querySelectorAll('[data-combinacion]')) b.setAttribute('aria-pressed', String(b.dataset.combinacion === estado.combinacion))
+  }
+
+  // ---- El marco ------------------------------------------------------------------------------
+
+  const caja = document.getElementById('caja')
+  const visor = document.getElementById('visor')
+
+  function medidasPantalla () {
+    if (estado.pantalla === 'todo') return [window.innerWidth, window.innerHeight]
+    return estado.pantalla.split('x').map(Number)
+  }
+
+  function dimensionar () {
+    const [w, h] = medidasPantalla()
+    const disponible = document.documentElement.clientWidth - 16
+    const escala = Math.min(1, disponible / w)
+    visor.style.width = w + 'px'; visor.style.height = h + 'px'
+    visor.style.transform = escala < 1 ? `scale(${escala})` : ''
+    caja.style.width = Math.round(w * escala) + 'px'; caja.style.height = Math.round(h * escala) + 'px'
+  }
+
+  function cargar () { visor.src = `/#/historias/${estado.historia}` }
+
+  function cambio (k) {
+    guardar(); pintarControles()
+    if (k === 'historia') { cargar(); return }
+    if (k === 'pantalla') dimensionar()
+    aplicar()
+  }
+
+  window.addEventListener('resize', () => { if (estado.pantalla === 'todo') dimensionar(); aplicar() })
+
+  const docApp = () => { try { return visor.contentDocument } catch { return null } }
+  const capaApp = () => docApp()?.querySelector('.capa-recorrido')
+
+  // ---- Lo que se inyecta en la app -----------------------------------------------------------
+
+  // El paso de la app en el ancho de la capa. El texto que corre también se apaga con movimiento
+  // reducido, pero eso no se simula acá.
+  function pasoDeLaApp () {
+    const capa = capaApp()
+    return capa && capa.clientWidth >= 900 ? 0.4 : 0.75
+  }
+
+  function quieta () {
+    const p = pasoDeLaApp()
+    return estado.quieta === 'paso' ? p : estado.quieta === 'medio' ? p / 2 : 0.75
+  }
+
+  // La geometría de hoy, con `Q` en vez de 0,75 (index.css, `.escena-recorrido + .respiro-recorrido`):
+  // la escena de antes se alarga Q y la pausa mide 1 + Q y sube lo mismo, así que entra en el mismo
+  // lugar que hoy y queda quieta Q. Con el fundido, la escena siguiente sube una pantalla y queda
+  // montada sobre el final de la pausa: empieza justo cuando termina lo quieto.
+  function css () {
+    const Q = quieta()
+    let s = `
+      .escena-recorrido:has(+ .respiro-recorrido)::after { height: calc(var(--alto-capa, 100svh) * ${Q}) !important; }
+      .escena-recorrido + .respiro-recorrido {
+        margin-top: calc(var(--alto-capa, 100svh) * ${-(1 + Q)}) !important;
+        min-height: calc(var(--alto-capa, 100svh) * ${1 + Q}) !important;
+      }
+    `
+    // La frase que corre: deja de estar pegada al centro y se ubica, dentro de la pausa, al 80 % de
+    // la pantalla (`LECTURA_TEXTO_CORRE`, donde queda la frase de un paso cuando se activa). Como la
+    // pausa entra con su borde en el de la capa, al cruzar la línea la frase aparece ahí y después
+    // sube con el scroll. Solo desde 900 px y sin movimiento reducido, como el texto que corre.
+    if (estado.texto === 'corre') {
+      s += `
+        @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+          .escena-recorrido + .respiro-recorrido > .escena {
+            position: absolute !important; left: 0; right: 0; top: calc(var(--alto-capa, 100svh) * 0.8) !important;
+            height: 0 !important; min-height: 0 !important; padding-block: 0 !important; overflow: visible;
+          }
+        }
+      `
+    }
+    // La escena siguiente sube `d` después de lo quieto: se monta sobre el final de la pausa lo que
+    // no sube (1 − d), y como a ese punto ya asoma a media pantalla, aparece con un fundido.
+    const d = Number(estado.subida)
+    if (d < 1) {
+      s += `
+        .respiro-recorrido + .escena-recorrido { margin-top: calc(var(--alto-capa, 100svh) * ${-(1 - d)}); }
+        .respiro-recorrido + .escena-recorrido > .escena {
+          transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .respiro-recorrido + .escena-recorrido:not([data-lab-cruzada]) > .escena { opacity: 0; transform: translateY(20px); pointer-events: none; }
+        .respiro-recorrido + .escena-recorrido:not([data-lab-cruzada]) .tarjeta-frase { opacity: 0 !important; }
+        /* La frase de la pausa se va hacia arriba, como una frase de escena. */
+        .respiro-recorrido:has(+ .escena-recorrido[data-lab-cruzada]) { pointer-events: none !important; }
+        .respiro-recorrido:has(+ .escena-recorrido[data-lab-cruzada]) .bloque-texto { opacity: 0 !important; transform: translateY(-20px) !important; }
+      `
+    }
+    return s
+  }
+
+  function aplicar () {
+    const doc = docApp()
+    if (!doc || !capaApp()) return
+    let estilo = doc.getElementById('lab-estilo')
+    if (!estilo) { estilo = doc.createElement('style'); estilo.id = 'lab-estilo'; doc.head.append(estilo) }
+    estilo.textContent = css()
+  }
+
+  // Las paradas, con la regla de la app (`paradas` en CapaRecorrido.tsx): el borde del elemento en
+  // coordenadas de contenido, menos su `scroll-margin-top`.
+  function paradas (capa, selector) {
+    const base = capa.getBoundingClientRect().top - capa.scrollTop
+    return [...capa.querySelectorAll(selector)].map((el) => {
+      const margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+      return { el, y: Math.round(el.getBoundingClientRect().top - base - margen) }
+    })
+  }
+
+  // ---- Cada cuadro ---------------------------------------------------------------------------
+
+  const lupa = document.getElementById('lupa')
+  function cuadro () {
+    const capa = capaApp()
+    if (capa) {
+      const tope = capa.scrollHeight - capa.clientHeight
+      // Cuándo empieza a llegar la escena que sigue a una pausa: al terminar lo quieto, cuando su
+      // borde de arriba está a `d` de pantalla del de la capa (con d = 0, la línea de `Respiro`).
+      const arriba = capa.getBoundingClientRect().top
+      const d = Number(estado.subida)
+      for (const n of capa.querySelectorAll('.respiro-recorrido + .escena-recorrido')) {
+        const cruzada = d < 1 && n.getBoundingClientRect().top - arriba <= d * capa.clientHeight + 1
+        if (cruzada !== n.hasAttribute('data-lab-cruzada')) n.toggleAttribute('data-lab-cruzada', cruzada)
+      }
+      // Las marcas, recalculadas, sobre los cortes que dibuja la app, con el ancho elegido.
+      const barra = capa.querySelector('[role="progressbar"]')
+      const svg = barra?.querySelector('svg')
+      if (svg && tope > 0) {
+        const W = barra.clientWidth
+        const marcas = paradas(capa, '.respiro-recorrido, .paso-recorrido').map(({ y }) => y / tope).filter((f) => f > 0.002 && f < 0.998)
+        const cortes = svg.querySelectorAll('rect')
+        const ancho = Number(estado.corte)
+        cortes.forEach((r, i) => {
+          const f = marcas[i]
+          if (f === undefined) { r.setAttribute('width', '0'); return }
+          r.setAttribute('x', (f * W - ancho / 2).toFixed(2)); r.setAttribute('width', String(ancho))
+        })
+        lupa.innerHTML = svg.outerHTML.replace('<svg', `<svg style="width:${W * 2}px;height:${barra.clientHeight * 2}px"`)
+      }
+      medir(capa)
+    }
+    requestAnimationFrame(cuadro)
+  }
+
+  // ---- Medidas en la barra del visor ---------------------------------------------------------
+
+  const medidas = document.getElementById('medidas')
+  let ultima = {}
+  let firmaMedida = ''
+  function medir (capa) {
+    const alto = capa.clientHeight
+    const lista = paradas(capa, '.respiro-recorrido, .paso-recorrido')
+      .map(({ el, y }) => ({ pausa: el.classList.contains('respiro-recorrido'), y }))
+      .sort((a, b) => a.y - b.y)
+    // Pausa → primera frase de la escena siguiente, en pantallas y en pasos.
+    const pausas = lista.map((c, i) => (c.pausa && lista[i + 1] ? (lista[i + 1].y - c.y) / alto : null)).filter((v) => v !== null)
+    const p = pasoDeLaApp()
+    const firma = JSON.stringify([pausas, alto, capa.scrollHeight, estado])
+    if (firma === firmaMedida) return
+    firmaMedida = firma
+    const media = pausas.length ? pausas.reduce((a, b) => a + b, 0) / pausas.length : null
+    ultima = {
+      pantalla: `${capa.clientWidth}x${alto}`,
+      paso: p,
+      pausaQuieta: +quieta().toFixed(2),
+      pausaHastaPrimeraFrase: pausas.map((v) => +v.toFixed(2)),
+      pausaEnPasos: media === null ? null : +(media / p).toFixed(1),
+      historiaEnPantallas: +((capa.scrollHeight - alto) / alto).toFixed(1),
+    }
+    medidas.innerHTML = `<span>Capa <b>${capa.clientWidth}×${alto}</b></span>` +
+      `<span>Un paso: <b>${String(p).replace('.', ',')}</b> de pantalla</span>` +
+      (media === null ? '<span>Esta historia no tiene pausas</span>' :
+        `<span>Pausa hasta la primera frase siguiente: <b class="${media / p > 1.5 ? 'corto' : ''}">${ultima.pausaHastaPrimeraFrase.map((v) => String(v).replace('.', ',')).join(' · ')}</b> pantallas = <b class="${media / p > 1.5 ? 'corto' : ''}">${String(ultima.pausaEnPasos).replace('.', ',')}</b> pasos</span>`) +
+      `<span>Historia entera: <b>${String(ultima.historiaEnPantallas).replace('.', ',')}</b> pantallas</span>`
+  }
+
+  // ---- Exportar -----------------------------------------------------------------------------
+
+  document.getElementById('copiar').addEventListener('click', async () => {
+    const { combinacion, ...parametros } = estado
+    const datos = {
+      laboratorio: 'pausa-corta',
+      fecha: new Date().toISOString().slice(0, 10),
+      combinacion,
+      parametros,
+      textos: {},
+      medida: ultima,
+      nota: document.getElementById('nota').value,
+    }
+    const texto = JSON.stringify(datos, null, 2)
+    const pre = document.getElementById('json')
+    pre.textContent = texto; pre.hidden = false
+    try { await navigator.clipboard.writeText(texto); document.getElementById('copiado').textContent = 'Copiado.' }
+    catch { document.getElementById('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.' }
+  })
+
+  // ---- Arranque -----------------------------------------------------------------------------
+
+  visor.addEventListener('load', () => {
+    const win = visor.contentWindow
+    const esperar = () => { if (capaApp()?.querySelector('.paso-recorrido')) setTimeout(aplicar, 300); else setTimeout(esperar, 100) }
+    esperar()
+    win.addEventListener('resize', aplicar)
+    win.addEventListener('hashchange', () => { setTimeout(esperar, 50) })
+  })
+
+  // La combinación marcada sale de los parámetros guardados, no de la última elegida.
+  estado.combinacion = combinacionDe()
+  pintarControles(); dimensionar(); cargar(); requestAnimationFrame(cuadro)
+})()
+</script>

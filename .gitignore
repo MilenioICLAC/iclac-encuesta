@@ -46,3 +46,7 @@ public/laboratorio-decisiones.html
 public/laboratorio-la-encuesta.html
 # Y el del scroll en escritorio: `npm run lab:scroll` a partir de `laboratorio/scroll-escritorio.html`.
 public/laboratorio-scroll.html
+# Y el de la barra de avance con barco: `npm run lab:barco` a partir de `laboratorio/barra-barco.html`.
+public/laboratorio-barco.html
+# Y el de la pausa corta: `npm run lab:pausa` a partir de `laboratorio/pausa-corta.html`.
+public/laboratorio-pausa.html
