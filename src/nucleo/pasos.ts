@@ -16,6 +16,26 @@ import { useEffect, useRef, useState } from 'react'
  *     recortada: `prefers-reduced-motion` salta al último paso, que es el que tiene todo.
  */
 
+/**
+ * Si una media query se cumple, y se actualiza cuando deja de cumplirse. Sirve para decisiones que
+ * viven en React y no solo en el CSS: en escritorio la escena dibuja sus frases en la pista (el
+ * texto corre), y eso cambia qué se renderiza, no solo cómo se ve.
+ */
+export function useConsulta (consulta: string) {
+  // Se lee al crear el estado y no solo en el efecto: partir en `false` dibujaba un primer cuadro
+  // sin tarjetas y con pasos de 0,75, y las marcas de la barra saltaban (Codex, 25-09-2026).
+  const [cumple, setCumple] = useState(() => typeof matchMedia === 'function' && matchMedia(consulta).matches)
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return
+    const lista = matchMedia(consulta)
+    setCumple(lista.matches)
+    const alCambiar = () => { setCumple(lista.matches) }
+    lista.addEventListener('change', alCambiar)
+    return () => { lista.removeEventListener('change', alCambiar) }
+  }, [consulta])
+  return cumple
+}
+
 export function useMovimientoReducido () {
   const [reducido, setReducido] = useState(false)
   useEffect(() => {

@@ -92,4 +92,5 @@ comprueba con un `tsconfig` temporal que lo incluya.
 | `laboratorio/recorrido.html` | `npm run lab` | escenas del recorrido; sin revisar desde el 08-09 |
 | `laboratorio/cierre-recorrido.html` | `npm run lab:cierre` | cerrado, falta podar |
 | `laboratorio/portada-recorrido.html` | `npm run lab:portada` | cerrado, falta podar |
+| `laboratorio/scroll-escritorio.html` | `npm run lab:scroll` | decidido y aplicado (25-09-2026): B (texto que corre, paso 0,4, frase al 80 %) y flechas; falta podar |
 | `laboratorio/la-encuesta.html` | `npm run lab:la-encuesta` | cerrado, falta podar: JSON aplicado el 24-09-2026 en `FichaTecnica.tsx` (la pestaña es «Ficha técnica»); se hizo sin iframe porque la pestaña no existía |

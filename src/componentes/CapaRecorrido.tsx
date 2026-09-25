@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePasoActivo } from '../nucleo/pasos'
+import { useConsulta, usePasoActivo } from '../nucleo/pasos'
 import { NumeroHistoria, Siguiente } from './siguiente'
 
 /**
@@ -72,6 +72,66 @@ function paradas (contenedor: HTMLElement, selector: string) {
   }))].sort((a, b) => a - b)
 }
 
+/**
+ * Adónde llevan «anterior» y «siguiente», con el teclado o con las flechas de la pantalla: **solo a
+ * los lugares donde algo cambia** (la portada, cada paso, cada pausa y el final), no a los colchones
+ * de entrada y salida de cada escena, donde no cambia nada.
+ *
+ * Existe por quien no tiene rueda (Fran, 25-09-2026): un clic en la barra de scroll baja 87,5 % de
+ * la pantalla y se saltaba frases, y arrastrarla mueve de 10 a 23 px por píxel. Las flechas le dan
+ * «el siguiente» en vez de una cantidad de píxeles.
+ *
+ * **Con el texto que corre (escritorio), la parada de un paso no es el destino.** En la parada la
+ * figura cambia, pero la frase recién está entrando por abajo (su centro al 80 % de la pantalla).
+ * El destino es, dentro del mismo paso, donde la frase queda centrada en la figura, sin entrar al
+ * degradado bajo el titular y sin llegar al paso siguiente. Medido en el laboratorio del scroll: 48
+ * de 48 llegadas centradas (a 25 px como máximo en 1366×768), enteras y con la figura en su paso.
+ */
+function paradasDeCambio (capa: HTMLElement) {
+  const tope = capa.scrollHeight - capa.clientHeight
+  const arriba = capa.getBoundingClientRect().top - capa.scrollTop
+  const lista = paradas(capa, '.portada-recorrido, .respiro-recorrido, .paso-recorrido')
+  if (lista[lista.length - 1] !== tope) lista.push(tope)
+  for (const paso of capa.querySelectorAll<HTMLElement>('.paso-recorrido')) {
+    const tarjeta = paso.querySelector<HTMLElement>('.tarjeta-frase')
+    const escena = paso.closest('.escena-recorrido')?.querySelector<HTMLElement>(':scope > .escena')
+    const figura = escena?.querySelector<HTMLElement>(':scope > .bloque-figura')
+    const encabezado = escena?.querySelector<HTMLElement>('.bloque-encabezado')
+    if (!tarjeta || !escena || !figura || !encabezado) continue
+    const activacion = Math.round(paso.getBoundingClientRect().top - arriba - (parseFloat(getComputedStyle(paso).scrollMarginTop) || 0))
+    // Todo en coordenadas de la escena pegada: su `top` de sticky más la distancia dentro de ella.
+    const pegada = parseFloat(getComputedStyle(escena).top) || 0
+    const re = escena.getBoundingClientRect()
+    const rf = figura.getBoundingClientRect()
+    const rt = tarjeta.getBoundingClientRect()
+    const degradado = parseFloat(getComputedStyle(encabezado, '::after').height) || 0
+    const centroFigura = pegada + rf.top - re.top + rf.height / 2
+    const piso = pegada + encabezado.getBoundingClientRect().bottom - re.top + degradado
+    const arribaTarjeta = rt.top - arriba
+    const destino = Math.max(activacion, Math.min(
+      arribaTarjeta + rt.height / 2 - centroFigura,
+      arribaTarjeta - piso,
+      activacion + paso.offsetHeight - 0.1 * capa.clientHeight,
+    ))
+    const k = lista.findIndex((y) => Math.abs(y - activacion) <= 3)
+    if (k >= 0) lista[k] = Math.min(tope, Math.round(destino))
+  }
+  return lista.sort((a, b) => a - b)
+}
+
+/**
+ * La parada siguiente o anterior a `desde`. Una parada a menos de 0,1 de pantalla no cuenta como
+ * cambio: la portada para en el alto de la barra y la capa abre en 0; los cambios reales están a
+ * 0,4 de pantalla o más.
+ */
+function paradaVecina (capa: HTMLElement, desde: number, sentido: number) {
+  const lista = paradasDeCambio(capa)
+  const cerca = 0.1 * capa.clientHeight
+  return sentido > 0
+    ? lista.find((y) => y > desde + cerca)
+    : [...lista].reverse().find((y) => y < desde - cerca)
+}
+
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
 /** La sección de método de la historia, para que el cierre la ofrezca sin que cada historia la repita. */
@@ -120,6 +180,44 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
   const barra = useRef<HTMLDivElement | null>(null)
   const [avance, setAvance] = useState(0)
   const [escenas, setEscenas] = useState<Record<number, EstadoEscena>>({})
+  // Si se está en la portada o al final: ahí la flecha correspondiente no lleva a ningún lado.
+  const [extremo, setExtremo] = useState<{ inicio: boolean, fin: boolean }>({ inicio: true, fin: false })
+
+  /*
+   * Ir a la parada siguiente o anterior (ver `paradasDeCambio`). La comparten el teclado y las
+   * flechas de la pantalla, así que llevan exactamente al mismo lugar.
+   *
+   * **Se cuenta desde el último destino pedido** mientras el scroll suave no llega: sin eso, dos
+   * clics o dos teclas seguidas medían desde un scroll a mitad de camino y avanzaban uno solo.
+   *
+   * **Pero solo mientras ese scroll suave dura.** Si el lector mueve la rueda o el dedo, o pasa más
+   * de lo que tarda un scroll suave, el destino se olvida y se cuenta desde donde está: con el
+   * destino viejo, un clic después de la rueda devolvía 589 px hacia atrás, y desde el final
+   * «Siguiente» quedaba habilitado sin hacer nada (Codex, 25-09-2026).
+   */
+  const destino = useRef<{ y: number, t: number } | null>(null)
+  const irA = useCallback((sentido: number) => {
+    const el = capa.current
+    if (!el) return false
+    const d = destino.current
+    const pendiente = d !== null && performance.now() - d.t < 1200 && Math.abs(el.scrollTop - d.y) > 4
+    const y = paradaVecina(el, pendiente ? d.y : el.scrollTop, sentido)
+    if (y === undefined) return false
+    destino.current = { y, t: performance.now() }
+    el.scrollTo({ top: y, behavior: 'smooth' })
+    return true
+  }, [])
+  useEffect(() => {
+    const el = raiz
+    if (!el) return
+    const olvidar = () => { destino.current = null }
+    el.addEventListener('wheel', olvidar, { passive: true })
+    el.addEventListener('touchstart', olvidar, { passive: true })
+    return () => {
+      el.removeEventListener('wheel', olvidar)
+      el.removeEventListener('touchstart', olvidar)
+    }
+  }, [raiz])
 
   // Cada escena informa; la capa se queda con lo último de cada una. Se compara antes de escribir
   // porque el observador de pasos reporta también cuando nada cambió, y un `setState` por reporte
@@ -197,6 +295,10 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
        * **Esto no es scroll-jacking:** no se toca la rueda ni el gesto táctil, que siguen libres.
        * Es lo contrario, de hecho: quien navega con teclado pide «el siguiente» y recibe el
        * siguiente, en vez de una cantidad de píxeles que a veces se salta el contenido.
+       *
+       * Desde el 25-09-2026 va a los mismos lugares que las flechas de la pantalla (`irA`): solo
+       * donde algo cambia, sin parar en los colchones, y con el texto que corre, a donde la frase
+       * se lee.
        */
       const teclas: Record<string, number> = { PageDown: 1, PageUp: -1, ArrowDown: 1, ArrowUp: -1 }
       const sentido = teclas[e.key]
@@ -206,16 +308,11 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
         const enControl = activo instanceof HTMLElement &&
           ['INPUT', 'SELECT', 'TEXTAREA'].includes(activo.tagName)
         if (!enControl) {
-          // Las mismas paradas que marca la barra: ver `paradas`.
-          const lista = paradas(capa.current, '.portada-recorrido, .respiro-recorrido, .colchon-recorrido, .paso-recorrido')
-          const actual = capa.current.scrollTop
-          const siguiente = sentido > 0
-            ? lista.find((y) => y > actual + 4)
-            : [...lista].reverse().find((y) => y < actual - 4)
-          if (siguiente !== undefined) {
-            e.preventDefault()
-            capa.current.scrollTo({ top: siguiente, behavior: 'smooth' })
-          }
+          // Lo mismo que las flechas de la pantalla: ver `paradasDeCambio`. La tecla se consume
+          // aunque no quede parada en ese sentido: si no, en la portada el navegador la aplicaba
+          // con su propio scroll de 40 px, dos veces sin cambiar nada.
+          e.preventDefault()
+          irA(sentido)
           return
         }
       }
@@ -230,9 +327,12 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
       // disparaba jamás y en teléfono el foco se escapaba de la capa al encabezado del sitio
       // (medido el 08-09-2026). Hacia adelante sí cerraba, porque el último foco está siempre
       // visible: por eso el defecto era asimétrico y costó verlo.
+      // **Y por `tabIndex`**: un botón con `tabindex="-1"` hace juego con `button:not([disabled])`
+      // pero el tabulador nunca lo alcanza. Un botón así del cierre quedaba de último, la guarda no
+      // se disparaba y el foco se iba a la página de atrás (medido el 25-09-2026: 16 de 60 teclas).
       const focos = [...capa.current.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), input, select, textarea, summary, [tabindex]:not([tabindex="-1"])',
-      )].filter(visible)
+      )].filter((el) => el.tabIndex >= 0 && visible(el))
       if (focos.length === 0) return
       const primero = focos[0]
       const ultimo = focos[focos.length - 1]
@@ -249,7 +349,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
       window.scrollTo(0, desplazado)
       anterior?.focus()
     }
-  }, [abierta])
+  }, [abierta, irA])
 
   // El alto real de la barra, publicado para que la escena se pegue justo debajo. Escrito a mano
   // en el CSS decía 2,5 rem y la barra mide 43 px: la escena quedaba 3 px más alta que el hueco
@@ -273,6 +373,12 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
     const el = e.currentTarget
     const recorrible = el.scrollHeight - el.clientHeight
     setAvance(recorrible > 0 ? Math.min(1, el.scrollTop / recorrible) : 1)
+    // Mismo umbral que `paradaVecina`: más cerca que eso del borde, no queda cambio en ese sentido.
+    // La portada para en el alto de la barra, así que el inicio suma ese margen.
+    const cerca = 0.1 * el.clientHeight
+    const inicio = el.scrollTop <= cerca + (barra.current?.offsetHeight ?? 0)
+    const fin = el.scrollTop >= recorrible - cerca
+    setExtremo((previo) => (previo.inicio === inicio && previo.fin === fin ? previo : { inicio, fin }))
   }
 
   return (
@@ -340,6 +446,26 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
+      </div>
+
+      {/* Anterior y siguiente con el mouse, para quien no tiene rueda: lo mismo que el teclado.
+          Solo con puntero fino (ver `.flechas-recorrido` en `index.css`): con el dedo el gesto
+          alcanza, y en el teléfono le quitarían sitio a la figura. */}
+      <div className="flechas-recorrido">
+        {([['Anterior', -1, 'M6 15l6-6 6 6', extremo.inicio], ['Siguiente', 1, 'M6 9l6 6 6-6', extremo.fin]] as const).map(([nombre, sentido, trazo, apagada]) => (
+          <button
+            key={nombre}
+            type="button"
+            aria-label={nombre}
+            disabled={apagada}
+            onClick={() => { irA(sentido) }}
+            className="presionable grid h-11 w-11 place-items-center rounded-full border border-gray-300 bg-white text-brand-dark shadow-sm hover:border-brand-dark disabled:text-gray-300 disabled:hover:border-gray-300"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden className="h-[18px] w-[18px]">
+              <path strokeLinecap="round" strokeLinejoin="round" d={trazo} />
+            </svg>
+          </button>
+        ))}
       </div>
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
@@ -642,6 +768,18 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   const [altoFigura, setAltoFigura] = useState(0)
   const encabezado = typeof titulo === 'function' ? titulo(activo) : titulo
 
+  /*
+   * **En escritorio el texto corre** (laboratorio del scroll, 25-09-2026). La figura queda pegada y
+   * sigue encendiendo por paso, pero cada frase es una tarjeta dentro de su paso de la pista, que sube
+   * con el scroll: el gesto mueve algo visible, y quien se pasa ve la frase irse y puede volver. Con
+   * el texto quieto, la rueda recorría 6 a 8 giros sin que nada se moviera y después cambiaba todo.
+   *
+   * Solo con dos columnas (la frase va en la izquierda), desde 900 px y sin movimiento reducido: ahí
+   * no hay pista y el párrafo va entero, como siempre. En teléfono no hubo queja y queda igual.
+   */
+  const escritorio = useConsulta('(min-width: 900px)')
+  const corre = dosColumnas && escritorio && !reducido && !sinFigura
+
 
   // **Cuál escena está en vista se mide con la misma banda que los pasos.** Con la escena pegada,
   // su sección ocupa toda su tajada de scroll: la que cruza el centro del contenedor es la que el
@@ -723,7 +861,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         ref={escena}
         // `.escena` usa el alto de la capa (heredado de la sección) para su `min-height`, que es lo
         // que le da a `justify-center` espacio que repartir (ver `index.css`).
-        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
+        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''}${corre ? ' texto-corre' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
       >
         {/* El titular y la frase son la misma voz, así que viajan juntos: en escritorio son una
             columna y la figura es la otra. En angosto el envoltorio es `display: contents` y no
@@ -770,7 +908,17 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         )}
       </div>
 
-      {!reducido && <Pista cantidad={frases.length} refs={refs} alto={alto} altoEscena={altoEscena} salida={0.45} />}
+      {!reducido && (
+        <Pista
+          cantidad={frases.length}
+          refs={refs}
+          alto={alto}
+          altoEscena={altoEscena}
+          salida={0.45}
+          paso={corre ? PASO_TEXTO_CORRE : undefined}
+          tarjetas={corre ? frases.map((f, i) => ({ frase: f, lugar: lugar(i) })) : undefined}
+        />
+      )}
     </section>
   )
 }
@@ -791,7 +939,23 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
  * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll sin nada nuevo. Ahora
  * cada escena cuesta su propio alto.
  */
-function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
+/**
+ * Con el texto que corre, cada paso mide 0,4 de pantalla y no 0,75: la frase sube lo que mide su
+ * paso mientras está activa, y con 0,75 se leía entera solo el 25 a 43 % de ese tramo. Con 0,4 y la
+ * frase al 80 %, el 84 a 100 % en promedio y 60 % la peor (seis historias, 1366, 1512 y 1920;
+ * laboratorio del scroll, 25-09-2026).
+ */
+const PASO_TEXTO_CORRE = 0.4
+
+/** Dónde está el centro de la frase, en fracción de la capa, cuando su paso se activa y la figura
+ *  cambia. Más arriba, la frase sube bajo el titular antes de terminar su paso. */
+const LECTURA_TEXTO_CORRE = 0.8
+
+/** El colchón de entrada, en fracción de la capa: es también el `scroll-margin-top` de cada paso,
+ *  así que es la línea (55 %) donde el paso toca la banda de lectura y se activa. */
+const COLCHON = 0.55
+
+function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2, paso = 0.75, tarjetas }: {
   cantidad: number
   refs: React.MutableRefObject<(HTMLElement | null)[]>
   /** El alto de la capa. */
@@ -800,6 +964,14 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
   altoEscena: number
   /** El colchón de salida, en fracción de la capa. Ver abajo. */
   salida?: number
+  /** El alto de cada paso, en fracción de la capa. */
+  paso?: number
+  /**
+   * Con el texto que corre, la frase de cada paso y dónde está respecto del activo. Van **dentro**
+   * del paso, así que suben con el scroll. Son una copia visual: la frase de verdad sigue en la
+   * escena con opacidad cero, para el lector de pantalla y para copiar, y la pista es `aria-hidden`.
+   */
+  tarjetas?: { frase: React.ReactNode, lugar: string }[]
 }) {
   /*
    * Los pasos tienen que costar todos lo mismo, y no salen parejos solos: la escena pegada ocupa
@@ -816,8 +988,8 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
    * `i × alto de paso`. En píxeles medidos y no en porcentaje: un margen en porcentaje se
    * resuelve contra el **ancho**.
    */
-  const altoPaso = alto ? Math.round(alto * 0.75) : undefined
-  const colchon = alto ? Math.round(alto * 0.55) : undefined
+  const altoPaso = alto ? Math.round(alto * paso) : undefined
+  const colchon = alto ? Math.round(alto * COLCHON) : undefined
   // La pista sube **el alto de la escena entero**, y nada más.
   //
   // Dos errores medidos con Playwright el 06-09-2026, los dos en esta línea: subir el alto de la
@@ -836,7 +1008,9 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
   const colchonFinal = alto ? Math.round(alto * salida) : undefined
 
   return (
-    <div aria-hidden className="pointer-events-none" style={subirPista ? { marginTop: subirPista } : undefined}>
+    // Con tarjetas, la pista va **detrás** de la escena pegada (`pista-con-texto` en `index.css`): el
+    // titular, con fondo blanco y un degradado debajo, tapa las frases que suben hasta él.
+    <div aria-hidden className={`pointer-events-none${tarjetas ? ' pista-con-texto' : ''}`} style={subirPista ? { marginTop: subirPista } : undefined}>
       <div
         className="colchon-recorrido"
         style={{ ...(colchon ? { height: colchon } : {}), ...(colchon ? { scrollMarginTop: colchon } : {}) }}
@@ -853,7 +1027,15 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2 }: {
             ...(altoPaso ? { height: altoPaso } : {}),
             ...(colchon ? { scrollMarginTop: colchon } : {}),
           }}
-        />
+        >
+          {/* El paso se activa cuando su borde de arriba cruza el 55 %; a esa altura el centro de
+              la frase queda en `LECTURA_TEXTO_CORRE` de la capa. */}
+          {tarjetas?.[i] && (
+            <div className="fila-tarjeta" style={alto ? { top: Math.round(alto * (LECTURA_TEXTO_CORRE - COLCHON)) } : undefined}>
+              <p className="tarjeta-frase" data-lugar={tarjetas[i].lugar}>{tarjetas[i].frase}</p>
+            </div>
+          )}
+        </div>
       ))}
       <div
         className="colchon-recorrido"

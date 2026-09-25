@@ -6,7 +6,7 @@ description: Reglas para construir y modificar el recorrido con scroll (scrollyt
 # El recorrido con scroll
 
 Solo reglas vigentes. De dónde salió cada una, con sus mediciones: un registro de decisiones interno (scroll y capa),
-0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), 0028 (frases y pausa con movimiento), en `la documentación interna`,
+0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), 0028 (frases y pausa con movimiento), 0034 (en escritorio el texto corre; flechas y teclado al próximo cambio), en `la documentación interna`,
 `encuesta/docs/adr/`. Lo que queda pendiente: `encuesta/docs/estado.md` §2.2.
 
 **Antes de cambiar la composición de algo visible, skill `laboratorio`.** Antes de escribir una frase
@@ -154,10 +154,19 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   rueda costaba, el scroll se movía solo y las paradas no coincidían con las marcas. El scroll es del
   lector; cada paso lleva `scroll-margin-top` igual al colchón, que define su **parada**: el scroll en
   que toca la banda de lectura. Medido: cada frase cambia a menos de 8 px de su marca.
-- **Teclado:** la capa maneja `PageUp`/`PageDown` y flechas llevando al anclaje siguiente. Los anclajes
-  se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
+- **Teclado y flechas de la pantalla hacen lo mismo** (`irA` y `paradasDeCambio` en `CapaRecorrido`,
+  25-09-2026): `PageUp`/`PageDown`, las flechas del teclado y los botones «Anterior»/«Siguiente» van al
+  **próximo cambio** (portada, cada paso, cada pausa, el final), nunca a un colchón. Con el texto que
+  corre, el destino de un paso no es su parada sino, dentro del mismo paso, donde la frase queda
+  centrada en la figura, fuera del degradado del titular y antes del paso siguiente. Dos acciones
+  seguidas cuentan desde el último destino pedido, no desde el scroll a mitad de camino. La tecla se
+  consume siempre dentro de la capa (en la portada el navegador aplicaba su scroll de 40 px). Los
+  anclajes se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
   nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, compartida con
   las marcas de la barra). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
+- **Los botones existen por quien no tiene rueda** (Fran, 25-09-2026): un clic en la barra de scroll
+  baja 87,5 % de la pantalla y se saltaba frases; arrastrarla mueve de 10 a 23 px por píxel. Van abajo
+  a la derecha y **solo con puntero fino** (`.flechas-recorrido`, media query de puntero, no de ancho).
 - **El alto sale del contenedor y va en píxeles** (`--alto-capa`), con `svh` de respaldo para el primer
   cuadro. Nunca `100%` (se resuelve contra una sección sin alto) ni `vh`.
 - **La escena se pega bajo la barra**; la barra se mide y se publica en `--barra-capa`. Alto útil de
@@ -168,7 +177,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - **La geometría se fija al abrir** y se rehace solo si cambia el ancho (la barra del navegador móvil
   cambia el alto sin que sea una rotación).
 - **El bloque de texto no cambia de alto:** todas las frases en la misma celda de una grilla, una
-  frase por paso en todos los anchos. Con movimiento reducido el párrafo **no** lleva la grilla.
+  frase por paso en todos los anchos (con el texto que corre, esa celda queda invisible y lo que se
+  lee son las tarjetas). Con movimiento reducido el párrafo **no** lleva la grilla.
 - **El bloque de la figura no se encoge entre pasos:** `Escena` guarda su mayor alto por ancho con
   `useLayoutEffect`.
 - **Pantallas bajas:** media query por alto (`max-height: 700px`); el aire es lo primero que cede.
@@ -184,6 +194,21 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - Texto a 27 px (titular) y 34 px (frase); filas de 58 px y nombres a 14 px. Revisar que «Estados
   Unidos» no salga cortado.
 - **Solo en escenas con una figura** (`dosColumnas` en `Escena`).
+- **El texto corre** (laboratorio del scroll, 25-09-2026; `corre` en `Escena`, clase `.texto-corre`):
+  con dos columnas, desde 900 px y sin movimiento reducido, cada frase es una tarjeta
+  (`.tarjeta-frase`) dentro de su paso de la pista y sube con el scroll; la figura queda pegada y
+  sigue encendiendo por paso. Pasos de **0,4** de pantalla (`PASO_TEXTO_CORRE`; con 0,75 la frase se
+  leía entera solo el 25 a 43 % de su paso) y la frase al **80 %** cuando su paso se activa
+  (`LECTURA_TEXTO_CORRE`). La frase activa en tinta plena, las demás a 0,25. El titular sube al borde
+  de arriba, con fondo blanco y un degradado de 7 rem debajo; la pista va con `z-index: -1` detrás de
+  la escena pegada, así que el titular tapa las frases **sin listener de scroll**. El párrafo de la
+  escena queda con opacidad cero: es el texto de verdad para el lector de pantalla. La grilla de dos
+  columnas vive en variables (`--columnas-escena` y afines) que comparten escena y tarjetas.
+  Colchones sin cambio (0,55 y 0,45). En teléfono no cambió nada. Bajo 1100 px de ancho o 700 de
+  alto las tarjetas van a 28 px: a 900×700, con 34, dos frases medían 442 px y no cabían enteras.
+  `useConsulta` lee la media query al crear el estado, no un cuadro después (si no, las marcas
+  saltan al entrar). El destino pendiente de las flechas dura lo que un scroll suave (1,2 s) y se
+  olvida con la rueda o el dedo: con el destino viejo, un clic tras la rueda devolvía 589 px.
 
 ## Accesibilidad
 
@@ -201,10 +226,12 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - Scroll-jacking o «un gesto, un paso». Parallax. Librerías de scroll (`scrollama`, GSAP).
 - Un canvas de diseño estático para decidir comportamiento en el tiempo: para eso está el laboratorio.
 
-## Límites conocidos (15-09-2026)
+## Límites conocidos (25-09-2026)
 
-- El teclado sigue parando en los colchones (entrada y salida de cada escena), donde no cambia nada y
-  la barra no pone marca.
+- La barra de scroll del navegador sigue siendo gruesa para esto: un clic en su carril cruza más de
+  un cambio (en escritorio, con pasos de 0,4, un tercio de los clics). Por eso existen las flechas;
+  la barra no se toca.
+- Sin verificar en un computador real sin rueda (el caso de Fran); medido con Playwright.
 
 ## Verificación antes de cerrar
 
@@ -217,7 +244,9 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 4. Medido: el bloque de la figura no se mueve entre pasos, y el **último hijo** de la escena queda
    dentro de la capa en 360×640 y 375×667.
 5. Pasando de una escena a la siguiente, no una sola: superposición y paso desparejo.
-6. Con teclado de punta a punta en los dos sentidos, sin pasos saltados; `Shift+Tab` no escapa.
+6. Con teclado **y con los botones** de punta a punta en los dos sentidos: un cambio por acción, sin
+   pasos saltados ni acciones sin cambio; con el texto que corre, cada llegada deja la frase centrada
+   en la figura, entera y en tinta plena. `Shift+Tab` no escapa.
 7. Con movimiento reducido: todo encendido, frases sin superponerse, sin pista.
 8. Con `mouse.wheel` en los dos sentidos: cada frase cambia sobre su marca de la barra, y la salida se alcanza.
 9. Si vino de un laboratorio: contra el JSON, parámetro por parámetro, textos verbatim.

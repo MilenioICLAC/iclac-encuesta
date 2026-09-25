@@ -28,6 +28,25 @@
   .presionable:active { transform: none; }
 }
 
+/* Anterior y siguiente del recorrido (`CapaRecorrido`), abajo a la derecha. **Solo con puntero
+   fino**, por media query de puntero y no por ancho, como la invitación de la portada: con el dedo
+   el gesto alcanza, y el caso que las pidió es un computador sin rueda (Fran, 25-09-2026). */
+.flechas-recorrido {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .flechas-recorrido {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
 /*
  * Fila del gráfico de puntos.
  *
@@ -541,15 +560,24 @@
    países. Va como media query y no medido por JavaScript porque la capa es `fixed inset-0`: su
    ancho **es** el de la ventana, así que acá la media query dice la verdad. */
 @media (min-width: 900px) {
+  /* La grilla de dos columnas, en variables: la usan la escena y las frases que corren en la pista
+     (`.fila-tarjeta`), que tienen que caer exactamente en la columna del relato. */
+  .capa-recorrido {
+    --columnas-escena: minmax(0, 1fr) minmax(0, 1.15fr);
+    --hueco-columnas: 2.75rem;
+    --ancho-columnas: 74rem;
+    --relleno-columnas: 2rem;
+  }
+
   .capa-recorrido .escena.en-columnas {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-columns: var(--columnas-escena);
     align-content: center;
     align-items: center;
-    column-gap: 2.75rem;
-    max-width: 74rem;
+    column-gap: var(--hueco-columnas);
+    max-width: var(--ancho-columnas);
     margin-inline: auto;
-    padding-inline: 2rem;
+    padding-inline: var(--relleno-columnas);
   }
 
   /* El relato ocupa el alto de la fila, que lo fija la figura. Dentro, el titular queda pegado
@@ -593,9 +621,105 @@
     line-height: 1.35;
   }
 
-  .capa-recorrido .escena.en-columnas .parrafo-escena {
+  .capa-recorrido .escena.en-columnas .parrafo-escena,
+  .capa-recorrido .tarjeta-frase {
     font-size: 34px;
     line-height: 1.3;
+  }
+
+  /*
+   * **El texto corre** (laboratorio del scroll, 25-09-2026; `corre` en `Escena`).
+   *
+   * Las frases son tarjetas dentro de los pasos de la pista y suben con el scroll; la figura queda
+   * pegada. El titular sube al borde de arriba (centrado dejaba 555 px de columna para frases que
+   * recorren un paso entero) y la figura sigue centrada en su columna.
+   *
+   * La pista va detrás de la escena pegada (`z-index: -1` contra la capa, que es el contexto de
+   * apilamiento), así que el titular, con fondo blanco, tapa las frases que llegan a él, y el
+   * degradado de abajo las desvanece antes. Sin listener de scroll: solo apilamiento y un relleno.
+   * El párrafo de la escena queda con opacidad cero: es el texto de verdad para el lector de
+   * pantalla y para copiar.
+   */
+  .capa-recorrido .escena.en-columnas.texto-corre {
+    align-content: stretch;
+  }
+
+  .capa-recorrido .escena.en-columnas.texto-corre > .columna-relato {
+    align-self: start;
+  }
+
+  .capa-recorrido .escena.en-columnas.texto-corre > .bloque-figura {
+    align-self: center;
+  }
+
+  .capa-recorrido .escena.en-columnas.texto-corre > .columna-relato > .bloque-texto {
+    opacity: 0;
+  }
+
+  .capa-recorrido .escena.en-columnas.texto-corre .bloque-encabezado {
+    position: relative;
+    background: #fff;
+    /* Tapa también el aire entre la barra y el titular, por donde la frase pasaría asomada. */
+    box-shadow: 0 -2rem 0 #fff;
+  }
+
+  /* El alto de este degradado lo lee `paradasDeCambio`: la flecha no deja una frase dentro de él. */
+  .capa-recorrido .escena.en-columnas.texto-corre .bloque-encabezado::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    height: 7rem; /* 12 + 100 px bajo el titular: la zona de desvanecido del laboratorio */
+    /* Blanco sólido la primera mitad: con el degradado parejo, el final de la frase anterior asomaba
+       bajo el titular. */
+    background: linear-gradient(#fff 50%, rgb(255 255 255 / 0));
+    pointer-events: none;
+  }
+
+  .capa-recorrido .pista-con-texto {
+    position: relative;
+    z-index: -1;
+  }
+
+  .capa-recorrido .pista-con-texto .paso-recorrido {
+    position: relative;
+  }
+
+  /* La misma grilla que la escena, para que la frase caiga en la columna del relato. */
+  .capa-recorrido .fila-tarjeta {
+    position: absolute;
+    inset-inline: 0;
+    transform: translateY(-50%);
+    display: grid;
+    grid-template-columns: var(--columnas-escena);
+    column-gap: var(--hueco-columnas);
+    max-width: var(--ancho-columnas);
+    margin-inline: auto;
+    padding-inline: var(--relleno-columnas);
+  }
+
+  /* En ventanas angostas o bajas la frase va más chica: a 900×700, con 34 px en una columna de
+     ~370 px, dos frases medían 442 px y quedaban 6 px fuera de la pantalla (Codex, 25-09-2026). */
+  @media (max-width: 1099px), (max-height: 700px) {
+    .capa-recorrido .tarjeta-frase {
+      font-size: 28px;
+    }
+  }
+
+  .capa-recorrido .tarjeta-frase {
+    grid-column: 1;
+    color: theme("colors.gray.800");
+    transition: opacity 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* La frase del paso en tinta plena; las demás, tenues (laboratorio: 0,25). */
+  .capa-recorrido .tarjeta-frase:not([data-lugar="activa"]) {
+    opacity: 0.25;
+  }
+
+  /* Con la pausa cruzada la escena se desvanece, y sus frases con ella. */
+  .escena-recorrido:has(+ .respiro-recorrido[data-cruzada]) .tarjeta-frase {
+    opacity: 0;
   }
 
   /* La figura divergente crece con la columna, igual que el termómetro: con filas de 26 px y
