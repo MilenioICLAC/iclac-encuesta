@@ -1,0 +1,532 @@
+<title>Laboratorio del scroll en escritorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo va en claro: la app no tiene modo oscuro y la capa del recorrido es blanca. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca-oscura: #00776E;
+    --g600: #4B5563;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+
+  .envoltorio { max-width: 1960px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 96ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .grupo[hidden] { display: none; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  .combinaciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; }
+  .combinacion { text-align: left; border: 1px solid var(--linea); background: var(--superficie); border-radius: 12px; padding: 10px 12px; font: inherit; cursor: pointer; color: var(--tinta); }
+  .combinacion strong { display: block; font-family: var(--display); font-weight: 600; font-size: 14px; }
+  .combinacion span { display: block; font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
+  .combinacion[aria-pressed="true"] { border-color: var(--marca-oscura); box-shadow: inset 0 0 0 1px var(--marca-oscura); }
+  .no-hecho { border: 1px dashed var(--g600); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; color: var(--g600); }
+
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .barra-visor b { color: var(--tinta); font-weight: 600; }
+  .barra-visor .corto { color: #B42318; }
+  .lienzo { padding-block: 16px; display: flex; justify-content: center; }
+  .caja { position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); background: #fff; }
+  .caja iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+
+  .exportar { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .exportar textarea { font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; min-height: 64px; }
+  .exportar pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--papel); border-radius: 8px; padding: 8px; user-select: all; }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fila small { color: var(--tinta-suave); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio del scroll en escritorio</h1>
+    <p>La app real, en un marco, con cada propuesta aplicada encima. Recorre una historia con tu rueda o tu trackpad, como la leería alguien del equipo, y compara. Lo que se decide: si el texto corre con el scroll, si la figura sigue encendiendo por frase y cuánto scroll cuesta un paso.</p>
+  </header>
+
+  <ul class="avisos">
+    <li>Solo escritorio (desde 900 px): la queja es de computador, y bajo 900 px la app no cambia en ninguna combinación.</li>
+    <li>Las frases de las tarjetas son las de la app, copiadas de su página al abrirla. Las pausas, la portada y el cierre no cambian.</li>
+    <li>En C la figura es la del último paso, así que las primeras frases de una escena pueden hablar de algo que no está dibujado (en «La mirada», «En 2023 los dos estaban parejos» sobre la figura de 2025, y la recta de 2023 sobre las tres oleadas). Es el costo de C, no una falla del laboratorio.</li>
+    <li>En B y C el titular sube al borde de arriba y la figura queda centrada en su columna: con el titular centrado, como en la app, la frase no alcanzaba a leerse durante su paso.</li>
+    <li>Navegar con clic (feedback de Fran, 25-09-2026: sin rueda, cada clic en la barra de scroll se saltaba figuras): las flechas llevan al próximo cambio (frase, pausa o cierre) con scroll suave; la barra de avance, al cambio más cercano al punto del clic. La barra de scroll del navegador sigue ahí y se comporta igual que antes.</li>
+    <li>El teclado sigue funcionando en todas; en «C» la tecla puede parar en un lugar corrido (el truco que deja la figura completa altera la medida del último paso).</li>
+    <li>Movimiento reducido no se simula acá: en la app, con esa preferencia no hay pista ni pasos, y la escena va entera en las tres combinaciones.</li>
+    <li>Para mover el marco con la rueda, el puntero tiene que estar encima.</li>
+  </ul>
+
+  <div class="combinaciones" id="combinaciones">
+    <button class="combinacion" data-combinacion="app" aria-pressed="false"><strong>Como está la app</strong><span>Texto y figura quietos; una pista invisible mide el scroll y la frase cambia en su lugar.</span></button>
+    <button class="combinacion" data-combinacion="b" aria-pressed="false"><strong>Propuesta B · el texto corre</strong><span>La figura queda fija y sigue encendiendo lo que dice cada frase; las frases suben con el scroll, una tarjeta por paso.</span></button>
+    <button class="combinacion" data-combinacion="c" aria-pressed="false"><strong>Propuesta C · figura completa</strong><span>La figura llega completa (su último paso) y no cambia; solo las frases suben con el scroll.</span></button>
+    <div class="no-hecho">No hecho: C con el anillo de énfasis por frase. El anillo depende del paso activo de la app y no se puede inyectar sin tocar su código; si C gusta, se arma en una segunda ronda.</div>
+  </div>
+
+  <div class="controles">
+    <div class="grupo"><span>Historia</span><div class="seg" data-parametro="historia"></div></div>
+    <div class="grupo"><span>Pantalla</span><div class="seg" data-parametro="pantalla"></div></div>
+    <div class="grupo"><span>Costo de un paso (scroll entre dos frases)</span><div class="seg" data-parametro="paso"></div></div>
+    <div class="grupo" data-solo="b c"><span>Dónde está la frase cuando cambia la figura (alto de pantalla)</span><div class="seg" data-parametro="lectura"></div></div>
+    <div class="grupo" data-solo="b c"><span>Frases que no son la del paso</span><div class="seg" data-parametro="inactivas"></div></div>
+    <div class="grupo"><span>Navegar con clic (para quien no tiene rueda)</span><div class="seg" data-parametro="clic"></div></div>
+    <div class="grupo" data-solo="app b"><span>Duración de los cambios de la figura</span><div class="seg" data-parametro="transicion"></div></div>
+  </div>
+
+  <div class="marco">
+    <div class="barra-visor" id="medidas" aria-live="off"></div>
+    <div class="lienzo"><div class="caja" id="caja"><iframe id="visor" title="La app con la combinación elegida"></iframe></div></div>
+  </div>
+
+  <div class="exportar">
+    <label for="nota" style="font-size:11.5px;color:var(--tinta-suave)">Nota (qué te gustó, qué no, qué dispositivo usaste)</label>
+    <textarea id="nota"></textarea>
+    <div class="fila"><button class="accion" id="copiar">Copiar JSON</button><small id="copiado"></small></div>
+    <pre id="json" hidden></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  const CLAVE = 'lab-scroll-escritorio-v1'
+
+  // Lo que ofrece cada parámetro. Los valores de «Como está la app» son los de la app hoy:
+  // paso de 0,75 de pantalla (`Pista` en CapaRecorrido.tsx) y transiciones de 500 ms en puntos y
+  // 300 ms en barras (`Puntos.tsx`, `BarrasDeEscena.tsx`).
+  const OPCIONES = {
+    historia: [
+      ['mirada', 'La mirada'], ['entre-potencias', 'Entre dos potencias'], ['territorio', 'Donde uno vive'],
+      ['inversion', 'Inversión y Estado'], ['china-cotidiana', 'China cotidiana'], ['vacuna', 'La vacuna'],
+    ],
+    pantalla: [['1366x768', '1366×768'], ['1512x860', '1512×860'], ['1920x1080', '1920×1080'], ['todo', 'Todo']],
+    paso: [['0.4', '0,4 pantalla'], ['0.5', '0,5'], ['0.75', '0,75 (hoy)'], ['1', '1 pantalla']],
+    lectura: [['0.5', 'al medio'], ['0.65', '65 %'], ['0.8', '80 %'], ['0.95', 'entrando por abajo']],
+    inactivas: [['0.25', 'tenues'], ['0.5', 'a media'], ['1', 'iguales']],
+    transicion: [['app', 'como la app'], ['250', '250 ms'], ['150', '150 ms']],
+    clic: [['no', 'sin botones (hoy)'], ['flechas', 'flechas'], ['flechas-barra', 'flechas y barra de avance']],
+  }
+
+  // B y C parten en paso 0,4 con la frase al 80 %: barrido de las seis historias en 1366, 1512 y
+  // 1920 (25-09-2026), la frase activa se lee entera el 84 a 100 % de su paso en promedio y 60 %
+  // la peor. Con el paso de hoy (0,75), 25 a 43 %: si el texto corre, el paso tiene que acortarse.
+  const PRESETS = {
+    app: { paso: '0.75', transicion: 'app' },
+    b: { paso: '0.4', lectura: '0.8', inactivas: '0.25', transicion: 'app' },
+    c: { paso: '0.4', lectura: '0.8', inactivas: '0.25' },
+  }
+
+  const inicial = { combinacion: 'b', historia: 'mirada', pantalla: '1512x860', paso: '0.4', lectura: '0.8', inactivas: '0.25', transicion: 'app', clic: 'flechas' }
+
+  // Leído por identificador y validado contra las opciones: un valor guardado por una versión
+  // anterior que ya no existe cae al inicial en vez de romper.
+  const estado = { ...inicial }
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE) || '{}')
+    for (const k of Object.keys(inicial)) {
+      const v = guardado[k]
+      if (k === 'combinacion' ? ['app', 'b', 'c'].includes(v) : OPCIONES[k]?.some(([id]) => id === v)) estado[k] = v
+    }
+    if (typeof guardado.nota === 'string') document.getElementById('nota').value = guardado.nota
+  } catch { /* sin almacenamiento, se usa el inicial */ }
+  const guardar = () => {
+    try { localStorage.setItem(CLAVE, JSON.stringify({ ...estado, nota: document.getElementById('nota').value })) } catch { /* nada */ }
+  }
+
+  // ---- Controles -----------------------------------------------------------------------------
+
+  for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+    const k = grupo.dataset.parametro
+    for (const [id, rotulo] of OPCIONES[k]) {
+      const b = document.createElement('button')
+      b.type = 'button'; b.dataset.valor = id; b.textContent = rotulo
+      b.addEventListener('click', () => { estado[k] = id; cambio(k) })
+      grupo.append(b)
+    }
+  }
+  for (const b of document.querySelectorAll('[data-combinacion]')) {
+    b.addEventListener('click', () => {
+      estado.combinacion = b.dataset.combinacion
+      Object.assign(estado, PRESETS[estado.combinacion])
+      cambio('combinacion')
+    })
+  }
+  document.getElementById('nota').addEventListener('input', guardar)
+
+  function pintarControles () {
+    for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+      for (const b of grupo.children) b.setAttribute('aria-pressed', String(b.dataset.valor === estado[grupo.dataset.parametro]))
+    }
+    for (const b of document.querySelectorAll('[data-combinacion]')) b.setAttribute('aria-pressed', String(b.dataset.combinacion === estado.combinacion))
+    // Un parámetro que en la combinación elegida no hace nada no se ofrece.
+    for (const g of document.querySelectorAll('[data-solo]')) g.hidden = !g.dataset.solo.split(' ').includes(estado.combinacion)
+  }
+
+  // ---- El marco ------------------------------------------------------------------------------
+
+  const caja = document.getElementById('caja')
+  const visor = document.getElementById('visor')
+
+  function medidasPantalla () {
+    if (estado.pantalla === 'todo') return [window.innerWidth, window.innerHeight]
+    return estado.pantalla.split('x').map(Number)
+  }
+
+  function dimensionar () {
+    const [w, h] = medidasPantalla()
+    const disponible = document.documentElement.clientWidth - 16
+    const escala = Math.min(1, disponible / w)
+    visor.style.width = w + 'px'; visor.style.height = h + 'px'
+    visor.style.transform = escala < 1 ? `scale(${escala})` : ''
+    caja.style.width = Math.round(w * escala) + 'px'; caja.style.height = Math.round(h * escala) + 'px'
+    return escala
+  }
+
+  let historiaCargada = null
+  function cargar () {
+    historiaCargada = estado.historia
+    visor.src = `/#/historias/${estado.historia}`
+  }
+
+  function cambio (k) {
+    guardar(); pintarControles()
+    if (k === 'historia') { cargar(); return }
+    if (k === 'pantalla') dimensionar()
+    aplicarLuego()
+  }
+
+  window.addEventListener('resize', () => { if (estado.pantalla === 'todo') { dimensionar(); aplicarLuego() } })
+
+  // ---- Lo que se inyecta en la app -----------------------------------------------------------
+
+  const docApp = () => { try { return visor.contentDocument } catch { return null } }
+  const capaApp = () => docApp()?.querySelector('.capa-recorrido')
+
+  function css () {
+    const e = estado
+    const corre = e.combinacion !== 'app'
+    let s = `
+      /* Costo de un paso: la app lo escribe en línea (0,75 × alto de la capa); acá se pisa. */
+      .escena-recorrido .paso-recorrido { height: calc(var(--alto-capa) * ${e.paso}) !important; }
+      .lab-tarjetas { position: absolute; left: 0; top: 0; width: 100%; height: 0; z-index: 10; pointer-events: none; }
+      .lab-tarjeta { position: absolute; font-size: 34px; line-height: 1.3; color: #1F2937; }
+      /* Flechas: gris 300 de borde y tinta brand-dark, como los controles de la capa. */
+      .lab-nav { position: fixed; right: 24px; bottom: 24px; z-index: 30; display: flex; flex-direction: column; gap: 8px; }
+      .lab-nav button { width: 44px; height: 44px; border-radius: 999px; border: 1px solid #D1D5DB; background: #fff; color: #00776E; display: grid; place-items: center; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+      .lab-nav button:disabled { color: #D1D5DB; cursor: default; }
+      .lab-nav button:focus-visible { outline: 2px solid #00776E; outline-offset: 2px; }
+      @media (hover: hover) and (pointer: fine) { .lab-nav button:not(:disabled):hover { border-color: #00776E; } }
+      .lab-barra-clic [role="progressbar"] { cursor: pointer; }
+    `
+    if (corre) {
+      s += `
+        @media (min-width: 900px) {
+          .capa-recorrido .escena.en-columnas:not(.sin-figura) .bloque-texto { visibility: hidden; }
+          /* El titular sube al borde de arriba: centrado, dejaba 555 px de columna para frases que
+             recorren un paso entero. La figura sigue centrada en su columna. */
+          .capa-recorrido .escena.en-columnas:not(.sin-figura) { align-content: stretch; }
+          .capa-recorrido .escena.en-columnas:not(.sin-figura) > .columna-relato { align-self: start; }
+          .capa-recorrido .escena.en-columnas:not(.sin-figura) > .bloque-figura { align-self: center; }
+        }
+      `
+    }
+    if (e.combinacion !== 'c' && e.transicion !== 'app') {
+      s += `.capa-recorrido .bloque-figura * { transition-duration: ${e.transicion}ms !important; }`
+    }
+    return s
+  }
+
+  let tarjetas = [] // { el, seccion, i, arriba (px de contenido), encabezado }
+  let secciones = []
+  let temporizador = null
+  function aplicarLuego () { clearTimeout(temporizador); temporizador = setTimeout(aplicar, 60) }
+
+  function aplicar () {
+    const doc = docApp(); const capa = capaApp()
+    if (!doc || !capa) { aplicarLuego(); return }
+    let estilo = doc.getElementById('lab-estilo')
+    if (!estilo) { estilo = doc.createElement('style'); estilo.id = 'lab-estilo'; doc.head.append(estilo) }
+    estilo.textContent = css()
+    // Se espera un cuadro para que el nuevo alto de los pasos ya esté en el layout.
+    requestAnimationFrame(() => requestAnimationFrame(montar))
+  }
+
+  function montar () {
+    const doc = docApp(); const capa = capaApp()
+    if (!doc || !capa) return
+    capa.querySelector('.lab-tarjetas')?.remove()
+    for (const p of capa.querySelectorAll('.paso-recorrido')) { p.style.transform = ''; p.style.transformOrigin = '' }
+    tarjetas = []; secciones = []
+    // Las duraciones son de esta configuración: sin reiniciarlas, al cambiar de historia o de
+    // combinación seguían a la vista las de la anterior (hallazgo de Codex, 25-09-2026).
+    duraciones.length = 0; claveActiva = null
+    const ancho = capa.clientWidth
+    const alto = capa.clientHeight
+    const rc = capa.getBoundingClientRect()
+    const base = rc.top - capa.scrollTop
+    const corre = estado.combinacion !== 'app' && ancho >= 900
+    const lamina = doc.createElement('div'); lamina.className = 'lab-tarjetas'; lamina.setAttribute('aria-hidden', 'true')
+    capa.append(lamina)
+
+    for (const seccion of capa.querySelectorAll('.escena-recorrido')) {
+      const pasos = [...seccion.querySelectorAll('.paso-recorrido')]
+      const frases = [...seccion.querySelectorAll('.parrafo-escena > span')]
+      const encabezado = seccion.querySelector('.bloque-encabezado')
+      const bloque = seccion.querySelector('.escena.en-columnas:not(.sin-figura) .bloque-texto')
+      const arribas = pasos.map((p) => p.getBoundingClientRect().top - base)
+      secciones.push({ seccion, arribas, frases })
+      if (!corre || !bloque || pasos.length === 0) continue
+      const rb = bloque.getBoundingClientRect()
+      // Dónde queda el pie del titular con la escena pegada: su `top` de sticky más la distancia del
+      // titular dentro de ella. Medido en vivo solo vale para la escena a la vista.
+      const escenaEl = bloque.closest('.escena')
+      const topePegado = parseFloat(doc.defaultView.getComputedStyle(escenaEl).top)
+      const piso = topePegado + (encabezado.getBoundingClientRect().bottom - escenaEl.getBoundingClientRect().top) + 12
+      // El centro de la figura con la escena pegada: ahí queda la frase cuando se llega con flecha.
+      const rf = escenaEl.querySelector(':scope > .bloque-figura')?.getBoundingClientRect()
+      const centroFigura = rf ? topePegado + (rf.top - escenaEl.getBoundingClientRect().top) + rf.height / 2 : alto / 2
+      pasos.forEach((p, i) => {
+        const t = doc.createElement('div')
+        t.className = 'lab-tarjeta'
+        t.innerHTML = frases[i]?.innerHTML ?? ''
+        t.style.left = (rb.left - rc.left) + 'px'
+        t.style.width = rb.width + 'px'
+        lamina.append(t)
+        // El paso i se enciende cuando su borde de arriba cruza el 55 % de la capa (la banda de
+        // `usePasoActivo`). En ese scroll, el centro de la tarjeta queda en `lectura` × alto.
+        const h = t.offsetHeight
+        const arriba = arribas[i] + (Number(estado.lectura) - 0.55) * alto - h / 2
+        t.style.top = arriba + 'px'
+        // Adónde lleva la flecha: la frase centrada en la figura, pero sin entrar en la zona donde se
+        // desvanece bajo el titular y sin pasar a la parada siguiente (la figura cambiaría de paso).
+        const activacion = Math.round(arribas[i] - 0.55 * alto)
+        const siguiente = arribas[i + 1] !== undefined ? Math.round(arribas[i + 1] - 0.55 * alto) : Infinity
+        const centrada = arriba + h / 2 - centroFigura
+        const sinDesvanecer = arriba - (piso + 100)
+        const objetivo = Math.round(Math.max(activacion, Math.min(centrada, sinDesvanecer, siguiente - 0.1 * alto)))
+        tarjetas.push({ el: t, seccion, i, arriba, piso, h, activacion, objetivo })
+      })
+      // C: la figura completa desde que llega. El paso activo de la app es el mayor dentro de la
+      // banda, así que se estira el último (con `transform`, que el observador mide y el layout no)
+      // hasta cubrir la pista entera: siempre está dentro y gana.
+      if (estado.combinacion === 'c') {
+        const ultimo = pasos.at(-1)
+        const colchon = seccion.querySelector('.colchon-recorrido')
+        const r0 = colchon.getBoundingClientRect(); const r1 = ultimo.getBoundingClientRect()
+        ultimo.style.transformOrigin = '50% 100%'
+        ultimo.style.transform = `scaleY(${((r1.bottom - r0.top) / r1.height).toFixed(3)})`
+      }
+    }
+    montarNavegacion(doc, capa)
+    medir()
+  }
+
+  // ---- Navegar con clic -----------------------------------------------------------------------
+  //
+  // Lo mismo que el teclado de la app (`PageDown` y flechas en CapaRecorrido.tsx), pero con el
+  // mouse, y **solo a los lugares donde algo cambia**: portada, cada paso (frase nueva), cada pausa.
+  // El teclado para también en los colchones, donde no cambia nada; acá no. Scroll suave, así que
+  // en B el texto se ve subir. No es «un gesto, un paso»: la rueda y el gesto quedan libres.
+
+  function paradasDeCambio (capa) {
+    // En C el último paso está estirado con `transform`: se suelta para medir y se vuelve a poner.
+    const estirados = [...capa.querySelectorAll('.paso-recorrido')].filter((p) => p.style.transform)
+    const guardado = estirados.map((p) => p.style.transform)
+    for (const p of estirados) p.style.transform = ''
+    const arriba = capa.getBoundingClientRect().top - capa.scrollTop
+    const tope = capa.scrollHeight - capa.clientHeight
+    const lista = [...new Set([...capa.querySelectorAll('.portada-recorrido, .respiro-recorrido, .paso-recorrido')].map((el) => {
+      const margen = parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+      return Math.min(tope, Math.max(0, Math.round(el.getBoundingClientRect().top - arriba - margen)))
+    }))].sort((a, b) => a - b)
+    estirados.forEach((p, i) => { p.style.transform = guardado[i] })
+    if (lista.at(-1) !== tope) lista.push(tope)
+    // En B y C la parada de un paso es el instante en que cambia la figura, con la frase todavía
+    // entrando por abajo. La flecha lleva, dentro del mismo paso, a donde la frase queda para leerse.
+    for (const t of tarjetas) {
+      const k = lista.findIndex((v) => Math.abs(v - t.activacion) <= 3)
+      if (k >= 0) lista[k] = Math.min(t.objetivo, tope)
+    }
+    lista.sort((a, b) => a - b)
+    return lista
+  }
+
+  function montarNavegacion (doc, capa) {
+    capa.querySelector('.lab-nav')?.remove()
+    capa.classList.toggle('lab-barra-clic', estado.clic === 'flechas-barra')
+    if (estado.clic === 'no') return
+    const nav = doc.createElement('div'); nav.className = 'lab-nav'
+    const flecha = (d) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`
+    nav.innerHTML = `<button type="button" class="presionable" data-sentido="-1" aria-label="Anterior">${flecha('M6 15l6-6 6 6')}</button>` +
+      `<button type="button" class="presionable" data-sentido="1" aria-label="Siguiente">${flecha('M6 9l6 6 6-6')}</button>`
+    capa.append(nav)
+    // El destino se calcula desde el último destino pedido si el scroll suave todavía no llegó: dos
+    // clics seguidos avanzan dos cambios, no uno.
+    let destino = null
+    for (const b of nav.querySelectorAll('button')) {
+      b.addEventListener('click', () => {
+        const lista = paradasDeCambio(capa)
+        const desde = destino !== null && Math.abs(capa.scrollTop - destino) > 4 ? destino : capa.scrollTop
+        const sentido = Number(b.dataset.sentido)
+        // Una parada a menos de 0,1 de pantalla no es un cambio (la portada para en 43 px, el alto
+        // de la barra, y el marco abre en 0); los cambios reales están a 0,4 de pantalla o más.
+        const cerca = 0.1 * capa.clientHeight
+        const y = sentido > 0 ? lista.find((v) => v > desde + cerca) : [...lista].reverse().find((v) => v < desde - cerca)
+        if (y === undefined) return
+        destino = y
+        capa.scrollTo({ top: y, behavior: 'smooth' })
+      })
+    }
+    const actualizar = () => {
+      const lista = paradasDeCambio(capa)
+      const cerca = 0.1 * capa.clientHeight
+      nav.children[0].disabled = capa.scrollTop <= lista[0] + cerca
+      nav.children[1].disabled = capa.scrollTop >= lista.at(-1) - cerca
+    }
+    // Un solo oyente por capa: cada cambio de parámetro vuelve a montar.
+    if (capa.labActualizar) capa.removeEventListener('scroll', capa.labActualizar)
+    capa.labActualizar = actualizar
+    capa.addEventListener('scroll', actualizar, { passive: true }); actualizar()
+    if (estado.clic === 'flechas-barra' && !capa.dataset.labBarra) {
+      // La barra mide 6 px: se escucha la franja de arriba entera, dentro del ancho de la barra.
+      capa.dataset.labBarra = '1'
+      const franja = capa.querySelector('[role="progressbar"]').parentElement
+      franja.addEventListener('click', (e) => {
+        if (estado.clic !== 'flechas-barra') return
+        const r = capa.querySelector('[role="progressbar"]').getBoundingClientRect()
+        if (e.clientX < r.left || e.clientX > r.right) return
+        const lista = paradasDeCambio(capa)
+        const tope = capa.scrollHeight - capa.clientHeight
+        const pedido = ((e.clientX - r.left) / r.width) * tope
+        const y = lista.reduce((a, v) => (Math.abs(v - pedido) < Math.abs(a - pedido) ? v : a), lista[0])
+        capa.scrollTo({ top: y, behavior: 'smooth' })
+      })
+    }
+  }
+
+  // ---- Cada cuadro: opacidad de las tarjetas y registro de cuánto dura cada paso ------------
+
+  let claveActiva = null; let desde = 0; const duraciones = []
+  function activoDe (s, capa) {
+    // En la app y en B, el paso lo decide la app (`data-lugar`). En C la app queda en el último, así
+    // que se calcula con la misma regla: el último paso cuyo borde cruzó el 55 %.
+    if (estado.combinacion !== 'c') return s.frases.findIndex((f) => f.dataset.lugar === 'activa')
+    const linea = capa.scrollTop + 0.55 * capa.clientHeight
+    let a = 0; s.arribas.forEach((y, i) => { if (y <= linea) a = i }); return a
+  }
+
+  function cuadro () {
+    const capa = capaApp()
+    if (capa) {
+      const rc = capa.getBoundingClientRect()
+      const alto = capa.clientHeight
+      // Qué sección tiene delante el lector: la que cruza el centro de la capa.
+      let enVista = null
+      for (const s of secciones) {
+        const r = s.seccion.getBoundingClientRect()
+        const apagada = s.seccion.nextElementSibling?.matches?.('.respiro-recorrido[data-cruzada]')
+        if (r.top - rc.top <= alto / 2 && r.bottom - rc.top >= alto / 2 && !apagada) enVista = s
+        s.activo = activoDe(s, capa)
+      }
+      for (const t of tarjetas) {
+        const s = secciones.find((x) => x.seccion === t.seccion)
+        const arribaVista = t.arriba - capa.scrollTop
+        // Se desvanece en los 100 px antes de tocar el titular, que queda quieto arriba.
+        const bajoTitular = Math.max(0, Math.min(1, (arribaVista - t.piso) / 100))
+        const apagada = t.seccion.nextElementSibling?.matches?.('.respiro-recorrido[data-cruzada]')
+        const tenue = s && s.activo === t.i ? 1 : Number(estado.inactivas)
+        t.el.style.opacity = apagada ? 0 : (bajoTitular * tenue).toFixed(3)
+      }
+      const clave = enVista ? `${secciones.indexOf(enVista)}:${enVista.activo}` : null
+      if (clave !== claveActiva) {
+        const ahora = performance.now()
+        if (claveActiva !== null && enVista) duraciones.push(Math.round(ahora - desde))
+        if (duraciones.length > 8) duraciones.shift()
+        claveActiva = clave; desde = ahora
+        medir()
+      }
+    }
+    requestAnimationFrame(cuadro)
+  }
+
+  // ---- Medidas en la barra del visor ---------------------------------------------------------
+
+  const medidas = document.getElementById('medidas')
+  let ultima = {}
+  function medir () {
+    const capa = capaApp()
+    if (!capa) return
+    const alto = capa.clientHeight
+    const paso = Math.round(alto * Number(estado.paso))
+    const total = capa.scrollHeight - capa.clientHeight
+    const cortos = duraciones.filter((d) => d < 500).length
+    // Qué fracción de su paso se lee entera la frase activa: la tarjeta sube `paso` px mientras su
+    // paso está activo, y se lee entera mientras su borde de arriba está bajo la zona donde se
+    // desvanece (titular + 112 px) y su borde de abajo dentro de la capa.
+    const fracciones = tarjetas.map((t) => {
+      const piso = t.piso + 100
+      const arriba0 = Number(estado.lectura) * alto - t.h / 2
+      const desde = Math.min(arriba0, alto - t.h); const hasta = Math.max(arriba0 - paso, piso)
+      return Math.max(0, desde - hasta) / paso
+    })
+    const media = fracciones.length ? fracciones.reduce((a, b) => a + b, 0) / fracciones.length : null
+    const minima = fracciones.length ? Math.min(...fracciones) : null
+    ultima = { pantalla: `${capa.clientWidth}x${alto}`, pxPorPaso: paso, girosDeRuedaPorPaso: +(paso / 100).toFixed(1), scrollTotal: total, girosDeRuedaTotal: Math.round(total / 100), duracionesMs: [...duraciones], fraccionLegibleMedia: media === null ? null : +media.toFixed(2), fraccionLegibleMinima: minima === null ? null : +minima.toFixed(2) }
+    medidas.innerHTML = `<span>Capa <b>${capa.clientWidth}×${alto}</b></span>` +
+      `<span>Un paso: <b>${paso} px</b> ≈ <b>${ultima.girosDeRuedaPorPaso}</b> giros de rueda de 100 px</span>` +
+      (media === null ? '' : `<span>La frase activa se lee entera: <b>${Math.round(media * 100)} %</b> de su paso en promedio, <b class="${minima < 0.5 ? 'corto' : ''}">${Math.round(minima * 100)} %</b> la peor</span>`) +
+      `<span>Historia entera: <b>${total} px</b> ≈ <b>${ultima.girosDeRuedaTotal}</b> giros</span>` +
+      `<span>Últimos pasos a la vista: <b>${duraciones.length ? duraciones.map((d) => `<span class="${d < 500 ? 'corto' : ''}">${d}</span>`).join(' · ') + ' ms' : '—'}</b></span>` +
+      `<span>${cortos ? `<b class="corto">${cortos}</b> de ${duraciones.length} duraron menos que la transición de 500 ms` : ''}</span>`
+  }
+
+  // ---- Exportar -----------------------------------------------------------------------------
+
+  document.getElementById('copiar').addEventListener('click', async () => {
+    const { combinacion, ...parametros } = estado
+    const datos = {
+      laboratorio: 'scroll-escritorio',
+      fecha: new Date().toISOString().slice(0, 10),
+      combinacion,
+      parametros,
+      textos: {},
+      medida: ultima,
+      nota: document.getElementById('nota').value,
+    }
+    const texto = JSON.stringify(datos, null, 2)
+    const pre = document.getElementById('json')
+    pre.textContent = texto; pre.hidden = false
+    try { await navigator.clipboard.writeText(texto); document.getElementById('copiado').textContent = 'Copiado.' }
+    catch { document.getElementById('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.' }
+  })
+
+  // ---- Arranque -----------------------------------------------------------------------------
+
+  visor.addEventListener('load', () => {
+    const win = visor.contentWindow
+    // La geometría de la pista se fija después del primer cuadro de la capa.
+    const esperar = () => { if (capaApp()?.querySelector('.paso-recorrido')) setTimeout(aplicar, 400); else setTimeout(esperar, 100) }
+    esperar()
+    win.addEventListener('resize', aplicarLuego)
+    win.addEventListener('hashchange', () => { setTimeout(esperar, 50) })
+  })
+
+  pintarControles(); dimensionar(); cargar(); requestAnimationFrame(cuadro)
+})()
+</script>

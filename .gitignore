@@ -44,3 +44,5 @@ public/laboratorio-cotidiana.html
 public/laboratorio-decisiones.html
 # Y el de la pestaña «La encuesta»: `npm run lab:la-encuesta` a partir de `laboratorio/la-encuesta.html`.
 public/laboratorio-la-encuesta.html
+# Y el del scroll en escritorio: `npm run lab:scroll` a partir de `laboratorio/scroll-escritorio.html`.
+public/laboratorio-scroll.html

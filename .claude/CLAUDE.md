@@ -32,7 +32,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 |---|---|
 | `src/App.tsx` | Rutas y páginas que no son historias: `App` (rutas), `Marco` (159, encabezado), `SobreLosDatos` (203) |
 | `src/historias/` | `indice.tsx` (registro: id, bloque, pregunta, hallazgo, contrastes que la sostienen), `MenuHistorias.tsx` (la raíz), una historia por archivo (`recorrido.tsx` tiene `La mirada` y `Entre dos potencias`, partidas del recorrido viejo; `territorio`, `inversion`, `cotidiana`, `vacuna`), `comun.tsx` (`AnioDelPaso`, `LeyendaDeOleadas`) y `lectura.ts` (`lector`, `serieDeMedida`, `casosDe`) |
-| `src/componentes/CapaRecorrido.tsx` | La capa: `CapaRecorrido` (87, props `metodo` y `salida`), `Portada` (353), `Respiro` (478), `Escena` (549), `Pista` (759), `Cierre` (843) |
+| `src/componentes/CapaRecorrido.tsx` | La capa: `paradasDeCambio` (90, adónde llevan teclado y flechas), `CapaRecorrido` (171, props `metodo` y `salida`; `irA` y las flechas «Anterior»/«Siguiente»), `Portada` (494), `Respiro` (619), `Escena` (720; en escritorio el texto corre, un registro de decisiones interno), `Pista` (958, con las tarjetas de frase), `Cierre` (1066) |
 | `src/nucleo/pasos.ts` | `usePasoActivo`, `pasoActivo`, `useMovimientoReducido` |
 | `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `GRUPOS`, `pasosDeGrupo`, `GENERO`, `IDEOLOGIA` y `MACROZONA` (grupos de un corte en el explorador, que no se pintan como oleadas; cada corte declara la suya en `CORTES` y `paletaDeCorte` la aplica por grupo), `SEMANTICOS` (color por etiqueta) |
@@ -61,7 +61,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 npm run dev          # Vite en 5180; desde otra máquina: http://localhost:5180
 npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar algo
 npm run datos        # etl:combinada + descargas
-npm run lab:<tema>   # copia un laboratorio a public/ (lab, lab:cierre, lab:portada, lab:cotidiana; lab:decisiones es el dashboard de decisiones)
+npm run lab:<tema>   # copia un laboratorio a public/ (lab, lab:cierre, lab:portada, lab:cotidiana, lab:scroll; lab:decisiones es el dashboard de decisiones)
 npm run build
 ```
 
