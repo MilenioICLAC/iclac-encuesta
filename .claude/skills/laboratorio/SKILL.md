@@ -93,4 +93,6 @@ comprueba con un `tsconfig` temporal que lo incluya.
 | `laboratorio/cierre-recorrido.html` | `npm run lab:cierre` | cerrado, falta podar |
 | `laboratorio/portada-recorrido.html` | `npm run lab:portada` | cerrado, falta podar |
 | `laboratorio/scroll-escritorio.html` | `npm run lab:scroll` | decidido y aplicado (25-09-2026): B (texto que corre, paso 0,4, frase al 80 %) y flechas; falta podar |
+| `laboratorio/barra-barco.html` | `npm run lab:barco` | decidido y aplicado (25-09-2026) en `BarraDeAvance.tsx`: ola baja, tinta de 6 px en hebras, barco de 20 px; falta podar |
+| `laboratorio/pausa-corta.html` | `npm run lab:pausa` | decidido y aplicado (25-09-2026): pausa quieta un paso, la escena siguiente sube 0,4, frase de la pausa que corre en escritorio, cortes de 4 px; falta podar |
 | `laboratorio/la-encuesta.html` | `npm run lab:la-encuesta` | cerrado, falta podar: JSON aplicado el 24-09-2026 en `FichaTecnica.tsx` (la pestaña es «Ficha técnica»); se hizo sin iframe porque la pestaña no existía |

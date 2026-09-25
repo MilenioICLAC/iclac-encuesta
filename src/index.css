@@ -365,6 +365,70 @@
   pointer-events: none;
 }
 
+/*
+ * **La pausa queda quieta un paso** (laboratorio `pausa-corta`, 25-09-2026): el de la escena que la
+ * precede. Arriba, el de 0,75; con el texto que corre, el paso mide 0,4 (`PASO_TEXTO_CORRE`) y la
+ * pausa también. Con 0,75 fijo, en escritorio la pausa costaba más de cuatro pasos y su tramo en la
+ * barra de avance confundía.
+ */
+.escena-recorrido:has(> .escena.texto-corre):has(+ .respiro-recorrido)::after {
+  height: calc(var(--alto-capa, 100svh) * 0.4);
+}
+
+.escena-recorrido:has(> .escena.texto-corre) + .respiro-recorrido {
+  margin-top: calc(var(--alto-capa, 100svh) * -1.4);
+  min-height: calc(var(--alto-capa, 100svh) * 1.4);
+}
+
+/*
+ * **Y la escena que sigue sube poco** (mismo laboratorio). Subiendo una pantalla entera desde abajo,
+ * la subida costaba más que la pausa. Ahora queda montada sobre el final de la pausa y sube solo
+ * `--subida-tras-pausa` (lo publica `CapaRecorrido` desde `SUBIDA_TRAS_PAUSA`); como a ese punto ya
+ * asoma a media pantalla, aparece con un fundido cuando llega (`data-salida`, ver `Respiro`) y la
+ * frase de la pausa se va hacia arriba, como una frase de escena.
+ */
+.escena-recorrido + .respiro-recorrido + .escena-recorrido {
+  margin-top: calc(var(--alto-capa, 100svh) * (var(--subida-tras-pausa, 1) - 1));
+}
+
+.escena-recorrido + .respiro-recorrido:not([data-salida]) + .escena-recorrido > .escena {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.escena-recorrido + .respiro-recorrido:not([data-salida]) + .escena-recorrido .tarjeta-frase {
+  opacity: 0;
+}
+
+.respiro-recorrido[data-salida] {
+  pointer-events: none;
+}
+
+.escena-recorrido + .respiro-recorrido[data-cruzada][data-salida] .bloque-texto {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/*
+ * **En escritorio la frase de la pausa corre como las de los pasos** (mismo laboratorio): deja de
+ * estar pegada al centro y queda, dentro de la pausa, a `--lectura-texto-corre` de la pantalla, donde
+ * entra la frase de un paso al activarse. Al cruzar la línea de la pausa aparece ahí y sube con el
+ * scroll. Mismas condiciones que el texto que corre (`corre` en `Escena`).
+ */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .escena-recorrido + .respiro-recorrido > .escena {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--alto-capa, 100svh) * var(--lectura-texto-corre, 0.5));
+    height: 0;
+    min-height: 0;
+    padding-block: 0;
+    overflow: visible;
+  }
+}
+
 .escena-recorrido + .respiro-recorrido[data-cruzada] {
   pointer-events: auto;
 }
@@ -395,7 +459,21 @@
     transition: none;
   }
 
-  .escena-recorrido + .respiro-recorrido .bloque-texto {
+  .escena-recorrido + .respiro-recorrido .bloque-texto,
+  .escena-recorrido + .respiro-recorrido:not([data-salida]) + .escena-recorrido > .escena {
+    transform: none;
+  }
+
+  /* Sin pasos, la escena entre dos pausas no tiene tiempo quieto: la pausa siguiente la tapa apenas
+     llega, y solo se lee mientras sube. Con la subida corta serían 0,4 de pantalla; acá sigue
+     subiendo una entera y la frase de la pausa se va con ella, como antes. `!important` porque la
+     variable llega en línea desde `CapaRecorrido`. */
+  .capa-recorrido {
+    --subida-tras-pausa: 1 !important;
+  }
+
+  .escena-recorrido + .respiro-recorrido[data-cruzada][data-salida] .bloque-texto {
+    opacity: 1;
     transform: none;
   }
 }

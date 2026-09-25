@@ -1,0 +1,487 @@
+<title>Laboratorio de la barra de avance: el barco y la tinta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo va en claro: la app no tiene modo oscuro y la capa del recorrido es blanca. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca-oscura: #00776E;
+    --g600: #4B5563;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+
+  .envoltorio { max-width: 1960px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 96ch; }
+  .avisos li + li { margin-top: 4px; }
+
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .grupo[hidden] { display: none; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  .combinaciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; }
+  .combinacion { text-align: left; border: 1px solid var(--linea); background: var(--superficie); border-radius: 12px; padding: 10px 12px; font: inherit; cursor: pointer; color: var(--tinta); }
+  .combinacion strong { display: block; font-family: var(--display); font-weight: 600; font-size: 14px; }
+  .combinacion span { display: block; font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
+  .combinacion[aria-pressed="true"] { border-color: var(--marca-oscura); box-shadow: inset 0 0 0 1px var(--marca-oscura); }
+
+  /* La lupa: la misma barra, dibujada por la misma función, a tres veces su tamaño. */
+  .lupa { padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); overflow: hidden; }
+  .lupa > span { display: block; font-size: 11.5px; color: var(--tinta-suave); margin-bottom: 8px; }
+  .lupa-fila { display: flex; align-items: center; gap: 12px; }
+  .lupa-lienzo { flex: 1; min-width: 0; overflow: hidden; }
+  .lupa-lienzo svg { display: block; transform-origin: 0 50%; }
+  .lupa input[type="range"] { width: 100%; margin-top: 8px; accent-color: var(--marca-oscura); }
+
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .barra-visor b { color: var(--tinta); font-weight: 600; }
+  .barra-visor .corto { color: #B42318; }
+  .lienzo { padding-block: 16px; display: flex; justify-content: center; }
+  .caja { position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); background: #fff; }
+  .caja iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+
+  .exportar { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .exportar textarea { font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; min-height: 64px; }
+  .exportar pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--papel); border-radius: 8px; padding: 8px; user-select: all; }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fila small { color: var(--tinta-suave); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>La barra de avance: el barco y la tinta</h1>
+    <p>La app real, en un marco, con la barra nueva dibujada encima de la de hoy. Recorre una historia con la rueda o el dedo y mira cómo navega el barco. Fijo: la tinta en el verde de la barra de hoy (brand-dark), el riel en el gris de hoy, las líneas blancas en cada cambio y el barco en negro. Lo que se decide: la forma de la ola, el trazo y el barco.</p>
+  </header>
+
+  <ul class="avisos">
+    <li>La barra sigue siendo la de la app (misma medida del avance y mismas marcas, leídas de su página); acá solo cambia cómo se dibuja.</li>
+    <li>El barco se centra en la punta de la tinta y no sale de la barra: en 0 % y en 100 % se queda en el borde, con la punta bajo el casco.</li>
+    <li>La ola no se mueve sola: se dibuja con el scroll, igual que el relleno de hoy. Lo único con movimiento es la inclinación del barco, que se apaga con movimiento reducido (simulable abajo). El resto de la app no cambia con esa simulación.</li>
+    <li>En el marco angosto dentro de una ventana ancha la barra se ve más chica de lo que es: para el detalle, la lupa (×3), que se mueve con el scroll del marco o con su propio control.</li>
+  </ul>
+
+  <div class="combinaciones" id="combinaciones">
+    <button class="combinacion" data-combinacion="app" aria-pressed="false"><strong>Como está la app</strong><span>Barra recta de 6 px: relleno verde sobre gris, líneas blancas en cada cambio.</span></button>
+    <button class="combinacion" data-combinacion="propuesta" aria-pressed="false"><strong>Propuesta</strong><span>Ola suave, tinta en hebras de pincel afinada en la punta, riel en ola gris y un junco negro de 20 px que se inclina con la ola.</span></button>
+  </div>
+
+  <div class="controles">
+    <div class="grupo"><span>Historia</span><div class="seg" data-parametro="historia"></div></div>
+    <div class="grupo"><span>Pantalla</span><div class="seg" data-parametro="pantalla"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Alto de la ola</span><div class="seg" data-parametro="amplitud"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Largo de la ola</span><div class="seg" data-parametro="periodo"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Grosor de la tinta</span><div class="seg" data-parametro="grosor"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Trazo de la tinta</span><div class="seg" data-parametro="trazo"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Punta de la tinta</span><div class="seg" data-parametro="punta"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Lo que falta (riel)</span><div class="seg" data-parametro="riel"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Alto del barco</span><div class="seg" data-parametro="barco"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>El barco en la ola</span><div class="seg" data-parametro="inclina"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Negro del barco</span><div class="seg" data-parametro="negro"></div></div>
+    <div class="grupo" data-solo="propuesta"><span>Movimiento reducido</span><div class="seg" data-parametro="reducido"></div></div>
+  </div>
+
+  <div class="lupa" id="lupa">
+    <span>Lupa ×3: la barra con el ancho que tiene en el marco</span>
+    <div class="lupa-fila"><div class="lupa-lienzo" id="lupa-lienzo"></div></div>
+    <input type="range" id="lupa-avance" min="0" max="1000" value="400" aria-label="Avance en la lupa">
+  </div>
+
+  <div class="marco">
+    <div class="barra-visor" id="medidas" aria-live="off"></div>
+    <div class="lienzo"><div class="caja" id="caja"><iframe id="visor" title="La app con la barra elegida"></iframe></div></div>
+  </div>
+
+  <div class="exportar">
+    <label for="nota" style="font-size:11.5px;color:var(--tinta-suave)">Nota (qué te gustó, qué no, qué dispositivo usaste)</label>
+    <textarea id="nota"></textarea>
+    <div class="fila"><button class="accion" id="copiar">Copiar JSON</button><small id="copiado"></small></div>
+    <pre id="json" hidden></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  const CLAVE = 'lab-barra-barco-v1'
+
+  // Colores de la app: brand-dark (tailwind.config.js), gray-200 del riel de hoy y gray-900 de la
+  // tinta del texto (CapaRecorrido.tsx).
+  const TINTA = '#00776E'
+  const RIEL = '#E5E7EB'
+  const NEGROS = { puro: '#000000', texto: '#111827' }
+
+  const OPCIONES = {
+    historia: [
+      ['mirada', 'La mirada'], ['entre-potencias', 'Entre dos potencias'], ['territorio', 'Donde uno vive'],
+      ['inversion', 'Inversión y Estado'], ['china-cotidiana', 'China cotidiana'], ['vacuna', 'La vacuna'],
+    ],
+    pantalla: [['360x640', '360×640'], ['390x844', '390×844'], ['768x1024', '768'], ['1512x860', '1512'], ['todo', 'Todo']],
+    amplitud: [['0', 'plana'], ['1.5', 'baja (1,5 px)'], ['2.5', 'media (2,5 px)'], ['4', 'alta (4 px)']],
+    periodo: [['24', 'corta (24 px)'], ['40', 'media (40 px)'], ['64', 'larga (64 px)']],
+    grosor: [['3', '3 px'], ['4.5', '4,5 px'], ['6', '6 px (hoy)']],
+    trazo: [['lisa', 'lisa'], ['presion', 'con presión'], ['hebras', 'hebras de pincel']],
+    punta: [['roma', 'roma'], ['afinada', 'afinada']],
+    riel: [['ola', 'ola gris'], ['recta', 'línea gris recta'], ['nada', 'sin riel']],
+    barco: [['16', '16 px'], ['20', '20 px'], ['24', '24 px'], ['28', '28 px']],
+    inclina: [['quieto', 'derecho'], ['suave', 'se inclina un poco'], ['sigue', 'sigue la ola']],
+    negro: [['texto', 'el del texto (gray-900)'], ['puro', 'negro puro']],
+    reducido: [['no', 'no'], ['si', 'simular']],
+  }
+
+  const PRESETS = {
+    app: {},
+    propuesta: { amplitud: '2.5', periodo: '40', grosor: '4.5', trazo: 'hebras', punta: 'afinada', riel: 'ola', barco: '20', inclina: 'suave', negro: 'texto' },
+  }
+
+  const inicial = { combinacion: 'propuesta', historia: 'mirada', pantalla: '390x844', ...PRESETS.propuesta, reducido: 'no' }
+
+  // Leído por identificador y validado contra las opciones: un valor guardado por una versión
+  // anterior que ya no existe cae al inicial en vez de romper.
+  const estado = { ...inicial }
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE) || '{}')
+    for (const k of Object.keys(inicial)) {
+      const v = guardado[k]
+      if (k === 'combinacion' ? Object.keys(PRESETS).includes(v) : OPCIONES[k]?.some(([id]) => id === v)) estado[k] = v
+    }
+    if (typeof guardado.nota === 'string') document.getElementById('nota').value = guardado.nota
+  } catch { /* sin almacenamiento, se usa el inicial */ }
+  const guardar = () => {
+    try { localStorage.setItem(CLAVE, JSON.stringify({ ...estado, nota: document.getElementById('nota').value })) } catch { /* nada */ }
+  }
+
+  // ---- Controles -----------------------------------------------------------------------------
+
+  for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+    const k = grupo.dataset.parametro
+    for (const [id, rotulo] of OPCIONES[k]) {
+      const b = document.createElement('button')
+      b.type = 'button'; b.dataset.valor = id; b.textContent = rotulo
+      b.addEventListener('click', () => { estado[k] = id; cambio(k) })
+      grupo.append(b)
+    }
+  }
+  for (const b of document.querySelectorAll('[data-combinacion]')) {
+    b.addEventListener('click', () => {
+      estado.combinacion = b.dataset.combinacion
+      Object.assign(estado, PRESETS[estado.combinacion])
+      cambio('combinacion')
+    })
+  }
+  document.getElementById('nota').addEventListener('input', guardar)
+
+  function pintarControles () {
+    for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+      for (const b of grupo.children) b.setAttribute('aria-pressed', String(b.dataset.valor === estado[grupo.dataset.parametro]))
+    }
+    for (const b of document.querySelectorAll('[data-combinacion]')) b.setAttribute('aria-pressed', String(b.dataset.combinacion === estado.combinacion))
+    // Un parámetro que en la combinación elegida no hace nada no se ofrece.
+    for (const g of document.querySelectorAll('[data-solo]')) g.hidden = !g.dataset.solo.split(' ').includes(estado.combinacion)
+    // El trazo liso no tiene punta que afinar distinta del resto: igual se ofrece, porque la punta
+    // afinada también aplica a la lisa. El riel recto con ola plana es lo mismo que la ola: se deja.
+  }
+
+  // ---- El dibujo -----------------------------------------------------------------------------
+  //
+  // Una sola función para el marco y la lupa. La ola tiene período fijo en píxeles, contado desde
+  // el borde izquierdo de la barra: la tinta y el riel comparten fase, y cambiar el ancho no estira
+  // la ola (una ola en `viewBox` con `preserveAspectRatio="none"` se deformaría en cada ancho).
+
+  const num = (k) => Number(estado[k])
+
+  function geometria () {
+    const A = num('amplitud'); const T = num('grosor'); const B = num('barco')
+    // El barco se hunde un cuarto del grosor en la tinta; arriba, lo que necesita en la cresta.
+    const hundido = T * 0.3
+    const H = Math.ceil(B + 2 * A + T / 2 + 2 - hundido)
+    const yc = H - A - T / 2 - 1
+    return { A, T, B, H, yc, hundido, P: num('periodo') }
+  }
+
+  const ola = (g, x) => g.yc + g.A * Math.sin((2 * Math.PI * x) / g.P)
+  const pendiente = (g, x) => g.A * (2 * Math.PI / g.P) * Math.cos((2 * Math.PI * x) / g.P)
+
+  // Una cinta: borde de arriba de izquierda a derecha y el de abajo de vuelta. `grosor(x)` y
+  // `centro(x)` dan su forma; el paso de 1,5 px basta a cualquier escala de la lupa.
+  function cinta (x0, x1, centro, grosor) {
+    if (x1 - x0 < 0.5) return ''
+    const arriba = []; const abajo = []
+    const paso = 1.5
+    for (let x = x0; ; x += paso) {
+      const xx = Math.min(x, x1)
+      const c = centro(xx); const t = Math.max(0, grosor(xx)) / 2
+      arriba.push(`${xx.toFixed(2)},${(c - t).toFixed(2)}`)
+      abajo.push(`${xx.toFixed(2)},${(c + t).toFixed(2)}`)
+      if (xx >= x1) break
+    }
+    return `M${arriba.join('L')}L${abajo.reverse().join('L')}Z`
+  }
+
+  // Cuánto se afina la tinta en sus dos extremos: arranca a medio grosor, como un pincel que se
+  // apoya, y con la punta afinada termina en cero en los últimos 18 px.
+  function afinar (x, X) {
+    const inicio = Math.min(1, 0.45 + 0.55 * (x / 10))
+    if (estado.punta !== 'afinada') return inicio
+    const largo = Math.min(18, X)
+    return inicio * (largo > 0 ? Math.pow(Math.min(1, Math.max(0, (X - x) / largo)), 0.6) : 1)
+  }
+
+  function trazosDeTinta (g, X) {
+    if (X <= 0.5) return []
+    if (estado.trazo === 'lisa') {
+      return [cinta(0, X, (x) => ola(g, x), (x) => g.T * afinar(x, X))]
+    }
+    if (estado.trazo === 'presion') {
+      return [cinta(0, X, (x) => ola(g, x), (x) => g.T * afinar(x, X) * (0.8 + 0.2 * Math.sin(x / 9.3) * Math.sin(x / 23.1 + 1)))]
+    }
+    // Hebras: tres cerdas del pincel, cada una con su pulso de grosor, su pequeño desvío y un largo
+    // algo distinto en la punta; donde el pulso cae, la cerda se corta y deja pasar el blanco.
+    const hebras = []
+    const separacion = g.T / 3
+    for (let s = -1; s <= 1; s++) {
+      const fin = Math.max(0, X - Math.abs(s) * 3)
+      const ancho = (x) => {
+        const pulso = 0.72 + 0.28 * Math.sin(x / 6.1 + s * 1.9) * Math.sin(x / 17.3 + s * 0.7)
+        const corte = Math.sin(x / 11.7 + s * 2.3) * Math.sin(x / 29.9 + s) > 0.62 && s !== 0 ? 0.25 : 1
+        return (g.T / 2.1) * pulso * corte * afinar(x, fin)
+      }
+      hebras.push(cinta(0, fin, (x) => ola(g, x) + s * separacion + 0.35 * Math.sin(x / 7.3 + s * 2), ancho))
+    }
+    return hebras
+  }
+
+  // El junco, dibujado a mano con proa a la derecha (hacia donde avanza). Caja de 40 × 27,5, el
+  // alto visible (así «alto del barco» mide lo que se ve): casco bajo con popa y proa levantadas,
+  // tres mástiles y velas en abanico. Los sables son cortes blancos, como las marcas de la barra.
+  const JUNCO = {
+    ancho: 40, alto: 27.5, quilla: 26.8,
+    casco: 'M1.2 15.6 Q3 19.8 8 20.6 Q20 22 32 20.4 Q36 19.6 39 17.2 Q37.6 22.4 34 25.2 Q31.5 26.8 27 26.8 L11.5 26.8 Q6 26.8 3.6 22.6 Q2 19.6 1.2 15.6 Z',
+    mastiles: 'M21 21 V1.8 M31 20 V6.8 M7.2 19.5 V8.4',
+    velas: 'M21.4 2.4 L13.2 4.4 Q9.6 12 11.8 20.2 L21.4 20.6 Z M31.4 7.4 L25.6 9 Q23.2 14 24.8 19.6 L31.4 19.8 Z M7.6 8.8 L3.6 10.4 Q2 14 3.2 18 L7.6 18.2 Z',
+    sables: 'M12.4 8.4 L21.4 7.5 M11.3 12.6 L21.4 11.9 M11.4 16.6 L21.4 16.2 M24.6 12.6 L31.4 12 M24.4 16.2 L31.4 15.9 M2.9 13.6 L7.6 13.3',
+  }
+
+  function svgBarra (W, avance, marcas) {
+    const g = geometria()
+    const X = Math.max(0, Math.min(W, avance * W))
+    const partes = []
+    // Lo que falta.
+    if (estado.riel === 'ola') partes.push(`<path fill="${RIEL}" d="${cinta(X, W, (x) => ola(g, x), () => Math.max(2, g.T * 0.55))}"/>`)
+    if (estado.riel === 'recta') partes.push(`<rect fill="${RIEL}" x="${X.toFixed(2)}" y="${(g.yc - 1).toFixed(2)}" width="${Math.max(0, W - X).toFixed(2)}" height="2"/>`)
+    // La tinta.
+    for (const d of trazosDeTinta(g, X)) partes.push(`<path fill="${TINTA}" d="${d}"/>`)
+    // Las marcas: cortes blancos de 2 px sobre la franja de la ola, no sobre el barco.
+    const y0 = g.yc - g.A - g.T; const alto = 2 * (g.A + g.T)
+    for (const f of marcas) partes.push(`<rect fill="#fff" x="${(f * W - 1).toFixed(2)}" y="${y0.toFixed(2)}" width="2" height="${alto.toFixed(2)}"/>`)
+    // El barco: centrado en la punta, sin salirse de la barra, con la quilla hundida en la ola.
+    const escala = g.B / JUNCO.alto
+    const bw = JUNCO.ancho * escala
+    const bx = Math.max(bw / 2, Math.min(W - bw / 2, X))
+    const by = ola(g, bx) + g.hundido
+    const factor = estado.reducido === 'si' ? 0 : { quieto: 0, suave: 0.5, sigue: 1 }[estado.inclina]
+    const angulo = (Math.atan(pendiente(g, bx)) * 180 / Math.PI) * factor
+    const negro = NEGROS[estado.negro]
+    partes.push(
+      `<g transform="translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${angulo.toFixed(2)}) scale(${escala.toFixed(4)}) translate(${-JUNCO.ancho / 2} ${-JUNCO.quilla})">` +
+      `<path d="${JUNCO.mastiles}" stroke="${negro}" stroke-width="1.4" fill="none" stroke-linecap="round"/>` +
+      `<path d="${JUNCO.velas}" fill="${negro}"/>` +
+      `<path d="${JUNCO.sables}" stroke="#fff" stroke-width="1.1" fill="none" stroke-linecap="round"/>` +
+      `<path d="${JUNCO.casco}" fill="${negro}"/>` +
+      '</g>',
+    )
+    return { html: partes.join(''), H: g.H }
+  }
+
+  // ---- El marco ------------------------------------------------------------------------------
+
+  const caja = document.getElementById('caja')
+  const visor = document.getElementById('visor')
+
+  function medidasPantalla () {
+    if (estado.pantalla === 'todo') return [window.innerWidth, window.innerHeight]
+    return estado.pantalla.split('x').map(Number)
+  }
+
+  function dimensionar () {
+    const [w, h] = medidasPantalla()
+    const disponible = document.documentElement.clientWidth - 16
+    const escala = Math.min(1, disponible / w)
+    visor.style.width = w + 'px'; visor.style.height = h + 'px'
+    visor.style.transform = escala < 1 ? `scale(${escala})` : ''
+    caja.style.width = Math.round(w * escala) + 'px'; caja.style.height = Math.round(h * escala) + 'px'
+  }
+
+  function cargar () { visor.src = `/#/historias/${estado.historia}` }
+
+  function cambio (k) {
+    guardar(); pintarControles()
+    if (k === 'historia') { cargar(); return }
+    if (k === 'pantalla') dimensionar()
+    aplicar(); ultimaFirma = ''
+  }
+
+  window.addEventListener('resize', () => { if (estado.pantalla === 'todo') dimensionar(); ultimaFirma = '' })
+
+  const docApp = () => { try { return visor.contentDocument } catch { return null } }
+  const capaApp = () => docApp()?.querySelector('.capa-recorrido')
+
+  // Se esconde lo que dibuja la barra de hoy (el relleno y las líneas) sin sacarlo del DOM: el
+  // `progressbar` y su `aria-valuenow` siguen siendo los de la app.
+  function aplicar () {
+    const doc = docApp()
+    if (!doc || !capaApp()) return
+    let estilo = doc.getElementById('lab-estilo')
+    if (!estilo) { estilo = doc.createElement('style'); estilo.id = 'lab-estilo'; doc.head.append(estilo) }
+    const g = geometria()
+    estilo.textContent = estado.combinacion === 'app' ? '' : `
+      .capa-recorrido [role="progressbar"] { height: ${g.H}px !important; background: transparent !important; overflow: visible !important; border-radius: 0 !important; }
+      .capa-recorrido [role="progressbar"] > :not(.lab-ola) { visibility: hidden; }
+      .capa-recorrido .lab-ola { position: absolute; inset: 0; display: block; overflow: visible; }
+    `
+    const barra = capaApp().querySelector('[role="progressbar"]')
+    let svg = barra.querySelector('.lab-ola')
+    if (estado.combinacion === 'app') { svg?.remove(); return }
+    if (!svg) {
+      svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('class', 'lab-ola'); svg.setAttribute('aria-hidden', 'true')
+      barra.append(svg)
+    }
+  }
+
+  // Lo que la app dice de su barra: el avance, calculado igual que `alDesplazar`, y las marcas,
+  // leídas del `left` de cada línea.
+  function leerApp () {
+    const capa = capaApp()
+    if (!capa) return null
+    const barra = capa.querySelector('[role="progressbar"]')
+    if (!barra) return null
+    const recorrible = capa.scrollHeight - capa.clientHeight
+    const avance = recorrible > 0 ? Math.min(1, capa.scrollTop / recorrible) : 1
+    const marcas = [...barra.querySelectorAll(':scope > span')].map((s) => parseFloat(s.style.left) / 100).filter((f) => Number.isFinite(f))
+    return { capa, barra, avance, marcas, W: barra.clientWidth }
+  }
+
+  // ---- Cada cuadro ---------------------------------------------------------------------------
+
+  const lupaLienzo = document.getElementById('lupa-lienzo')
+  const lupaAvance = document.getElementById('lupa-avance')
+  let lupaManual = false
+  lupaAvance.addEventListener('input', () => { lupaManual = true; ultimaFirma = '' })
+
+  let ultimaFirma = ''
+  let ultimoScroll = -1
+  function cuadro () {
+    const app = leerApp()
+    if (app) {
+      // Si el marco se movió, la lupa vuelve a seguirlo.
+      if (app.capa.scrollTop !== ultimoScroll) { lupaManual = false; ultimoScroll = app.capa.scrollTop }
+      const avanceLupa = lupaManual ? Number(lupaAvance.value) / 1000 : app.avance
+      if (!lupaManual) lupaAvance.value = String(Math.round(app.avance * 1000))
+      const firma = JSON.stringify([estado, app.avance, avanceLupa, app.W, app.marcas.length, lupaLienzo.clientWidth])
+      if (firma !== ultimaFirma) {
+        ultimaFirma = firma
+        if (estado.combinacion !== 'app') {
+          const svg = app.barra.querySelector('.lab-ola')
+          if (svg) {
+            const { html, H } = svgBarra(app.W, app.avance, app.marcas)
+            svg.setAttribute('viewBox', `0 0 ${app.W} ${H}`); svg.setAttribute('width', app.W); svg.setAttribute('height', H)
+            svg.innerHTML = html
+          }
+        }
+        pintarLupa(app.W, avanceLupa, app.marcas)
+        medir(app)
+      }
+    }
+    requestAnimationFrame(cuadro)
+  }
+
+  function pintarLupa (W, avance, marcas) {
+    const lupa = 3
+    let html; let H
+    if (estado.combinacion === 'app') {
+      // La de hoy, en SVG con las medidas de la app: 6 px de alto, redondeada, líneas de 2 px.
+      H = 6
+      const X = avance * W
+      html = `<clipPath id="lupa-clip"><rect width="${W}" height="6" rx="3"/></clipPath><g clip-path="url(#lupa-clip)"><rect width="${W}" height="6" fill="${RIEL}"/><rect width="${X}" height="6" rx="3" fill="${TINTA}"/>` +
+        marcas.map((f) => `<rect fill="#fff" x="${f * W - 1}" width="2" height="6"/>`).join('') + '</g>'
+    } else {
+      ({ html, H } = svgBarra(W, avance, marcas))
+    }
+    // La lupa muestra un tramo de la barra alrededor del barco cuando no cabe entera.
+    const visible = lupaLienzo.clientWidth / lupa
+    const desde = Math.max(0, Math.min(W - visible, avance * W - visible / 2))
+    lupaLienzo.innerHTML = `<svg width="${W * lupa}" height="${H * lupa}" viewBox="0 0 ${W} ${H}" style="margin-left:${-desde * lupa}px" aria-hidden="true">${html}</svg>`
+  }
+
+  // ---- Medidas en la barra del visor ---------------------------------------------------------
+
+  const medidas = document.getElementById('medidas')
+  let ultima = {}
+  function medir (app) {
+    const g = geometria()
+    const barraCapa = parseFloat(app.capa.style.getPropertyValue('--barra-capa')) || null
+    const olas = estado.combinacion === 'app' || g.A === 0 ? 0 : Math.round(app.W / g.P)
+    ultima = {
+      pantalla: `${app.capa.clientWidth}x${app.capa.clientHeight}`,
+      anchoBarra: app.W,
+      altoBarraAvance: estado.combinacion === 'app' ? 6 : g.H,
+      altoFranjaSuperior: barraCapa,
+      olasVisibles: olas,
+      avance: +(app.avance * 100).toFixed(1),
+      marcas: app.marcas.length,
+    }
+    medidas.innerHTML = `<span>Capa <b>${ultima.pantalla.replace('x', '×')}</b></span>` +
+      `<span>Barra de avance: <b>${ultima.anchoBarra} × ${ultima.altoBarraAvance} px</b> (hoy ${ultima.anchoBarra} × 6)</span>` +
+      `<span>Franja de arriba: <b class="${barraCapa > 43 ? 'corto' : ''}">${barraCapa ?? '—'} px</b> (hoy 43; lo que crece se lo quita a la figura)</span>` +
+      (olas ? `<span>Olas a lo ancho: <b>${olas}</b></span>` : '') +
+      `<span>Avance: <b>${ultima.avance} %</b></span>` +
+      `<span>Marcas: <b>${ultima.marcas}</b></span>`
+  }
+
+  // ---- Exportar -----------------------------------------------------------------------------
+
+  document.getElementById('copiar').addEventListener('click', async () => {
+    const { combinacion, ...parametros } = estado
+    const datos = {
+      laboratorio: 'barra-barco',
+      fecha: new Date().toISOString().slice(0, 10),
+      combinacion,
+      parametros,
+      textos: {},
+      medida: ultima,
+      nota: document.getElementById('nota').value,
+    }
+    const texto = JSON.stringify(datos, null, 2)
+    const pre = document.getElementById('json')
+    pre.textContent = texto; pre.hidden = false
+    try { await navigator.clipboard.writeText(texto); document.getElementById('copiado').textContent = 'Copiado.' }
+    catch { document.getElementById('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.' }
+  })
+
+  // ---- Arranque -----------------------------------------------------------------------------
+
+  visor.addEventListener('load', () => {
+    const win = visor.contentWindow
+    const esperar = () => { if (capaApp()?.querySelector('[role="progressbar"]')) { aplicar(); ultimaFirma = '' } else setTimeout(esperar, 100) }
+    esperar()
+    win.addEventListener('hashchange', () => { setTimeout(esperar, 50) })
+  })
+
+  pintarControles(); dimensionar(); cargar(); requestAnimationFrame(cuadro)
+})()
+</script>

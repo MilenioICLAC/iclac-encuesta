@@ -24,7 +24,9 @@
     "lab:cotidiana": "node scripts/laboratorio.mjs laboratorio/china-cotidiana.html public/laboratorio-cotidiana.html",
     "lab:decisiones": "node scripts/laboratorio.mjs laboratorio/decisiones.html public/laboratorio-decisiones.html",
     "lab:la-encuesta": "node scripts/laboratorio.mjs laboratorio/la-encuesta.html public/laboratorio-la-encuesta.html",
-    "lab:scroll": "node scripts/laboratorio.mjs laboratorio/scroll-escritorio.html public/laboratorio-scroll.html"
+    "lab:scroll": "node scripts/laboratorio.mjs laboratorio/scroll-escritorio.html public/laboratorio-scroll.html",
+    "lab:barco": "node scripts/laboratorio.mjs laboratorio/barra-barco.html public/laboratorio-barco.html",
+    "lab:pausa": "node scripts/laboratorio.mjs laboratorio/pausa-corta.html public/laboratorio-pausa.html"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

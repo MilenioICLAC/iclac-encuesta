@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useConsulta, usePasoActivo } from '../nucleo/pasos'
+import { BarraDeAvance } from './BarraDeAvance'
 import { NumeroHistoria, Siguiente } from './siguiente'
 
 /**
@@ -114,6 +115,20 @@ function paradasDeCambio (capa: HTMLElement) {
       activacion + paso.offsetHeight - 0.1 * capa.clientHeight,
     ))
     const k = lista.findIndex((y) => Math.abs(y - activacion) <= 3)
+    if (k >= 0) lista[k] = Math.min(tope, Math.round(destino))
+  }
+  // La pausa cuya frase corre (escritorio, `index.css`): en su parada la frase recién entra, al
+  // 80 %. El destino es donde queda al centro de la capa, sin pasar el final de lo quieto (el alto
+  // de la pausa menos una pantalla), donde llega la escena siguiente.
+  for (const pausa of capa.querySelectorAll<HTMLElement>('.respiro-recorrido')) {
+    const escena = pausa.querySelector<HTMLElement>(':scope > .escena')
+    if (!escena || getComputedStyle(escena).position !== 'absolute') continue
+    const parada = Math.round(pausa.getBoundingClientRect().top - arriba - (parseFloat(getComputedStyle(pausa).scrollMarginTop) || 0))
+    // El envoltorio mide cero de alto y la frase va centrada en él: su borde es el centro de la frase.
+    const centro = escena.getBoundingClientRect().top - arriba
+    const quieta = pausa.offsetHeight - capa.clientHeight
+    const destino = Math.max(parada, Math.min(centro - capa.clientHeight / 2, parada + quieta - 0.1 * capa.clientHeight))
+    const k = lista.findIndex((y) => Math.abs(y - parada) <= 3)
     if (k >= 0) lista[k] = Math.min(tope, Math.round(destino))
   }
   return lista.sort((a, b) => a - b)
@@ -389,32 +404,14 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
       ref={(el) => { capa.current = el; setRaiz(el) }}
       onScroll={alDesplazar}
       className="capa-recorrido fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-white"
+      // Para la geometría de las pausas en `index.css`: un número, un lugar.
+      style={{ '--subida-tras-pausa': SUBIDA_TRAS_PAUSA, '--lectura-texto-corre': LECTURA_TEXTO_CORRE } as React.CSSProperties}
     >
       <div ref={barra} className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
-        {/* Cuánto falta, y cuánto hasta lo próximo: la barra se llena con el scroll y cada línea es
+        {/* Cuánto falta, y cuánto hasta lo próximo: la tinta avanza con el scroll y cada línea es
             un lugar donde algo cambia. Sin rótulo: cómo se llama cada tramo es vocabulario nuestro.
-            Las líneas son relleno blanco sobre la barra, así cortan igual la parte llena y la vacía. */}
-        <div
-          role="progressbar"
-          aria-label="Avance de la historia"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(avance * 100)}
-          className="relative h-1.5 grow overflow-hidden rounded-full bg-gray-200"
-        >
-          <div
-            className="h-full rounded-full bg-brand-dark transition-[width] duration-200"
-            style={{ width: `${Math.round(avance * 100)}%` }}
-          />
-          {marcas.map((f) => (
-            <span
-              key={f}
-              aria-hidden
-              className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white"
-              style={{ left: `${f * 100}%` }}
-            />
-          ))}
-        </div>
+            Las líneas son cortes blancos, así cortan igual la tinta y lo que falta. */}
+        <BarraDeAvance avance={avance} marcas={marcas} />
 
         {/* El titular de lo que está en pantalla, para quien no ve la barra. `polite` y no
             `assertive`: avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
@@ -644,13 +641,25 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
    * `sticky`.
    */
   const [cruzada, setCruzada] = useState(false)
+  /*
+   * **Y si ya llegó la escena siguiente**, con la misma lectura. Montada sobre el final de la pausa
+   * (`index.css`), llega cuando su borde de arriba está a la subida (`--subida-tras-pausa`) del de la capa: ahí
+   * aparece con un fundido y la frase de la pausa se va. Solo entre dos escenas, como la entrada.
+   */
+  const [salida, setSalida] = useState(false)
   useEffect(() => {
     const nodo = seccion.current
     if (!nodo || !raiz) return
     let cuadro = 0
     const medir = () => {
       cuadro = 0
-      setCruzada(nodo.getBoundingClientRect().top - raiz.getBoundingClientRect().top <= 1)
+      const arriba = raiz.getBoundingClientRect().top
+      setCruzada(nodo.getBoundingClientRect().top - arriba <= 1)
+      const siguiente = nodo.nextElementSibling
+      const entreEscenas = !!siguiente?.classList.contains('escena-recorrido') && !!nodo.previousElementSibling?.classList.contains('escena-recorrido')
+      // La subida se lee del CSS y no de la constante: con movimiento reducido vuelve a ser 1.
+      const subida = parseFloat(getComputedStyle(raiz).getPropertyValue('--subida-tras-pausa')) || 1
+      setSalida(entreEscenas && !!siguiente && siguiente.getBoundingClientRect().top - arriba <= subida * raiz.clientHeight + 1)
     }
     const alMover = () => { if (!cuadro) cuadro = requestAnimationFrame(medir) }
     medir()
@@ -685,6 +694,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
       ref={seccion}
       className="respiro-recorrido relative"
       data-cruzada={cruzada ? '' : undefined}
+      data-salida={salida ? '' : undefined}
       style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
     >
       <div className="escena sin-figura sticky flex flex-col items-center justify-center px-4 py-6 sm:px-6">
@@ -950,6 +960,11 @@ const PASO_TEXTO_CORRE = 0.4
 /** Dónde está el centro de la frase, en fracción de la capa, cuando su paso se activa y la figura
  *  cambia. Más arriba, la frase sube bajo el titular antes de terminar su paso. */
 const LECTURA_TEXTO_CORRE = 0.8
+
+/** Cuánto sube la escena que sigue a una pausa, en fracción de la capa (laboratorio `pausa-corta`,
+ *  25-09-2026). Con una pantalla entera, la subida costaba más scroll que la pausa. El CSS lo lee
+ *  como `--subida-tras-pausa`. */
+const SUBIDA_TRAS_PAUSA = 0.4
 
 /** El colchón de entrada, en fracción de la capa: es también el `scroll-margin-top` de cada paso,
  *  así que es la línea (55 %) donde el paso toca la banda de lectura y se activa. */

@@ -25,9 +25,14 @@ Todo vive en la capa (`CapaRecorrido`, `fixed inset-0`, con barra superior medid
 | Cierre | `Cierre` | −99 |
 
 **La barra no nombra piezas** (Felipe, 22-09-2026): «escena», «pausa», «paso», «portada» y «cierre»
-son vocabulario interno. La barra de avance lleva una línea blanca en cada paso y cada respiro,
+son vocabulario interno. La barra de avance lleva un corte blanco de 4 px en cada paso y cada respiro,
 medida en la parada de cada uno (`paradas`, la misma función del teclado): dice cuánto scroll falta
 para lo próximo. Con movimiento reducido no hay pasos y quedan solo las de los respiros.
+Se dibuja como una ola de tinta que deja atrás un junco negro (`BarraDeAvance.tsx`, laboratorio
+`barra-barco`, 25-09-2026): tinta de 6 px en tres hebras en `brand-dark`, lo que falta en gris 200,
+ola de 1,5 px y 40 px de largo con período fijo en píxeles (no se estira con el ancho), y un barco
+de 20 px centrado en la punta, que se inclina con la mitad de la pendiente y va derecho con
+movimiento reducido. La barra mide 27 px y la franja de arriba 44 (antes 6 y 43).
 
 Desde el 22-09-2026 hay **seis historias**, cada una una capa propia en `#/historias/<id>`, con
 registro en `src/historias/indice.tsx` y menú en la raíz:
@@ -63,10 +68,17 @@ termina en cero (un registro de decisiones interno).
 - **Se entra a la pausa con un fundido en el lugar** (22-09-2026, laboratorio de la pausa, opción A
   con B). La escena anterior no sube como una página (se llevaba primero titular y frase): se queda
   pegada, y al cruzar la línea de la pausa se desvanece mientras la frase de la pausa entra desde
-  abajo, 20 px y 500 ms como las frases. Las dos quedan quietas 0,75 de pantalla y se van juntas.
-  Geometría en `index.css` (`.escena-recorrido + .respiro-recorrido`, con `:has()`); el estado,
-  `data-cruzada`, lo pone `Respiro` leyendo su posición en cada scroll, porque una marca observada
-  se cruza de un salto sin avisar. La salida de la pausa hacia la escena siguiente no cambió.
+  abajo, 20 px y 500 ms como las frases. Geometría en `index.css` (`.escena-recorrido +
+  .respiro-recorrido`, con `:has()`); el estado, `data-cruzada`, lo pone `Respiro` leyendo su
+  posición en cada scroll, porque una marca observada se cruza de un salto sin avisar.
+- **La pausa queda quieta un paso y la escena siguiente sube poco** (25-09-2026, laboratorio
+  `pausa-corta`): quieta lo que mide el paso de la escena de antes (0,75, o 0,4 con el texto que
+  corre), y la escena siguiente, montada sobre el final de la pausa, sube solo `SUBIDA_TRAS_PAUSA`
+  (0,4) y aparece con un fundido (`data-salida`, también de `Respiro`) mientras la frase de la pausa
+  se va hacia arriba. La pausa cuesta 2 pasos en escritorio y 1,5 en el teléfono; antes, 4,4 y 2,3,
+  y su tramo en la barra confundía. En escritorio la frase de la pausa **corre**: entra al 80 % y
+  sube con el scroll, y las flechas la dejan centrada. Con movimiento reducido la subida vuelve a
+  ser una pantalla: sin pasos, la escena entre dos pausas solo se lee mientras sube.
 - **Las frases entran desde abajo y salen hacia arriba**, 20 px, 500 ms, curva
   `cubic-bezier(0.2, 0.8, 0.2, 1)`, en todos los pasos y anchos, por `data-lugar` (`antes`,
   `activa`, `despues`); al volver atrás cada una vuelve por donde se fue. Tiempo fijo, no atado al
@@ -172,7 +184,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - **La escena se pega bajo la barra**; la barra se mide y se publica en `--barra-capa`. Alto útil de
   una escena = capa − barra.
 - **Respiro y portada miden la pantalla entera**, barra incluida (el respiro que sigue a una escena
-  mide 1,75 y sube lo mismo, montado sobre ella); su escena interna va pegada bajo la
+  mide 1 + paso y sube lo mismo, montado sobre ella); su escena interna va pegada bajo la
   barra. Con el alto de una escena se asoma la siguiente.
 - **La geometría se fija al abrir** y se rehace solo si cambia el ancho (la barra del navegador móvil
   cambia el alto sin que sea una rotación).
