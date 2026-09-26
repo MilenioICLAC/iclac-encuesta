@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { HISTORIAS } from './indice'
 import { ContenidoTarjeta, RELLENO, TARJETA } from './TarjetaHistoria'
 import { TransicionHistoria, type Eleccion } from './contextoTransicion'
+import { CucharaPortada } from '../componentes/Sinan'
 
 /**
  * Del menú a la portada de una historia, sin corte.
@@ -17,7 +18,14 @@ import { TransicionHistoria, type Eleccion } from './contextoTransicion'
  * 5. **Titular:** la pregunta viaja hasta el título de la portada, **medido** en la capa ya
  *    montada, y toma su tamaño (fundido cruzado entre el estilo de la tarjeta y el de la portada:
  *    el corte de línea no es el mismo).
+ *    **La cuchara del sinan va con ella:** sale de la tarjeta, donde se quedó cuando se apagó el
+ *    resto, y llega bajo el título oscilando como una brújula que se asienta.
  * 6. El blanco se desvanece y aparece el resto de la portada alrededor del título, que no se mueve.
+ * 7. **Dividir:** la cuchara se abre en tres y cada una se posa en su lugar: el ícono de scroll y
+ *    los botones «Anterior» y «Siguiente» (girada para «Anterior»). En un teléfono no hay botones y
+ *    va una sola. Es la entrada de las tarjetas al revés: allá muchas se juntan en una.
+ *
+ * Los tiempos de la cuchara salieron del laboratorio del viaje (25-09-2026).
  *
  * Inspirado en *Scroll Choreography* de componentry.dev, disparado por el clic y no por el scroll.
  *
@@ -73,6 +81,27 @@ const TITULAR = 480
 const DESTAPAR = 240
 /** Escala de la elegida mientras está levantada. */
 const ALZADA = 1.04
+/** La división de la cuchara: espera tras destapar, vuelo, desfase entre las tres y relevo. */
+const PAUSA = 150
+const DIVIDIR = 450
+const ESCALON = 60
+const POSAR = 120
+/** Cuánto queda la cuchara bajo el título, en píxeles. */
+const BAJO_TITULO = 28
+
+/**
+ * Dónde está una cuchara del sinan en la pantalla: el centro y el largo de su dibujo (cuenco y
+ * mango, sin el círculo). Con un giro de 180° el largo sigue siendo el alto de su caja.
+ */
+interface Cuchara { x: number, y: number, largo: number, giro: number }
+function cucharaDe (svg: Element, giro = 0): Cuchara {
+  const partes = [...svg.querySelectorAll('ellipse, path')].map((p) => p.getBoundingClientRect())
+  const izquierda = Math.min(...partes.map((r) => r.left))
+  const derecha = Math.max(...partes.map((r) => r.right))
+  const arriba = Math.min(...partes.map((r) => r.top))
+  const abajo = Math.max(...partes.map((r) => r.bottom))
+  return { x: (izquierda + derecha) / 2, y: (arriba + abajo) / 2, largo: abajo - arriba, giro }
+}
 
 function geometria ({ indice, cajas }: Eleccion) {
   const elegida = cajas[indice]
@@ -105,6 +134,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
   const copias = useRef<(HTMLDivElement | null)[]>([])
   const fondo = useRef<HTMLDivElement | null>(null)
   const titulo = useRef<HTMLDivElement | null>(null)
+  // Las cucharas que viajan: la primera sale de la tarjeta; las otras dos nacen al dividirse.
+  const viajeras = useRef<(HTMLDivElement | null)[]>([])
   const { indice, cajas, orden } = geometria(eleccion)
 
   // Atrás o `Escape` a mitad de camino: la ruta deja de ser la esperada y la transición se retira.
@@ -126,6 +157,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
     }
     const salida = 'cubic-bezier(.2,.8,.2,1)'
     const suave = 'cubic-bezier(.65,0,.35,1)'
+    // La división, más marcada que el resto: sale y llega con decisión (laboratorio del viaje).
+    const FUERTE = 'cubic-bezier(.77,0,.175,1)'
     const centro = { x: window.innerWidth / 2 - cx, y: window.innerHeight / 2 - cy }
     // Lo justo para cubrir la pantalla desde el centro, con margen para que las esquinas
     // redondeadas queden afuera. El fondo está dentro de la copia, que ya va alzada.
@@ -147,12 +180,45 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       navegarRef.current(ruta)
     }
 
+    // La cuchara que viaja, medida sin transformar: de ahí sale cuánto escalarla y dónde apoyarla
+    // para que su dibujo quede exactamente sobre otro (medido en el laboratorio: 0 px de error).
+    const svgViajera = viajeras.current[0]?.querySelector('svg')
+    const base = svgViajera ? cucharaDe(svgViajera) : null
+    const poner = (c: Cuchara) => base
+      ? `translate(${c.x}px, ${c.y}px) rotate(${c.giro}deg) scale(${c.largo / base.largo}) translate(${-base.x}px, ${-base.y}px)`
+      : 'none'
+    // Los íconos donde se va a posar esperan vacíos desde que la capa monta (ver `index.css`).
+    const raiz = document.documentElement
+    raiz.dataset.cucharaViaja = 'portada anterior siguiente'
+    const posada = (clave: string) => {
+      const quedan = (raiz.dataset.cucharaViaja ?? '').split(' ').filter((c) => c && c !== clave)
+      if (quedan.length) raiz.dataset.cucharaViaja = quedan.join(' ')
+      else delete raiz.dataset.cucharaViaja
+    }
+    // El vaivén del ícono de scroll: quieto en su punto de partida mientras la cuchara llega, para
+    // medirlo sin él, y de vuelta desde ahí cuando se posa.
+    const vaivenIcono = (icono: Element | null, correr: boolean) => {
+      icono?.querySelector('.cuchara')?.getAnimations().forEach((a) => {
+        a.currentTime = 0
+        if (correr) a.play(); else a.pause()
+      })
+    }
+    // Las copias siguen el vaivén donde lo dejó el menú: sin esto, la cuchara saltaba en el clic.
+    if (eleccion.vaiven !== undefined) {
+      copias.current.forEach((c) => {
+        c?.querySelector('[data-cuchara] .cuchara')?.getAnimations().forEach((a) => { a.currentTime = eleccion.vaiven! })
+      })
+    }
+
     // Un cambio de tamaño invalida toda la geometría medida: se cubre la pantalla nueva de blanco
     // al instante, se navega si todavía no, y se destapa cuando la capa existe. Retirarse de
     // inmediato dejaba el menú a la vista 20 a 67 ms (medido por Codex, 22-09-2026): el router
     // aplica la navegación con menos prioridad que el estado de la transición, y no caen en el
     // mismo render. Las animaciones de duración cero se componen encima de las del camino.
     let desmontada = false
+    // Destapada la portada, lo que queda es la división de la cuchara, que no tapa nada: el
+    // teclado ya es de la capa (Tab no se bloquea más; hallazgo de Codex, 25-09-2026).
+    let destapada = false
     const alRedimensionar = () => {
       if (!vigente) return
       vigente = false
@@ -164,9 +230,13 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       const elegidaCopia = copias.current[indice]
       fijar(elegidaCopia, { transform: t(ancho / 2 - cx, alto / 2 - cy, 0, ALZADA), opacity: 1 })
       fijar(fondo.current, { transform: `scale(${Math.max(ancho / elegida.width, alto / elegida.height) * 1.2 / ALZADA})` })
-      elegidaCopia?.querySelectorAll('[data-pregunta], [data-desvanece]').forEach((el) => { fijar(el, { opacity: 0 }) })
+      elegidaCopia?.querySelectorAll('[data-pregunta], [data-desvanece], [data-cuchara]').forEach((el) => { fijar(el, { opacity: 0 }) })
       orden.forEach((i) => { fijar(copias.current[i], { opacity: 0 }) })
       fijar(titulo.current, { opacity: 0 })
+      // Sin viaje: las cucharas se van y los íconos aparecen en su lugar.
+      viajeras.current.forEach((v) => { fijar(v, { opacity: 0 }) })
+      delete raiz.dataset.cucharaViaja
+      vaivenIcono(document.querySelector('.portada-recorrido .cuchara-portada'), true)
       fijar(lienzo.current, { opacity: 1 })
       if (fase.current === 'menu') irALaHistoria()
       const inicio = performance.now()
@@ -186,7 +256,7 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
     const alTeclear = (e: KeyboardEvent) => {
       // Las tarjetas salen del orden de Tab mientras dura, y el foco siguiente era el pie de
       // página: movía la página bajo las copias fijas.
-      if (e.key === 'Tab') e.preventDefault()
+      if (e.key === 'Tab' && !destapada) e.preventDefault()
       // `Escape` antes de navegar deshace la elección y deja el menú como estaba. Después es de
       // la capa, que sale al menú, y la transición se retira sola (efecto de la ruta, arriba).
       if (e.key === 'Escape' && vigente && fase.current === 'menu') {
@@ -222,6 +292,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
     })
 
     const correr = async () => {
+      // Dónde queda la cuchara bajo el título (tramo 5); sin portada medida, no hay división.
+      let frente: Cuchara | null = null
       const copia = (i: number) => copias.current[i]
       const pregunta = copia(indice)?.querySelector<HTMLElement>('[data-pregunta]')
 
@@ -281,6 +353,28 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         const escala = parseFloat(getComputedStyle(pregunta).fontSize) * ALZADA / parseFloat(estilo.fontSize)
         const dx = (origen.left + origen.width / 2) - (destino.left + destino.width / 2)
         const dy = (origen.top + origen.height / 2) - (destino.top + destino.height / 2)
+
+        // La cuchara deja la tarjeta y va bajo el título, del tamaño de la del ícono de scroll.
+        // Pasa del sur y vuelve, cada vez menos, como una aguja que se asienta.
+        const deTarjeta = copia(indice)?.querySelector<SVGElement>('[data-cuchara] svg')
+        const icono = document.querySelector('.portada-recorrido .cuchara-portada')
+        const viajera = viajeras.current[0]
+        if (deTarjeta && icono && viajera && base) {
+          vaivenIcono(icono, false)
+          const largo = cucharaDe(icono).largo
+          frente = { x: destino.left + destino.width / 2, y: destino.bottom + BAJO_TITULO + largo / 2, largo, giro: 0 }
+          const desde = cucharaDe(deTarjeta)
+          deTarjeta.style.visibility = 'hidden'
+          viajera.style.transform = poner(desde)
+          viajera.style.opacity = '1'
+          void tramo(viajera, [
+            { transform: poner(desde) },
+            { transform: poner({ ...frente, giro: -16 }), offset: 0.62 },
+            { transform: poner({ ...frente, giro: 7 }), offset: 0.82 },
+            { transform: poner(frente) },
+          ], TITULAR, suave)
+        }
+
         await Promise.all([
           // Un blur leve mientras las dos preguntas se cruzan: sin él se ven dos textos con cortes
           // de línea distintos, uno encima del otro; con él se leen como uno que cambia de forma.
@@ -301,9 +395,71 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         if (!vigente) return
       }
 
-      // 6. Destapar.
+      // 6. Destapar. La cuchara no está en el lienzo: queda bajo el título.
       await tramo(lienzo.current, [{ opacity: 1 }, { opacity: 0 }], DESTAPAR, 'ease-out')
+      if (!vigente) return
+      destapada = true
+
+      // 7. Dividir.
+      if (frente) await dividir(frente)
       if (vigente) terminar.current()
+    }
+
+    /**
+     * Una cuchara al ícono de scroll y una a cada botón que se vea (en un teléfono no hay). Las
+     * destinos se miden al empezar: si el lector hace scroll a mitad de camino, se posan todas de
+     * inmediato en vez de llegar a un lugar que ya se movió.
+     */
+    const dividir = async (frente: Cuchara) => {
+      const icono = document.querySelector('.portada-recorrido .cuchara-portada')
+      const capa = document.querySelector('.capa-recorrido')
+      if (!icono || !capa) return
+      const botones = [...document.querySelectorAll('.flechas-recorrido button')].filter((b) => b.getClientRects().length > 0)
+      const destinos = [
+        { clave: 'portada', el: icono, c: cucharaDe(icono), circulo: 0.3, color: getComputedStyle(icono).color },
+        ...botones.map((b, i) => {
+          const svg = b.querySelector('svg')!
+          // «Anterior» es la misma cuchara girada: da media vuelta mientras vuela.
+          return { clave: i === 0 ? 'anterior' : 'siguiente', el: svg, c: cucharaDe(svg, i === 0 ? 180 : 0), circulo: 0, color: getComputedStyle(b).color }
+        }),
+      ]
+      // Las que no tienen destino (en un teléfono) no se usan.
+      const sinUsar = new Set(['portada', 'anterior', 'siguiente'].filter((c) => !destinos.some((d) => d.clave === c)))
+      sinUsar.forEach(posada)
+
+      let cortada = false
+      const cortar = () => {
+        if (cortada) return
+        cortada = true
+        animaciones.forEach((a) => {
+          const objetivo = (a.effect as KeyframeEffect | null)?.target
+          if (objetivo && viajeras.current.some((v) => v?.contains(objetivo))) a.cancel()
+        })
+        viajeras.current.forEach((v) => { if (v) v.style.opacity = '0' })
+        destinos.forEach((d) => { posada(d.clave) })
+        vaivenIcono(icono, true)
+      }
+      capa.addEventListener('scroll', cortar, { passive: true, once: true })
+      const color = getComputedStyle(viajeras.current[0]!).color
+
+      await Promise.all(destinos.map(async (d, i) => {
+        const v = viajeras.current[i]
+        if (!v) return
+        v.style.transform = poner(frente)
+        v.style.opacity = '1'
+        const retardo = PAUSA + i * ESCALON
+        const circulo = v.querySelector('.circulo')
+        await Promise.all([
+          tramo(v, [{ transform: poner(frente), color }, { transform: poner(d.c), color: d.color }], DIVIDIR, FUERTE, retardo),
+          tramo(circulo, [{ opacity: 0.3 }, { opacity: d.circulo }], DIVIDIR / 2, 'ease-out', retardo),
+        ])
+        if (!vigente || cortada) return
+        // Se posa: aparece la de verdad debajo y la viajera se va.
+        posada(d.clave)
+        if (d.clave === 'portada') vaivenIcono(icono, true)
+        await tramo(v, [{ opacity: 1 }, { opacity: 0 }], POSAR, 'ease-out')
+      }))
+      capa.removeEventListener('scroll', cortar)
     }
     void correr()
 
@@ -314,10 +470,14 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       window.removeEventListener('resize', alRedimensionar)
       document.removeEventListener('keydown', alTeclear)
       animaciones.forEach((a) => { a.cancel() })
+      // Se corte donde se corte (Atrás, `Escape`, un scroll), los íconos quedan en su lugar.
+      delete raiz.dataset.cucharaViaja
+      vaivenIcono(document.querySelector('.portada-recorrido .cuchara-portada'), true)
     }
   }, [eleccion, ruta])
 
   return createPortal(
+    <>
     <div ref={lienzo} aria-hidden className="pointer-events-none fixed inset-0 z-[60]">
       {cajas.map((c, i) => {
         const h = HISTORIAS[i]
@@ -350,7 +510,17 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       })}
       {/* El título de llegada: se posiciona y se llena al medir la portada (tramo 5). */}
       <div ref={titulo} className="absolute opacity-0" style={{ zIndex: cajas.length + 2 }} />
-    </div>,
+    </div>
+    {/* Las cucharas que viajan, fuera del lienzo: siguen a la vista cuando el lienzo se destapa.
+        Cada una se apoya en su esquina de arriba a la izquierda y la mueve `transform`. */}
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[61]">
+      {[0, 1, 2].map((i) => (
+        <div key={i} ref={(el) => { viajeras.current[i] = el }} className="absolute left-0 top-0 text-brand-dark opacity-0" style={{ transformOrigin: '0 0', willChange: 'transform' }}>
+          <CucharaPortada clase="" />
+        </div>
+      ))}
+    </div>
+    </>,
     document.body,
   )
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useConsulta, usePasoActivo } from '../nucleo/pasos'
 import { BarraDeAvance } from './BarraDeAvance'
 import { NumeroHistoria, Siguiente } from './siguiente'
+import { CucharaBoton, CucharaPortada, MangoTendido } from './Sinan'
 
 /**
  * El recorrido vive en una capa propia, no en el scroll de la página.
@@ -449,7 +450,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
           Solo con puntero fino (ver `.flechas-recorrido` en `index.css`): con el dedo el gesto
           alcanza, y en el teléfono le quitarían sitio a la figura. */}
       <div className="flechas-recorrido">
-        {([['Anterior', -1, 'M6 15l6-6 6 6', extremo.inicio], ['Siguiente', 1, 'M6 9l6 6 6-6', extremo.fin]] as const).map(([nombre, sentido, trazo, apagada]) => (
+        {([['Anterior', -1, 'arriba', extremo.inicio], ['Siguiente', 1, 'abajo', extremo.fin]] as const).map(([nombre, sentido, hacia, apagada]) => (
           <button
             key={nombre}
             type="button"
@@ -458,9 +459,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
             onClick={() => { irA(sentido) }}
             className="presionable grid h-11 w-11 place-items-center rounded-full border border-gray-300 bg-white text-brand-dark shadow-sm hover:border-brand-dark disabled:text-gray-300 disabled:hover:border-gray-300"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden className="h-[18px] w-[18px]">
-              <path strokeLinecap="round" strokeLinejoin="round" d={trazo} />
-            </svg>
+            <CucharaBoton hacia={hacia} />
           </button>
         ))}
       </div>
@@ -542,62 +541,10 @@ export function Portada ({ raiz, titulo, children }: {
             <span className="texto-mouse">Haz scroll para desplazarte</span>
             <span className="texto-tactil">Desliza para desplazarte</span>
           </span>
-          <ArcosPortada />
+          <CucharaPortada />
         </button>
       </div>
     </section>
-  )
-}
-
-/**
- * Tres arcos que apuntan hacia abajo, cada uno más angosto y más claro que el de arriba.
- *
- * Flotan en cascada: los tres bajan y vuelven con un desfase, y cada uno se aclara un poco al
- * bajar. El movimiento es solo `transform` y `opacity`, y con movimiento reducido se detiene
- * (`index.css`). Las medidas son las del laboratorio: 64 px de ancho, trazo de 3 y arcos a media
- * altura de un semicírculo.
- */
-const ARCOS = (() => {
-  const ancho = 64
-  const trazo = 3
-  const separacion = ancho * 0.12
-  let y = trazo
-  const arcos = [1, 0.7, 0.45].map((escala, i) => {
-    const r = (ancho / 2 - trazo) * escala
-    const ry = r / 2
-    // De izquierda a derecha con barrido 0 la curva pasa por abajo: el arco apunta hacia abajo.
-    const d = `M ${(ancho / 2 - r).toFixed(2)} ${y.toFixed(2)} A ${r.toFixed(2)} ${ry.toFixed(2)} 0 0 0 ${(ancho / 2 + r).toFixed(2)} ${y.toFixed(2)}`
-    y += ry + separacion
-    return { d, opacidad: escala, retraso: i * 0.18 }
-  })
-  return { ancho, trazo, alto: Math.ceil(y - separacion + trazo), arcos }
-})()
-
-function ArcosPortada () {
-  return (
-    <svg
-      aria-hidden
-      width={ARCOS.ancho}
-      height={ARCOS.alto}
-      viewBox={`0 0 ${ARCOS.ancho} ${ARCOS.alto}`}
-      className="arcos-portada overflow-visible text-brand-dark"
-    >
-      {ARCOS.arcos.map((a) => (
-        <path
-          key={a.d}
-          d={a.d}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={ARCOS.trazo}
-          strokeLinecap="round"
-          style={{
-            '--opacidad': a.opacidad,
-            '--opacidad-alta': Math.min(1, a.opacidad + 0.3),
-            '--retraso': `${a.retraso}s`,
-          } as React.CSSProperties}
-        />
-      ))}
-    </svg>
   )
 }
 
@@ -1181,7 +1128,7 @@ export function Cierre ({ raiz, titulo, frases }: {
               aria-label={siguiente ? `Leer la historia ${siguiente.numero}: ${siguiente.nombre}` : undefined}
               className="boton-siguiente presionable mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
             >
-              {siguiente ? 'Leer la historia' : 'Ver todas las historias'} <span aria-hidden>→</span>
+              {siguiente ? 'Leer la historia' : 'Ver todas las historias'} <MangoTendido hacia="derecha" />
             </Link>
             <div className="otras-salidas mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
               {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">Volver a las historias</Link>}
@@ -1192,7 +1139,9 @@ export function Cierre ({ raiz, titulo, frases }: {
                 onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
                 className="underline underline-offset-2 hover:text-brand-dark"
               >
-                Volver al inicio <span aria-hidden>↑</span>
+                {/* Sin espacio antes: el subrayado lo tomaría solo, y la caja girada del ícono ya
+                    deja su aire (1,5 em de caja para 0,9 de dibujo). */}
+                Volver al inicio<MangoTendido hacia="arriba" />
               </button>
             </div>
           </div>

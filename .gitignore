@@ -50,3 +50,7 @@ public/laboratorio-scroll.html
 public/laboratorio-barco.html
 # Y el de la pausa corta: `npm run lab:pausa` a partir de `laboratorio/pausa-corta.html`.
 public/laboratorio-pausa.html
+# Y el del sinan (íconos de las historias): `npm run lab:sinan` a partir de `laboratorio/sinan.html`.
+public/laboratorio-sinan.html
+# Y el del viaje de la cuchara: `npm run lab:viaje` a partir de `laboratorio/cuchara-viaje.html`.
+public/laboratorio-viaje.html

@@ -1,11 +1,13 @@
+import { CucharaPortada } from '../componentes/Sinan'
 import type { Historia } from './indice'
 
 /**
  * La tarjeta de una historia en el menú. Vive aparte porque la dibujan dos: el menú y la
  * transición hacia la portada (`Transicion.tsx`), que anima copias idénticas.
  *
- * `data-pregunta` marca lo que sobrevive a la transición (viaja hasta el título de la portada) y
- * `data-desvanece` lo que se apaga en el camino.
+ * `data-pregunta` marca lo que sobrevive a la transición (viaja hasta el título de la portada),
+ * `data-cuchara` la cuchara del sinan, que también sobrevive (viaja al frente y se divide en tres),
+ * y `data-desvanece` lo que se apaga en el camino.
  */
 /** El relleno lo comparten la tarjeta y la copia elegida de la transición: si difieren, la pregunta arranca corrida. */
 export const RELLENO = 'p-6'
@@ -14,9 +16,10 @@ export const TARJETA = `flex w-full flex-col rounded-lg border border-gray-200 b
 export function ContenidoTarjeta ({ h, i }: { h: Historia, i: number }) {
   return (
     <>
-      <span data-desvanece className="flex items-baseline justify-between gap-4 text-sm font-semibold text-brand-dark">
-        <span><span className="sr-only">Historia {i + 1}: </span>{h.nombre}</span>
-        <span aria-hidden className="text-lg leading-none transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-1 motion-reduce:transition-none">→</span>
+      <span className="flex items-center justify-between gap-4 text-sm font-semibold text-brand-dark">
+        <span data-desvanece><span className="sr-only">Historia {i + 1}: </span>{h.nombre}</span>
+        {/* La cuchara de la portada, que flota: no se corre al pasar el cursor como la flecha. */}
+        <span data-cuchara className="shrink-0"><CucharaPortada tamano={28} clase="cuchara-tarjeta" /></span>
       </span>
       <span data-pregunta className="mt-2 font-display text-xl font-semibold leading-snug text-gray-900 sm:text-2xl">
         {h.pregunta}

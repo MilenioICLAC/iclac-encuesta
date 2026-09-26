@@ -1,7 +1,10 @@
 import { createContext, useContext } from 'react'
 
-/** La tarjeta elegida y dónde estaban todas al hacer clic (ver `Transicion.tsx`). */
-export interface Eleccion { indice: number, cajas: DOMRect[] }
+/**
+ * La tarjeta elegida y dónde estaban todas al hacer clic (ver `Transicion.tsx`), y en qué punto de
+ * su vaivén iba la cuchara, para que las copias sigan desde ahí y no salten al empezar.
+ */
+export interface Eleccion { indice: number, cajas: DOMRect[], vaiven?: number }
 
 interface Contexto {
   iniciar: (eleccion: Eleccion) => void

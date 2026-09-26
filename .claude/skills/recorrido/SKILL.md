@@ -52,7 +52,12 @@ para cada historia.
 **Entrada desde el menú (22-09-2026):** el clic en una tarjeta apila las demás bajo ella, centra la
 pila, hace crecer el fondo de la elegida hasta cubrir la pantalla (se desvanece todo menos la
 pregunta), navega y lleva la pregunta hasta el `.pregunta-portada` **medido** en la capa ya montada;
-después se destapa la portada. Vive en `src/historias/Transicion.tsx`, fuera de las rutas. **Si
+después se destapa la portada. **La cuchara del sinan viaja con la pregunta** (laboratorio del viaje,
+25-09-2026): la de la tarjeta (`data-cuchara`, la de la portada a 28 px, flotando) no se apaga con el
+resto, va bajo el título oscilando como brújula y, 150 ms después de destapar, se divide en tres que
+se posan en el ícono de scroll y en «Anterior»/«Siguiente» (una sola en teléfono). Los íconos
+esperan vacíos por `data-cuchara-viaja` en `<html>`; un scroll, Atrás o `Escape` cortan la división
+y los dejan en su lugar. Vive en `src/historias/Transicion.tsx`, fuera de las rutas. **Si
 cambia la clase o el estilo del título de la portada, la transición lo sigue sola** (copia el
 estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existiendo en las seis. El relleno de la
 tarjeta es `RELLENO` (`TarjetaHistoria.tsx`), el mismo en el menú y en la copia elegida: escrito a
@@ -95,9 +100,13 @@ termina en cero (un registro de decisiones interno).
   conclusión; si no, esos pasos no se dibujan.
 - **Pocos pasos:** dos minutos de lectura, tres o cuatro frases por escena. Las cifras se calculan
   (`encendidos()`, `lector()`), no se escriben a mano.
-- **Portada:** logo de ICLAC, «¿Qué opina la gente sobre China?» y un botón de tres arcos flotando en
-  cascada con «Haz scroll para desplazarte» («Desliza» con puntero táctil, por media query de puntero
-  y no por ancho). El botón hace lo mismo que el gesto. Sin lista de escenas.
+- **Portada:** logo de ICLAC, «¿Qué opina la gente sobre China?» y un botón con la cuchara del sinan
+  que baja y vuelve con «Haz scroll para desplazarte» («Desliza» con puntero táctil, por media query
+  de puntero y no por ancho). El botón hace lo mismo que el gesto. Sin lista de escenas.
+- **Los íconos de dirección son el sinan** (laboratorio del sinan, 25-09-2026; `Sinan.tsx`): la
+  cuchara de la portada, la misma sin círculo a 26 px en «Anterior» y «Siguiente», y el «mango
+  tendido» (de Codex) en lugar de «→» y «↑» en el cierre. La dirección la da el mango. Sin
+  caracteres chinos inventados. Las tarjetas del menú siguen con «→».
 - **Cierre:** repite conclusiones, no escenas. Los titulares de las escenas, cada uno enlazado a su
   escena y en gris 500 al pasar. En un paso propio, la salida: la historia siguiente como la tarjeta
   del menú («Siguiente · Historia N», su pregunta y «Leer la historia →», por el contexto `Siguiente`
@@ -230,7 +239,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - Trampa de foco con los focos **filtrados por visibilidad** (`checkVisibility()`, respaldo
   `getClientRects().length > 0`), foco al abrir y devuelto al cerrar.
 - **Movimiento reducido:** escena completa desde el primer píxel, **sin pista** (y la barra marca solo
-  los respiros), arcos quietos, sin emanata; el énfasis estático se queda.
+  los respiros), cuchara de la portada quieta, sin emanata; el énfasis estático se queda.
 
 ## Lo que no se hace
 

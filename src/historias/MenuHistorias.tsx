@@ -46,7 +46,9 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
     e.preventDefault()
     if (enCurso) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(`/historias/${HISTORIAS[i].id}`); return }
-    iniciar({ indice: i, cajas: tarjetas.current.map((t) => t!.getBoundingClientRect()) })
+    // Las cucharas flotan juntas: el punto del vaivén de la elegida es el de todas.
+    const vaiven = tarjetas.current[i]?.querySelector('[data-cuchara] .cuchara')?.getAnimations()[0]?.currentTime
+    iniciar({ indice: i, cajas: tarjetas.current.map((t) => t!.getBoundingClientRect()), vaiven: typeof vaiven === 'number' ? vaiven : undefined })
   }
 
   return (
