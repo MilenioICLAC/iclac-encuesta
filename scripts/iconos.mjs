@@ -1,4 +1,4 @@
-// El ícono de la app es el junco de la barra de avance (`src/componentes/junco.ts`, la única copia
+// El ícono de la app es el junco de la barra de avance, en verde oscuro (`src/componentes/junco.ts`, la única copia
 // del dibujo). Escribe en `public/` el SVG de la pestaña, los PNG que piden iOS y el manifiesto, y
 // el manifiesto. Los PNG los rasteriza Chromium (Playwright global, como `mirar_recorrido.mjs`).
 //
@@ -9,8 +9,7 @@ import { createRequire } from 'node:module'
 import { JUNCO } from '../src/componentes/junco.ts'
 
 const PUBLICO = new URL('../public/', import.meta.url)
-const NEGRO = '#111827' // gray-900, el mismo de la barra
-const CLARO = '#F3F4F6' // gray-100, para la pestaña en tema oscuro
+const VERDE = '#00776E' // brand-dark, el verde oscuro de ICLAC (la barra sigue con el junco negro)
 
 // Lo visible del junco (sin la caja vacía de arriba), medido sobre los trazados.
 const VISIBLE = { x0: 1.2, x1: 39, y0: 1.8 - JUNCO.mastil / 2, y1: 26.8 }
@@ -38,14 +37,13 @@ function junco ({ lado, ancho, color, fondo }) {
   ].join('')
 }
 
-const svg = (lado, cuerpo, estilo = '') =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}">${estilo}${cuerpo}</svg>\n`
+const svg = (lado, cuerpo) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}">${cuerpo}</svg>\n`
 
-// La pestaña: sin fondo, casi de borde a borde, y claro cuando el navegador está en tema oscuro.
+// La pestaña: sin fondo y casi de borde a borde, en el mismo verde con cualquier tema.
 writeFileSync(new URL('favicon.svg', PUBLICO), svg(
   40,
-  junco({ lado: 40, ancho: 39, color: 'currentColor' }),
-  `<style>svg{color:${NEGRO}}@media (prefers-color-scheme:dark){svg{color:${CLARO}}}</style>`,
+  junco({ lado: 40, ancho: 39, color: VERDE }),
 ))
 
 // Los PNG: la pestaña de respaldo (sin fondo) y los de pantalla de inicio, sobre blanco (iOS rellena
@@ -66,7 +64,7 @@ for (const { archivo, lado, ancho, fondo } of PNG) {
   await pagina.setViewportSize({ width: lado, height: lado })
   await pagina.setContent(
     `<style>*{margin:0}svg{display:block;width:${lado}px;height:${lado}px}</style>` +
-    svg(lado, junco({ lado, ancho, color: NEGRO, fondo })),
+    svg(lado, junco({ lado, ancho, color: VERDE, fondo })),
   )
   await pagina.screenshot({ path: new URL(archivo, PUBLICO).pathname, omitBackground: !fondo })
 }
