@@ -51,7 +51,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
-| `scripts/iconos.mjs` | `junco.ts` → ícono en `brand-dark` de la pestaña (`favicon.svg`), PNG de iOS y del manifiesto, y `manifest.webmanifest`, en `public/`; `npm run iconos` (Playwright) |
+| `scripts/iconos.mjs` | `junco.ts` → ícono en `brand-dark`: `favicon.ico` de la pestaña (16, 32 y 48 px, sin SVG, como mapa_FDI), PNG de iOS y del manifiesto, y `manifest.webmanifest`, en `public/`; `npm run iconos` (Playwright) |
 | `scripts/mirar_recorrido.mjs` | Recorre cada historia (o la pedida) con Playwright y mide costo de paso, escenas y leyendas a la vista |
 | `scripts/mirar_explorador.mjs` | Recorre cada pregunta del explorador en sus tres estados y anchos; mide desbordes, títulos, valores cortados y consola |
 | `scripts/laboratorio.mjs`, `laboratorio/` | Laboratorios de composición (skill `laboratorio`) |
