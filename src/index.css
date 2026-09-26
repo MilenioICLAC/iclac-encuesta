@@ -620,15 +620,11 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
   }
 
   /* Con la historia siguiente en la salida, tres titulares largos más la tarjeta no caben en
-     360×640 y el rótulo de arriba quedaba bajo la barra (medido el 22-09-2026): ceden las frases
-     y la pregunta de la siguiente. */
+     360×640 y el rótulo de arriba quedaba bajo la barra (medido el 22-09-2026): ceden las frases.
+     La tarjeta de la siguiente no: la copia de la transición tiene que medir lo mismo. */
   .capa-recorrido .cierre-recorrido .frases-cierre > li {
     font-size: 17px;
     line-height: 1.35;
-  }
-
-  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
-    font-size: 18px;
   }
 
   .capa-recorrido .cierre-recorrido .boton-siguiente {
@@ -871,10 +867,6 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
 
   .capa-recorrido .cierre-recorrido .salida-cierre {
     margin-top: 2.25rem;
-  }
-
-  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
-    font-size: 24px;
   }
 
   .capa-recorrido .cierre-recorrido .salida-cierre a,

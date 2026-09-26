@@ -108,9 +108,10 @@ termina en cero (un registro de decisiones interno).
   tendido» (de Codex) en lugar de «→» y «↑» en el cierre. La dirección la da el mango. Sin
   caracteres chinos inventados. Las tarjetas del menú siguen con «→».
 - **Cierre:** repite conclusiones, no escenas. Los titulares de las escenas, cada uno enlazado a su
-  escena y en gris 500 al pasar. En un paso propio, la salida: la historia siguiente como la tarjeta
-  del menú («Siguiente · Historia N», su pregunta y «Leer la historia →», por el contexto `Siguiente`
-  que arma `App`); en la última, «Ver todas las historias →». Debajo, en texto: volver a las
+  escena y en gris 500 al pasar. En un paso propio, la salida: la historia siguiente como una tarjeta
+  del menú en miniatura (`TarjetaSiguiente`: «Siguiente · Historia N» y la tarjeta con nombre,
+  cuchara y pregunta, por el contexto `Siguiente` que arma `App`), que al tocarla hace la misma
+  transición que el menú, sin pila (25-09-2026); en la última, «Ver todas las historias». Debajo, en texto: volver a las
   historias (no en la última, que ya lo es), explorar las preguntas, cómo se hizo (el método de la
   historia) y volver al inicio. Las frases **son** los titulares, escritos una vez.
 

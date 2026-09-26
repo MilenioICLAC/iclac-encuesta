@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useConsulta, usePasoActivo } from '../nucleo/pasos'
+import { useTransicionHistoria } from '../historias/contextoTransicion'
+import { ContenidoTarjeta, TARJETA_MINI } from '../historias/TarjetaHistoria'
 import { BarraDeAvance } from './BarraDeAvance'
-import { NumeroHistoria, Siguiente } from './siguiente'
+import { NumeroHistoria, Siguiente, type HistoriaSiguiente } from './siguiente'
 import { CucharaBoton, CucharaPortada, MangoTendido } from './Sinan'
 
 /**
@@ -1008,6 +1010,51 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2, paso = 0.75, t
 }
 
 /**
+ * La historia siguiente, como una tarjeta del menú en miniatura: nombre, cuchara y pregunta, sin el
+ * hallazgo. Al elegirla hace lo mismo que las del menú (`Transicion.tsx`): se alza, va al centro,
+ * cubre la pantalla, su pregunta pasa a ser el título de la portada y la cuchara se divide en tres.
+ * Sin pila, porque es una sola. Con movimiento reducido, o un clic que pide otra pestaña, navega
+ * directo (decisión de Felipe, 25-09-2026).
+ */
+function TarjetaSiguiente ({ siguiente }: { siguiente: HistoriaSiguiente }) {
+  const { iniciar, enCurso } = useTransicionHistoria()
+  const { pathname } = useLocation()
+  const navegar = useNavigate()
+  const tarjeta = useRef<HTMLAnchorElement | null>(null)
+  const indice = siguiente.numero - 1
+
+  const elegir = (e: React.MouseEvent) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    if (enCurso || !tarjeta.current) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(siguiente.ruta); return }
+    const caja = tarjeta.current.getBoundingClientRect()
+    const vaiven = tarjeta.current.querySelector('[data-cuchara] .cuchara')?.getAnimations()[0]?.currentTime
+    iniciar({
+      indice,
+      cajas: Array.from({ length: indice + 1 }, (_, i) => (i === indice ? caja : null)),
+      vaiven: typeof vaiven === 'number' ? vaiven : undefined,
+      desde: pathname,
+      mini: true,
+    })
+  }
+
+  // Transparente mientras dura la transición, como la lista del menú: la copia la reemplaza.
+  return (
+    <Link
+      ref={tarjeta}
+      to={siguiente.ruta}
+      onClick={elegir}
+      tabIndex={enCurso ? -1 : undefined}
+      aria-label={`Leer la historia ${siguiente.numero}: ${siguiente.nombre}`}
+      className={`tarjeta-siguiente group mt-2 ${TARJETA_MINI} max-w-md transition-[border-color,box-shadow] duration-200 ease-in-out hover:border-brand-dark hover:shadow-md hover:shadow-brand-dark/10 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark ${enCurso ? 'opacity-0' : ''}`}
+    >
+      <ContenidoTarjeta h={siguiente} i={indice} mini />
+    </Link>
+  )
+}
+
+/**
  * El cierre del recorrido: una frase por conclusión, que se encienden con el scroll, y después la
  * salida.
  *
@@ -1021,8 +1068,8 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2, paso = 0.75, t
  *   rehacer el recorrido entero.
  * - **La salida tiene su propio paso.** Con la última frase compartía el gesto, y se leía antes
  *   de que la frase terminara de encenderse.
- * - **La salida principal es la historia siguiente**, con su número y su pregunta de portada, como
- *   la tarjeta del menú. La última historia ofrece volver al menú. Lo que sigue a una historia es
+ * - **La salida principal es la historia siguiente**, como una tarjeta del menú en miniatura
+ *   (`TarjetaSiguiente`). La última historia ofrece volver al menú. Lo que sigue a una historia es
  *   otra (decisión de Felipe, 22-09-2026).
  */
 export function Cierre ({ raiz, titulo, frases }: {
@@ -1115,21 +1162,23 @@ export function Cierre ({ raiz, titulo, frases }: {
           {/* `invisible` además de la opacidad: son controles, y un botón transparente se puede
               tabular y apretar sin verlo. */}
           <div className={`salida-cierre mt-7 border-t border-gray-200 pt-5 transition-[opacity,visibility] duration-500 ${salidaVisible ? '' : 'invisible opacity-0'}`}>
-            {siguiente && (
-              <>
-                <p className="rotulo-siguiente font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">
-                  Siguiente · Historia {siguiente.numero}
-                </p>
-                <p className="pregunta-siguiente mt-1 text-balance font-display text-xl font-semibold leading-snug text-gray-900">{siguiente.pregunta}</p>
-              </>
-            )}
-            <Link
-              to={siguiente ? siguiente.ruta : '/'}
-              aria-label={siguiente ? `Leer la historia ${siguiente.numero}: ${siguiente.nombre}` : undefined}
-              className="boton-siguiente presionable mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
-            >
-              {siguiente ? 'Leer la historia' : 'Ver todas las historias'} <MangoTendido hacia="derecha" />
-            </Link>
+            {siguiente
+              ? (
+                <>
+                  <p className="rotulo-siguiente font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">
+                    Siguiente · Historia {siguiente.numero}
+                  </p>
+                  <TarjetaSiguiente siguiente={siguiente} />
+                </>
+                )
+              : (
+                <Link
+                  to="/"
+                  className="boton-siguiente presionable mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
+                >
+                  Ver todas las historias <MangoTendido hacia="derecha" />
+                </Link>
+                )}
             <div className="otras-salidas mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
               {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">Volver a las historias</Link>}
               <Link to="/explorar" className="underline underline-offset-2 hover:text-brand-dark">Explorar las preguntas</Link>

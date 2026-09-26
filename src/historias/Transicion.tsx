@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { HISTORIAS } from './indice'
-import { ContenidoTarjeta, RELLENO, TARJETA } from './TarjetaHistoria'
+import { ContenidoTarjeta, RELLENO, RELLENO_MINI, TARJETA } from './TarjetaHistoria'
 import { TransicionHistoria, type Eleccion } from './contextoTransicion'
 import { CucharaPortada } from '../componentes/Sinan'
 
@@ -104,13 +104,14 @@ function cucharaDe (svg: Element, giro = 0): Cuchara {
 }
 
 function geometria ({ indice, cajas }: Eleccion) {
-  const elegida = cajas[indice]
+  const elegida = cajas[indice]!
   const cx = elegida.left + elegida.width / 2
   const cy = elegida.top + elegida.height / 2
   // Las demás, de la más cercana a la más lejana: la cercana queda justo debajo de la elegida.
+  // Desde el cierre no hay demás: la pila es de una.
   const orden = cajas
-    .map((c, i) => ({ i, d: Math.hypot(c.left + c.width / 2 - cx, c.top + c.height / 2 - cy) }))
-    .filter((x) => x.i !== indice)
+    .map((c, i) => ({ i, d: c ? Math.hypot(c.left + c.width / 2 - cx, c.top + c.height / 2 - cy) : Infinity }))
+    .filter((x) => x.i !== indice && cajas[x.i])
     .sort((a, b) => a.d - b.d)
     .map((x) => x.i)
   return { indice, cajas, elegida, cx, cy, orden }
@@ -139,10 +140,11 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
   const { indice, cajas, orden } = geometria(eleccion)
 
   // Atrás o `Escape` a mitad de camino: la ruta deja de ser la esperada y la transición se retira.
+  // Antes de navegar se espera la de partida: el menú o la historia desde cuyo cierre se eligió.
   useEffect(() => {
-    const esperada = fase.current === 'menu' ? '/' : ruta
+    const esperada = fase.current === 'menu' ? eleccion.desde : ruta
     if (ubicacion.pathname !== esperada) terminar.current()
-  }, [ubicacion.pathname, ruta])
+  }, [ubicacion.pathname, ruta, eleccion.desde])
 
   useLayoutEffect(() => {
     const { indice, cajas, elegida, cx, cy, orden } = geometria(eleccion)
@@ -166,7 +168,7 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
 
     const apilada = (i: number) => {
       const p = orden.indexOf(i) + 1
-      const c = cajas[i]
+      const c = cajas[i]!
       const lado = p % 2 === 0 ? 1 : -1
       return {
         x: cx - (c.left + c.width / 2) + lado * 4 * p,
@@ -177,8 +179,18 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
 
     const irALaHistoria = () => {
       fase.current = 'historia'
+      // Los íconos donde se va a posar la cuchara esperan vacíos desde que la capa monta (ver
+      // `index.css`). Recién acá: desde un cierre, antes vaciaría los botones de la historia de
+      // partida, que están a la vista. Con un cambio de tamaño no hay viaje (`vigente` ya es falso).
+      if (vigente) raiz.dataset.cucharaViaja = 'portada anterior siguiente'
       navegarRef.current(ruta)
     }
+
+    // La capa de la historia a la que se va. Desde el cierre de otra historia, la de partida sigue
+    // montada unos cuadros después de navegar: la de destino es la que no estaba al hacer clic.
+    const previas = new Set(document.querySelectorAll('.capa-recorrido'))
+    const capaDestino = () => [...document.querySelectorAll('.capa-recorrido')].find((c) => !previas.has(c)) ?? null
+    const iconoDestino = () => capaDestino()?.querySelector('.portada-recorrido .cuchara-portada') ?? null
 
     // La cuchara que viaja, medida sin transformar: de ahí sale cuánto escalarla y dónde apoyarla
     // para que su dibujo quede exactamente sobre otro (medido en el laboratorio: 0 px de error).
@@ -187,9 +199,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
     const poner = (c: Cuchara) => base
       ? `translate(${c.x}px, ${c.y}px) rotate(${c.giro}deg) scale(${c.largo / base.largo}) translate(${-base.x}px, ${-base.y}px)`
       : 'none'
-    // Los íconos donde se va a posar esperan vacíos desde que la capa monta (ver `index.css`).
+    // Dónde se anotan los íconos que esperan a la cuchara (se llena en `irALaHistoria`).
     const raiz = document.documentElement
-    raiz.dataset.cucharaViaja = 'portada anterior siguiente'
     const posada = (clave: string) => {
       const quedan = (raiz.dataset.cucharaViaja ?? '').split(' ').filter((c) => c && c !== clave)
       if (quedan.length) raiz.dataset.cucharaViaja = quedan.join(' ')
@@ -236,13 +247,13 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       // Sin viaje: las cucharas se van y los íconos aparecen en su lugar.
       viajeras.current.forEach((v) => { fijar(v, { opacity: 0 }) })
       delete raiz.dataset.cucharaViaja
-      vaivenIcono(document.querySelector('.portada-recorrido .cuchara-portada'), true)
+      vaivenIcono(iconoDestino(), true)
       fijar(lienzo.current, { opacity: 1 })
       if (fase.current === 'menu') irALaHistoria()
       const inicio = performance.now()
       const mirar = () => {
         if (desmontada) return
-        if (document.querySelector('.capa-recorrido') || performance.now() - inicio > 1500) {
+        if (capaDestino() || performance.now() - inicio > 1500) {
           void tramo(lienzo.current, [{ opacity: 1 }, { opacity: 0 }], DESTAPAR, 'ease-out')
             .then(() => { if (!desmontada) terminar.current() })
           return
@@ -257,19 +268,22 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       // Las tarjetas salen del orden de Tab mientras dura, y el foco siguiente era el pie de
       // página: movía la página bajo las copias fijas.
       if (e.key === 'Tab' && !destapada) e.preventDefault()
-      // `Escape` antes de navegar deshace la elección y deja el menú como estaba. Después es de
-      // la capa, que sale al menú, y la transición se retira sola (efecto de la ruta, arriba).
+      // `Escape` antes de navegar deshace la elección y deja el menú (o el cierre) como estaba, y
+      // no sigue: desde un cierre, la capa de partida lo tomaría para salir al menú. Por eso se
+      // escucha en captura. Después de navegar es de la capa, que sale al menú, y la transición se
+      // retira sola (efecto de la ruta, arriba).
       if (e.key === 'Escape' && vigente && fase.current === 'menu') {
+        e.stopPropagation()
         vigente = false
         terminar.current()
       }
       // Entre la navegación y el montaje de la capa nadie escucha `Escape` (medido: se perdía a
       // 40 ms de navegar). En ese hueco se hace lo que haría la capa: volver al menú.
-      if (e.key === 'Escape' && fase.current === 'historia' && !document.querySelector('.capa-recorrido')) {
+      if (e.key === 'Escape' && fase.current === 'historia' && !capaDestino()) {
         navegarRef.current('/')
       }
     }
-    document.addEventListener('keydown', alTeclear)
+    document.addEventListener('keydown', alTeclear, true)
 
     // El título de la portada, cuando la capa ya lo dibujó y dejó de moverse (el imán lleva la
     // portada bajo la barra en los primeros cuadros).
@@ -279,7 +293,7 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       let quieto = 0
       const mirar = () => {
         if (!vigente) { resolver(null); return }
-        const h2 = document.querySelector<HTMLElement>('.capa-recorrido .pregunta-portada')
+        const h2 = capaDestino()?.querySelector<HTMLElement>('.pregunta-portada') ?? null
         if (h2) {
           const y = Math.round(h2.getBoundingClientRect().top)
           quieto = y === anterior ? quieto + 1 : 0
@@ -298,7 +312,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       const pregunta = copia(indice)?.querySelector<HTMLElement>('[data-pregunta]')
 
       // 1. Apilar.
-      await Promise.all(cajas.map((_, i) => {
+      await Promise.all(cajas.map((c, i) => {
+        if (!c) return Promise.resolve()
         if (i === indice) return tramo(copia(i), [{ transform: t(0, 0) }, { transform: t(0, 0, 0, ALZADA) }], APILAR, salida)
         const a = apilada(i)
         // Las más lejanas salen un poco después: la pila se arma de adentro hacia afuera.
@@ -307,7 +322,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       if (!vigente) return
 
       // 2. Centrar.
-      await Promise.all(cajas.map((_, i) => {
+      await Promise.all(cajas.map((c, i) => {
+        if (!c) return Promise.resolve()
         if (i === indice) return tramo(copia(i), [{ transform: t(0, 0, 0, ALZADA) }, { transform: t(centro.x, centro.y, 0, ALZADA) }], CENTRAR, salida)
         const a = apilada(i)
         return tramo(copia(i), [{ transform: t(a.x, a.y, a.giro, 0.96) }, { transform: t(a.x + centro.x, a.y + centro.y, a.giro, 0.96) }], CENTRAR, salida)
@@ -357,7 +373,7 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         // La cuchara deja la tarjeta y va bajo el título, del tamaño de la del ícono de scroll.
         // Pasa del sur y vuelve, cada vez menos, como una aguja que se asienta.
         const deTarjeta = copia(indice)?.querySelector<SVGElement>('[data-cuchara] svg')
-        const icono = document.querySelector('.portada-recorrido .cuchara-portada')
+        const icono = iconoDestino()
         const viajera = viajeras.current[0]
         if (deTarjeta && icono && viajera && base) {
           vaivenIcono(icono, false)
@@ -411,10 +427,10 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
      * inmediato en vez de llegar a un lugar que ya se movió.
      */
     const dividir = async (frente: Cuchara) => {
-      const icono = document.querySelector('.portada-recorrido .cuchara-portada')
-      const capa = document.querySelector('.capa-recorrido')
+      const capa = capaDestino()
+      const icono = iconoDestino()
       if (!icono || !capa) return
-      const botones = [...document.querySelectorAll('.flechas-recorrido button')].filter((b) => b.getClientRects().length > 0)
+      const botones = [...capa.querySelectorAll('.flechas-recorrido button')].filter((b) => b.getClientRects().length > 0)
       const destinos = [
         { clave: 'portada', el: icono, c: cucharaDe(icono), circulo: 0.3, color: getComputedStyle(icono).color },
         ...botones.map((b, i) => {
@@ -468,11 +484,11 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
       desmontada = true
       cancelAnimationFrame(cuadro)
       window.removeEventListener('resize', alRedimensionar)
-      document.removeEventListener('keydown', alTeclear)
+      document.removeEventListener('keydown', alTeclear, true)
       animaciones.forEach((a) => { a.cancel() })
       // Se corte donde se corte (Atrás, `Escape`, un scroll), los íconos quedan en su lugar.
       delete raiz.dataset.cucharaViaja
-      vaivenIcono(document.querySelector('.portada-recorrido .cuchara-portada'), true)
+      vaivenIcono(iconoDestino(), true)
     }
   }, [eleccion, ruta])
 
@@ -480,6 +496,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
     <>
     <div ref={lienzo} aria-hidden className="pointer-events-none fixed inset-0 z-[60]">
       {cajas.map((c, i) => {
+        // Desde el cierre solo está la elegida.
+        if (!c) return null
         const h = HISTORIAS[i]
         const caja = {
           left: c.left,
@@ -502,8 +520,8 @@ function Transicion ({ eleccion, alTerminar }: { eleccion: Eleccion, alTerminar:
         return (
           <div key={h.id} ref={(el) => { copias.current[i] = el }} className="absolute" style={caja}>
             <div ref={fondo} className="absolute inset-0 rounded-lg border border-gray-200 bg-white shadow-xl" />
-            <div className={`relative flex h-full flex-col border border-transparent ${RELLENO}`}>
-              <ContenidoTarjeta h={h} i={i} />
+            <div className={`relative flex h-full flex-col border border-transparent ${eleccion.mini ? RELLENO_MINI : RELLENO}`}>
+              <ContenidoTarjeta h={h} i={i} mini={eleccion.mini} />
             </div>
           </div>
         )

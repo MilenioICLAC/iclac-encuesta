@@ -54,3 +54,5 @@ public/laboratorio-pausa.html
 public/laboratorio-sinan.html
 # Y el del viaje de la cuchara: `npm run lab:viaje` a partir de `laboratorio/cuchara-viaje.html`.
 public/laboratorio-viaje.html
+# Y el de la tarjeta del cierre: `npm run lab:tarjeta` a partir de `laboratorio/tarjeta-cierre.html`.
+public/laboratorio-tarjeta.html
