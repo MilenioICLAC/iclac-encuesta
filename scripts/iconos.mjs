@@ -1,6 +1,7 @@
-// El ícono de la app es el junco de la barra de avance, en verde oscuro (`src/componentes/junco.ts`, la única copia
-// del dibujo). Escribe en `public/` el SVG de la pestaña, los PNG que piden iOS y el manifiesto, y
-// el manifiesto. Los PNG los rasteriza Chromium (Playwright global, como `mirar_recorrido.mjs`).
+// El ícono de la app es el junco de la barra de avance, en verde oscuro (`src/componentes/junco.ts`,
+// la única copia del dibujo). Escribe en `public/` el `.ico` de la pestaña, los PNG que piden iOS y
+// el manifiesto, y el manifiesto. Los rasteriza Chromium (Playwright global, como
+// `mirar_recorrido.mjs`).
 //
 //   node scripts/iconos.mjs
 import { execFileSync } from 'node:child_process'
@@ -40,34 +41,53 @@ function junco ({ lado, ancho, color, fondo }) {
 const svg = (lado, cuerpo) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${lado} ${lado}">${cuerpo}</svg>\n`
 
-// La pestaña: sin fondo y casi de borde a borde, en el mismo verde con cualquier tema.
-writeFileSync(new URL('favicon.svg', PUBLICO), svg(
-  40,
-  junco({ lado: 40, ancho: 39, color: VERDE }),
-))
-
-// Los PNG: la pestaña de respaldo (sin fondo) y los de pantalla de inicio, sobre blanco (iOS rellena
-// la transparencia con negro). El «maskable» deja el barco dentro del círculo seguro del 80 %.
-const PNG = [
-  { archivo: 'favicon-32.png', lado: 32, ancho: 31 },
-  { archivo: 'apple-touch-icon.png', lado: 180, ancho: 132, fondo: '#fff' },
-  { archivo: 'icon-192.png', lado: 192, ancho: 150, fondo: '#fff' },
-  { archivo: 'icon-512.png', lado: 512, ancho: 400, fondo: '#fff' },
-  { archivo: 'icon-maskable-512.png', lado: 512, ancho: 300, fondo: '#fff' },
-]
+/** Un `.ico` con cada tamaño guardado como PNG (Vista en adelante y todos los navegadores). */
+function ico (imagenes) {
+  const cabecera = Buffer.alloc(6 + 16 * imagenes.length)
+  cabecera.writeUInt16LE(1, 2) // tipo: ícono
+  cabecera.writeUInt16LE(imagenes.length, 4)
+  let desde = cabecera.length
+  imagenes.forEach(({ lado, png }, i) => {
+    const o = 6 + 16 * i
+    cabecera.writeUInt8(lado % 256, o) // ancho (0 = 256)
+    cabecera.writeUInt8(lado % 256, o + 1) // alto
+    cabecera.writeUInt16LE(1, o + 4) // planos
+    cabecera.writeUInt16LE(32, o + 6) // bits por píxel
+    cabecera.writeUInt32LE(png.length, o + 8)
+    cabecera.writeUInt32LE(desde, o + 12)
+    desde += png.length
+  })
+  return Buffer.concat([cabecera, ...imagenes.map((m) => m.png)])
+}
 
 const require = createRequire(import.meta.url)
 const { chromium } = require(execFileSync('npm', ['root', '-g']).toString().trim() + '/playwright')
 const navegador = await chromium.launch()
 const pagina = await navegador.newPage()
-for (const { archivo, lado, ancho, fondo } of PNG) {
+async function png ({ lado, ancho, fondo }) {
   await pagina.setViewportSize({ width: lado, height: lado })
   await pagina.setContent(
     `<style>*{margin:0}svg{display:block;width:${lado}px;height:${lado}px}</style>` +
     svg(lado, junco({ lado, ancho, color: VERDE, fondo })),
   )
-  await pagina.screenshot({ path: new URL(archivo, PUBLICO).pathname, omitBackground: !fondo })
+  return pagina.screenshot({ omitBackground: !fondo })
 }
+
+// La pestaña, como en mapa_FDI: un `.ico` de 16, 32 y 48 px, sin fondo, en un solo color con
+// cualquier tema, y sin favicon SVG (Chrome y Firefox lo preferirían sobre el `.ico`).
+const pestana = []
+for (const lado of [16, 32, 48]) pestana.push({ lado, png: await png({ lado, ancho: lado - 1 }) })
+writeFileSync(new URL('favicon.ico', PUBLICO), ico(pestana))
+
+// Los de pantalla de inicio, sobre blanco (iOS rellena la transparencia con negro). El «maskable»
+// deja el barco dentro del círculo seguro del 80 %.
+const PNG = [
+  { archivo: 'apple-touch-icon.png', lado: 180, ancho: 132, fondo: '#fff' },
+  { archivo: 'icon-192.png', lado: 192, ancho: 150, fondo: '#fff' },
+  { archivo: 'icon-512.png', lado: 512, ancho: 400, fondo: '#fff' },
+  { archivo: 'icon-maskable-512.png', lado: 512, ancho: 300, fondo: '#fff' },
+]
+for (const p of PNG) writeFileSync(new URL(p.archivo, PUBLICO), await png(p))
 await navegador.close()
 
 writeFileSync(new URL('manifest.webmanifest', PUBLICO), JSON.stringify({
@@ -84,4 +104,4 @@ writeFileSync(new URL('manifest.webmanifest', PUBLICO), JSON.stringify({
   ],
 }, null, 2) + '\n')
 
-console.log('iconos:', ['favicon.svg', ...PNG.map((p) => p.archivo), 'manifest.webmanifest'].join(', '))
+console.log('iconos:', ['favicon.ico', ...PNG.map((p) => p.archivo), 'manifest.webmanifest'].join(', '))
