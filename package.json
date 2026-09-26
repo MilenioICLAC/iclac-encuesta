@@ -26,7 +26,10 @@
     "lab:la-encuesta": "node scripts/laboratorio.mjs laboratorio/la-encuesta.html public/laboratorio-la-encuesta.html",
     "lab:scroll": "node scripts/laboratorio.mjs laboratorio/scroll-escritorio.html public/laboratorio-scroll.html",
     "lab:barco": "node scripts/laboratorio.mjs laboratorio/barra-barco.html public/laboratorio-barco.html",
-    "lab:pausa": "node scripts/laboratorio.mjs laboratorio/pausa-corta.html public/laboratorio-pausa.html"
+    "lab:pausa": "node scripts/laboratorio.mjs laboratorio/pausa-corta.html public/laboratorio-pausa.html",
+    "lab:sinan": "node scripts/laboratorio.mjs laboratorio/sinan.html public/laboratorio-sinan.html",
+    "lab:viaje": "node scripts/laboratorio.mjs laboratorio/cuchara-viaje.html public/laboratorio-viaje.html",
+    "lab:tarjeta": "node scripts/laboratorio.mjs laboratorio/tarjeta-cierre.html public/laboratorio-tarjeta.html"
   },
   "dependencies": {
     "@fontsource/raleway": "^5.3.0",

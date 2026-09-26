@@ -1,0 +1,530 @@
+<title>Laboratorio del viaje de la cuchara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /* El cromo va en claro: la app no tiene modo oscuro. */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7;
+    --superficie: #FFFFFF;
+    --tinta: #101917;
+    --tinta-suave: #6E7C79;
+    --linea: #DFE4E2;
+    --marca-oscura: #00776E;
+    --g600: #4B5563;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+  .envoltorio { max-width: 1960px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  .avisos { margin: 0; padding-left: 18px; font-size: 13px; color: var(--g600); max-width: 96ch; }
+  .avisos li + li { margin-top: 4px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .controles h2 { flex-basis: 100%; margin: 0; font-family: var(--display); font-size: 14px; font-weight: 600; }
+  .grupo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .grupo > span { font-size: 11.5px; color: var(--tinta-suave); }
+  .grupo[hidden] { display: none; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { border-color: var(--marca-oscura); background: var(--marca-oscura); color: #fff; }
+  .seg button:focus-visible, .accion:focus-visible, textarea:focus-visible, .combinacion:focus-visible { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+  .combinaciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; }
+  .combinacion { text-align: left; border: 1px solid var(--linea); background: var(--superficie); border-radius: 12px; padding: 10px 12px; font: inherit; cursor: pointer; color: var(--tinta); }
+  .combinacion strong { display: block; font-family: var(--display); font-weight: 600; font-size: 14px; }
+  .combinacion span { display: block; font-size: 12.5px; color: var(--tinta-suave); margin-top: 2px; }
+  .combinacion[aria-pressed="true"] { border-color: var(--marca-oscura); box-shadow: inset 0 0 0 1px var(--marca-oscura); }
+  .marco { margin-inline: -16px; border-block: 1px solid var(--linea); background: #EEF1F0; }
+  .barra-visor { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 12px; border-bottom: 1px solid var(--linea); background: var(--superficie); font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; align-items: center; }
+  .barra-visor b { color: var(--tinta); font-weight: 600; }
+  .barra-visor .corto { color: #B42318; }
+  .lienzo { padding-block: 16px; display: flex; justify-content: center; }
+  .caja { position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); background: #fff; }
+  .caja iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+  .exportar { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); }
+  .exportar textarea { font: inherit; font-size: 13.5px; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 8px; width: 100%; min-height: 64px; }
+  .exportar pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--papel); border-radius: 8px; padding: 8px; user-select: all; }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fila small { color: var(--tinta-suave); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Laboratorio del viaje de la cuchara</h1>
+    <p>La cuchara del sinan reemplaza la flecha de las tarjetas del menú. Al elegir una historia, viaja al frente con la pregunta, se divide en tres y cada una se posa en su lugar: el ícono de scroll de la portada y los botones «Anterior» y «Siguiente». Es la entrada de las tarjetas al revés: allá muchas se juntan en una, acá una se abre en tres. Toca una tarjeta dentro del marco, o usa «Elegir».</p>
+  </header>
+
+  <ul class="avisos">
+    <li>La app es la de verdad, en un marco; la cuchara que viaja es del laboratorio y va encima. Sigue cuadro a cuadro a la tarjeta mientras se apila y se centra, y arranca hacia el frente cuando arranca la pregunta, con su misma duración (480 ms) y curva.</li>
+    <li>En un teléfono no hay botones (solo aparecen con mouse o trackpad): va una sola cuchara, al ícono de scroll. «Simular teléfono» los esconde en el marco; el marco angosto no los esconde solo, porque este computador tiene mouse.</li>
+    <li>Con movimiento reducido no hay transición (el menú navega directo, como hoy) y la cuchara de la tarjeta no flota. No se simula acá: la app lo decide con la preferencia del sistema.</li>
+    <li>«Error al posarse» es la distancia entre la cuchara del laboratorio y el ícono real cuando se cruzan: con 0 a 1 px el relevo no se ve.</li>
+  </ul>
+
+  <div class="combinaciones">
+    <button class="combinacion" data-combinacion="app" aria-pressed="false"><strong>Como está la app</strong><span>Flecha de texto en las tarjetas; la portada abre con sus íconos ya puestos.</span></button>
+    <button class="combinacion" data-combinacion="propuesta" aria-pressed="false"><strong>Propuesta</strong><span>La cuchara de la portada en miniatura, flotando en ola; se detiene bajo el título, oscila como brújula y se abre en tres.</span></button>
+  </div>
+
+  <div class="controles">
+    <h2>En la tarjeta</h2>
+    <div class="grupo"><span>Forma</span><div class="seg" data-parametro="forma"></div></div>
+    <div class="grupo"><span>Tamaño</span><div class="seg" data-parametro="tamano"></div></div>
+    <div class="grupo"><span>Flota</span><div class="seg" data-parametro="flota"></div></div>
+    <div class="grupo"><span>Entre tarjetas</span><div class="seg" data-parametro="desfase"></div></div>
+  </div>
+  <div class="controles">
+    <h2>El viaje</h2>
+    <div class="grupo"><span>Al frente, se detiene</span><div class="seg" data-parametro="frente"></div></div>
+    <div class="grupo"><span>Giro al llegar al frente</span><div class="seg" data-parametro="giro"></div></div>
+    <div class="grupo"><span>Pausa antes de dividirse (tras destapar la portada)</span><div class="seg" data-parametro="pausa"></div></div>
+    <div class="grupo"><span>Duración de la división</span><div class="seg" data-parametro="division"></div></div>
+    <div class="grupo"><span>Desfase entre las tres</span><div class="seg" data-parametro="escalon"></div></div>
+    <div class="grupo"><span>Curva de la división</span><div class="seg" data-parametro="curva"></div></div>
+  </div>
+  <div class="controles">
+    <h2>El marco</h2>
+    <div class="grupo"><span>Pantalla</span><div class="seg" data-parametro="pantalla"></div></div>
+    <div class="grupo"><span>Botones</span><div class="seg" data-parametro="telefono"></div></div>
+    <div class="grupo"><span>Velocidad</span><div class="seg" data-parametro="velocidad"></div></div>
+    <div class="grupo"><span>Elegir</span><div class="seg" id="elegir"></div></div>
+    <div class="grupo"><span>&nbsp;</span><div class="seg"><button type="button" id="menu">Volver al menú</button></div></div>
+  </div>
+
+  <div class="marco">
+    <div class="barra-visor" id="medidas" aria-live="off"></div>
+    <div class="lienzo"><div class="caja" id="caja"><iframe id="visor" title="La app con el viaje de la cuchara"></iframe></div></div>
+  </div>
+
+  <div class="exportar">
+    <label for="nota" style="font-size:11.5px;color:var(--tinta-suave)">Nota (qué te gustó, qué no, qué dispositivo usaste)</label>
+    <textarea id="nota"></textarea>
+    <div class="fila"><button class="accion" id="copiar">Copiar JSON</button><small id="copiado"></small></div>
+    <pre id="json" hidden></pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  const CLAVE = 'lab-cuchara-viaje-v1'
+  const MARCA = '#00776E'
+
+  const OPCIONES = {
+    forma: [['app', 'flecha (hoy)'], ['portada', 'la de la portada'], ['sola', 'sola, hacia abajo'], ['derecha', 'sola, hacia la derecha']],
+    tamano: [['22', '22 px'], ['28', '28 px'], ['34', '34 px']],
+    flota: [['siempre', 'siempre'], ['pasar', 'al pasar el cursor'], ['quieta', 'quieta']],
+    desfase: [['juntas', 'juntas'], ['ola', 'en ola']],
+    frente: [['debajo', 'bajo el título'], ['icono', 'en el ícono de scroll']],
+    giro: [['directo', 'directo'], ['brujula', 'oscila como brújula']],
+    pausa: [['0', '0 ms'], ['150', '150 ms'], ['300', '300 ms']],
+    division: [['450', '450 ms'], ['600', '600 ms'], ['750', '750 ms']],
+    escalon: [['0', '0 ms'], ['60', '60 ms'], ['120', '120 ms']],
+    curva: [['app', 'la de la transición'], ['fuerte', 'más marcada']],
+    pantalla: [['360x640', '360×640'], ['390x844', '390×844'], ['768x1024', '768×1024'], ['1512x860', '1512×860'], ['todo', 'Todo']],
+    telefono: [['no', 'con botones (mouse)'], ['si', 'simular teléfono']],
+    velocidad: [['1', '1×'], ['0.5', '0,5×'], ['0.25', '0,25×']],
+  }
+  const CURVAS = { app: 'cubic-bezier(.65,0,.35,1)', fuerte: 'cubic-bezier(0.77,0,0.175,1)' }
+  // Los de la transición real (`Transicion.tsx`): el tramo en que la pregunta va al título.
+  const TITULAR = 480
+  const SUAVE = 'cubic-bezier(.65,0,.35,1)'
+
+  const PRESETS = {
+    app: { forma: 'app' },
+    propuesta: { forma: 'portada', tamano: '28', flota: 'siempre', desfase: 'ola', frente: 'debajo', giro: 'brujula', pausa: '150', division: '600', escalon: '60', curva: 'fuerte' },
+  }
+  const inicial = { combinacion: 'propuesta', ...PRESETS.propuesta, pantalla: '390x844', telefono: 'no', velocidad: '1' }
+
+  const estado = { ...inicial }
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || '{}')
+    for (const k of Object.keys(inicial)) {
+      const v = g[k]
+      if (k === 'combinacion' ? ['app', 'propuesta', 'mezcla'].includes(v) : OPCIONES[k]?.some(([id]) => id === v)) estado[k] = v
+    }
+    if (typeof g.nota === 'string') document.getElementById('nota').value = g.nota
+  } catch { /* sin almacenamiento, se usa el inicial */ }
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ ...estado, nota: document.getElementById('nota').value })) } catch { /* nada */ } }
+
+  // ---- Controles -----------------------------------------------------------------------------
+
+  for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+    const k = grupo.dataset.parametro
+    for (const [id, rotulo] of OPCIONES[k]) {
+      const b = document.createElement('button')
+      b.type = 'button'; b.dataset.valor = id; b.textContent = rotulo
+      b.addEventListener('click', () => {
+        estado[k] = id
+        if (!['pantalla', 'telefono', 'velocidad'].includes(k)) estado.combinacion = 'mezcla'
+        cambio(k)
+      })
+      grupo.append(b)
+    }
+  }
+  for (const b of document.querySelectorAll('[data-combinacion]')) {
+    b.addEventListener('click', () => { estado.combinacion = b.dataset.combinacion; Object.assign(estado, PRESETS[estado.combinacion]); cambio('combinacion') })
+  }
+  document.getElementById('nota').addEventListener('input', guardar)
+  function pintarControles () {
+    for (const grupo of document.querySelectorAll('.seg[data-parametro]')) {
+      for (const b of grupo.children) b.setAttribute('aria-pressed', String(b.dataset.valor === estado[grupo.dataset.parametro]))
+    }
+    for (const b of document.querySelectorAll('[data-combinacion]')) b.setAttribute('aria-pressed', String(b.dataset.combinacion === estado.combinacion))
+    // Un parámetro que no hace nada no se ofrece: con la flecha de hoy no hay cuchara.
+    const hay = estado.forma !== 'app'
+    for (const k of ['tamano', 'flota', 'desfase', 'frente', 'giro', 'pausa', 'division', 'escalon', 'curva']) {
+      document.querySelector(`[data-parametro="${k}"]`).closest('.grupo').hidden = !hay
+    }
+    document.querySelector('[data-parametro="desfase"]').closest('.grupo').hidden = !hay || estado.flota === 'quieta'
+  }
+
+  // ---- El marco ------------------------------------------------------------------------------
+
+  const caja = document.getElementById('caja')
+  const visor = document.getElementById('visor')
+  function dimensionar () {
+    const [w, h] = estado.pantalla === 'todo' ? [window.innerWidth, window.innerHeight] : estado.pantalla.split('x').map(Number)
+    const escala = Math.min(1, (document.documentElement.clientWidth - 16) / w)
+    visor.style.width = w + 'px'; visor.style.height = h + 'px'
+    visor.style.transform = escala < 1 ? `scale(${escala})` : ''
+    caja.style.width = Math.round(w * escala) + 'px'; caja.style.height = Math.round(h * escala) + 'px'
+  }
+  window.addEventListener('resize', () => { if (estado.pantalla === 'todo') dimensionar() })
+  const D = () => { try { return visor.contentDocument } catch { return null } }
+  const W = () => visor.contentWindow
+
+  function cambio (k) {
+    guardar(); pintarControles()
+    if (k === 'pantalla') dimensionar()
+    preparar()
+  }
+
+  document.getElementById('menu').addEventListener('click', () => { W().location.hash = '#/' })
+  const elegir = document.getElementById('elegir')
+  for (let i = 0; i < 6; i++) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = String(i + 1)
+    b.setAttribute('aria-label', `Elegir la tarjeta ${i + 1}`)
+    b.addEventListener('click', () => {
+      const d = D()
+      const ir = () => {
+        const a = d.querySelectorAll('ol a')[i]
+        if (!a) { setTimeout(ir, 150); return }
+        a.scrollIntoView({ block: 'center' })
+        setTimeout(() => a.dispatchEvent(new (W().MouseEvent)('click', { bubbles: true, cancelable: true, button: 0 })), 250)
+      }
+      if (!d.querySelector('ol a')) W().location.hash = '#/'
+      ir()
+    })
+    elegir.append(b)
+  }
+
+  // ---- Los dibujos ---------------------------------------------------------------------------
+  //
+  // Los mismos de `src/componentes/Sinan.tsx`: la cuchara de la portada (con su círculo) y la de los
+  // botones (sin él). Cada una con `.cuchara` para que flote sola.
+
+  const PORTADA = `<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <circle class="circulo" cx="32" cy="29" r="22" stroke-width="2" opacity="0.3"/>
+    <g class="cuchara">
+      <ellipse cx="32" cy="22" rx="8" ry="9" stroke-width="3" fill="currentColor" fill-opacity="0.12"/>
+      <path d="M29.9 31.4L34.1 31.4L33.2 55.5Q32 57.5 30.8 55.5Z" fill="currentColor" stroke-width="1"/>
+    </g></g>`
+  const SOLA = `<g class="cuchara"><ellipse cx="12" cy="7.4" rx="3.9" ry="4.4" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.8"/>
+    <path d="M11 11.6L13 11.6L12.55 21.2Q12 22.2 11.45 21.2Z" fill="currentColor"/></g>`
+
+  function svgTarjeta () {
+    const t = Number(estado.tamano)
+    const [vb, dentro, giro] = estado.forma === 'portada' ? ['0 0 64 64', PORTADA, 0] : ['0 0 24 24', SOLA, estado.forma === 'derecha' ? -90 : 0]
+    return `<svg viewBox="${vb}" width="${t}" height="${t}" aria-hidden="true" style="overflow:visible;display:block;${giro ? `transform:rotate(${giro}deg)` : ''}">${dentro}</svg>`
+  }
+  const giroTarjeta = () => (estado.forma === 'derecha' ? -90 : 0)
+
+  // ---- En la app: la cuchara de las tarjetas --------------------------------------------------
+
+  function css () {
+    // El vaivén es el de la portada: 6 unidades del dibujo de 64, así que en la cuchara sola (24)
+    // son 2,25. Va sobre `.cuchara`: con la forma girada, flota a lo largo del mango.
+    const amplitud = estado.forma === 'portada' ? 6 : 2.25
+    const flotar = `animation: lab-flotar 2s ease-in-out infinite; animation-delay: var(--retraso, 0s);`
+    return `
+      @keyframes lab-flotar { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(${amplitud}px) } }
+      /* El «→» se corría a la derecha al pasar el cursor; la cuchara no. */
+      .lab-cuchara-tarjeta { display: inline-flex; transform: none !important; align-self: center; }
+      ${estado.flota === 'siempre' ? `.lab-cuchara-tarjeta .cuchara { ${flotar} }` : ''}
+      ${estado.flota === 'pasar' ? `@media (hover: hover) and (pointer: fine) { a:hover .lab-cuchara-tarjeta .cuchara { ${flotar} } }` : ''}
+      /* La elegida la reemplaza la que viaja. */
+      .lab-elegida .lab-cuchara-tarjeta { visibility: hidden; }
+      html.lab-viaje .cuchara-portada:not(.lab-listo), html.lab-viaje .flechas-recorrido svg:not(.lab-listo) { opacity: 0; }
+      html.lab-sin-botones .flechas-recorrido { display: none !important; }
+      .lab-capa { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+      .lab-viajera { position: absolute; left: 0; top: 0; width: 64px; height: 64px; transform-origin: 0 0; color: ${MARCA}; will-change: transform; }
+      .lab-viajera svg { display: block; overflow: visible; }
+    `
+  }
+
+  function ponerCucharas (raiz) {
+    const d = D(); if (!d) return
+    const flechas = [...raiz.querySelectorAll('span[aria-hidden="true"]')].filter((s) => s.textContent.trim() === '→' || s.classList.contains('lab-cuchara-tarjeta'))
+    for (const s of flechas) {
+      // Solo las de las tarjetas: en el menú (enlaces de la lista) y en las copias de la transición.
+      if (!s.closest('ol a') && !s.closest('.z-\\[60\\]')) continue
+      const firma = `${estado.forma}:${estado.tamano}`
+      if (s.dataset.labFirma === firma) continue
+      s.dataset.labFirma = firma
+      if (estado.forma === 'app') { s.classList.remove('lab-cuchara-tarjeta'); s.textContent = '→'; continue }
+      s.classList.add('lab-cuchara-tarjeta')
+      s.innerHTML = svgTarjeta()
+    }
+    // En ola: cada tarjeta medio compás después de la anterior. Las copias de la transición toman
+    // el tiempo de su original, para que la cuchara no salte en el clic.
+    const menu = [...d.querySelectorAll('ol a .lab-cuchara-tarjeta .cuchara')]
+    menu.forEach((g, i) => { g.style.setProperty('--retraso', estado.desfase === 'ola' ? `${-i * 0.33}s` : '0s') })
+    const copias = [...d.querySelectorAll('.z-\\[60\\] .lab-cuchara-tarjeta .cuchara')]
+    copias.forEach((g, i) => {
+      const original = menu[i]?.getAnimations()[0]
+      const propia = g.getAnimations()[0]
+      if (original && propia) propia.currentTime = original.currentTime
+    })
+  }
+
+  let observador = null
+  function preparar () {
+    const d = D(); if (!d?.head) return
+    let estilo = d.getElementById('lab-estilo')
+    if (!estilo) { estilo = d.createElement('style'); estilo.id = 'lab-estilo'; d.head.append(estilo) }
+    estilo.textContent = css()
+    d.documentElement.classList.toggle('lab-sin-botones', estado.telefono === 'si')
+    // La cámara lenta solo vale durante un viaje; fuera de él todo vuelve a 1×.
+    if (!viaje) for (const a of d.getAnimations()) a.playbackRate = 1
+    for (const s of d.querySelectorAll('.lab-cuchara-tarjeta')) delete s.dataset.labFirma
+    ponerCucharas(d.body)
+    if (!observador) {
+      // Las copias de la transición aparecen en un portal: se les pone la cuchara antes del
+      // siguiente cuadro, o la tarjeta elegida mostraría la flecha un instante.
+      observador = new (W().MutationObserver)((cambios) => {
+        for (const c of cambios) for (const n of c.addedNodes) if (n.nodeType === 1) ponerCucharas(n)
+        // La copia elegida (la de dos capas) no muestra su cuchara: la muestra la viajera.
+        if (viaje) D().querySelector('.z-\\[60\\] .relative.flex')?.classList.add('lab-elegida')
+      })
+      observador.observe(d.body, { childList: true, subtree: true })
+      d.addEventListener('click', alElegir, true)
+    }
+  }
+
+  // ---- El viaje ------------------------------------------------------------------------------
+
+  let viaje = null
+  let ultima = {}
+  let numeroDeViaje = 0
+
+  function alElegir (e) {
+    if (estado.forma === 'app' || viaje) return
+    const a = e.target.closest?.('ol a')
+    if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    const indice = [...D().querySelectorAll('ol a')].indexOf(a)
+    const origen = a.querySelector('.lab-cuchara-tarjeta svg')
+    if (indice < 0 || !origen) return
+    viajar(indice, origen)
+  }
+
+  // Dónde está una cuchara: el centro y el largo de su dibujo (cuenco y mango, sin el círculo),
+  // medidos en la pantalla. Con un giro de 90° el largo es el ancho de su caja.
+  function cucharaDe (svg, giro) {
+    const partes = [...svg.querySelectorAll('ellipse, path')].map((p) => p.getBoundingClientRect())
+    const l = Math.min(...partes.map((r) => r.left)); const r = Math.max(...partes.map((r) => r.right))
+    const t = Math.min(...partes.map((r) => r.top)); const b = Math.max(...partes.map((r) => r.bottom))
+    return { x: (l + r) / 2, y: (t + b) / 2, largo: Math.abs(giro % 180) === 90 ? r - l : b - t, giro }
+  }
+
+  function viajar (indice, origen) {
+    const d = D(); const w = W()
+    const velocidad = Number(estado.velocidad)
+    const inicio = w.performance.now()
+    // Las medidas del viaje anterior se borran: si no, se leen como si fueran de este.
+    numeroDeViaje += 1
+    ultima = {}; medir()
+    d.documentElement.classList.add('lab-viaje')
+    const capa = d.createElement('div'); capa.className = 'lab-capa'; capa.setAttribute('aria-hidden', 'true')
+    d.body.append(capa)
+    const nueva = () => {
+      const v = d.createElement('div'); v.className = 'lab-viajera'
+      v.innerHTML = `<svg viewBox="0 0 64 64" width="64" height="64">${PORTADA}</svg>`
+      capa.append(v)
+      return v
+    }
+    const viajera = nueva()
+    // La cuchara de la viajera sin transformar: de ahí sale cuánto escalarla y dónde apoyarla.
+    const base = cucharaDe(viajera.querySelector('svg'), 0)
+    const poner = (c) => `translate(${c.x}px, ${c.y}px) rotate(${c.giro}deg) scale(${c.largo / base.largo}) translate(${-base.x}px, ${-base.y}px)`
+    const circuloTarjeta = estado.forma === 'portada' ? 0.3 : 0
+    viajera.querySelector('.circulo').style.opacity = circuloTarjeta
+
+    const cuadros = []; let antes = w.performance.now()
+    const animaciones = []
+    const animar = (el, k, o) => { const a = el.animate(k, { fill: 'forwards', ...o }); a.playbackRate = velocidad; animaciones.push(a); return a }
+    viaje = { capa, animaciones, errores: [], actual: cucharaDe(origen, giroTarjeta()) }
+    viajera.style.transform = poner(viaje.actual)
+    const fin = (motivo) => {
+      if (!viaje) return
+      w.cancelAnimationFrame(viaje.cuadro)
+      for (const a of animaciones) a.cancel()
+      capa.remove()
+      d.documentElement.classList.remove('lab-viaje')
+      for (const el of d.querySelectorAll('.lab-listo')) el.classList.remove('lab-listo')
+      for (const el of d.querySelectorAll('.lab-elegida')) el.classList.remove('lab-elegida')
+      const icono = d.querySelector('.cuchara-portada .cuchara')
+      icono?.getAnimations().forEach((a) => { a.currentTime = 0; a.play() })
+      const largos = cuadros.filter((c) => c > 25).length
+      ultima = { motivo, duracionMs: Math.round((w.performance.now() - inicio) * velocidad), cuadrosLargos: largos, cuadros: cuadros.length, errorAlPosarsePx: viaje.errores.length ? +Math.max(...viaje.errores).toFixed(1) : null, destinos: viaje.destinos ?? null }
+      viaje = null
+      medir()
+    }
+
+    // 1. Seguir a la tarjeta: mientras se apila, se centra y la cubre el blanco, la viajera se
+    //    pone cada cuadro sobre la cuchara (escondida) de la copia elegida.
+    let fase = 'seguir'
+    const limite = w.performance.now() + 6000 / velocidad
+    const seguir = () => {
+      const ahora = w.performance.now(); cuadros.push(ahora - antes); antes = ahora
+      if (ahora > limite) { fin('se agotó el tiempo'); return }
+      if (fase !== 'seguir') return
+      const lienzo = d.querySelector('.z-\\[60\\]')
+      const copia = lienzo?.querySelector('.relative.flex .lab-cuchara-tarjeta svg')
+      if (lienzo && !copia) { viaje.cuadro = w.requestAnimationFrame(seguir); return }
+      copia?.closest('.relative.flex').classList.add('lab-elegida')
+      origen.closest('a')?.classList.add('lab-elegida')
+      viaje.actual = cucharaDe(copia ?? origen, giroTarjeta())
+      viajera.style.transform = poner(viaje.actual)
+      for (const a of d.getAnimations()) if (a.playbackRate !== velocidad) a.playbackRate = velocidad
+      // La pregunta arranca hacia el título: el último hijo del lienzo empieza a animarse.
+      const titulo = lienzo?.lastElementChild
+      if (titulo && titulo.getAnimations().length) { fase = 'frente'; void alFrente(); return }
+      viaje.cuadro = w.requestAnimationFrame(seguir)
+    }
+    viaje.cuadro = w.requestAnimationFrame(seguir)
+
+    const contar = () => {
+      if (!viaje) return
+      const ahora = w.performance.now(); cuadros.push(ahora - antes); antes = ahora
+      for (const a of d.getAnimations()) if (a.playbackRate !== velocidad) a.playbackRate = velocidad
+      viaje.cuadro = w.requestAnimationFrame(contar)
+    }
+
+    // El ícono de scroll, quieto en su punto de partida: se mide sin el vaivén y vuelve a flotar
+    // desde ahí cuando la cuchara se posa.
+    const destinoIcono = () => {
+      const svg = d.querySelector('.cuchara-portada')
+      if (!svg) return null
+      svg.querySelector('.cuchara')?.getAnimations().forEach((a) => { a.pause(); a.currentTime = 0 })
+      return { el: svg, c: cucharaDe(svg, 0), circulo: 0.3 }
+    }
+    const destinosBotones = () => {
+      const botones = [...d.querySelectorAll('.flechas-recorrido button')].filter((b) => b.getClientRects().length && getComputedStyle(b.parentElement).display !== 'none')
+      return botones.map((b, i) => {
+        const svg = b.querySelector('svg')
+        // «Anterior» es la misma cuchara girada: 180° dan la vuelta por la derecha.
+        const giro = i === 0 ? 180 : 0
+        return { el: svg, c: cucharaDe(svg, giro), circulo: 0, color: getComputedStyle(b).color }
+      })
+    }
+
+    // 2. Al frente, con la pregunta: misma duración y curva que el tramo del título.
+    const alFrente = async () => {
+      viaje.cuadro = w.requestAnimationFrame(contar)
+      const h2 = d.querySelector('.capa-recorrido .pregunta-portada')
+      const icono = destinoIcono()
+      if (!h2 || !icono) { fin('no se encontró la portada'); return }
+      const t = h2.getBoundingClientRect()
+      const frente = estado.frente === 'icono'
+        ? icono.c
+        : { x: t.left + t.width / 2, y: t.bottom + 28 + icono.c.largo / 2, largo: icono.c.largo, giro: 0 }
+      // Desde donde la dejó el último cuadro de «seguir».
+      const desde = viaje.actual
+      const pasos = [{ transform: poner(desde) }]
+      if (estado.giro === 'brujula') {
+        // Pasa del sur y vuelve, dos veces cada vez menos, como una aguja que se asienta.
+        const g0 = desde.giro
+        pasos.push({ transform: poner({ ...frente, giro: g0 === 0 ? -16 : 14 }), offset: 0.62 })
+        pasos.push({ transform: poner({ ...frente, giro: g0 === 0 ? 7 : -6 }), offset: 0.82 })
+      }
+      pasos.push({ transform: poner(frente) })
+      animar(viajera, pasos, { duration: TITULAR, easing: SUAVE })
+      await animar(viajera.querySelector('.circulo'), [{ opacity: circuloTarjeta }, { opacity: 0.3 }], { duration: TITULAR, easing: SUAVE }).finished.catch(() => {})
+      if (!viaje) return
+      // 3. Espera a que se destape la portada (el lienzo de la transición se va).
+      await new Promise((resolver) => {
+        const mirar = () => { if (!viaje) return resolver(); if (!d.querySelector('.z-\\[60\\]')) return resolver(); w.requestAnimationFrame(mirar) }
+        mirar()
+      })
+      if (!viaje) return
+      dividir(frente, icono)
+    }
+
+    // 4. Se divide: una al ícono de scroll y una a cada botón que se vea.
+    const dividir = async (frente, icono) => {
+      const destinos = [icono, ...(estado.telefono === 'si' ? [] : destinosBotones())]
+      viaje.destinos = destinos.length
+      const curva = CURVAS[estado.curva]
+      const duracion = Number(estado.division)
+      const todas = destinos.map((dest, i) => {
+        const v = i === 0 ? viajera : nueva()
+        v.style.transform = poner(frente)
+        if (i > 0) v.querySelector('.circulo').style.opacity = 0.3
+        const retardo = Number(estado.pausa) + i * Number(estado.escalon)
+        const a = animar(v, [{ transform: poner(frente), color: MARCA }, { transform: poner(dest.c), color: dest.color ?? MARCA }], { duration: duracion, delay: retardo, easing: curva })
+        animar(v.querySelector('.circulo'), [{ opacity: 0.3 }, { opacity: dest.circulo }], { duration: duracion * 0.5, delay: retardo, easing: 'ease-out' })
+        return a.finished.then(() => {
+          if (!viaje) return
+          // Se posa: aparece la de verdad debajo, se mide cuánto erró y la viajera se va.
+          dest.el.classList.add('lab-listo')
+          const real = cucharaDe(dest.el, dest.c.giro)
+          const propia = cucharaDe(v.querySelector('svg'), dest.c.giro)
+          viaje.errores.push(Math.hypot(real.x - propia.x, real.y - propia.y) + Math.abs(real.largo - propia.largo))
+          if (i === 0) dest.el.querySelector('.cuchara')?.getAnimations().forEach((x) => { x.currentTime = 0; x.play() })
+          return animar(v, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out' }).finished
+        }).catch(() => {})
+      })
+      await Promise.all(todas)
+      fin('completo')
+    }
+  }
+
+  // ---- Medidas -------------------------------------------------------------------------------
+
+  const medidas = document.getElementById('medidas')
+  function medir () {
+    const u = ultima
+    medidas.innerHTML = !u.motivo ? `<span>${viaje ? `Viaje n.º ${numeroDeViaje} en curso…` : 'Elige una tarjeta para medir el viaje.'}</span>` :
+      `<span>Viaje <b>n.º ${numeroDeViaje}</b>: <b>${u.motivo}</b></span>` +
+      `<span>Duración, del clic a la última cuchara: <b>${u.duracionMs} ms</b>${estado.velocidad !== '1' ? ' (llevada a 1×)' : ''}</span>` +
+      `<span>Cucharas al llegar: <b>${u.destinos ?? '—'}</b></span>` +
+      `<span>Error al posarse: <b class="${u.errorAlPosarsePx > 1 ? 'corto' : ''}">${u.errorAlPosarsePx ?? '—'} px</b></span>` +
+      `<span>Cuadros de más de 25 ms: <b class="${u.cuadrosLargos ? 'corto' : ''}">${u.cuadrosLargos}</b> de ${u.cuadros}</span>`
+  }
+
+  // ---- Exportar ------------------------------------------------------------------------------
+
+  document.getElementById('copiar').addEventListener('click', async () => {
+    const { combinacion, ...parametros } = estado
+    const datos = { laboratorio: 'cuchara-viaje', fecha: new Date().toISOString().slice(0, 10), combinacion, parametros, textos: {}, medida: ultima, nota: document.getElementById('nota').value }
+    const texto = JSON.stringify(datos, null, 2)
+    const pre = document.getElementById('json')
+    pre.textContent = texto; pre.hidden = false
+    try { await navigator.clipboard.writeText(texto); document.getElementById('copiado').textContent = 'Copiado.' }
+    catch { document.getElementById('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.' }
+  })
+
+  // ---- Arranque ------------------------------------------------------------------------------
+
+  visor.addEventListener('load', () => {
+    observador = null
+    const esperar = () => { if (D()?.querySelector('ol a, .capa-recorrido')) preparar(); else setTimeout(esperar, 100) }
+    esperar()
+  })
+  pintarControles(); dimensionar(); medir()
+  visor.src = '/#/'
+})()
+</script>

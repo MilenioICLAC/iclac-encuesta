@@ -149,8 +149,9 @@
   min-height: calc(var(--alto-capa, 100svh) - var(--barra-capa, 2.5rem));
 }
 
-/* La portada: el logo arriba, la pregunta centrada en el hueco (`my-auto`) y abajo los tres arcos
-   con la invitación. Salió del laboratorio de la portada el 15-09-2026. */
+/* La portada: el logo arriba, la pregunta centrada en el hueco (`my-auto`) y abajo la cuchara
+   del sinan con la invitación. Salió del laboratorio de la portada el 15-09-2026; la cuchara, del
+   laboratorio del sinan el 25-09-2026. */
 .portada-recorrido .texto-invitar {
   font-size: 14px;
 }
@@ -171,30 +172,40 @@
   }
 }
 
-/* La cascada: cada arco baja 6 px y vuelve, con su propio retraso, y se aclara al bajar. */
-@keyframes flotar-portada {
+/* La cuchara del sinan baja 6 px y vuelve; el círculo queda quieto (`CucharaPortada`). */
+@keyframes bajar-portada {
   0%,
   100% {
     transform: translateY(0);
-    opacity: var(--opacidad);
   }
 
   50% {
     transform: translateY(6px);
-    opacity: var(--opacidad-alta);
   }
 }
 
-.arcos-portada path {
-  opacity: var(--opacidad);
-  animation: flotar-portada 2s ease-in-out infinite;
-  animation-delay: var(--retraso);
+/* La misma en las tarjetas del menú: flotan todas juntas, porque montan en el mismo cuadro. */
+.cuchara-portada .cuchara,
+.cuchara-tarjeta .cuchara {
+  animation: bajar-portada 2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .arcos-portada path {
+  .cuchara-portada .cuchara,
+  .cuchara-tarjeta .cuchara {
     animation: none;
   }
+}
+
+/*
+ * Mientras la cuchara del menú viaja a la portada (`Transicion.tsx`), los íconos donde se va a posar
+ * esperan vacíos. El atributo va en `<html>` y lista los que faltan: cada cuchara que se posa quita
+ * el suyo. Así no se tocan las clases de nodos que son de React.
+ */
+html[data-cuchara-viaja~='portada'] .portada-recorrido .cuchara-portada,
+html[data-cuchara-viaja~='anterior'] .flechas-recorrido button:first-child svg,
+html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
+  opacity: 0;
 }
 
 @media (min-width: 900px) {
@@ -609,15 +620,11 @@
   }
 
   /* Con la historia siguiente en la salida, tres titulares largos más la tarjeta no caben en
-     360×640 y el rótulo de arriba quedaba bajo la barra (medido el 22-09-2026): ceden las frases
-     y la pregunta de la siguiente. */
+     360×640 y el rótulo de arriba quedaba bajo la barra (medido el 22-09-2026): ceden las frases.
+     La tarjeta de la siguiente no: la copia de la transición tiene que medir lo mismo. */
   .capa-recorrido .cierre-recorrido .frases-cierre > li {
     font-size: 17px;
     line-height: 1.35;
-  }
-
-  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
-    font-size: 18px;
   }
 
   .capa-recorrido .cierre-recorrido .boton-siguiente {
@@ -860,10 +867,6 @@
 
   .capa-recorrido .cierre-recorrido .salida-cierre {
     margin-top: 2.25rem;
-  }
-
-  .capa-recorrido .cierre-recorrido .pregunta-siguiente {
-    font-size: 24px;
   }
 
   .capa-recorrido .cierre-recorrido .salida-cierre a,
