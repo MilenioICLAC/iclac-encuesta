@@ -18,6 +18,7 @@
     "descargas": "node scripts/descargas.mjs",
     "datos": "npm run etl:combinada && npm run descargas && npm run geometria",
     "geometria": "node scripts/geometria_regiones.mjs",
+    "iconos": "node scripts/iconos.mjs",
     "lab": "node scripts/laboratorio.mjs laboratorio/recorrido.html",
     "lab:cierre": "node scripts/laboratorio.mjs laboratorio/cierre-recorrido.html public/laboratorio-cierre.html",
     "lab:portada": "node scripts/laboratorio.mjs laboratorio/portada-recorrido.html public/laboratorio-portada.html",

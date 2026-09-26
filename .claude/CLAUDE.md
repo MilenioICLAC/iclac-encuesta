@@ -34,6 +34,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/historias/` | `indice.tsx` (registro: id, bloque, pregunta, hallazgo, contrastes que la sostienen), `MenuHistorias.tsx` (la raíz), `TarjetaHistoria.tsx` (la tarjeta, que dibujan el menú, el cierre en miniatura y la transición), `Transicion.tsx` (del menú o de un cierre a la portada, con la cuchara que viaja y se divide; un registro de decisiones interno), una historia por archivo (`recorrido.tsx` tiene `La mirada` y `Entre dos potencias`, partidas del recorrido viejo; `territorio`, `inversion`, `cotidiana`, `vacuna`), `comun.tsx` (`AnioDelPaso`, `LeyendaDeOleadas`) y `lectura.ts` (`lector`, `serieDeMedida`, `casosDe`) |
 | `src/componentes/CapaRecorrido.tsx` | La capa: `paradasDeCambio` (94, adónde llevan teclado y flechas), `CapaRecorrido` (189, props `metodo` y `salida`; `irA` y las flechas «Anterior»/«Siguiente»), `Portada` (492), `Respiro` (565), `Escena` (679; en escritorio el texto corre, un registro de decisiones interno), `Pista` (922, con las tarjetas de frase), `TarjetaSiguiente` (1019, la historia siguiente en el cierre), `Cierre` (1075) |
 | `src/componentes/Sinan.tsx` | Los íconos de dirección, la cuchara del sinan (un registro de decisiones interno): `CucharaPortada` (portada, tarjetas y la que viaja), `CucharaBoton` («Anterior»/«Siguiente»), `MangoTendido` (flechas de texto del cierre) |
+| `src/componentes/junco.ts` | El dibujo del junco, única copia: lo dibuja `BarraDeAvance` y de él sale el ícono de la app |
 | `src/nucleo/pasos.ts` | `usePasoActivo`, `pasoActivo`, `useMovimientoReducido` |
 | `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
 | `src/nucleo/paleta.ts` | `IDENTIDAD`, `ORDEN` y `pasosDeOrden` (rampa de oleadas), `GRUPOS`, `pasosDeGrupo`, `GENERO`, `IDEOLOGIA` y `MACROZONA` (grupos de un corte en el explorador, que no se pintan como oleadas; cada corte declara la suya en `CORTES` y `paletaDeCorte` la aplica por grupo), `SEMANTICOS` (color por etiqueta) |
@@ -50,6 +51,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
 | `scripts/etl.mjs` | ETL viejo por oleada sobre `data_csv.csv`; lo usan las pruebas de la microdata publicada |
 | `scripts/geometria_regiones.mjs` | SVG de simplemaps (`data/sources/geo/`) → `public/data/chile-regiones.json`; corre dentro de `npm run datos` |
+| `scripts/iconos.mjs` | `junco.ts` → ícono de la pestaña (`favicon.svg`, claro en tema oscuro), PNG de iOS y del manifiesto, y `manifest.webmanifest`, en `public/`; `npm run iconos` (Playwright) |
 | `scripts/mirar_recorrido.mjs` | Recorre cada historia (o la pedida) con Playwright y mide costo de paso, escenas y leyendas a la vista |
 | `scripts/mirar_explorador.mjs` | Recorre cada pregunta del explorador en sus tres estados y anchos; mide desbordes, títulos, valores cortados y consola |
 | `scripts/laboratorio.mjs`, `laboratorio/` | Laboratorios de composición (skill `laboratorio`) |
@@ -62,6 +64,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 npm run dev          # Vite en 5180; desde otra máquina: http://localhost:5180
 npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar algo
 npm run datos        # etl:combinada + descargas
+npm run iconos       # rehace el ícono de la app desde el junco
 npm run lab:<tema>   # copia un laboratorio a public/ (lab, lab:cierre, lab:portada, lab:cotidiana, lab:scroll, lab:barco, lab:pausa, lab:sinan, lab:viaje, lab:tarjeta; lab:decisiones es el dashboard de decisiones)
 npm run build
 ```
