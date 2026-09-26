@@ -199,6 +199,21 @@ function RutaExplorador ({ encuesta, recordada, onRecordar }: { encuesta: Encues
 }
 
 /**
+ * Las instituciones del pie: las del monitor anterior de Bastián Olea, con un cambio. El logo
+ * ANID + Milenio pasa a MinCiencia + ANID en su variante monocroma, como en el mapa de inversiones
+ * (30-07-2026): el ministerio que lo firmaba ya no corresponde, y la marca Milenio sale con él.
+ * Los de las universidades vienen del monitor en gris y con margen propio dentro de un lienzo de
+ * 380 × 160; por eso van más altos que el SVG, que llega recortado al borde.
+ */
+const INSTITUCIONES = [
+  { src: 'minciencia-anid.svg', alt: 'Ministerio de Ciencia, Tecnología, Conocimiento e Innovación · ANID', href: 'https://anid.cl/', alto: 'h-12 sm:h-14' },
+  { src: 'uc.png', alt: 'Pontificia Universidad Católica de Chile', href: 'https://www.uc.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'uchile.png', alt: 'Universidad de Chile', href: 'https://uchile.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'ucn.png', alt: 'Universidad Católica del Norte', href: 'https://www.ucn.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'uta.png', alt: 'Universidad de Tarapacá', href: 'https://www.uta.cl/', alto: 'h-14 sm:h-16' }
+]
+
+/**
  * El marco de todas las vistas: encabezado pegado arriba, la vista, y el pie de crédito.
  *
  * **Cada destino del nav es una vista con su URL.** Antes era una sola página con anclas, y una
@@ -230,6 +245,15 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
         <Outlet />
       </main>
       <footer className="border-t border-gray-200 bg-white">
+        <ul className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 pt-5 sm:gap-x-6">
+          {INSTITUCIONES.map(l => (
+            <li key={l.src}>
+              <a href={l.href} target="_blank" rel="noopener noreferrer" className="block">
+                <img src={`${import.meta.env.BASE_URL}icons/${l.src}`} alt={l.alt} className={`w-auto object-contain ${l.alto}`} />
+              </a>
+            </li>
+          ))}
+        </ul>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
           <span>
             Núcleo Milenio Impactos de China en América Latina y el Caribe ·{' '}
