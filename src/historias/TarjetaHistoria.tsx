@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import { CucharaPortada } from '../componentes/Sinan'
 import type { Historia } from './indice'
+import { traducido } from '../locale'
 
 /**
  * La tarjeta de una historia. Vive aparte porque la dibujan tres: el menú, la salida del cierre de
@@ -21,18 +23,19 @@ export const TARJETA_MINI = caja(RELLENO_MINI)
 type DeTarjeta = Pick<Historia, 'nombre' | 'pregunta'> & Partial<Pick<Historia, 'hallazgo'>>
 
 export function ContenidoTarjeta ({ h, i, mini = false }: { h: DeTarjeta, i: number, mini?: boolean }) {
+  const { t } = useTranslation('capa')
   return (
     <>
       <span className="flex items-center justify-between gap-4 text-sm font-semibold text-brand-dark">
-        <span data-desvanece data-parte="nombre"><span className="sr-only">Historia {i + 1}: </span>{h.nombre}</span>
+        <span data-desvanece data-parte="nombre"><span className="sr-only">{t('historiaDeTarjeta', { numero: i + 1 })}</span>{traducido(h.nombre)}</span>
         {/* La cuchara de la portada, que flota: no se corre al pasar el cursor como la flecha. */}
         <span data-cuchara className="shrink-0"><CucharaPortada tamano={28} clase="cuchara-tarjeta" /></span>
       </span>
       <span data-pregunta className={`font-display font-semibold leading-snug text-gray-900 ${mini ? 'mt-1 text-lg sm:text-xl' : 'mt-2 text-xl sm:text-2xl'}`}>
-        {h.pregunta}
+        {traducido(h.pregunta)}
       </span>
       {!mini && h.hallazgo && (
-        <span data-desvanece className="mt-3 max-w-[52ch] text-sm leading-relaxed text-gray-600 sm:text-base">{h.hallazgo}</span>
+        <span data-desvanece className="mt-3 max-w-[52ch] text-sm leading-relaxed text-gray-600 sm:text-base">{traducido(h.hallazgo)}</span>
       )}
     </>
   )

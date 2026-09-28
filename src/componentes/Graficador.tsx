@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import type { Encuesta, Pregunta } from '../nucleo/tipos'
-import { CORTES } from '../nucleo/modulos'
-import { enunciadoEn, formaDeFigura, modelo, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
+import { corteDe } from '../nucleo/modulos'
+import { corteEnFrase, enunciadoEn, formaDeFigura, modelo, textoExplorador as t, tituloEn, vistaPosible, type Modelo, type Vista } from '../nucleo/explorador'
 import FiguraExplorador from './FiguraExplorador'
-import { numero } from '../locale'
+import { lista, numero, plural, traducido, useIdioma } from '../locale'
 
 /**
  * El explorador: cualquier pregunta del instrumento, para consultar. Las historias afirman; esto no.
@@ -39,40 +39,43 @@ export default function Graficador ({
   const p = encuesta.preguntas.find((x) => x.id === id) ?? encuesta.preguntas[0]
   const vista = vistaPosible(p, pedida)
   const estado = { vista, ola, corte, soloIndependientes }
-  const m: Modelo = useMemo(() => modelo(encuesta, p, estado), [encuesta, p, vista, ola, corte, soloIndependientes]) // eslint-disable-line react-hooks/exhaustive-deps
+  // El modelo trae los rótulos ya traducidos: el idioma va en las dependencias.
+  const idioma = useIdioma()
+  const m: Modelo = useMemo(() => modelo(encuesta, p, estado), [encuesta, p, vista, ola, corte, soloIndependientes, idioma]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const noEnOla = vista === 'ola' && !p.olas.includes(ola)
   const corteFuera = vista === 'ola' && corte !== null && (p.sinCortes ?? []).includes(corte)
-  const etiquetaCorte = CORTES.find((c) => c.nombre === corte)?.etiqueta.toLowerCase()
+  const etiquetaCorte = corteDe(corte) ? corteEnFrase(traducido(corteDe(corte)!.etiqueta)) : ''
+  const olasSerie = p.serie ? lista(p.serie.olas.map(String)) : ''
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-6">
       <article className="rounded-lg border border-gray-200 bg-white p-4">
         <h3 className="font-display text-base font-semibold text-balance">{tituloEn(p, estado)}</h3>
-        <p className="mt-1 max-w-3xl text-xs leading-snug text-gray-500">«{enunciadoEn(p, estado)}»</p>
+        <p className="mt-1 max-w-3xl text-xs leading-snug text-gray-500">{t('nota.comillas', { texto: enunciadoEn(p, estado) })}</p>
 
         {vista === 'serie' && p.serie && (
           <p className="mt-2 text-xs text-gray-600">
-            {formaDeFigura(m) === 'mancuerna' ? 'Un punto por oleada' : 'Una barra por oleada'}: {p.serie.olas.join(', ').replace(/, (\d+)$/, ' y $1')}.
+            {t(formaDeFigura(m) === 'mancuerna' ? 'nota.unPunto' : 'nota.unaBarra', { olas: olasSerie })}
             {/* `p4`: Boric no existe en 2025 ni Jara antes. */}
-            {m.forma === 'porcentajes' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && ' Una categoría que no existía en una oleada no lleva punto ahí.'}
-            {p.abierta && ` Las ${p.abierta.palabras === 10 ? 'diez' : p.abierta.palabras} palabras más dichas en promedio entre oleadas.`}
-            {corte && ' El corte no se aplica entre oleadas.'}
+            {m.forma === 'porcentajes' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && t('nota.categoriaNueva')}
+            {p.abierta && t('nota.palabras', { n: p.abierta.palabras === 10 ? t('nota.diez') : numero(p.abierta.palabras) })}
+            {corte && t('nota.corteSerie')}
           </p>
         )}
         {p.abierta && m.forma === 'porcentajes' && m.compara === 'grupos' && m.bloques.some((b) => b.filas.some((f) => f.valor === null && f.base > 0)) && (
-          <p className="mt-2 text-xs text-gray-600">Sin punto: menos de {p.abierta.minimo} personas la mencionaron en ese grupo.</p>
+          <p className="mt-2 text-xs text-gray-600">{t('nota.sinPunto', { minimo: numero(p.abierta.minimo) })}</p>
         )}
         {corteFuera && (
-          <p className="mt-2 text-xs text-gray-600">El corte por {etiquetaCorte} no se aplica: es esta misma pregunta en tres tramos.</p>
+          <p className="mt-2 text-xs text-gray-600">{t('nota.corteFuera', { corte: etiquetaCorte })}</p>
         )}
 
         {noEnOla
           ? (
             <div className="mt-3 text-sm text-gray-600">
-              <p>Esta pregunta no se hizo en {ola}.</p>
+              <p>{t('vacia.noSeHizo', { ola })}</p>
               <p className="mt-2 flex flex-wrap items-center gap-2">
-                Se hizo en
+                {t('vacia.seHizoEn')}
                 {p.olas.map((o) => (
                   <button
                     key={o}
@@ -95,30 +98,32 @@ export default function Graficador ({
 }
 
 function Pie ({ p, vista, ola, modelo: m, encuesta, noEnOla }: { p: Pregunta, vista: Vista, ola: number, modelo: Modelo, encuesta: Encuesta, noEnOla: boolean }) {
-  const advertencia = p.advertencia ? encuesta.contrastes?.medidas.find((x) => x.id === p.advertencia)?.advertencia : undefined
-  const poblacion = (vista === 'ola' ? p.poblacionPorOla?.[ola] : undefined) ?? p.poblacion
+  const aviso = p.advertencia ? encuesta.contrastes?.medidas.find((x) => x.id === p.advertencia)?.advertencia : undefined
+  const advertencia = aviso ? traducido(aviso) : undefined
+  const deLaPoblacion = (vista === 'ola' ? p.poblacionPorOla?.[ola] : undefined) ?? p.poblacion
+  const poblacion = deLaPoblacion ? traducido(deLaPoblacion) : undefined
   const base = !noEnOla && vista === 'ola' ? baseDe(m) : null
 
-  const olasSerie = p.serie?.olas.join(', ').replace(/, (\d+)$/, ' y $1')
+  const olasSerie = p.serie ? lista(p.serie.olas.map(String)) : ''
   // Si la oleada que se mira no entra en la comparación (`p4` en 2025), se dice, con la razón.
   const fueraDeLaSerie = Boolean(p.serie) && vista === 'ola' && !p.serie!.olas.includes(ola)
   const comparacion = p.serie
-    ? fueraDeLaSerie ? `Entre oleadas se compara ${olasSerie}; ${ola} no entra.` : `Se compara entre ${olasSerie}.`
+    ? fueraDeLaSerie ? t('pie.fueraDeSerie', { olas: olasSerie, ola }) : t('pie.seCompara', { olas: olasSerie })
     : p.olas.length === 1
-      ? `Solo se preguntó en ${p.olas[0]}.`
-      : p.sinSerie ?? 'No se compara entre oleadas.'
+      ? t('pie.soloEn', { ola: p.olas[0] })
+      : p.sinSerie ? traducido(p.sinSerie) : t('pie.noSeCompara')
 
   const notas = [
     poblacion,
-    vista === 'serie' || fueraDeLaSerie ? p.serie?.nota : undefined,
-    p.nota,
+    (vista === 'serie' || fueraDeLaSerie) && p.serie?.nota ? traducido(p.serie.nota) : undefined,
+    p.nota ? traducido(p.nota) : undefined,
     advertencia,
   ].filter((x): x is string => Boolean(x))
 
   return (
     <footer className="mt-3 border-t border-gray-100 pt-2 text-xs text-gray-500">
       <p className="flex flex-wrap gap-x-2 gap-y-1">
-        {base !== null && <span className="tabular-nums">{numero(base)} respuestas en {ola}.</span>}
+        {base !== null && <span className="tabular-nums">{t(plural(base, { one: 'pie.respuestasEnUno', other: 'pie.respuestasEn' }), { n: numero(base), ola })}</span>}
         <span className={p.serie ? undefined : 'text-amber-700'}>{comparacion}</span>
       </p>
       {notas.map((n) => <p key={n} className="mt-1 max-w-3xl leading-snug">{n}</p>)}

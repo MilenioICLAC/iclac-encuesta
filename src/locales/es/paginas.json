@@ -1,0 +1,124 @@
+{
+  "app": {
+    "errorTitulo": "No se pudieron cargar los datos",
+    "errorAntes": "Recarga la página. Si el problema sigue, escríbenos a través de",
+    "errorDespues": ".",
+    "cargando": "Cargando…",
+    "nucleo": "Núcleo Milenio Impactos de China en América Latina y el Caribe",
+    "instituciones": {
+      "minciencia": "Ministerio de Ciencia, Tecnología, Conocimiento e Innovación · ANID",
+      "uc": "Pontificia Universidad Católica de Chile",
+      "uchile": "Universidad de Chile",
+      "ucn": "Universidad Católica del Norte",
+      "uta": "Universidad de Tarapacá"
+    }
+  },
+  "datos": {
+    "titulo": "Sobre los datos",
+    "bajada": "Lo que hay que saber antes de citar una cifra, y cómo se sostiene cada frase de las historias.",
+    "enEstaPagina": "En esta página",
+    "indice": {
+      "citar": "Antes de citar",
+      "historias": "Qué sostiene cada historia",
+      "comoSeLee": "Cómo se prueba una diferencia",
+      "todas": "Todas las comparaciones"
+    },
+    "citarTitulo": "Antes de citar una cifra",
+    "masSobre": "Más sobre la encuesta →",
+    "historiasBajada": "Cada frase que afirma un cambio o una diferencia depende de una de estas pruebas. En cada fila, la raya vertical es el cero, el punto es la diferencia y la línea, su intervalo del {{p95}}. Si la línea cruza el cero, la fila dice «parejo» y la historia no elige ganador.",
+    "metodo": "Método",
+    "comoSeLeeBajada": "El p, el intervalo, la composición fija y por qué no es margen de error",
+    "todasTitulo": "Todas las comparaciones entre oleadas",
+    "todasBajadaUna": "{{n}} medida en una tabla, incluidas las que ninguna historia usa",
+    "todasBajada": "{{n}} medidas en una tabla, incluidas las que ninguna historia usa"
+  },
+  "metodo": {
+    "historia": "Historia {{n}} · {{nombre}}",
+    "prueba": "{{n}} prueba",
+    "pruebas": "{{n}} pruebas",
+    "afirma": "Lo que afirma: ",
+    "recta": "Por qué un puñado de respuestas puede inclinar una recta"
+  },
+  "contrastes": {
+    "medida": "Medida",
+    "sinDato": "sin dato",
+    "noPasa": "no pasa la corrección",
+    "parejo": "parejo"
+  },
+  "descargas": {
+    "titulo": "Descargar los datos",
+    "bajada": "Las respuestas completas de las tres oleadas, para reanalizarlas. Van en CSV con codificación UTF-8 y separador de coma.",
+    "idioma": "",
+    "respuestas": "Respuestas",
+    "documentacion": "Documentación",
+    "fila": "{{n}} fila",
+    "filas": "{{n}} filas",
+    "antes": "Antes de usarlos",
+    "archivos": {
+      "combinada": "Las tres oleadas juntas",
+      "oleada": "Oleada {{anio}}",
+      "diccionario": "Diccionario de variables",
+      "valores": "Etiquetas de respuesta",
+      "notas": "Notas de la base",
+      "libro": "Libro de códigos {{anio}}",
+      "nota": "Nota metodológica del muestreo",
+      "indice": "Diseño del índice de impacto de China por región",
+      "cuestionario": "Cuestionario {{anio}}"
+    }
+  },
+  "ficha": {
+    "titulo": "Ficha técnica",
+    "institucion": "Institución y objetivo",
+    "aplicacion": "Aplicación y cuestionario",
+    "oleada": "Oleada",
+    "fechas": "Fechas de aplicación",
+    "duracion": "Duración mediana",
+    "minutos": "{{n}} minutos",
+    "fuenteCampo": "Fuente: registro de las respuestas de cada oleada.",
+    "diseno": "Diseño muestral",
+    "estrato": "Estrato",
+    "region": "Región",
+    "indice": "Índice",
+    "total": "Total",
+    "fuentesEstratosA": "Fuentes: estratos e índice, nota metodológica",
+    "fuentesEstratosB": "; casos por región, base combinada",
+    "fin": ".",
+    "mapa": "Mapa de Chile por estrato de exposición económica a China.",
+    "casos": "Casos por oleada",
+    "composicion": "Composición de las muestras",
+    "categoria": "Categoría",
+    "fuenteComposicionA": "Fuente: base combinada",
+    "fuenteComposicionB": ". Por redondeo, los porcentajes pueden no sumar 100.",
+    "alcance": "Alcance de las cifras",
+    "fuentes": "Fuentes",
+    "composicionRotulos": {
+      "grupos": {
+        "sexo": "Sexo",
+        "edadr": "Edad",
+        "nse": "Nivel socioeconómico",
+        "educacion": "Nivel educativo"
+      },
+      "sexo": {
+        "1": "Masculino",
+        "2": "Femenino"
+      },
+      "nse": {
+        "999": "No informada"
+      },
+      "educacion": {
+        "1": "Sin estudios",
+        "2": "Básica incompleta",
+        "3": "Básica completa",
+        "4": "Media incompleta",
+        "5": "Media completa",
+        "6": "Técnica incompleta",
+        "7": "Técnica completa - Universitaria incompleta",
+        "8": "Universitaria completa",
+        "9": "Postgrado",
+        "999": "No informada"
+      },
+      "tramo": "{{desde}} a {{hasta}} años",
+      "tramoAbierto": "{{desde}} años o más"
+    }
+  }
+}

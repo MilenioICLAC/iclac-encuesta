@@ -1,5 +1,6 @@
 import { escalaRedonda } from './escala'
 import { numero } from '../locale'
+import i18n from '../i18n'
 
 /**
  * El trato de la figura del termómetro, en un solo lugar.
@@ -36,9 +37,10 @@ export const MARCAS = 5
  */
 export function unidadEje (escala: { min: number, max: number }): string {
   const recortado = escala.min > 0 || escala.max < 100
+  // En el idioma activo (`explorador.json`); quien lo llama lo hace al dibujar, así que sigue al idioma.
   return recortado
-    ? `Evaluación de 0 a 100 · eje recortado a ${numero(escala.min)}-${numero(escala.max)}`
-    : 'Evaluación de 0 a 100'
+    ? i18n.t('termometro.ejeRecortado', { ns: 'explorador', min: numero(escala.min), max: numero(escala.max) })
+    : i18n.t('termometro.eje', { ns: 'explorador' })
 }
 
 /**

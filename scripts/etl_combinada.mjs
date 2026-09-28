@@ -1,6 +1,7 @@
 // ETL de la base combinada: las tres oleadas en un solo artefacto para el navegador.
 //
 //   node scripts/etl_combinada.mjs [--out public/data/encuesta.json]
+//   node scripts/etl_combinada.mjs --esqueleto   (escribe los archivos de traducción que falten)
 //
 // Lee `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx`, que es la base canónica que
 // ICLAC rehízo el 01-09-2026 sobre los 1.228 casos completos de 2025. Emite los microdatos
@@ -24,6 +25,7 @@ import { contrastes } from './lib/contrastes.mjs'
 import { PREGUNTAS, validarPreguntas } from './lib/preguntas_explorador.mjs'
 import { conAbiertas, marcarAbiertas } from './lib/abiertas.mjs'
 import { campo, indiceRegional, FUENTE_INDICE } from './lib/ficha.mjs'
+import { cargarTraducciones, escribirEsqueletos, traducirDatos } from './lib/traducciones/publicar.mjs'
 
 const FUENTE = 'data/sources/combinada/ICLAC_2023_2025_combinada.xlsx'
 
@@ -84,6 +86,10 @@ const TEXTOS = [
   { id: 'p6a', titulo: 'Marcas chinas mencionadas', columnas: ['p6a_2_txt', 'p6a_3_txt', 'p6a_4_txt'] },
 ]
 
+/**
+ * El artefacto en español. Los textos visibles pasan a tres idiomas después, en `traducirDatos`
+ * (`lib/traducciones/`), que falla si una traducción falta o sobra.
+ */
 export function procesar () {
   const { datos: filas } = registros(FUENTE, 'datos')
   const { datos: dicc } = registros(FUENTE, 'diccionario')
@@ -280,9 +286,14 @@ export function procesar () {
 
 const esEjecutable = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())
 if (esEjecutable) {
-  const { values } = parseArgs({ options: { out: { type: 'string' } } })
+  const { values } = parseArgs({ options: { out: { type: 'string' }, esqueleto: { type: 'boolean' } } })
+  if (values.esqueleto) {
+    const escritos = escribirEsqueletos(procesar())
+    console.log(escritos.length ? `Escritos:\n  ${escritos.join('\n  ')}` : 'Los archivos de traducción ya existen: no se pisa ninguno.')
+    process.exit(0)
+  }
   const salida = resolve(values.out ?? 'public/data/encuesta.json')
-  const datos = procesar()
+  const datos = traducirDatos(procesar(), await cargarTraducciones())
   mkdirSync(dirname(salida), { recursive: true })
   writeFileSync(salida, JSON.stringify(datos), 'utf8')
 

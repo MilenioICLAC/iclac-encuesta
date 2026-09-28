@@ -1,7 +1,23 @@
 import type { Caso, CategoriaPregunta, Encuesta, Pregunta, Variable } from './tipos'
 import { distribucion, filtrar, media, multirespuesta, porGrupo, type Multirespuesta } from './agregar'
-import { CORTES } from './modulos'
-import { GENERO, IDENTIDAD, IDEOLOGIA, MACROZONA, NEUTRO, pasosDeGrupo, pasosDeOrden } from './paleta'
+import { corteDe } from './modulos'
+import { GENERO, IDENTIDAD, IDEOLOGIA, MACROZONA, NEUTRO, pasosDeGrupo, pasosDeOrden, semantico } from './paleta'
+import { compararEnEspanol, idioma, locale, palabraVisible, traducido, type Traducible } from '../locale'
+import i18n from '../i18n'
+
+/** Un texto del explorador (`src/locales/<idioma>/explorador.json`) en el idioma activo. */
+export const textoExplorador = (clave: string, valores?: Record<string, string | number>): string =>
+  i18n.t(clave, { ns: 'explorador', ...valores })
+
+/**
+ * El rótulo de un corte dentro de una frase («1.228 casos · sin corte»): con minúscula inicial en
+ * español y en inglés, y **solo la inicial**, que «China» no pase a «china». El chino no tiene
+ * mayúsculas y queda igual.
+ */
+export function corteEnFrase (etiqueta: string): string {
+  if (idioma() === 'cn') return etiqueta
+  return etiqueta.charAt(0).toLocaleLowerCase(locale()) + etiqueta.slice(1)
+}
 
 /**
  * Qué dibuja el explorador para una pregunta, en cada uno de sus tres estados: una oleada, una
@@ -15,6 +31,10 @@ import { GENERO, IDENTIDAD, IDEOLOGIA, MACROZONA, NEUTRO, pasosDeGrupo, pasosDeO
  *
  * Todo lo que decide qué se compara viene del catálogo (`Pregunta`), que el ETL valida contra los
  * datos. Acá no se infiere comparabilidad de nada.
+ *
+ * **Los rótulos salen en el idioma activo** (`traducido`), así que un `useMemo` sobre `modelo` lleva
+ * el idioma en sus dependencias. Las claves (`clave` de bloques, filas y series) no se traducen: con
+ * ellas se ordena y se elige el color.
  */
 
 export type Vista = 'ola' | 'serie'
@@ -32,6 +52,8 @@ export interface Fila {
 export interface Bloque {
   clave: string
   etiqueta: string
+  /** El color propio de la categoría (`SEMANTICOS`), si lo tiene. */
+  color?: string
   filas: Fila[]
 }
 
@@ -102,12 +124,13 @@ export function paletaDeCorte (m: Exclude<Modelo, { forma: 'vacia' }>): { colore
   const escalon = (k: number) => 8 + 2 * k
   if (m.compara === 'olas') return { colores: pasosDeOrden(n), tamanos: m.series.map((_, i) => escalon(i)) }
   if (m.compara === 'nada') return { colores: [IDENTIDAD[0]], tamanos: null }
-  const corte = CORTES.find((c) => c.nombre === m.corte)
-  // **El color y el tamaño siguen al grupo, no a su posición:** se buscan en el `orden` del corte.
-  // Si un recorte dejara fuera a «Centro», «Derecha» no hereda su gris, y AB · C1 no se achica.
-  const orden = corte?.orden ?? m.series.map((s) => s.etiqueta)
+  const corte = corteDe(m.corte)
+  // **El color y el tamaño siguen al grupo, no a su posición:** se buscan por su clave en los
+  // `grupos` del corte. Si un recorte dejara fuera a «Centro», «Derecha» no hereda su gris, y
+  // AB · C1 no se achica. Por la clave y no por el rótulo, que cambia con el idioma.
+  const orden = corte?.grupos?.map(([clave]) => clave) ?? m.series.map((s) => s.clave)
   const lugar = m.series.map((s, i) => {
-    const k = orden.indexOf(s.etiqueta)
+    const k = orden.indexOf(s.clave)
     return k >= 0 ? k : i
   })
   const porGrupo = (paleta: readonly string[]) => lugar.map((k) => paleta[k] ?? NEUTRO)
@@ -122,21 +145,22 @@ export function paletaDeCorte (m: Exclude<Modelo, { forma: 'vacia' }>): { colore
 // --- Textos de la pregunta -------------------------------------------------------------------
 
 export function tituloEn (p: Pregunta, estado: Pick<Estado, 'vista' | 'ola'>): string {
-  if (estado.vista === 'serie') return p.titulo
-  return p.tituloPorOla?.[estado.ola] ?? p.titulo
+  if (estado.vista === 'serie') return traducido(p.titulo)
+  return traducido(p.tituloPorOla?.[estado.ola] ?? p.titulo)
 }
 
 export function enunciadoEn (p: Pregunta, estado: Pick<Estado, 'vista' | 'ola'>): string {
   if (estado.vista === 'serie' && p.serie) {
     // Entre oleadas el enunciado es el de la oleada más reciente de la serie.
     const ultima = p.serie.olas[p.serie.olas.length - 1]
-    return p.enunciadoPorOla?.[ultima] ?? p.enunciado
+    return traducido(p.enunciadoPorOla?.[ultima] ?? p.enunciado)
   }
-  return p.enunciadoPorOla?.[estado.ola] ?? p.enunciado
+  return traducido(p.enunciadoPorOla?.[estado.ola] ?? p.enunciado)
 }
 
+/** La etiqueta de la categoría en esa oleada, en el idioma activo. */
 export function etiquetaEn (c: CategoriaPregunta, ola: number): string {
-  return c.porOla?.[ola] ?? c.etiqueta
+  return traducido(c.porOla?.[ola] ?? c.etiqueta)
 }
 
 /** Si el corte elegido se aplica a esta pregunta en este estado. */
@@ -156,7 +180,7 @@ export function vistaPosible (p: Pregunta, vista: Vista): Vista {
 export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo {
   const vista = vistaPosible(p, estado.vista)
   if (vista === 'ola' && !p.olas.includes(estado.ola)) {
-    return { forma: 'vacia', motivo: `Esta pregunta no se hizo en ${estado.ola}.` }
+    return { forma: 'vacia', motivo: textoExplorador('vacia.noSeHizo', { ola: estado.ola }) }
   }
 
   // Las series de la figura: las oleadas de la comparación, los grupos del corte, o una sola.
@@ -165,7 +189,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
     ? 'uno'
     : vista === 'serie'
       ? 'orden'
-      : CORTES.find((c) => c.nombre === estado.corte)?.nominal ? 'identidad' : 'orden'
+      : corteDe(estado.corte)?.nominal ? 'identidad' : 'orden'
 
   const compara: Compara = series.length === 0 ? 'nada' : vista === 'serie' ? 'olas' : 'grupos'
   const unaSola = series.length === 0
@@ -182,13 +206,13 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
           return { clave: g.clave, n: conMarca.filter((c) => Number(c[p.noResponde!.variable]) === p.noResponde!.codigo).length, total: conMarca.length }
         })
       : undefined
-    if (filas.every((f) => f.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
+    if (filas.every((f) => f.base === 0)) return { forma: 'vacia', motivo: textoExplorador('vacia.sinRespuestas') }
     return { forma: 'medias', filas, series: series.map(({ clave, etiqueta }) => ({ clave, etiqueta })), color, compara, corte: compara === 'grupos' ? estado.corte : null, noResponde }
   }
 
   if (p.tipo === 'multiple') {
     const grupo = encuesta.multiples.find((m) => m.id === p.variable)
-    if (!grupo) return { forma: 'vacia', motivo: 'No hay datos para esta pregunta.' }
+    if (!grupo) return { forma: 'vacia', motivo: textoExplorador('vacia.sinDatos') }
     // Entre oleadas, solo las opciones que se ofrecieron en todas: una opción nueva no es un alza.
     const olasFigura = [...new Set(grupos.map((g) => g.ola))]
     const opciones = (p.categorias ?? []).filter((c) => {
@@ -200,7 +224,8 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
     const elegidas = abierta ? palabrasDe(abierta.palabras, opciones, porGrupo.map(({ r }) => r), vista === 'serie' ? null : multirespuesta(casosDeLaOla(encuesta, estado), grupo, estado.ola)) : opciones
     const bloques = elegidas.map((c) => ({
       clave: String(c.codigo),
-      etiqueta: c.etiqueta,
+      // Las palabras de una abierta llevan la original al lado: «trade (comercio)».
+      etiqueta: abierta ? palabraVisible(c.etiqueta) : traducido(c.etiqueta),
       filas: porGrupo.map(({ g, r }) => {
         const m = r.menciones.find((x) => x.columna === c.codigo)
         const n = m?.n ?? 0
@@ -209,7 +234,7 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
         return { clave: g.clave, etiqueta: g.etiqueta, valor: r.base > 0 && !bajoMinimo ? m?.porcentaje ?? 0 : null, n, base: r.base }
       }),
     }))
-    if (porGrupo.every(({ r }) => r.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
+    if (porGrupo.every(({ r }) => r.base === 0)) return { forma: 'vacia', motivo: textoExplorador('vacia.sinRespuestas') }
     return {
       forma: 'porcentajes',
       escala: abierta ? 'palabras' : 'menciones',
@@ -237,11 +262,14 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
     categorias: categorias.map((c) => ({ codigo: Number(c.codigo), etiqueta: etiquetaEn(c, olaDeEtiquetas), difiereEntreOlas: false })),
   }
   const agregados = grupos.map((g) => ({ g, d: distribucion(g.casos, variable) }))
-  if (agregados.every(({ d }) => d.base === 0)) return { forma: 'vacia', motivo: 'No hay respuestas en este recorte.' }
+  if (agregados.every(({ d }) => d.base === 0)) return { forma: 'vacia', motivo: textoExplorador('vacia.sinRespuestas') }
 
   const bloques = categorias.map((c) => ({
     clave: String(c.codigo),
     etiqueta: etiquetaEn(c, olaDeEtiquetas),
+    // La polaridad de la categoría (`p26`, `p24`): solo en la vista de una oleada, donde el código
+    // es el de la pregunta y no el de una derivada.
+    ...(vista === 'ola' ? { color: semantico(p.id, c.codigo) } : {}),
     filas: agregados.map(({ g, d }) => {
       const s = d.segmentos.find((x) => x.codigo === Number(c.codigo))
       // Una categoría de la serie que no existe en esta oleada no es 0 %: no se preguntó (`p4`).
@@ -256,13 +284,15 @@ export function modelo (encuesta: Encuesta, p: Pregunta, estado: Estado): Modelo
  * Las palabras de una abierta que entran en la figura. En una oleada, con o sin corte, las más
  * nombradas en esa oleada entera (`unaOla`), así el corte muestra las mismas palabras que sin él;
  * entre oleadas, las de mayor porcentaje promedio, para que 2025 no pese el doble. A igualdad,
- * alfabético. El ETL marca a cada persona justo para estos órdenes (`scripts/lib/abiertas.mjs`).
+ * alfabético. El ETL marca a cada persona justo para estos órdenes (`scripts/lib/abiertas.mjs`), así
+ * que el desempate es **por la palabra en español, en cualquier idioma**: ordenado por la traducción,
+ * en inglés podía entrar una palabra sin marca y salir en cero.
  */
-function palabrasDe <T extends { codigo: number | string, etiqueta: string }> (cuantas: number, opciones: T[], porOla: Multirespuesta[], unaOla: Multirespuesta | null): T[] {
+function palabrasDe <T extends { codigo: number | string, etiqueta: Traducible }> (cuantas: number, opciones: T[], porOla: Multirespuesta[], unaOla: Multirespuesta | null): T[] {
   const puntaje = (c: T) => unaOla
     ? unaOla.menciones.find((m) => m.columna === c.codigo)?.n ?? 0
     : porOla.reduce((s, r) => s + (r.menciones.find((m) => m.columna === c.codigo)?.porcentaje ?? 0), 0) / porOla.length
-  return [...opciones].sort((a, b) => puntaje(b) - puntaje(a) || a.etiqueta.localeCompare(b.etiqueta, 'es')).slice(0, cuantas)
+  return [...opciones].sort((a, b) => puntaje(b) - puntaje(a) || compararEnEspanol(a.etiqueta.es, b.etiqueta.es)).slice(0, cuantas)
 }
 
 interface Serie { clave: string, etiqueta: string, casos: Caso[], ola: number }
@@ -294,8 +324,7 @@ function seriesDe (encuesta: Encuesta, p: Pregunta, estado: Estado): Serie[] {
     })
   }
   if (!corteAplicable(p, estado)) return []
-  const orden = CORTES.find((c) => c.nombre === estado.corte)?.orden
-  return porGrupo(casosDeLaOla(encuesta, estado), estado.corte!, encuesta.variables, orden)
+  return porGrupo(casosDeLaOla(encuesta, estado), estado.corte!, encuesta.variables, corteDe(estado.corte)?.grupos)
     .map((g) => ({ clave: g.clave, etiqueta: g.etiqueta, casos: g.casos, ola: estado.ola }))
 }
 

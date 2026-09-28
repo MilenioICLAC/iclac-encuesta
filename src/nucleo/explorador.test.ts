@@ -34,7 +34,7 @@ describe('el explorador, pregunta por pregunta', () => {
   })
 
   for (const p of encuesta.preguntas) {
-    describe(`${p.id} · ${p.titulo}`, () => {
+    describe(`${p.id} · ${p.titulo.es}`, () => {
       it('tiene un título legible', () => {
         for (const ola of p.olas) {
           const t = tituloEn(p, { vista: 'ola', ola })
@@ -250,7 +250,7 @@ describe('las preguntas abiertas (laboratorio abiertas, 24-09-2026)', () => {
         expect(m.escala).toBe('palabras')
         expect(m.bloques[0].filas[0].base, `${ola}: base`).toBe(nube.baseOla?.[ola])
         for (const b of m.bloques) {
-          expect(b.filas[0].n, `${ola} · ${b.etiqueta}`).toBe(nube.porOla[ola].find((x) => x.palabra === b.etiqueta)?.n)
+          expect(b.filas[0].n, `${ola} · ${b.etiqueta}`).toBe(nube.porOla[ola].find((x) => x.palabra.es === b.etiqueta)?.n)
         }
       }
     })
@@ -279,7 +279,7 @@ describe('las preguntas abiertas (laboratorio abiertas, 24-09-2026)', () => {
   })
 
   it('el nombre del propio país no cuenta', () => {
-    const etiquetas = (id: string) => encuesta.preguntas.find((x) => x.id === id)!.categorias!.map((c) => c.etiqueta)
+    const etiquetas = (id: string) => encuesta.preguntas.find((x) => x.id === id)!.categorias!.map((c) => c.etiqueta.es)
     expect(etiquetas('p4_1')).not.toContain('china')
     expect(etiquetas('p4_4')).not.toContain('francia')
   })

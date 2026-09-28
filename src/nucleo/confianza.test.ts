@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { CATEGORIAS, extremoDe, figuraBalanza, figuraConfianza, brechaPersonal } from './confianza'
-import { SEMANTICOS } from './paleta'
+import { CONFIANZA } from './paleta'
 import type { Caso, Encuesta, Variable } from './tipos'
 
 /**
@@ -48,10 +48,10 @@ describe('las figuras de confianza', () => {
     expect(figura.extremo).toBe(extremoDe(figura.filas, CATEGORIAS))
   })
 
-  it('pinta la escala con los colores amarrados a la etiqueta, no con hexadecimales sueltos', () => {
+  it('pinta la escala con los colores de la paleta, no con hexadecimales sueltos', () => {
     // Así cualquier vista pinta la misma pregunta igual sin que nadie repita un color.
     expect(CATEGORIAS.map((c) => c.color)).toEqual([
-      SEMANTICOS.Ninguna, SEMANTICOS.Poca, SEMANTICOS.Algo, SEMANTICOS.Mucha,
+      CONFIANZA.ninguna, CONFIANZA.poca, CONFIANZA.algo, CONFIANZA.mucha,
     ])
     expect(CATEGORIAS.map((c) => c.lado)).toEqual([-1, -1, 1, 1])
   })

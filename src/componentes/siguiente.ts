@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import type { Traducible } from '../locale'
 
 /**
  * La historia que viene después de la que se está leyendo, para la salida del cierre.
@@ -10,8 +11,8 @@ import { createContext } from 'react'
  */
 export interface HistoriaSiguiente {
   numero: number
-  nombre: string
-  pregunta: string
+  nombre: Traducible
+  pregunta: Traducible
   ruta: string
 }
 

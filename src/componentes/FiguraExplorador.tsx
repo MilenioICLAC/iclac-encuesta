@@ -1,6 +1,5 @@
 import type { Bloque, Fila, Modelo } from '../nucleo/explorador'
-import { BASE_MINIMA, formaDeFigura, paletaDeCorte } from '../nucleo/explorador'
-import { SEMANTICOS } from '../nucleo/paleta'
+import { BASE_MINIMA, formaDeFigura, paletaDeCorte, textoExplorador as t } from '../nucleo/explorador'
 import { topePorcentaje } from '../nucleo/escala'
 import { decimal, numero, porcentaje } from '../locale'
 import Puntos from './Puntos'
@@ -45,23 +44,19 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
   const pie = (
     <>
       {escala === 'menciones' && (
-        <p className="mt-2 text-xs text-gray-500">
-          Se puede marcar más de una opción, así que los porcentajes suman más de 100.
-        </p>
+        <p className="mt-2 text-xs text-gray-500">{t('figura.menciones')}</p>
       )}
       {escala === 'palabras' && (
-        <p className="mt-2 text-xs text-gray-500">
-          Cada persona puede nombrar varias cosas, así que los porcentajes suman más de 100.
-        </p>
+        <p className="mt-2 text-xs text-gray-500">{t('figura.palabras')}</p>
       )}
-      {escasa && <NotaEscasa donde={compara === 'olas' ? 'en esa oleada' : compara === 'grupos' ? 'en ese grupo' : 'en esa fila'} />}
+      {escasa && <NotaEscasa compara={compara} />}
       <TablaAccesible
         cabeza={['', ...(compara === 'nada' ? ['%'] : series.map((s) => s.etiqueta))]}
         filas={[
           // Con respuestas en la oleada y sin valor, la categoría no existía ahí (`p4`): se dice.
           // En una abierta con corte, sin valor es que pocos la nombraron en ese grupo, no que no se preguntara.
-          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor !== null ? porcentaje(f.valor, 0) : f.base > 0 ? (escala === 'palabras' ? `Menos de ${modelo.minimo ?? 0} menciones` : 'No se preguntó') : '—'))]),
-          ['Respuestas', ...bases.map((x) => numero(x))],
+          ...bloques.map((b) => [b.etiqueta, ...b.filas.map((f) => (f.valor !== null ? porcentaje(f.valor, 0) : f.base > 0 ? (escala === 'palabras' ? t('figura.menosMenciones', { n: numero(modelo.minimo ?? 0) }) : t('figura.noSePregunto')) : '—'))]),
+          [t('figura.respuestas'), ...bases.map((x) => numero(x))],
         ]}
       />
     </>
@@ -77,7 +72,7 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
               fila={b.filas[0]}
               etiqueta={b.etiqueta}
               // Una serie: un color, salvo las categorías con polaridad propia.
-              color={SEMANTICOS[b.etiqueta] ?? colores[0]}
+              color={b.color ?? colores[0]}
               texto={(v) => porcentaje(v, 0)}
             />
           ))}
@@ -123,14 +118,15 @@ export default function FiguraExplorador ({ modelo }: { modelo: Modelo }) {
         formato={(v) => porcentaje(v, 0)}
         titulo={(fila, serie, v) => {
           const f = filaDe.get(fila.clave)?.filas.find((x) => x.clave === serie.clave)
-          return `${serie.etiqueta} · ${fila.etiqueta}: ${porcentaje(v, 1)}${f ? ` (${numero(f.n)} de ${numero(f.base)})` : ''}`
+          const cuantos = f ? t('figura.deCuantos', { n: numero(f.n), base: numero(f.base) }) : ''
+          return t('figura.conEtiqueta', { etiqueta: `${serie.etiqueta} · ${fila.etiqueta}`, resto: `${porcentaje(v, 1)}${cuantos}` })
         }}
         anchoEtiqueta="13rem"
         // Entre oleadas manda dónde está cada categoría hoy; entre grupos ninguno pesa más que otro.
         rotular={compara === 'olas' ? series.length - 1 : 'extremos'}
         esquivar
         entrada={false}
-        unidadEje={`${escala === 'menciones' ? 'Porcentaje que marcó cada opción' : escala === 'palabras' ? 'Porcentaje que la mencionó' : 'Porcentaje de respuestas'}${tope < 100 ? ` · eje de 0 a ${tope}` : ''}`}
+        unidadEje={`${t(escala === 'menciones' ? 'figura.ejeMenciones' : escala === 'palabras' ? 'figura.ejePalabras' : 'figura.ejeReparto')}${tope < 100 ? t('figura.ejeTope', { tope: numero(tope) }) : ''}`}
         leyenda={false}
         rotulosLargos
       />
@@ -149,7 +145,7 @@ function FiguraMedias ({ modelo, colorDe }: { modelo: Extract<Modelo, { forma: '
   return (
     <figure className="mt-2">
       {series.length > 1 && <Leyenda series={series} colorDe={colorDe} bases={filas.map((f) => f.base)} forma="barra" />}
-      <p className="mb-1 text-xs text-gray-500">Promedio de 0 a 100</p>
+      <p className="mb-1 text-xs text-gray-500">{t('figura.promedioEscala')}</p>
       <div className="flex flex-col gap-[3px]">
         {filas.map((f, i) => (
           <FilaBarra key={f.clave} fila={f} etiqueta={f.etiqueta} color={colorDe(i)} texto={(v) => decimal(v)} corta />
@@ -157,19 +153,20 @@ function FiguraMedias ({ modelo, colorDe }: { modelo: Extract<Modelo, { forma: '
       </div>
       {modelo.noResponde && (
         <p className="mt-2 text-xs text-gray-500">
-          Prefirieron no responder:{' '}
+          {t('figura.noRespondeAntes')}
           {modelo.noResponde.map((r, i) => (
             <span key={r.clave} className="tabular-nums">
               {i > 0 && ' · '}
-              {filas.length > 1 && `${filas[i].etiqueta}: `}
-              {r.total > 0 ? porcentaje((100 * r.n) / r.total, 0) : '—'}
+              {filas.length > 1
+                ? t('figura.conEtiqueta', { etiqueta: filas[i].etiqueta, resto: r.total > 0 ? porcentaje((100 * r.n) / r.total, 0) : '—' })
+                : r.total > 0 ? porcentaje((100 * r.n) / r.total, 0) : '—'}
             </span>
           ))}
-          . Quedan fuera del promedio.
+          {t('figura.noRespondeDespues')}
         </p>
       )}
-      {escasa && <NotaEscasa donde={modelo.compara === 'olas' ? 'en esa oleada' : modelo.compara === 'grupos' ? 'en ese grupo' : 'en esa fila'} />}
-      <TablaAccesible filas={filas.map((f) => [f.etiqueta, f.valor === null ? '—' : decimal(f.valor), numero(f.base)])} cabeza={['', 'Promedio', 'Respuestas']} />
+      {escasa && <NotaEscasa compara={modelo.compara} />}
+      <TablaAccesible filas={filas.map((f) => [f.etiqueta, f.valor === null ? '—' : decimal(f.valor), numero(f.base)])} cabeza={['', t('figura.promedio'), t('figura.respuestas')]} />
     </figure>
   )
 }
@@ -201,12 +198,16 @@ function FilaBarra ({
   return (
     <div
       className={`grid items-center gap-x-3 ${columnas}`}
-      title={valor === null ? undefined : `${etiqueta ? `${etiqueta}: ` : ''}${numero(fila.n)} de ${numero(fila.base)} respuestas`}
+      title={valor === null
+        ? undefined
+        : etiqueta
+          ? t('figura.conEtiqueta', { etiqueta, resto: t('figura.deRespuestas', { n: numero(fila.n), base: numero(fila.base) }) })
+          : t('figura.deRespuestas', { n: numero(fila.n), base: numero(fila.base) })}
     >
       {/* Rótulos completos, en dos líneas si hace falta: truncados, las opciones largas no se leían. */}
       <span className={`text-xs leading-snug text-gray-600 ${corta ? '' : 'col-span-2 sm:col-span-1'}`}>{etiqueta}</span>
       {valor === null
-        ? <span className="col-span-2 text-xs italic text-gray-400">No se preguntó</span>
+        ? <span className="col-span-2 text-xs italic text-gray-400">{t('figura.noSePregunto')}</span>
         : (
           <>
             <div className="h-4 overflow-hidden rounded-sm bg-gray-100">
@@ -244,7 +245,7 @@ function Leyenda ({ series, colorDe, bases, forma, tamanos }: { series: { clave:
           </li>
         )
       })}
-      <li className="text-[11px] text-gray-400">entre paréntesis, respuestas</li>
+      <li className="text-[11px] text-gray-400">{t('figura.leyendaN')}</li>
     </ul>
   )
 }
@@ -253,8 +254,10 @@ function Leyenda ({ series, colorDe, bases, forma, tamanos }: { series: { clave:
  * Solo el dato, sin juicio sobre él (Felipe, décima ronda: «queremos entregar información en esta
  * sección más que dar conclusiones»). Hasta ahí decía además «el porcentaje dice poco».
  */
-function NotaEscasa ({ donde }: { donde: string }) {
-  return <p className="mt-1 text-xs text-gray-500">* Menos de {BASE_MINIMA} respuestas {donde}.</p>
+function NotaEscasa ({ compara }: { compara: 'olas' | 'grupos' | 'nada' }) {
+  // Una frase entera por caso, no un «donde» pegado: el orden de las palabras cambia con el idioma.
+  const clave = compara === 'olas' ? 'figura.escasaOlas' : compara === 'grupos' ? 'figura.escasaGrupos' : 'figura.escasaFila'
+  return <p className="mt-1 text-xs text-gray-500">{t(clave, { n: numero(BASE_MINIMA) })}</p>
 }
 
 function TablaAccesible ({ cabeza, filas }: { cabeza: string[], filas: string[][] }) {

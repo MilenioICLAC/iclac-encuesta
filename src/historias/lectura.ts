@@ -1,5 +1,5 @@
 import type { Encuesta, NubePalabras } from '../nucleo/tipos'
-import { numero } from '../locale'
+import { numero, palabraVisible, traducido } from '../locale'
 
 /**
  * Lectura de los contrastes que el ETL dejó en el artefacto.
@@ -90,8 +90,8 @@ export function serieDeMedida (encuesta: Encuesta, id: string) {
   const primera = olas[0]
   const ultima = olas[olas.length - 1]
   return {
-    etiqueta: medida.etiqueta,
-    advertencia: medida.advertencia ?? '',
+    etiqueta: traducido(medida.etiqueta),
+    advertencia: medida.advertencia ? traducido(medida.advertencia) : '',
     puntos: olas.map((ola) => ({ ola, valor: valores.get(ola)!, n: enes.get(ola)! })),
     /** La comparación entre las dos puntas, que es la que el titular afirma. */
     punta: medida.comparaciones.find((c) => c.desde === primera && c.hasta === ultima) ?? null,
@@ -117,11 +117,12 @@ export function casosDe (pct: number, n: number) {
  */
 export function filasDePalabras (nube: NubePalabras, { tope = 5, fuera = [] as string[] } = {}) {
   const ultima = String(nube.olas[nube.olas.length - 1])
+  // La palabra se busca y se excluye por la que escribió la gente (`palabra.es`), no por su traducción.
   const pct = (ola: string, palabra: string) => {
-    const n = nube.porOla[ola]?.find((p) => p.palabra === palabra)?.n
+    const n = nube.porOla[ola]?.find((p) => p.palabra.es === palabra)?.n
     const base = nube.baseOla?.[ola] ?? 0
     return n === undefined || base === 0 ? null : (100 * n) / base
   }
-  const palabras = (nube.porOla[ultima] ?? []).map((p) => p.palabra).filter((p) => !fuera.includes(p)).slice(0, tope)
-  return palabras.map((palabra) => ({ clave: palabra, etiqueta: palabra, valores: nube.olas.map((o) => pct(String(o), palabra)) }))
+  const palabras = (nube.porOla[ultima] ?? []).map((p) => p.palabra).filter((p) => !fuera.includes(p.es)).slice(0, tope)
+  return palabras.map((palabra) => ({ clave: palabra.es, etiqueta: palabraVisible(palabra), valores: nube.olas.map((o) => pct(String(o), palabra.es)) }))
 }

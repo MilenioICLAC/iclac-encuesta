@@ -42,7 +42,10 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `src/nucleo/explorador.ts` | Qué dibuja el explorador en sus tres estados (una oleada, con corte, entre oleadas), leído del catálogo `encuesta.preguntas` |
 | `src/nucleo/` resto | `agregar.ts` (porcentajes; `participacion`: respuestas no son personas), `ficha.ts` (cifras de la «Ficha técnica»), `confianza.ts` (`p24`/`p25`), `escala.ts`, `tipos.ts` |
 | `src/componentes/` | Figuras: `FiguraExplorador` (la única del explorador: barras sin comparar, en el termómetro y en las de dos categorías; mancuerna con `Puntos` en las demás comparaciones; `formaDeFigura` en `explorador.ts` decide), `BarrasPosicionamiento` (`p26`), `Divergente` (escalas ordinales), `Puntos`, `Regresion`, `Enfasis`. Además `BarrasDeEscena` (barras de las historias), `MapaRegiones` (las 16 regiones, geometría de simplemaps), `Encabezado`, `MetodoHistorias` (método por historia, plegable), `Evidencia` (una prueba dibujada con su intervalo; la única forma de escribir un contraste en «Sobre los datos»), `MetodoRecorrido` (el caso de la recta), `Contrastes` (cómo se prueba y la tabla de medidas), `Descargas`, `Graficador` (el explorador), `BarraEstado` |
-| `src/textos.ts`, `src/locale.ts` | Cromo en tres idiomas; formato de números según idioma |
+| `src/i18n.ts`, `src/locales/{es,en,cn}/` | i18next copiado de mapa_FDI: idioma por `?lng=en|cn` (antes del `#`, lo manda el menú de iclac.cl), luego localStorage y navegador; cromo, capa, explorador y páginas en JSON con las mismas claves en los tres |
+| `src/locale.ts` | `useIdioma`, `traducido` (`Traducible`), `lista`, `plural`, `palabraVisible` y formato de números según idioma |
+| `src/historias/textos/` | La prosa de cada historia: `TEXTOS: Record<Idioma, (valores) => Contenido>` y `FICHA`; el componente de la historia solo calcula |
+| `scripts/lib/traducciones/` | EN y CN del catálogo, los contrastes y las palabras de las abiertas; el español sigue en su fuente y `validarTraducciones` hace fallar el ETL si falta o sobra una clave |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
 | `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
@@ -147,8 +150,9 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
   tarjetas del menú, cuya caja copia la transición en el clic. **Los `hover:` solo existen con puntero
   fino** (`hoverOnlyWhenSupported` en `tailwind.config.js`): nada que solo se descubra con el cursor.
   Por qué, y lo que no se aplicó de las skills de diseño externas: un registro de decisiones interno.
-- **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** El selector de
-  idioma cubre el cromo y una franja lo declara.
+- **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** En inglés y chino una franja
+  declara que la traducción es un borrador pendiente de revisión de ICLAC. Las claves de datos siguen en
+  español (valores de `casos`, palabras de las abiertas, colores por `'<pregunta>:<código>'`); solo se traducen los rótulos.
 - **El encabezado replica el de iclac.cl** (88 px escritorio, 60 teléfono, sombra y no borde; nav
   completo desde `lg`). El estado del explorador vive en `App` y sobrevive al cambio de vista.
 - **Commits** en español, en presente y describiendo el efecto («El recorrido estrena cierre y

@@ -115,35 +115,54 @@ export function pasosDeOrden (n: number): string[] {
 }
 
 /**
+ * La escala de confianza de `p24` y `p25`, que es una escala con polaridad: dos tonos que se alejan
+ * del cero, cada uno oscureciéndose hacia su extremo. **No es la rampa de orden**, porque acá el
+ * color tiene que decir de qué lado está la respuesta y no solo en qué posición. La usan también
+ * figuras de acuerdo y desacuerdo (`territorio`), con el mismo sentido de lado.
+ *
+ * Validado con el validador de `dataviz`: el par que se toca en el cero («Poca» contra «Algo»)
+ * separa ΔE 8,5 bajo protanopía y 20,2 con visión normal, y los extremos 26,9. La única
+ * objeción del validador es el piso de croma de `#00776E`, que es `brand-dark`, o sea la marca:
+ * el piso existe para que un color no se lea como gris **al lado de otros colores de
+ * identidad**, y acá está al lado de un óxido, que no se confunde con nada. El aviso de
+ * contraste contra el fondo se cubre con los rótulos, que la figura escribe siempre.
+ */
+export const CONFIANZA = { mucha: '#00776E', algo: '#39B5A8', poca: '#E9A26A', ninguna: '#A8431A' } as const
+
+/** Los lados de `p26`: alinearse con una potencia, con la otra, o con ninguna. */
+export const POSICION = { china: '#E8632A', eeuu: '#2A6FD6', distancia: '#8A8A85', ambos: '#00998C' } as const
+
+/**
  * Colores con significado propio, que no se reasignan nunca.
  *
- * `p26` y `p7` tienen categorías con polaridad: estar a favor de una potencia o de la otra, o
- * estar de acuerdo o en desacuerdo. Ahí el color no dice «serie 1» sino «este lado», y por eso
- * se amarran por etiqueta. Es lo mismo que hace el monitor actual.
+ * `p26` y la confianza tienen categorías con polaridad: estar a favor de una potencia o de la otra,
+ * o confiar mucho o nada. Ahí el color no dice «serie 1» sino «este lado». Es lo mismo que hace el
+ * monitor actual.
  *
- * **Se amarran a la etiqueta exacta**, que es frágil: si el proveedor de campo cambia «A favor
- * de EE. UU.» por «A favor de EEUU», el color se cae al de reserva. La alternativa, amarrarlos
- * al código, es peor: en `p4` el código 1 es Boric en 2023 y Kast en 2025.
+ * **Se amarran a `'<pregunta>:<código>'`, no a la etiqueta.** Amarrados a la etiqueta española, el
+ * color se caía al de reserva apenas la etiqueta se tradujera, o si el proveedor de campo cambiaba
+ * «EE. UU.» por «EEUU». El código es estable dentro de la pregunta; la trampa de `p4`, donde el 1 es
+ * Boric en 2023 y Kast en 2025, no alcanza a estas preguntas, cuyas categorías no cambian entre
+ * oleadas (el catálogo del explorador lo verifica en cada ETL).
  */
 export const SEMANTICOS: Record<string, string> = {
-  'A favor de China': '#E8632A',
-  'A favor de EE. UU.': '#2A6FD6',
-  'Mantener distancia de ambos': '#8A8A85',
-  'Relacionarse con ambos': '#00998C',
-  // Las cuatro de `p24` y `p25`, que son una escala con polaridad: dos tonos que se alejan del
-  // cero, cada uno oscureciéndose hacia su extremo. **No es la rampa de orden**, porque acá el
-  // color tiene que decir de qué lado está la respuesta y no solo en qué posición.
-  //
-  // Validado con el validador de `dataviz`: el par que se toca en el cero («Poca» contra «Algo»)
-  // separa ΔE 8,5 bajo protanopía y 20,2 con visión normal, y los extremos 26,9. La única
-  // objeción del validador es el piso de croma de `#00776E`, que es `brand-dark`, o sea la marca:
-  // el piso existe para que un color no se lea como gris **al lado de otros colores de
-  // identidad**, y acá está al lado de un óxido, que no se confunde con nada. El aviso de
-  // contraste contra el fondo se cubre con los rótulos, que la figura escribe siempre.
-  Mucha: '#00776E',
-  Algo: '#39B5A8',
-  Poca: '#E9A26A',
-  Ninguna: '#A8431A',
+  'p26:1': POSICION.china,
+  'p26:2': POSICION.eeuu,
+  'p26:3': POSICION.distancia,
+  'p26:4': POSICION.ambos,
+  'p24:1': CONFIANZA.mucha,
+  'p24:2': CONFIANZA.algo,
+  'p24:3': CONFIANZA.poca,
+  'p24:99': CONFIANZA.ninguna,
+  'p25:1': CONFIANZA.mucha,
+  'p25:2': CONFIANZA.algo,
+  'p25:3': CONFIANZA.poca,
+  'p25:99': CONFIANZA.ninguna,
+}
+
+/** El color propio de una categoría, o `undefined` si no tiene. */
+export function semantico (pregunta: string, codigo: number | string): string | undefined {
+  return SEMANTICOS[`${pregunta}:${codigo}`]
 }
 
 /** Gris de reserva, para lo que no calza en ningún conjunto. */

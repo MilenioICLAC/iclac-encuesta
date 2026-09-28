@@ -1,6 +1,14 @@
 import type { Encuesta } from '../nucleo/tipos'
+import type { Traducible } from '../locale'
+import { fichaDe } from './textos/tipos'
+import { FICHA as FICHA_VACUNA } from './textos/vacuna'
+import { FICHA as FICHA_TERRITORIO } from './textos/territorio'
+import { FICHA as FICHA_INVERSION } from './textos/inversion'
 import { HistoriaEntrePotencias, HistoriaMirada } from './recorrido'
+import { FICHA as FICHA_MIRADA } from './textos/mirada'
+import { FICHA as FICHA_POTENCIAS } from './textos/entre-potencias'
 import { HistoriaChinaCotidiana } from './cotidiana'
+import { FICHA as FICHA_COTIDIANA } from './textos/cotidiana'
 import { HistoriaInversion } from './inversion'
 import { HistoriaTerritorio } from './territorio'
 import { HistoriaVacuna } from './vacuna'
@@ -17,13 +25,17 @@ import { HistoriaVacuna } from './vacuna'
  * `hallazgo` es lo que la tarjeta del menú promete. **No lleva cifras**: una cifra escrita acá
  * envejece con la oleada siguiente, y la que importa está dentro de la historia, calculada.
  * `medidas` son los contrastes que la sostienen, y con ellos se arma su sección de método.
+ *
+ * **Nombre, pregunta y hallazgo van en los tres idiomas** (`traducido()` al mostrarlos). Los de una
+ * historia con módulo de textos salen de su `FICHA` (`textos/<id>.tsx`, con `fichaDe`); los demás
+ * están acá, con `en` y `cn` provisorios iguales al español, hasta que su historia se migre.
  */
 export interface Historia {
   id: string
   bloque: number
-  nombre: string
-  pregunta: string
-  hallazgo: string
+  nombre: Traducible
+  pregunta: Traducible
+  hallazgo: Traducible
   medidas: string[]
   Componente: (props: { encuesta: Encuesta, abierta: boolean }) => React.ReactElement
 }
@@ -32,54 +44,42 @@ export const HISTORIAS: Historia[] = [
   {
     id: 'mirada',
     bloque: 1,
-    nombre: 'La mirada',
-    pregunta: '¿Qué opina la gente sobre China?',
-    hallazgo: 'En la última oleada China queda por primera vez sobre Estados Unidos, y la posición política no ordena la opinión de forma robusta.',
+    ...fichaDe(FICHA_MIRADA),
     medidas: ['termometro-china', 'termometro-eeuu', 'termometro-japon', 'termometro-corea', 'termometro-francia', 'opinion-china', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china', 'ideologia-china', 'palabra-trump', 'palabra-tecnologia'],
     Componente: HistoriaMirada,
   },
   {
     id: 'entre-potencias',
     bloque: 2,
-    nombre: 'Entre dos potencias',
-    pregunta: '¿Con quién se queda Chile?',
-    hallazgo: 'La confianza en China se dispara, y en la última oleada cambia cuál potencia prefiere la minoría que elige.',
+    ...fichaDe(FICHA_POTENCIAS),
     medidas: ['confia-china', 'confia-eeuu', 'confianza-china', 'confianza-eeuu', 'mas-confianza-china', 'mas-confianza-eeuu', 'empate-confianza', 'brecha-confianza', 'no-alineamiento', 'ventaja-china-p26'],
     Componente: HistoriaEntrePotencias,
   },
   {
     id: 'territorio',
     bloque: 3,
-    nombre: 'Donde uno vive',
-    pregunta: '¿Pesa China distinto según dónde se vive?',
-    hallazgo: 'Hay más desacuerdo que acuerdo con que el acercamiento con China haya traído más riesgos que oportunidades, y la exposición económica de la región no cambia eso.',
+    ...fichaDe(FICHA_TERRITORIO),
     medidas: ['riesgo-desacuerdo', 'riesgo-indiferente', 'riesgo-comuna', 'riesgo-desacuerdo-sobre-acuerdo', 'riesgo-neto-exposicion', 'riesgo-estrato', 'p8-proveedor', 'p8-inversor', 'p8-proveedor-sobre-inversor', 'p8-proveedor-sobre-comprador', 'p8-proveedor-sobre-competidor'],
     Componente: HistoriaTerritorio,
   },
   {
     id: 'inversion',
     bloque: 4,
-    nombre: 'Inversión y Estado',
-    pregunta: '¿Dónde poner límites a la inversión?',
-    hallazgo: 'Una mayoría amplia y quieta quiere que el Estado pueda frenar inversiones, y sabe dónde: minería y electricidad.',
+    ...fichaDe(FICHA_INVERSION),
     medidas: ['limitar-inversiones', 'electrica-sobre-banca'],
     Componente: HistoriaInversion,
   },
   {
     id: 'china-cotidiana',
     bloque: 5,
-    nombre: 'China cotidiana',
-    pregunta: '¿Cuánta China hay en la vida diaria?',
-    hallazgo: 'Entre la primera y la última oleada, más gente tiene un mall chino cerca; conocer a alguien de China, no.',
+    ...fichaDe(FICHA_COTIDIANA),
     medidas: ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'palabra-mall', 'palabra-buena', 'buses-sabia', 'racismo-visto', 'racismo-contacto'],
     Componente: HistoriaChinaCotidiana,
   },
   {
     id: 'vacuna',
     bloque: 6,
-    nombre: 'La vacuna',
-    pregunta: '¿Qué queda de la vacuna china?',
-    hallazgo: 'El recuerdo de haberla recibido no se mueve; la buena opinión de quienes la recibieron, sí.',
+    ...fichaDe(FICHA_VACUNA),
     medidas: ['sinovac-recibio', 'sinovac-buena', 'prefiere-pfizer'],
     Componente: HistoriaVacuna,
   },

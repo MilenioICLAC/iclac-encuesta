@@ -1,0 +1,33 @@
+{
+  "titulo": "Encuesta de Percepciones sobre China en Chile",
+  "bajada": "Monitor de opinión pública · ICLAC",
+  "menu": "Menú",
+  "cerrarMenu": "Cerrar el menú",
+  "idioma": "Idioma",
+  "borrador": "",
+  "nav": {
+    "recorrido": "Historias",
+    "explorar": "Explorar",
+    "descargas": "Descargas",
+    "ficha": "Ficha técnica",
+    "datos": "Sobre los datos"
+  },
+  "regiones": {
+    "1": "Tarapacá",
+    "2": "Antofagasta",
+    "3": "Atacama",
+    "4": "Coquimbo",
+    "5": "Valparaíso",
+    "6": "O'Higgins",
+    "7": "Maule",
+    "8": "Bío Bío",
+    "9": "Araucanía",
+    "10": "Los Lagos",
+    "11": "Aysén",
+    "12": "Magallanes",
+    "13": "Metropolitana",
+    "14": "Los Ríos",
+    "15": "Arica y Parinacota",
+    "16": "Ñuble"
+  }
+}

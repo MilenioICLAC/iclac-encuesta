@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
-import { numero } from '../locale'
+import { useTranslation } from 'react-i18next'
+import { numero, plural } from '../locale'
 import { participacion } from '../nucleo/agregar'
-
-const EN_PALABRAS: Record<number, string> = { 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco' }
 import { HISTORIAS } from './indice'
 import { ContenidoTarjeta, TARJETA } from './TarjetaHistoria'
 import { useTransicionHistoria } from './contextoTransicion'
@@ -26,6 +25,21 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   const navegar = useNavigate()
   const { iniciar, enCurso, volviendoDe } = useTransicionHistoria()
   const tarjetas = useRef<(HTMLAnchorElement | null)[]>([])
+  const { t } = useTranslation('capa')
+
+  // La frase entera es una plantilla por idioma (`capa.json`, `menu.intro`); acá solo se arman los
+  // grupos de número y sustantivo, con la forma que pide cada número (el chino no tiene plural). Las
+  // oleadas van en palabras hasta cinco; los años, sin separador de miles.
+  const conNumero = (clave: string, n: number, texto = numero(n)) =>
+    t(`menu.${clave}.${plural(n, { one: 'one', other: 'other' })}`, { n: texto })
+  const intro = t('menu.intro', {
+    historias: conNumero('historias', HISTORIAS.length),
+    olas: conNumero('olas', olas.length, t(`menu.enPalabras.${olas.length}`, { defaultValue: numero(olas.length) })),
+    desde: String(olas[0]),
+    hasta: String(olas[olas.length - 1]),
+    respuestas: conNumero('respuestas', p.respuestas),
+    personas: conNumero('personas', p.personas),
+  })
 
   // De vuelta de una historia, el foco va a su tarjeta (ver `ProveedorTransicion`), y la tarjeta
   // a la vista. Un cuadro después: en este la capa todavía tiene el cuerpo fijo y lo devuelve al
@@ -54,14 +68,12 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-10">
       <h1 className="font-display text-2xl font-semibold text-gray-900 sm:text-3xl">
-        Percepciones sobre China en Chile
+        {t('menu.titulo')}
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-gray-600">
         {/* Respuestas y personas no son lo mismo: 159 personas contestaron en más de una oleada. */}
-        {HISTORIAS.length} historias contadas con la Encuesta de Percepciones sobre China en Chile, de
-        ICLAC: {EN_PALABRAS[olas.length] ?? numero(olas.length)} oleadas ({olas[0]} a {olas[olas.length - 1]}) y {numero(p.respuestas)} respuestas
-        de {numero(p.personas)} personas, en un panel en línea.{' '}
-        <Link to="/ficha" className="text-brand-dark underline hover:no-underline">Más sobre la encuesta →</Link>
+        {intro}{' '}
+        <Link to="/ficha" className="text-brand-dark underline hover:no-underline">{t('menu.mas')}</Link>
       </p>
       {/* Durante la transición los originales quedan transparentes, no `invisible`: con
           `visibility: hidden` el enlace elegido perdía el foco y la lista salía del árbol

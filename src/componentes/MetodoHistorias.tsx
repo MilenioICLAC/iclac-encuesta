@@ -3,6 +3,8 @@ import type { Encuesta } from '../nucleo/tipos'
 import { HISTORIAS } from '../historias/indice'
 import Evidencia from './Evidencia'
 import { CasoDeLaRecta } from './MetodoRecorrido'
+import { useTranslation } from 'react-i18next'
+import { numero, plural, traducido } from '../locale'
 
 /**
  * Una sección que se abre. `id` es el ancla de `#/datos?foco=<id>`, que la abre antes de llevar la
@@ -33,8 +35,10 @@ export function Plegable ({ id, resumen, children, abierta = false }: { id?: str
  * Cerrada muestra la pregunta y cuántas pruebas la sostienen; abierta, el hallazgo y las pruebas.
  */
 export default function MetodoHistorias ({ encuesta }: { encuesta: Encuesta }) {
+  const { t } = useTranslation('paginas')
   const c = encuesta.contrastes
   if (!c) return null
+  const pruebas = (n: number) => plural(n, { one: t('metodo.prueba', { n: numero(n) }), other: t('metodo.pruebas', { n: numero(n) }) })
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-4">
@@ -44,18 +48,18 @@ export default function MetodoHistorias ({ encuesta }: { encuesta: Encuesta }) {
           id={`metodo-${h.id}`}
           resumen={
             <>
-              <span className="font-display text-sm font-semibold text-gray-900">Historia {i + 1} · {h.nombre}</span>
-              <span className="block text-gray-500">{h.pregunta} · {h.medidas.length} {h.medidas.length === 1 ? 'prueba' : 'pruebas'}</span>
+              <span className="font-display text-sm font-semibold text-gray-900">{t('metodo.historia', { n: numero(i + 1), nombre: traducido(h.nombre) })}</span>
+              <span className="block text-gray-500">{traducido(h.pregunta)} · {pruebas(h.medidas.length)}</span>
             </>
           }
         >
-          <p className="max-w-2xl text-gray-900"><span className="text-gray-500">Lo que afirma: </span>{h.hallazgo}</p>
+          <p className="max-w-2xl text-gray-900"><span className="text-gray-500">{t('metodo.afirma')}</span>{traducido(h.hallazgo)}</p>
           <ul className="mt-2 max-w-3xl text-xs leading-snug">
             {h.medidas.map((id) => <Evidencia key={id} contrastes={c} id={id} />)}
           </ul>
           {h.id === 'mirada' && (
             <div className="mt-2 max-w-2xl rounded-md bg-gray-50 px-3 text-xs leading-snug">
-              <Plegable id="metodo-recta" resumen={<span className="font-medium text-gray-900">Por qué un puñado de respuestas puede inclinar una recta</span>}>
+              <Plegable id="metodo-recta" resumen={<span className="font-medium text-gray-900">{t('metodo.recta')}</span>}>
                 <CasoDeLaRecta encuesta={encuesta} />
               </Plegable>
             </div>

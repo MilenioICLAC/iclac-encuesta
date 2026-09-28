@@ -1,0 +1,30 @@
+{
+  "salida": "返回数据故事",
+  "salir": "退出",
+  "avance": "阅读进度",
+  "metodo": "方法",
+  "anterior": "上一步",
+  "siguiente": "下一步",
+  "invitarMouse": "滚动页面继续阅读",
+  "invitarTactil": "滑动屏幕继续阅读",
+  "historia": "第{{numero}}个数据故事",
+  "recorrido": "导览",
+  "siguienteHistoria": "下一个 · 第{{numero}}个数据故事",
+  "leerHistoria": "阅读第{{numero}}个数据故事：{{nombre}}",
+  "historiaDeTarjeta": "第{{numero}}个数据故事：",
+  "verTodas": "查看全部数据故事",
+  "explorar": "探索调查问题",
+  "comoSeHizo": "分析方法",
+  "volverInicio": "回到开头",
+  "valorBarra": "{{etiqueta}}：{{valor}}（n = {{n}}）",
+  "menu": {
+    "titulo": "智利对华认知",
+    "intro": "基于ICLAC智利对华认知调查的{{historias}}：{{olas}}（{{desde}}至{{hasta}}年），Netquest在线样本库中{{personas}}的{{respuestas}}。",
+    "historias": { "one": "{{n}}个数据故事", "other": "{{n}}个数据故事" },
+    "olas": { "one": "{{n}}轮调查", "other": "{{n}}轮调查" },
+    "respuestas": { "one": "{{n}}份回答", "other": "{{n}}份回答" },
+    "personas": { "one": "{{n}}名受访者", "other": "{{n}}名受访者" },
+    "enPalabras": { "1": "一", "2": "两", "3": "三", "4": "四", "5": "五" },
+    "mas": "关于本调查的更多信息 →"
+  }
+}

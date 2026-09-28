@@ -1,0 +1,95 @@
+{
+  "cabeza": {
+    "titulo": "Explorar cualquier pregunta",
+    "bajada": "Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se puede comparar."
+  },
+  "controles": {
+    "pregunta": "Pregunta",
+    "oleada": "Oleada",
+    "corte": "Corte",
+    "entreOleadas": "Entre oleadas",
+    "sinRepetidos": "Sin quienes respondieron en más de una oleada",
+    "noSeHizoEn": "Esta pregunta no se hizo en {{ola}}",
+    "noSeCompara": "Esta pregunta no se compara entre oleadas",
+    "corteNoSeAplica": "El corte no se aplica entre oleadas",
+    "cortesDesactivados": "Cortes desactivados",
+    "casosUno": "{{n}} caso · {{corte}}",
+    "casos": "{{n}} casos · {{corte}}",
+    "resumenSerie": "Entre oleadas · cortes desactivados"
+  },
+  "nota": {
+    "unPunto": "Un punto por oleada: {{olas}}.",
+    "unaBarra": "Una barra por oleada: {{olas}}.",
+    "categoriaNueva": " Una categoría que no existía en una oleada no lleva punto ahí.",
+    "diez": "diez",
+    "palabras": " Las {{n}} palabras más dichas en promedio entre oleadas.",
+    "corteSerie": " El corte no se aplica entre oleadas.",
+    "sinPunto": "Sin punto: menos de {{minimo}} personas la mencionaron en ese grupo.",
+    "corteFuera": "El corte por {{corte}} no se aplica: es esta misma pregunta en tres tramos.",
+    "comillas": "«{{texto}}»"
+  },
+  "vacia": {
+    "noSeHizo": "Esta pregunta no se hizo en {{ola}}.",
+    "seHizoEn": "Se hizo en",
+    "sinRespuestas": "No hay respuestas en este recorte.",
+    "sinDatos": "No hay datos para esta pregunta."
+  },
+  "pie": {
+    "respuestasEnUno": "{{n}} respuesta en {{ola}}.",
+    "respuestasEn": "{{n}} respuestas en {{ola}}.",
+    "fueraDeSerie": "Entre oleadas se compara {{olas}}; {{ola}} no entra.",
+    "seCompara": "Se compara entre {{olas}}.",
+    "soloEn": "Solo se preguntó en {{ola}}.",
+    "noSeCompara": "No se compara entre oleadas."
+  },
+  "figura": {
+    "menciones": "Se puede marcar más de una opción, así que los porcentajes suman más de 100.",
+    "palabras": "Cada persona puede nombrar varias cosas, así que los porcentajes suman más de 100.",
+    "escasaOlas": "* Menos de {{n}} respuestas en esa oleada.",
+    "escasaGrupos": "* Menos de {{n}} respuestas en ese grupo.",
+    "escasaFila": "* Menos de {{n}} respuestas en esa fila.",
+    "menosMenciones": "Menos de {{n}} menciones",
+    "noSePregunto": "No se preguntó",
+    "respuestas": "Respuestas",
+    "promedio": "Promedio",
+    "conEtiqueta": "{{etiqueta}}: {{resto}}",
+    "deRespuestas": "{{n}} de {{base}} respuestas",
+    "deCuantos": " ({{n}} de {{base}})",
+    "ejeMenciones": "Porcentaje que marcó cada opción",
+    "ejePalabras": "Porcentaje que la mencionó",
+    "ejeReparto": "Porcentaje de respuestas",
+    "ejeTope": " · eje de 0 a {{tope}}",
+    "promedioEscala": "Promedio de 0 a 100",
+    "noRespondeAntes": "Prefirieron no responder: ",
+    "noRespondeDespues": ". Quedan fuera del promedio.",
+    "leyendaN": "entre paréntesis, respuestas"
+  },
+  "posicionamiento": {
+    "aria": "Cómo debería posicionarse Chile: reparto completo por oleada",
+    "total": "Cada barra representa el 100 % de las respuestas.",
+    "frente": "{{a}} frente a {{b}}:",
+    "pp": " pp"
+  },
+  "regresion": {
+    "aria": "{{etiqueta}}. {{cual}}.",
+    "todas": "Las tres oleadas",
+    "ola": "Oleada {{ola}}",
+    "pendiente": "pendiente {{b}} [{{lo}}; {{hi}}]",
+    "r2": "R² {{r2}} % · n {{n}}",
+    "sinEl": " · sin el {{x}}",
+    "personas": "{{n}} personas · {{media}}"
+  },
+  "termometro": {
+    "eje": "Evaluación de 0 a 100",
+    "ejeRecortado": "Evaluación de 0 a 100 · eje recortado a {{min}}-{{max}}"
+  },
+  "confianza": {
+    "ninguna": "Ninguna",
+    "poca": "Poca",
+    "algo": "Algo",
+    "mucha": "Mucha",
+    "masEeuu": "Más en Estados Unidos",
+    "igual": "La misma",
+    "masChina": "Más en China"
+  }
+}

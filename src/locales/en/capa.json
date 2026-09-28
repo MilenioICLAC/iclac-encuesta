@@ -1,0 +1,30 @@
+{
+  "salida": "Back to stories",
+  "salir": "Exit",
+  "avance": "Story progress",
+  "metodo": "Method",
+  "anterior": "Previous",
+  "siguiente": "Next",
+  "invitarMouse": "Scroll to move through the story",
+  "invitarTactil": "Swipe to move through the story",
+  "historia": "Story {{numero}}",
+  "recorrido": "Walkthrough",
+  "siguienteHistoria": "Next · Story {{numero}}",
+  "leerHistoria": "Read story {{numero}}: {{nombre}}",
+  "historiaDeTarjeta": "Story {{numero}}: ",
+  "verTodas": "See all stories",
+  "explorar": "Explore the questions",
+  "comoSeHizo": "How it was done",
+  "volverInicio": "Back to the start",
+  "valorBarra": "{{etiqueta}}: {{valor}} (n = {{n}})",
+  "menu": {
+    "titulo": "Perceptions of China in Chile",
+    "intro": "{{historias}} with ICLAC's Survey on Perceptions of China in Chile: {{olas}} ({{desde}}–{{hasta}}) and {{respuestas}} from {{personas}} recruited through the Netquest online panel.",
+    "historias": { "one": "{{n}} story told", "other": "{{n}} stories told" },
+    "olas": { "one": "{{n}} wave", "other": "{{n}} waves" },
+    "respuestas": { "one": "{{n}} response", "other": "{{n}} responses" },
+    "personas": { "one": "{{n}} person", "other": "{{n}} people" },
+    "enPalabras": { "1": "one", "2": "two", "3": "three", "4": "four", "5": "five" },
+    "mas": "More about the survey →"
+  }
+}

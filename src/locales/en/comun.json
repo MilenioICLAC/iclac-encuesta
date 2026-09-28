@@ -1,0 +1,33 @@
+{
+  "titulo": "Survey on Perceptions of China in Chile",
+  "bajada": "Public opinion monitor · ICLAC",
+  "menu": "Menu",
+  "cerrarMenu": "Close menu",
+  "idioma": "Language",
+  "borrador": "This translation is a draft pending review by ICLAC.",
+  "nav": {
+    "recorrido": "Stories",
+    "explorar": "Explore",
+    "descargas": "Downloads",
+    "ficha": "Survey details",
+    "datos": "About the data"
+  },
+  "regiones": {
+    "1": "Tarapacá",
+    "2": "Antofagasta",
+    "3": "Atacama",
+    "4": "Coquimbo",
+    "5": "Valparaíso",
+    "6": "Libertador General Bernardo O'Higgins",
+    "7": "Maule",
+    "8": "Biobío",
+    "9": "La Araucanía",
+    "10": "Los Lagos",
+    "11": "Aysén del General Carlos Ibáñez del Campo",
+    "12": "Magallanes and Chilean Antarctica",
+    "13": "Santiago Metropolitan Region",
+    "14": "Los Ríos",
+    "15": "Arica y Parinacota",
+    "16": "Ñuble"
+  }
+}

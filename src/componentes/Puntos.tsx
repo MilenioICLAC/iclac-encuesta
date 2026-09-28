@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useEffect, useState } from 'react'
+import { textoExplorador as t } from '../nucleo/explorador'
 
 /**
  * Gráfico de puntos: una fila por entidad, un punto por grupo sobre esa misma fila.
@@ -336,7 +337,7 @@ export default function Puntos ({
                     }}
                     title={titulo
                       ? titulo(fila, p.serie, p.valor)
-                      : `${p.serie.etiqueta} · ${fila.etiqueta}: ${formato(p.valor)}`}
+                      : t('figura.conEtiqueta', { etiqueta: `${p.serie.etiqueta} · ${fila.etiqueta}`, resto: formato(p.valor) })}
                   />
                   )
                 })}

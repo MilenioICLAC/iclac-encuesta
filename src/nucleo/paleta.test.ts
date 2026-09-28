@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { GENERO, GRUPOS, IDENTIDAD, ORDEN, SEMANTICOS, pasosDeGrupo, pasosDeOrden } from './paleta'
+import { readFileSync } from 'node:fs'
+import type { Encuesta } from './tipos'
+import { CONFIANZA, GENERO, GRUPOS, IDENTIDAD, ORDEN, SEMANTICOS, pasosDeGrupo, pasosDeOrden } from './paleta'
 
 /**
  * La paleta pasó por el validador de la skill `dataviz`, que no se puede correr desde acá.
@@ -42,17 +44,14 @@ describe('la paleta', () => {
     }
   })
 
-  it('amarra los colores con significado a la etiqueta exacta que trae la base', () => {
-    expect(Object.keys(SEMANTICOS)).toEqual([
-      'A favor de China',
-      'A favor de EE. UU.',
-      'Mantener distancia de ambos',
-      'Relacionarse con ambos',
-      'Mucha',
-      'Algo',
-      'Poca',
-      'Ninguna',
-    ])
+  it('amarra los colores con significado a una categoría que existe, por pregunta y código', () => {
+    // Por código y no por etiqueta: una etiqueta traducida no puede soltar el color.
+    const encuesta: Encuesta = JSON.parse(readFileSync('public/data/encuesta.json', 'utf8'))
+    for (const clave of Object.keys(SEMANTICOS)) {
+      const [pregunta, codigo] = clave.split(':')
+      const p = encuesta.preguntas.find((x) => x.id === pregunta)
+      expect(p?.categorias?.some((c) => String(c.codigo) === codigo), clave).toBe(true)
+    }
   })
 
   it('pinta la escala de confianza con dos tonos que se alejan del cero', () => {
@@ -63,11 +62,11 @@ describe('la paleta', () => {
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
       return 0.2126 * r + 0.7152 * g + 0.0722 * b
     }
-    expect(luz(SEMANTICOS.Mucha)).toBeLessThan(luz(SEMANTICOS.Algo))
-    expect(luz(SEMANTICOS.Ninguna)).toBeLessThan(luz(SEMANTICOS.Poca))
+    expect(luz(CONFIANZA.mucha)).toBeLessThan(luz(CONFIANZA.algo))
+    expect(luz(CONFIANZA.ninguna)).toBeLessThan(luz(CONFIANZA.poca))
     // Y los dos lados no comparten tono: el canal rojo separa el óxido del verde azulado.
     const rojo = (hex: string) => parseInt(hex.slice(1, 3), 16)
-    expect(rojo(SEMANTICOS.Poca)).toBeGreaterThan(rojo(SEMANTICOS.Algo) + 80)
+    expect(rojo(CONFIANZA.poca)).toBeGreaterThan(rojo(CONFIANZA.algo) + 80)
   })
 })
 

@@ -14,6 +14,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* **El chino** (`<html lang="zh-CN">`, que fija `locale.ts`). Ni Raleway ni muchas fuentes del
+   sistema traen glifos CJK, y el respaldo que elige cada navegador por su cuenta varía: se nombra
+   uno por plataforma (macOS e iOS, Android y Linux, Windows). Los títulos conservan Raleway para
+   las cifras y las letras latinas. La cursiva no existe en la tipografía china: el navegador
+   inclina los caracteres a la fuerza y se leen peor, así que se endereza. */
+html:lang(zh) {
+  font-family: ui-sans-serif, system-ui, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+:lang(zh) .font-display {
+  font-family: Raleway, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+:lang(zh) .italic,
+:lang(zh) em,
+:lang(zh) i {
+  font-style: normal;
+}
+
 /* Un control que se presiona responde al presionarlo: se hunde un 3 % y vuelve. Curva ease-out
    fuerte y 160 ms, porque es respuesta y no decoración. Solo en botones y píldoras que cambian
    algo; no en las tarjetas del menú, cuya caja copia la transición en el clic. Reúne en una

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Pregunta } from '../nucleo/tipos'
 import { CORTES } from '../nucleo/modulos'
-import { tituloEn, type Vista } from '../nucleo/explorador'
-import { numero } from '../locale'
+import { corteEnFrase, textoExplorador as t, tituloEn, type Vista } from '../nucleo/explorador'
+import { numero, plural, traducido, useIdioma } from '../locale'
 import { enfocarRadio, radioSiguiente } from '../nucleo/teclado'
 
 /**
@@ -55,15 +55,20 @@ interface Props {
 }
 
 const ROTULO = 'text-xs font-medium uppercase tracking-wide text-gray-500'
-const CORTES_DESACTIVADOS = 'Cortes desactivados'
 
 export default function BarraEstado ({
   olas, preguntas, pregunta: p, onPregunta, vista, onVista, ola: elegida, onOla,
   corte, onCorte, soloIndependientes, onSoloIndependientes, n,
 }: Props) {
+  // Los rótulos salen en el idioma activo: suscribirse al cambio vuelve a dibujar la barra.
+  useIdioma()
   const serie = vista === 'serie'
-  const etiquetaCorte = serie ? 'Sin corte' : CORTES.find((c) => c.nombre === corte)?.etiqueta ?? 'Sin corte'
-  const estadoN = n === null ? CORTES_DESACTIVADOS : `${numero(n)} casos · ${etiquetaCorte.toLowerCase()}`
+  const sinCorte = traducido(CORTES[0].etiqueta)
+  const elegido = CORTES.find((c) => c.nombre === corte)
+  const etiquetaCorte = serie || !elegido ? sinCorte : traducido(elegido.etiqueta)
+  const estadoN = n === null
+    ? t('controles.cortesDesactivados')
+    : t(plural(n, { one: 'controles.casosUno', other: 'controles.casos' }), { n: numero(n), corte: corteEnFrase(etiquetaCorte) })
 
   // El alto de la cabeza se mide: cambia con el ancho, el idioma y la llegada de Raleway.
   const cabeza = useRef<HTMLDivElement>(null)
@@ -98,7 +103,7 @@ export default function BarraEstado ({
     })),
     {
       clave: 'serie',
-      texto: 'Entre oleadas',
+      texto: t('controles.entreOleadas'),
       activa: serie,
       apagada: !p.serie,
       sinPregunta: false,
@@ -111,7 +116,7 @@ export default function BarraEstado ({
     <>
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         <label className="flex min-w-[min(100%,16rem)] flex-1 flex-col gap-1">
-          <span className={ROTULO}>Pregunta</span>
+          <span className={ROTULO}>{t('controles.pregunta')}</span>
           <select
             value={p.id}
             onChange={(e) => { onPregunta(e.target.value) }}
@@ -125,10 +130,10 @@ export default function BarraEstado ({
         </label>
 
         <div className="flex w-full flex-col gap-1 sm:w-auto">
-          <span className={ROTULO} aria-hidden="true">Oleada</span>
+          <span className={ROTULO} aria-hidden="true">{t('controles.oleada')}</span>
           <div
             role="radiogroup"
-            aria-label="Oleada"
+            aria-label={t('controles.oleada')}
             className="flex rounded-md border border-gray-300"
             onKeyDown={(e) => {
               const i = radioSiguiente(e.key, actual, opciones.map((o) => !o.apagada))
@@ -146,7 +151,7 @@ export default function BarraEstado ({
                 aria-checked={o.activa}
                 tabIndex={o.activa ? 0 : -1}
                 disabled={o.apagada}
-                title={o.sinPregunta ? `Esta pregunta no se hizo en ${o.texto}` : o.apagada ? 'Esta pregunta no se compara entre oleadas' : undefined}
+                title={o.sinPregunta ? t('controles.noSeHizoEn', { ola: o.texto }) : o.apagada ? t('controles.noSeCompara') : undefined}
                 onClick={o.elegir}
                 className={[
                   `presionable whitespace-nowrap py-1.5 text-sm tabular-nums sm:flex-none sm:px-3 ${o.clave === 'serie' ? 'flex-none px-3' : 'flex-1 px-1.5'}`,
@@ -170,16 +175,16 @@ export default function BarraEstado ({
 
       <div className="mt-2 flex flex-wrap items-end gap-x-4 gap-y-2">
         <label className="flex flex-col gap-1">
-          <span className={ROTULO}>Corte</span>
+          <span className={ROTULO}>{t('controles.corte')}</span>
           <select
             value={corte ?? ''}
             onChange={(e) => { onCorte(e.target.value === '' ? null : e.target.value) }}
             disabled={serie}
-            title={serie ? 'El corte no se aplica entre oleadas' : undefined}
+            title={serie ? t('controles.corteNoSeAplica') : undefined}
             className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
           >
             {CORTES.map((c) => (
-              <option key={c.etiqueta} value={c.nombre ?? ''}>{c.etiqueta}</option>
+              <option key={c.nombre ?? ''} value={c.nombre ?? ''}>{traducido(c.etiqueta)}</option>
             ))}
           </select>
         </label>
@@ -191,7 +196,7 @@ export default function BarraEstado ({
             onChange={(e) => { onSoloIndependientes(e.target.checked) }}
             className="rounded border-gray-300"
           />
-          Sin quienes respondieron en más de una oleada
+          {t('controles.sinRepetidos')}
         </label>
 
         <p className="w-full pb-1.5 text-sm tabular-nums text-gray-500 sm:ml-auto sm:w-auto">{estadoN}</p>
@@ -208,9 +213,9 @@ export default function BarraEstado ({
       <div className="relative border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-5xl px-4">
           <div ref={cabeza} className="pb-3 pt-6">
-            <h2 className="font-display text-2xl font-semibold">Explorar cualquier pregunta</h2>
+            <h2 className="font-display text-2xl font-semibold">{t('cabeza.titulo')}</h2>
             <p className="mt-2 max-w-2xl text-sm text-gray-600">
-              Cualquier pregunta de la encuesta, una oleada a la vez o comparando las oleadas donde se puede comparar.
+              {t('cabeza.bajada')}
             </p>
           </div>
 
@@ -227,7 +232,7 @@ export default function BarraEstado ({
                 {/* El mismo título que la figura: entre oleadas `p4` es «Voto en segunda vuelta presidencial». */}
                 <span className="block truncate text-sm font-semibold text-gray-900">{tituloEn(p, { vista, ola: elegida })}</span>
                 <span className="block text-xs tabular-nums text-gray-500">
-                  {serie ? `Entre oleadas · ${CORTES_DESACTIVADOS.toLowerCase()}` : `${elegida} · ${estadoN}`}
+                  {serie ? t('controles.resumenSerie') : `${elegida} · ${estadoN}`}
                 </span>
               </span>
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className={`shrink-0 text-gray-500 transition-transform duration-150 ease-out ${abierta ? 'rotate-180' : ''}`}>

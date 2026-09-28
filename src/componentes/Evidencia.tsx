@@ -1,6 +1,7 @@
 import type { Contrastes, Correccion } from '../nucleo/tipos'
-import { decimal, numero } from '../locale'
+import { decimal, idioma, lista, numero, porcentaje, traducido, type Idioma } from '../locale'
 import { firme, nominal, valorP } from '../nucleo/prueba'
+import { entreCifraYUnidad, unidadDeDiferencia, unidadDePendiente } from './unidades'
 
 /**
  * Una prueba del artefacto, dibujada: el único lugar donde se escribe un contraste en «Sobre los datos».
@@ -14,6 +15,9 @@ import { firme, nominal, valorP } from '../nucleo/prueba'
  *
  * **Una diferencia dentro de una oleada no «sube».** Entre oleadas se dice sube o baja; en una
  * brecha o entre grupos, cuál queda arriba; en una recta, hacia dónde se inclina.
+ *
+ * **Cada frase se escribe entera en cada idioma** (`FRASES`): el orden de las piezas cambia, sobre
+ * todo en chino, y armarla con trozos traducidos la dejaría en orden español.
  */
 
 type Intervalo = [number, number]
@@ -38,46 +42,178 @@ interface Bloque {
   notas: string[]
 }
 
+interface Frases {
+  noPasa: string
+  sube: string
+  baja: string
+  parejo: string
+  positiva: string
+  negativa: string
+  arriba: (grupo: string) => string
+  bajaDerecha: string
+  subeDerecha: string
+  plana: string
+  /** El intervalo en el detalle: «IC [−1,2; +3,4]». */
+  ic: (rango: string) => string
+  holm: (familia: string, p: string) => string
+  fijos: (valor: string, unidad: string) => string
+  n: (a: number, b?: number) => string
+  dentroDePersona: string
+  puntas: string
+  sinCasos: string
+  /** Los tramos de un grupo con su nivel, en una línea. */
+  tramos: (xs: string[]) => string
+  menos: (uno: string, otro: string, rango: string) => string
+  entreOleadas: (tramo: string) => string
+  recta: (etiqueta: string) => string
+  pendiente: (izquierda: number, derecha: number) => string
+  sostiene: (ola: number, n: number, x: number, b: string, rango: string) => string
+  transversal: (desde: number, hasta: number) => string
+  suben: (cortes: { suben: number, total: number, etiqueta: string }[]) => string
+  noPorGrupo: string
+}
+
+const FRASES: Record<Idioma, Frases> = {
+  es: {
+    noPasa: 'no pasa la corrección',
+    sube: 'sube',
+    baja: 'baja',
+    parejo: 'parejo',
+    positiva: 'positiva',
+    negativa: 'negativa',
+    arriba: (grupo) => `${grupo} arriba`,
+    bajaDerecha: 'baja hacia la derecha',
+    subeDerecha: 'sube hacia la derecha',
+    plana: 'plana',
+    ic: (rango) => `IC ${rango}`,
+    holm: (familia, p) => `Holm (${familia}): ${p}`,
+    fijos: (valor, unidad) => `con edad y sexo fijos ${valor} ${unidad}`,
+    n: (a, b) => (b === undefined ? `n = ${numero(a)}` : `n = ${numero(a)} y ${numero(b)}`),
+    dentroDePersona: 'Diferencia dentro de cada persona, en cada oleada.',
+    puntas: 'Diferencia entre las puntas, dentro de cada oleada. Debajo, cada tramo consigo mismo entre oleadas.',
+    sinCasos: 'sin casos',
+    tramos: (xs) => xs.join(', '),
+    menos: (uno, otro, rango) => `${uno} menos ${otro}, IC ${rango}`,
+    entreOleadas: (tramo) => `${tramo}, entre oleadas`,
+    recta: (etiqueta) => `${etiqueta}: la recta`,
+    pendiente: (izquierda, derecha) => `Pendiente por punto de la escala (${izquierda} izquierda, ${derecha} derecha).`,
+    sostiene: (ola, n, x, b, rango) =>
+      `En ${ola} la inclinación la sostienen las ${numero(n)} personas del punto ${x}: sin ellas la pendiente queda en ${b} (IC ${rango}), plana. La inclinación de ${ola} no es robusta.`,
+    transversal: (desde, hasta) => `Opinión sobre China, ${desde} → ${hasta}, grupo por grupo`,
+    suben: (cortes) => `Sube el promedio en ${lista(cortes.map((k) => `${numero(k.suben)} de ${numero(k.total)} ${k.etiqueta}`))}.`,
+    noPorGrupo: 'Dice que el cambio no viene de un solo grupo; no afirma que cada grupo por separado se distinga del ruido.',
+  },
+  en: {
+    noPasa: 'does not pass the correction',
+    sube: 'up',
+    baja: 'down',
+    parejo: 'no clear difference',
+    positiva: 'positive',
+    negativa: 'negative',
+    arriba: (grupo) => `${grupo} higher`,
+    bajaDerecha: 'slopes down to the right',
+    subeDerecha: 'slopes up to the right',
+    plana: 'flat',
+    ic: (rango) => `interval ${rango}`,
+    holm: (familia, p) => `Holm (${familia}): ${p}`,
+    fijos: (valor, unidad) => `age and sex held constant: ${valor} ${unidad}`,
+    n: (a, b) => (b === undefined ? `n = ${numero(a)}` : `n = ${numero(a)} and ${numero(b)}`),
+    dentroDePersona: 'Difference within each person, in each wave.',
+    puntas: 'Difference between the two ends of the scale, within each wave. Below, each group compared with itself across waves.',
+    sinCasos: 'no cases',
+    tramos: (xs) => xs.join(', '),
+    menos: (uno, otro, rango) => `${uno} minus ${otro}, interval ${rango}`,
+    entreOleadas: (tramo) => `${tramo}, across waves`,
+    recta: (etiqueta) => `${etiqueta}: the regression line`,
+    pendiente: (izquierda, derecha) => `Slope per point of the scale (${numero(izquierda)} is left, ${numero(derecha)} is right).`,
+    sostiene: (ola, n, x, b, rango) =>
+      `In ${ola}, the slope rests on the ${numero(n)} people at point ${numero(x)}: without them it is ${b} (interval ${rango}), flat. The ${ola} slope is not robust.`,
+    transversal: (desde, hasta) => `Opinion of China, ${desde} → ${hasta}, group by group`,
+    suben: (cortes) => `The average rises in ${lista(cortes.map((k) => `${numero(k.suben)} of ${numero(k.total)} ${k.etiqueta}`))}.`,
+    noPorGrupo: 'This shows the change does not come from a single group; it does not claim that each group on its own can be distinguished from random variation.',
+  },
+  cn: {
+    noPasa: '未通过校正',
+    sube: '上升',
+    baja: '下降',
+    parejo: '难分高下',
+    positiva: '为正',
+    negativa: '为负',
+    arriba: (grupo) => `${grupo}较高`,
+    bajaDerecha: '向右下降',
+    subeDerecha: '向右上升',
+    plana: '平坦',
+    ic: (rango) => `区间 ${rango}`,
+    holm: (familia, p) => `Holm校正（${familia}）：${p}`,
+    fijos: (valor, unidad) => `固定年龄与性别构成：${valor}${unidad}`,
+    n: (a, b) => (b === undefined ? `n = ${numero(a)}` : `n = ${numero(a)}、${numero(b)}`),
+    dentroDePersona: '同一受访者自身的差异，逐轮列出。',
+    puntas: '各轮内量表两端之间的差异。下方为每组自身的跨轮次对比。',
+    sinCasos: '无受访者',
+    tramos: (xs) => xs.join('，'),
+    menos: (uno, otro, rango) => `${uno}减${otro}，区间 ${rango}`,
+    entreOleadas: (tramo) => `${tramo}：跨轮次对比`,
+    recta: (etiqueta) => `${etiqueta}：拟合直线`,
+    pendiente: (izquierda, derecha) => `量表每一刻度的斜率（${numero(izquierda)}为左，${numero(derecha)}为右）。`,
+    sostiene: (ola, n, x, b, rango) =>
+      `${ola}年的斜率取决于刻度${numero(x)}上的${numero(n)}名受访者：去掉这些人后斜率为${b}（区间 ${rango}），趋于平坦。${ola}年的斜率不稳健。`,
+    transversal: (desde, hasta) => `对中国的看法，${desde} → ${hasta}，逐组比较`,
+    suben: (cortes) => `平均值上升的组：${lista(cortes.map((k) => `${numero(k.total)}个${k.etiqueta}中有${numero(k.suben)}个`))}。`,
+    noPorGrupo: '这说明变化并非来自单一群体；但并不表明每个群体单独来看都能与随机波动区分。',
+  },
+}
+
+const frases = () => FRASES[idioma()]
+
 const signo = (v: number, d = 1) => `${v > 0 ? '+' : ''}${decimal(v, d)}`
-const rango = (ic: Intervalo, d = 1) => `[${signo(ic[0], d)}; ${signo(ic[1], d)}]`
-/** La unidad de una diferencia: una resta de porcentajes da puntos porcentuales, no por ciento. */
-const deDiferencia = (unidad: string) => (unidad === '%' || unidad === 'puntos porcentuales' ? 'pp' : unidad)
-const enumerar = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs.at(-1)}`)
-const deNivel = (v: number, unidad: string) => (unidad === '%' ? `${decimal(v, 1)} %` : decimal(v, 1))
+const rango = (ic: Intervalo, d = 1) => idioma() === 'cn'
+  ? `［${signo(ic[0], d)}；${signo(ic[1], d)}］`
+  : `[${signo(ic[0], d)}; ${signo(ic[1], d)}]`
+
+/** Un nivel: un porcentaje con el formato del idioma, o una cifra en la escala de la medida. */
+const deNivel = (v: number, unidad: string) => {
+  if (unidad !== '%') return decimal(v, 1)
+  return idioma() === 'es' ? `${decimal(v, 1)} %` : porcentaje(v, 1)
+}
 
 /** Qué se lee: la palabra si es firme, «no pasa la corrección» si solo pasa el nominal, y si no, parejo. */
 const leer = (x: { p: number, ic: Intervalo, holm?: Correccion[] }, si: string, parejo: string) =>
-  firme(x) ? si : nominal(x) ? 'no pasa la corrección' : parejo
+  firme(x) ? si : nominal(x) ? frases().noPasa : parejo
 
 function bloques (c: Contrastes, id: string): Bloque[] {
-  const nombre = (familia: string) => c.familias?.find((f) => f.id === familia)?.etiqueta ?? familia
+  const f = frases()
+  const separador = idioma() === 'cn' ? '；' : ' · '
+  const nombre = (familia: string) => {
+    const fam = c.familias?.find((x) => x.id === familia)
+    return fam ? traducido(fam.etiqueta) : familia
+  }
   /** Cada corrección con su familia: «Holm (hipótesis del bloque 3 de la guía): p = 0,067». */
   const holm = (x: { holm?: Correccion[] }) =>
-    (x.holm ?? []).map((h) => `Holm (${nombre(h.familia)}): ${valorP(h.p)}`)
+    (x.holm ?? []).map((h) => f.holm(nombre(h.familia), valorP(h.p)))
   const salida: Bloque[] = []
 
   const m = c.medidas.find((x) => x.id === id)
   if (m) {
     salida.push({
-      titulo: m.etiqueta,
-      unidad: deDiferencia(m.unidad),
+      titulo: traducido(m.etiqueta),
+      unidad: unidadDeDiferencia(m.unidad),
       decimales: 1,
-      advertencia: m.advertencia,
+      advertencia: m.advertencia ? traducido(m.advertencia) : undefined,
       notas: [],
       filas: m.comparaciones.map((k) => ({
         rotulo: `${k.desde} → ${k.hasta}`,
         diferencia: k.diferencia,
         ic: k.ic,
-        lectura: leer(k, k.diferencia > 0 ? 'sube' : 'baja', 'parejo'),
+        lectura: leer(k, k.diferencia > 0 ? f.sube : f.baja, f.parejo),
         firme: firme(k),
         detalle: [
           `${deNivel(k.a, m.unidad)} → ${deNivel(k.b, m.unidad)}`,
-          `IC ${rango(k.ic)}`,
+          f.ic(rango(k.ic)),
           valorP(k.p),
           ...holm(k),
-          k.estandarizada !== null ? `con edad y sexo fijos ${signo(k.estandarizada)} ${deDiferencia(m.unidad)}` : null,
-          `n = ${numero(k.n[0])} y ${numero(k.n[1])}`,
-        ].filter(Boolean).join(' · '),
+          k.estandarizada !== null ? f.fijos(signo(k.estandarizada), unidadDeDiferencia(m.unidad)) : null,
+          f.n(k.n[0], k.n[1]),
+        ].filter(Boolean).join(separador),
       })),
     })
   }
@@ -87,50 +223,52 @@ function bloques (c: Contrastes, id: string): Bloque[] {
     salida.push({
       // La resta usa las dos respuestas de la misma persona, que no son independientes. No es seguir a
       // nadie entre oleadas: cada persona contesta una vez.
-      titulo: b.etiqueta,
-      unidad: deDiferencia(b.unidad),
+      titulo: traducido(b.etiqueta),
+      unidad: unidadDeDiferencia(b.unidad),
       decimales: 1,
-      notas: ['Diferencia dentro de cada persona, en cada oleada.'],
+      notas: [f.dentroDePersona],
       filas: b.porOla.map((o) => ({
         rotulo: String(o.ola),
         diferencia: o.diferencia,
         ic: o.ic,
-        lectura: leer(o, o.diferencia > 0 ? 'positiva' : 'negativa', 'pareja'),
+        lectura: leer(o, o.diferencia > 0 ? f.positiva : f.negativa, f.parejo),
         firme: firme(o),
-        detalle: [`IC ${rango(o.ic)}`, valorP(o.p), ...holm(o), `n = ${numero(o.n)}`].join(' · '),
+        detalle: [f.ic(rango(o.ic)), valorP(o.p), ...holm(o), f.n(o.n)].join(separador),
       })),
     })
   }
 
   const g = c.grupos.find((x) => x.id === id)
   if (g) {
+    // Los tramos viajan con su clave en español; el rótulo, en `nombres`.
+    const tramoDe = (clave: string) => (g.nombres[clave] ? traducido(g.nombres[clave]) : clave)
     salida.push({
-      titulo: g.etiqueta,
-      unidad: deDiferencia(g.unidad),
+      titulo: traducido(g.etiqueta),
+      unidad: unidadDeDiferencia(g.unidad),
       decimales: 1,
-      notas: ['Diferencia entre las puntas, dentro de cada oleada. Debajo, cada tramo consigo mismo entre oleadas.'],
+      notas: [f.puntas],
       filas: g.porOla.filter((o) => o.brecha).map((o) => {
-        const [uno, otro] = o.brecha!.entre
+        const [uno, otro] = o.brecha!.entre.map(tramoDe)
         return {
           rotulo: String(o.ola),
           diferencia: o.brecha!.diferencia,
           ic: o.brecha!.ic,
-          lectura: leer(o.brecha!, o.brecha!.diferencia > 0 ? `${uno} arriba` : `${otro} arriba`, 'parejos'),
+          lectura: leer(o.brecha!, f.arriba(o.brecha!.diferencia > 0 ? uno : otro), f.parejo),
           firme: firme(o.brecha!),
           detalle: [
-            o.tramos.map((t) => `${t.nombre} ${t.media === null ? 'sin casos' : deNivel(t.media, g.unidad)} (n = ${numero(t.n)})`).join(', '),
-            `${uno} menos ${otro}, IC ${rango(o.brecha!.ic)}`,
+            f.tramos(o.tramos.map((t) => `${tramoDe(t.nombre)} ${t.media === null ? f.sinCasos : deNivel(t.media, g.unidad)} (${f.n(t.n)})`)),
+            f.menos(uno, otro, rango(o.brecha!.ic)),
             valorP(o.brecha!.p),
             ...holm(o.brecha!),
-          ].join(' · '),
+          ].join(separador),
         }
       }),
     })
     const tramos = [...new Set(g.entreOlas.map((e) => e.tramo))]
     for (const tramo of tramos) {
       salida.push({
-        titulo: `${tramo}, entre oleadas`,
-        unidad: deDiferencia(g.unidad),
+        titulo: f.entreOleadas(tramoDe(tramo)),
+        unidad: unidadDeDiferencia(g.unidad),
         decimales: 1,
         sub: true,
         notas: [],
@@ -138,9 +276,9 @@ function bloques (c: Contrastes, id: string): Bloque[] {
           rotulo: `${e.desde} → ${e.hasta}`,
           diferencia: e.diferencia,
           ic: e.ic,
-          lectura: leer(e, e.diferencia > 0 ? 'sube' : 'baja', 'parejo'),
+          lectura: leer(e, e.diferencia > 0 ? f.sube : f.baja, f.parejo),
           firme: firme(e),
-          detalle: `IC ${rango(e.ic)} · ${valorP(e.p)} · n = ${numero(e.n[0])} y ${numero(e.n[1])}`,
+          detalle: [f.ic(rango(e.ic)), valorP(e.p), f.n(e.n[0], e.n[1])].join(separador),
         })),
       })
     }
@@ -149,22 +287,22 @@ function bloques (c: Contrastes, id: string): Bloque[] {
   const r = c.regresiones.find((x) => x.id === id)
   if (r) {
     salida.push({
-      titulo: `${r.etiqueta}: la recta`,
-      unidad: 'puntos por punto',
+      titulo: f.recta(traducido(r.etiqueta)),
+      unidad: unidadDePendiente(),
       decimales: 2,
       notas: [
-        `Pendiente por punto de la escala (${r.rango[0]} izquierda, ${r.rango[1]} derecha).`,
+        f.pendiente(r.rango[0], r.rango[1]),
         // Solo cuando sacar el punto da vuelta la conclusión: si no, contarlo es ruido (skill `afirmaciones`).
         ...r.porOla.filter((o) => o.sostiene && firme(o.recta) && !firme(o.sostiene.recta)).map((o) =>
-          `En ${o.ola} la inclinación la sostienen las ${numero(o.sostiene!.n)} personas del punto ${o.sostiene!.x}: sin ellas la pendiente queda en ${signo(o.sostiene!.recta.b, 2)} (IC ${rango(o.sostiene!.recta.ic, 2)}), plana. La inclinación de ${o.ola} no es robusta.`),
+          f.sostiene(o.ola, o.sostiene!.n, o.sostiene!.x, signo(o.sostiene!.recta.b, 2), rango(o.sostiene!.recta.ic, 2))),
       ],
       filas: r.porOla.map((o) => ({
         rotulo: String(o.ola),
         diferencia: o.recta.b,
         ic: o.recta.ic,
-        lectura: leer(o.recta, o.recta.b < 0 ? 'baja hacia la derecha' : 'sube hacia la derecha', 'plana'),
+        lectura: leer(o.recta, o.recta.b < 0 ? f.bajaDerecha : f.subeDerecha, f.plana),
         firme: firme(o.recta),
-        detalle: `IC ${rango(o.recta.ic, 2)} · ${valorP(o.recta.p)} · n = ${numero(o.recta.n)}`,
+        detalle: [f.ic(rango(o.recta.ic, 2)), valorP(o.recta.p), f.n(o.recta.n)].join(separador),
       })),
     })
   }
@@ -172,13 +310,13 @@ function bloques (c: Contrastes, id: string): Bloque[] {
   const t = c.transversal.find((x) => x.id === id)
   if (t) {
     salida.push({
-      titulo: `Opinión sobre China, ${t.desde} → ${t.hasta}, grupo por grupo`,
+      titulo: f.transversal(t.desde, t.hasta),
       unidad: '',
       decimales: 1,
       filas: [],
       notas: [
-        `Sube el promedio en ${enumerar(t.cortes.map((k) => `${numero(k.suben)} de ${numero(k.total)} ${k.etiqueta}`))}.`,
-        'Dice que el cambio no viene de un solo grupo; no afirma que cada grupo por separado se distinga del ruido.',
+        f.suben(t.cortes.map((k) => ({ suben: k.suben, total: k.total, etiqueta: traducido(k.etiqueta) }))),
+        f.noPorGrupo,
       ],
     })
   }
@@ -202,6 +340,7 @@ function Raya ({ diferencia, ic, tope, firme }: { diferencia: number, ic: Interv
 }
 
 export default function Evidencia ({ contrastes, id }: { contrastes: Contrastes, id: string }) {
+  const entre = entreCifraYUnidad()
   return (
     <>
       {bloques(contrastes, id).map((b) => {
@@ -217,7 +356,7 @@ export default function Evidencia ({ contrastes, id }: { contrastes: Contrastes,
                     <span className="whitespace-nowrap tabular-nums text-gray-600">{f.rotulo}</span>
                     <Raya diferencia={f.diferencia} ic={f.ic} tope={tope} firme={f.firme} />
                     <span className="tabular-nums">
-                      <span className="font-medium text-gray-900">{signo(f.diferencia, b.decimales)}{'\u00a0'}{b.unidad}</span>
+                      <span className="font-medium text-gray-900">{signo(f.diferencia, b.decimales)}{entre}{b.unidad}</span>
                       {/* En teléfono la lectura baja entera a su línea, en vez de cortarse en el punto medio. */}
                       <span className={`max-sm:block ${f.firme ? 'text-brand-dark' : 'text-gray-500'}`}><span className="max-sm:hidden"> · </span>{f.lectura}</span>
                     </span>

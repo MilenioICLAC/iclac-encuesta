@@ -1,5 +1,6 @@
 import type { Recta, Regresion as Datos } from '../nucleo/tipos'
-import { decimal, numero } from '../locale'
+import { decimal, numero, traducido } from '../locale'
+import { textoExplorador as t } from '../nucleo/explorador'
 
 /**
  * La figura del experimento: la nube de promedios sobre una escala, y la recta que se le ajusta.
@@ -99,7 +100,7 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
   return (
     <figure className="m-0">
       <svg viewBox={`0 0 ${ANCHO} ${alto}`} className="w-full" role="img"
-        aria-label={`${datos.etiqueta}. ${todas ? 'Las tres oleadas' : `Oleada ${ola}`}.`}>
+        aria-label={t('regresion.aria', { etiqueta: traducido(datos.etiqueta), cual: todas ? t('regresion.todas') : t('regresion.ola', { ola }) })}>
         {marcas.map((v) => (
           <g key={v}>
             <line x1={IZQ} y1={py(v)} x2={DER} y2={py(v)} stroke="#E4E7E6" strokeWidth={1} />
@@ -148,10 +149,10 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
               stroke={tono} strokeWidth={3.5}
             />
             <text x={IZQ + 4} y={ARRIBA - 6} fontSize={9} fill="#17211F">
-              pendiente {cifra(recta.b)} [{cifra(recta.ic[0])}; {cifra(recta.ic[1])}]
+              {t('regresion.pendiente', { b: cifra(recta.b), lo: cifra(recta.ic[0]), hi: cifra(recta.ic[1]) })}
             </text>
             <text x={IZQ + 4} y={ARRIBA + 6} fontSize={8} fill="#6B7280">
-              R² {decimal(recta.r2, 1)} % · n {numero(recta.n)}{retirado !== null ? ` · sin el ${retirado}` : ''}
+              {t('regresion.r2', { r2: decimal(recta.r2, 1), n: numero(recta.n) })}{retirado !== null ? t('regresion.sinEl', { x: numero(retirado) }) : ''}
             </text>
           </g>
         )}
@@ -179,7 +180,7 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
                   // punto de la derecha quedaba cortado por la línea.
                   stroke="#FFFFFF" strokeWidth={3.5} paintOrder="stroke"
                 >
-                  {numero(q.n)} personas · {decimal(q.media as number, 1)}
+                  {t('regresion.personas', { n: numero(q.n), media: decimal(q.media as number, 1) })}
                 </text>
               )}
               {conEmanata && apagado && (

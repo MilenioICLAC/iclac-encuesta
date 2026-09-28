@@ -1,6 +1,9 @@
 import type { Caso, Variable } from './tipos'
 import { distribucion } from './agregar'
-import { SEMANTICOS } from './paleta'
+import { CONFIANZA, POSICION } from './paleta'
+import i18n from '../i18n'
+
+const rotulo = (clave: string): string => i18n.t(`confianza.${clave}`, { ns: 'explorador' })
 
 /**
  * El trato de las figuras de confianza (`p24` y `p25`), en un solo lugar.
@@ -43,15 +46,22 @@ export interface FiguraDivergente {
 /**
  * Las cuatro categorías en orden visual, del extremo izquierdo al derecho.
  *
- * El color sale de `SEMANTICOS`, amarrado a la etiqueta exacta: cualquier vista que pinte la misma
- * pregunta usa los mismos colores sin que nadie los repita.
+ * El color sale de `CONFIANZA` (`paleta.ts`), el mismo que `SEMANTICOS` le da a `p24` y `p25` por
+ * código: cualquier vista que pinte la misma pregunta usa los mismos colores sin que nadie los repita.
  */
-export const CATEGORIAS: CategoriaConfianza[] = [
-  { clave: 'ninguna', etiqueta: 'Ninguna', color: SEMANTICOS.Ninguna, lado: -1 },
-  { clave: 'poca', etiqueta: 'Poca', color: SEMANTICOS.Poca, lado: -1 },
-  { clave: 'algo', etiqueta: 'Algo', color: SEMANTICOS.Algo, lado: 1 },
-  { clave: 'mucha', etiqueta: 'Mucha', color: SEMANTICOS.Mucha, lado: 1 },
-]
+export const CATEGORIAS: CategoriaConfianza[] = ([
+  ['ninguna', CONFIANZA.ninguna, -1],
+  ['poca', CONFIANZA.poca, -1],
+  ['algo', CONFIANZA.algo, 1],
+  ['mucha', CONFIANZA.mucha, 1],
+] as const).map(([clave, color, lado]) => ({
+  clave,
+  // **Se lee al dibujar, no al cargar el módulo:** una etiqueta fijada al importar quedaría en el
+  // idioma de ese momento y no seguiría al selector.
+  get etiqueta () { return rotulo(clave) },
+  color,
+  lado,
+}))
 
 const CODIGOS = [99, 3, 2, 1]
 
@@ -128,9 +138,9 @@ export function figuraBalanza (
   casosDe: (ola: number) => Caso[],
 ): FiguraDivergente {
   const categorias: CategoriaConfianza[] = [
-    { clave: 'eeuu', etiqueta: 'Más en Estados Unidos', color: SEMANTICOS['A favor de EE. UU.'], lado: -1 },
-    { clave: 'igual', etiqueta: 'La misma', color: SEMANTICOS['Mantener distancia de ambos'], lado: 0 },
-    { clave: 'china', etiqueta: 'Más en China', color: SEMANTICOS['A favor de China'], lado: 1 },
+    { clave: 'eeuu', etiqueta: rotulo('masEeuu'), color: POSICION.eeuu, lado: -1 },
+    { clave: 'igual', etiqueta: rotulo('igual'), color: POSICION.distancia, lado: 0 },
+    { clave: 'china', etiqueta: rotulo('masChina'), color: POSICION.china, lado: 1 },
   ]
   const filas = olas.map((ola) => {
     const diferencias = casosDe(ola).map(brechaPersonal).filter((d): d is number => d !== null)

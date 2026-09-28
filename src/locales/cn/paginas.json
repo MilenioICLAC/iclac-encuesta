@@ -1,0 +1,124 @@
+{
+  "app": {
+    "errorTitulo": "数据加载失败",
+    "errorAntes": "请刷新页面。如问题仍然存在，请通过",
+    "errorDespues": "与我们联系。",
+    "cargando": "加载中…",
+    "nucleo": "中国对拉丁美洲和加勒比影响千禧年研究中心",
+    "instituciones": {
+      "minciencia": "智利科学、技术、知识与创新部 · ANID",
+      "uc": "智利天主教大学",
+      "uchile": "智利大学",
+      "ucn": "北方天主教大学",
+      "uta": "塔拉帕卡大学"
+    }
+  },
+  "datos": {
+    "titulo": "关于数据",
+    "bajada": "引用数据前需要了解的事项，以及数据故事中每句话的依据。",
+    "enEstaPagina": "本页内容",
+    "indice": {
+      "citar": "引用之前",
+      "historias": "每个数据故事的依据",
+      "comoSeLee": "如何检验差异",
+      "todas": "全部对比"
+    },
+    "citarTitulo": "引用数据之前",
+    "masSobre": "更多调查说明 →",
+    "historiasBajada": "每句声称存在变化或差异的表述，都以以下某项检验为依据。每行中，竖线表示零，圆点表示差异，横线表示其{{p95}}区间。若横线跨过零，该行标注“难分高下”，数据故事也不判定孰高孰低。",
+    "metodo": "方法",
+    "comoSeLeeBajada": "p值、区间、固定构成，以及为何这不是误差范围",
+    "todasTitulo": "全部跨轮次对比",
+    "todasBajadaUna": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
+    "todasBajada": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标"
+  },
+  "metodo": {
+    "historia": "数据故事{{n}} · {{nombre}}",
+    "prueba": "{{n}}项检验",
+    "pruebas": "{{n}}项检验",
+    "afirma": "结论：",
+    "recta": "为何少数回答就能使直线倾斜"
+  },
+  "contrastes": {
+    "medida": "指标",
+    "sinDato": "无数据",
+    "noPasa": "未通过校正",
+    "parejo": "难分高下"
+  },
+  "descargas": {
+    "titulo": "下载数据",
+    "bajada": "三轮调查的完整回答数据，供重新分析。文件为CSV格式，UTF-8编码，以逗号分隔。",
+    "idioma": "所有文件均为西班牙语，包括数据及其变量名和答案标签，以及说明文档。",
+    "respuestas": "回答数据",
+    "documentacion": "说明文档",
+    "fila": "{{n}}行",
+    "filas": "{{n}}行",
+    "antes": "使用前须知",
+    "archivos": {
+      "combinada": "三轮合并",
+      "oleada": "{{anio}}年调查",
+      "diccionario": "变量词典",
+      "valores": "答案标签",
+      "notas": "数据文件注释",
+      "libro": "{{anio}}年编码手册",
+      "nota": "抽样方法说明",
+      "indice": "各地区对华经济关联指数的设计",
+      "cuestionario": "{{anio}}年问卷"
+    }
+  },
+  "ficha": {
+    "titulo": "调查说明",
+    "institucion": "机构与目标",
+    "aplicacion": "调查实施与问卷",
+    "oleada": "轮次",
+    "fechas": "调查实施时间",
+    "duracion": "中位用时",
+    "minutos": "{{n}}分钟",
+    "fuenteCampo": "数据来源：各轮调查的回答记录。",
+    "diseno": "抽样设计",
+    "estrato": "层",
+    "region": "地区",
+    "indice": "指数",
+    "total": "合计",
+    "fuentesEstratosA": "数据来源：层与指数，见抽样方法说明",
+    "fuentesEstratosB": "；各地区样本量，见合并数据文件",
+    "fin": "。",
+    "mapa": "按对华经济关联度分层的智利地图。",
+    "casos": "各轮样本量",
+    "composicion": "样本构成",
+    "categoria": "类别",
+    "fuenteComposicionA": "数据来源：合并数据文件",
+    "fuenteComposicionB": "。因四舍五入，百分比之和可能不等于100。",
+    "alcance": "数据的适用范围",
+    "fuentes": "参考文献",
+    "composicionRotulos": {
+      "grupos": {
+        "sexo": "性别",
+        "edadr": "年龄",
+        "nse": "社会经济水平",
+        "educacion": "教育水平"
+      },
+      "sexo": {
+        "1": "男性",
+        "2": "女性"
+      },
+      "nse": {
+        "999": "未提供"
+      },
+      "educacion": {
+        "1": "未受过正式教育",
+        "2": "基础教育未完成",
+        "3": "基础教育毕业",
+        "4": "中等教育未完成",
+        "5": "中等教育毕业",
+        "6": "技术教育未完成",
+        "7": "技术教育毕业或大学肄业",
+        "8": "大学毕业",
+        "9": "研究生",
+        "999": "未提供"
+      },
+      "tramo": "{{desde}}–{{hasta}}岁",
+      "tramoAbierto": "{{desde}}岁及以上"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import type { Caso, Encuesta, Multiple, Variable } from './tipos'
+import { traducido, type Traducible } from '../locale'
 
 /**
  * El único lugar donde se calcula un porcentaje.
@@ -211,42 +212,43 @@ export function multirespuesta (casos: Caso[], grupo: Multiple, ola?: number): M
 /**
  * Corta un conjunto de casos por una variable de caracterización.
  *
- * Acepta cortes codificados (género, edad, educación) y cortes de texto (macrozona, impacto),
- * que son derivados del ETL y no tienen código. `orden` permite fijar la secuencia de los de
- * texto, donde el alfabético diría cosas falsas: «Alto, Bajo, Medio, Muy alto» sugiere una
- * escala que no es la que tiene.
+ * Acepta cortes codificados (género) y cortes de texto (edad, educación, macrozona, impacto), que
+ * son derivados del ETL y no tienen código. `grupos` fija la secuencia y el rótulo: la clave es el
+ * valor que guarda el caso, así que **se ordena por la clave y no por lo que se ve**, que cambia con
+ * el idioma. Sin `grupos`, el alfabético diría cosas falsas: «Alto, Bajo, Medio, Muy alto» sugiere
+ * una escala que no es la que tiene.
  */
 export function porGrupo (
   casos: Caso[],
   corte: string,
   variables: Variable[],
-  orden?: string[],
+  grupos?: [clave: string, etiqueta: Traducible][],
 ): { clave: string, etiqueta: string, casos: Caso[] }[] {
   const variable = variables.find((v) => v.nombre === corte)
   const etiquetas = variable ? categoriasDe(variable) : new Map<number, string>()
+  const rotulo = new Map(grupos ?? [])
 
-  const grupos = new Map<string, Caso[]>()
+  const porClave = new Map<string, Caso[]>()
   for (const caso of casos) {
     const v = caso[corte]
     if (v === null || v === undefined || v === '') continue
     const clave = String(v)
-    if (!grupos.has(clave)) grupos.set(clave, [])
-    grupos.get(clave)!.push(caso)
+    if (!porClave.has(clave)) porClave.set(clave, [])
+    porClave.get(clave)!.push(caso)
   }
 
-  const filas = [...grupos.entries()].map(([clave, casos]) => ({
-    clave,
-    etiqueta: etiquetas.get(Number(clave)) ?? clave,
-    casos,
-  }))
+  const filas = [...porClave.entries()].map(([clave, casos]) => {
+    const r = rotulo.get(clave)
+    return { clave, etiqueta: r ? traducido(r) : etiquetas.get(Number(clave)) ?? clave, casos }
+  })
 
-  if (orden) {
-    // Un valor fuera de `orden` va al final, no al principio: `indexOf` da -1 y lo subía.
-    const posicion = (etiqueta: string) => {
-      const i = orden.indexOf(etiqueta)
-      return i === -1 ? orden.length : i
+  if (grupos) {
+    // Un valor fuera de `grupos` va al final, no al principio: `findIndex` da -1 y lo subía.
+    const posicion = (clave: string) => {
+      const i = grupos.findIndex(([k]) => k === clave)
+      return i === -1 ? grupos.length : i
     }
-    return filas.sort((a, b) => posicion(a.etiqueta) - posicion(b.etiqueta))
+    return filas.sort((a, b) => posicion(a.clave) - posicion(b.clave))
   }
   return filas.sort((a, b) => Number(a.clave) - Number(b.clave))
 }

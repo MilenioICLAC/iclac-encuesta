@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import type { Idioma } from '../locale'
-import { TEXTOS } from '../textos'
+import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
+import { useIdioma, type Idioma } from '../locale'
 
 /**
  * El encabezado, copiado del repositorio de inversiones y adaptado a esta aplicación.
@@ -19,12 +20,10 @@ import { TEXTOS } from '../textos'
  * controles del explorador también es pegajosa y tiene que pegarse **debajo** de este, no debajo
  * del borde de la pantalla. El alto no se escribe a mano en ninguna de las dos, porque cambia
  * con el ancho (60 px en teléfono, 88 en escritorio) y dos números a mano se desincronizan.
+ *
+ * **La franja de borrador va adentro**, bajo la fila del logo: fuera del encabezado su alto no entraba
+ * en `--alto-encabezado` y la barra del explorador se pegaba encima de ella.
  */
-
-interface Props {
-  idioma: Idioma
-  onIdioma: (idioma: Idioma) => void
-}
 
 const IDIOMAS: { codigo: Idioma, etiqueta: string }[] = [
   { codigo: 'es', etiqueta: 'ES' },
@@ -47,7 +46,7 @@ export function IconoRecorrido ({ className }: { className?: string }) {
   )
 }
 
-const NAV: { a: string, clave: keyof typeof TEXTOS.nav }[] = [
+const NAV: { a: string, clave: 'recorrido' | 'explorar' | 'descargas' | 'ficha' | 'datos' }[] = [
   { a: '/', clave: 'recorrido' },
   { a: '/explorar', clave: 'explorar' },
   { a: '/descargas', clave: 'descargas' },
@@ -62,7 +61,9 @@ const SOMBRA = 'shadow-[0_5px_10px_0_rgba(50,50,50,0.06)]'
 const clase = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'font-semibold text-gray-900' : 'text-gray-500 hover:text-brand-dark'
 
-export default function Encabezado ({ idioma, onIdioma }: Props) {
+export default function Encabezado () {
+  const { t } = useTranslation()
+  const idioma = useIdioma()
   const [menuAbierto, setMenuAbierto] = useState(false)
   const caja = useRef<HTMLElement | null>(null)
   // La portada y la capa son el mismo destino para el lector, aunque sean dos rutas: el ítem se
@@ -85,14 +86,14 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
   }, [])
 
   const botonesIdioma = (
-    <div className="flex gap-1 text-sm" role="group" aria-label={TEXTOS.idioma[idioma]}>
+    <div className="flex gap-1 text-sm" role="group" aria-label={t('idioma')}>
       {IDIOMAS.map((l) => (
         <button
           key={l.codigo}
           type="button"
           lang={l.codigo === 'cn' ? 'zh' : l.codigo}
           aria-pressed={idioma === l.codigo}
-          onClick={() => { onIdioma(l.codigo) }}
+          onClick={() => { void i18n.changeLanguage(l.codigo) }}
           className={`rounded px-2 py-1 ${
             idioma === l.codigo
               ? 'bg-gray-900 text-white hover:bg-brand-dark'
@@ -108,9 +109,9 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
   return (
     <header
       ref={caja}
-      className={`sticky top-0 z-40 bg-white px-4 py-3 sm:px-6 md:py-[0.625rem] ${SOMBRA}`}
+      className={`sticky top-0 z-40 bg-white ${SOMBRA}`}
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 md:py-[0.625rem]">
         <div className="flex min-w-0 items-center gap-3">
           <a href="https://iclac.cl/" target="_blank" rel="noopener noreferrer" className="shrink-0">
             {/* 68 px en md+ es el alto exacto con que iclac.cl dibuja este mismo logo. */}
@@ -118,10 +119,10 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
           </a>
           <div className="min-w-0 leading-tight">
             <h1 className="font-display text-[0.8125rem] font-semibold leading-tight text-gray-900 sm:text-base">
-              {TEXTOS.titulo[idioma]}
+              {t('titulo')}
             </h1>
             {/* La bajada se esconde en teléfono. */}
-            <p className="mt-0.5 hidden truncate text-xs text-gray-500 sm:block">{TEXTOS.bajada[idioma]}</p>
+            <p className="mt-0.5 hidden truncate text-xs text-gray-500 sm:block">{t('bajada')}</p>
           </div>
         </div>
 
@@ -142,12 +143,12 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
                   }`}
                 >
                   <IconoRecorrido className="h-3 w-3 shrink-0" />
-                  {TEXTOS.nav[n.clave][idioma]}
+                  {t(`nav.${n.clave}`)}
                 </NavLink>
                 )
               : (
                 <NavLink key={n.a} to={n.a} className={clase}>
-                  {TEXTOS.nav[n.clave][idioma]}
+                  {t(`nav.${n.clave}`)}
                 </NavLink>
                 )))}
           </nav>
@@ -159,7 +160,7 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
           type="button"
           onClick={() => { setMenuAbierto((o) => !o) }}
           aria-expanded={menuAbierto}
-          aria-label={menuAbierto ? TEXTOS.cerrarMenu[idioma] : TEXTOS.menu[idioma]}
+          aria-label={menuAbierto ? t('cerrarMenu') : t('menu')}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-gray-700 hover:bg-brand hover:text-gray-900 lg:hidden"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6">
@@ -169,6 +170,14 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
           </svg>
         </button>
       </div>
+
+      {/* Solo fuera del español, que es el original: la traducción la escribimos nosotros y ICLAC
+          todavía no la revisa. Sin el aviso, un error de traducción se leería como postura de ICLAC. */}
+      {t('borrador') && (
+        <p className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
+          {t('borrador')}
+        </p>
+      )}
 
       {menuAbierto && (
         <div className="absolute inset-x-0 top-full z-40 flex flex-col gap-1 border-b border-gray-200 bg-white px-4 py-3 shadow-lg lg:hidden">
@@ -185,7 +194,7 @@ export default function Encabezado ({ idioma, onIdioma }: Props) {
                 }`}
               >
                 {n.clave === 'recorrido' && <IconoRecorrido className="h-3 w-3 shrink-0" />}
-                {TEXTOS.nav[n.clave][idioma]}
+                {t(`nav.${n.clave}`)}
               </NavLink>
             ))}
           </nav>

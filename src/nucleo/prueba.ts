@@ -14,7 +14,7 @@ import type { Correccion } from './tipos'
 export const cruzaCero = (ic: [number, number]) => ic[0] * ic[1] <= 0
 
 /** Con tres decimales, un p de 0,0001 se imprimiría «0,000»: con diez mil rondas el piso es 1/10.001. */
-export const valorP = (p: number) => (p < 0.001 ? 'p < 0,001' : `p = ${decimal(p, 3)}`)
+export const valorP = (p: number) => (p < 0.001 ? `p < ${decimal(0.001, 3)}` : `p = ${decimal(p, 3)}`)
 
 interface Prueba { p: number, ic: [number, number], holm?: Correccion[] }
 

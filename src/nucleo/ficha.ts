@@ -1,18 +1,18 @@
 import type { Encuesta } from './tipos'
+import { ESTRATOS, type Estrato } from './modulos'
+import i18n from '../i18n'
 
 /**
  * Las cifras de la «Ficha técnica», calculadas de los casos. Lo que no está en los casos (fechas,
  * duración, índice) lo escribe el ETL en `encuesta.ficha`; acá no hay ninguna cifra a mano.
  */
 
-/** Los estratos del diseño, del de mayor exposición al de menor: Q1 es «Muy alto». */
-export const ESTRATOS = ['Muy alto', 'Alto', 'Medio', 'Bajo'] as const
-export const NIVEL_ESTRATO: Record<string, string> = { 'Muy alto': 'muy alta', Alto: 'alta', Medio: 'media', Bajo: 'baja' }
+/** Los estratos del diseño y sus rótulos están en `modulos.ts` (`ESTRATOS`): Q1 es «Muy alto». */
 
 export interface FilaRegion {
   codigo: number
   nombre: string
-  estrato: typeof ESTRATOS[number]
+  estrato: Estrato
   /** 1 a 4. */
   q: number
   indice: number
@@ -33,12 +33,12 @@ export function regionesPorIndice (encuesta: Encuesta): FilaRegion[] {
     n.set(r, fila)
   }
   return (encuesta.ficha?.indice ?? []).map(({ codigo, indice }) => {
-    const e = estrato.get(codigo) as typeof ESTRATOS[number]
+    const e = estrato.get(codigo) as Estrato
     return {
       codigo,
       nombre: encuesta.regiones.find((x) => x.codigo === codigo)?.etiqueta ?? String(codigo),
       estrato: e,
-      q: ESTRATOS.indexOf(e) + 1,
+      q: ESTRATOS.findIndex(([clave]) => clave === e) + 1,
       indice,
       n: n.get(codigo) ?? {},
     }
@@ -67,8 +67,10 @@ export function edades (encuesta: Encuesta): Record<number, { min: number, max: 
 }
 
 export interface GrupoComposicion {
+  /** La variable de la base, que es la clave; `variable` es su nombre visible. */
+  clave: string
   variable: string
-  categorias: { etiqueta: string, n: Record<number, number> }[]
+  categorias: { codigo: number, etiqueta: string, n: Record<number, number> }[]
 }
 
 /**
@@ -76,21 +78,28 @@ export interface GrupoComposicion {
  * encuestadora. El tramo «0_17» de `edadr` está vacío en las tres oleadas y no se muestra.
  */
 export function composicion (encuesta: Encuesta): GrupoComposicion[] {
-  const grupo = (variable: string, nombre: string, rotulo: (e: string) => string = (e) => e): GrupoComposicion => {
+  // Los rótulos visibles salen de `paginas.json` (`ficha.composicionRotulos`); sin traducción queda el
+  // de la encuestadora, como las letras del nivel socioeconómico, que no se traducen.
+  const t = (clave: string, respaldo: string, valores: Record<string, string> = {}) =>
+    i18n.t(`ficha.composicionRotulos.${clave}`, { ns: 'paginas', defaultValue: respaldo, ...valores })
+  const grupo = (variable: string, rotulo: (e: string, codigo: number) => string = (e, codigo) => t(`${variable}.${codigo}`, e)): GrupoComposicion => {
     const v = encuesta.variables.find((x) => x.nombre === variable)
     const categorias = (v?.categorias ?? []).map((cat) => {
       const n: Record<number, number> = {}
       for (const o of encuesta.olas) n[o] = encuesta.casos.filter((c) => c.ola === o && Number(c[variable]) === cat.codigo).length
-      return { etiqueta: rotulo(cat.etiqueta), n }
+      return { codigo: cat.codigo, etiqueta: rotulo(cat.etiqueta, cat.codigo), n }
     }).filter((cat) => encuesta.olas.some((o) => cat.n[o] > 0))
-    return { variable: nombre, categorias }
+    return { clave: variable, variable: t(`grupos.${variable}`, variable), categorias }
   }
   // «18_24» → «18 a 24 años»; «65_+» → «65 años o más».
-  const tramo = (e: string) => e.includes('+') ? e.replace('_+', ' años o más') : `${e.replace('_', ' a ')} años`
+  const tramo = (e: string) => {
+    const [desde, hasta] = e.split('_')
+    return hasta === '+' ? t('tramoAbierto', e, { desde }) : t('tramo', e, { desde, hasta })
+  }
   return [
-    grupo('sexo', 'Sexo'),
-    grupo('edadr', 'Edad', tramo),
-    grupo('nse', 'Nivel socioeconómico'),
-    grupo('educacion', 'Nivel educativo'),
+    grupo('sexo'),
+    grupo('edadr', tramo),
+    grupo('nse'),
+    grupo('educacion'),
   ]
 }

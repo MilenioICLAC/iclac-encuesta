@@ -6,6 +6,8 @@ import { ContenidoTarjeta, TARJETA_MINI } from '../historias/TarjetaHistoria'
 import { BarraDeAvance } from './BarraDeAvance'
 import { NumeroHistoria, Siguiente, type HistoriaSiguiente } from './siguiente'
 import { CucharaBoton, CucharaPortada, MangoTendido } from './Sinan'
+import { useTranslation } from 'react-i18next'
+import { idioma, traducido } from '../locale'
 
 /**
  * El recorrido vive en una capa propia, no en el scroll de la página.
@@ -179,14 +181,15 @@ interface Props {
    * método: el enlace de la barra lleva al de la que se está leyendo, no al de otra.
    */
   metodo?: string
-  /** Qué dice el botón de salida, que dice a dónde lleva. Las historias salen al menú. */
+  /** Qué dice el botón de salida, que dice a dónde lleva. Sin la prop, «Volver a las historias» en el idioma activo. */
   salida?: string
   /** Recibe el contenedor con scroll: el observador de los pasos mide contra él y no contra la
    *  pantalla. Con la pantalla como raíz, dentro de una capa, ningún paso se activa nunca. */
   children: (raiz: HTMLElement | null) => React.ReactNode
 }
 
-export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'metodo-recorrido', salida = 'Volver a las historias', children }: Props) {
+export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'metodo-recorrido', salida, children }: Props) {
+  const { t } = useTranslation('capa')
   const capa = useRef<HTMLDivElement | null>(null)
   const cerrar = useRef<HTMLButtonElement | null>(null)
   // El cierre va por referencia y no por dependencia del efecto: llega como función anónima desde
@@ -429,7 +432,7 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
           to={`/datos?foco=${metodo}`}
           className="hidden shrink-0 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark sm:inline"
         >
-          Método
+          {t('metodo')}
         </Link>
 
         {/* El botón dice a dónde lleva. «Cerrar» no dice nada sobre qué pasa después, y salir de
@@ -440,8 +443,8 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
           onClick={alCerrar}
           className="presionable flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
         >
-          <span className="hidden sm:inline">{salida}</span>
-          <span className="sm:hidden">Salir</span>
+          <span className="hidden sm:inline">{salida ?? t('salida')}</span>
+          <span className="sm:hidden">{t('salir')}</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden className="h-3.5 w-3.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
           </svg>
@@ -452,11 +455,11 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
           Solo con puntero fino (ver `.flechas-recorrido` en `index.css`): con el dedo el gesto
           alcanza, y en el teléfono le quitarían sitio a la figura. */}
       <div className="flechas-recorrido">
-        {([['Anterior', -1, 'arriba', extremo.inicio], ['Siguiente', 1, 'abajo', extremo.fin]] as const).map(([nombre, sentido, hacia, apagada]) => (
+        {([['anterior', -1, 'arriba', extremo.inicio], ['siguiente', 1, 'abajo', extremo.fin]] as const).map(([nombre, sentido, hacia, apagada]) => (
           <button
             key={nombre}
             type="button"
-            aria-label={nombre}
+            aria-label={t(nombre)}
             disabled={apagada}
             onClick={() => { irA(sentido) }}
             className="presionable grid h-11 w-11 place-items-center rounded-full border border-gray-300 bg-white text-brand-dark shadow-sm hover:border-brand-dark disabled:text-gray-300 disabled:hover:border-gray-300"
@@ -495,6 +498,7 @@ export function Portada ({ raiz, titulo, children }: {
   titulo: string
   children: React.ReactNode
 }) {
+  const { t } = useTranslation('capa')
   const seccion = useRef<HTMLElement | null>(null)
   const alto = useAltoDe(raiz)
   const informar = useContext(Registro)
@@ -540,8 +544,8 @@ export function Portada ({ raiz, titulo, children }: {
           {/* El texto va según el puntero y no según el ancho: hay tablets anchas que se deslizan
               y portátiles angostos con mouse. Los dos van en el marcado y el CSS esconde uno. */}
           <span className="texto-invitar leading-snug">
-            <span className="texto-mouse">Haz scroll para desplazarte</span>
-            <span className="texto-tactil">Desliza para desplazarte</span>
+            <span className="texto-mouse">{t('invitarMouse')}</span>
+            <span className="texto-tactil">{t('invitarTactil')}</span>
           </span>
           <CucharaPortada />
         </button>
@@ -1017,6 +1021,7 @@ function Pista ({ cantidad, refs, alto, altoEscena, salida = 0.2, paso = 0.75, t
  * directo (decisión de Felipe, 25-09-2026).
  */
 function TarjetaSiguiente ({ siguiente }: { siguiente: HistoriaSiguiente }) {
+  const { t } = useTranslation('capa')
   const { iniciar, enCurso } = useTransicionHistoria()
   const { pathname } = useLocation()
   const navegar = useNavigate()
@@ -1046,7 +1051,7 @@ function TarjetaSiguiente ({ siguiente }: { siguiente: HistoriaSiguiente }) {
       to={siguiente.ruta}
       onClick={elegir}
       tabIndex={enCurso ? -1 : undefined}
-      aria-label={`Leer la historia ${siguiente.numero}: ${siguiente.nombre}`}
+      aria-label={t('leerHistoria', { numero: siguiente.numero, nombre: traducido(siguiente.nombre) })}
       className={`tarjeta-siguiente group mt-2 ${TARJETA_MINI} max-w-md transition-[border-color,box-shadow] duration-200 ease-in-out hover:border-brand-dark hover:shadow-md hover:shadow-brand-dark/10 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-dark ${enCurso ? 'opacity-0' : ''}`}
     >
       <ContenidoTarjeta h={siguiente} i={indice} mini />
@@ -1078,6 +1083,7 @@ export function Cierre ({ raiz, titulo, frases }: {
   /** El titular de cada escena que el cierre repite, con la escena a la que lleva. */
   frases: { escena: number, texto: string }[]
 }) {
+  const { t } = useTranslation('capa')
   const siguiente = useContext(Siguiente)
   const numero = useContext(NumeroHistoria)
   const metodo = useContext(Metodo)
@@ -1115,8 +1121,9 @@ export function Cierre ({ raiz, titulo, frases }: {
     raiz.scrollTo({ top: destino.getBoundingClientRect().top - arriba, behavior: reducido ? 'auto' : 'smooth' })
   }
 
-  // Los titulares se escriben sin punto final porque van de encabezado; acá son oraciones.
-  const cerrada = (texto: string) => (/[.!?]$/.test(texto) ? texto : `${texto}.`)
+  // Los titulares se escriben sin punto final porque van de encabezado; acá son oraciones. En chino
+  // el punto es «。», y el titular puede traer ya uno de ancho completo.
+  const cerrada = (texto: string) => (/[.!?。！？]$/.test(texto) ? texto : `${texto}${idioma() === 'cn' ? '。' : '.'}`)
   const salidaVisible = reducido || activo >= frases.length
 
   return (
@@ -1128,7 +1135,7 @@ export function Cierre ({ raiz, titulo, frases }: {
       >
         {/* Las medidas de escritorio viven en `index.css` (`.cierre-recorrido`). */}
         <div className="bloque-cierre mx-auto w-full max-w-2xl">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">{numero ? `Historia ${numero}` : 'Recorrido'}</p>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">{numero ? t('historia', { numero }) : t('recorrido')}</p>
           <h2 className="mt-1.5 font-display text-2xl font-semibold leading-tight text-gray-900">{titulo}</h2>
 
           <ol className="frases-cierre mt-5 flex flex-col gap-3">
@@ -1166,7 +1173,7 @@ export function Cierre ({ raiz, titulo, frases }: {
               ? (
                 <>
                   <p className="rotulo-siguiente font-display text-xs font-semibold uppercase tracking-widest text-brand-dark">
-                    Siguiente · Historia {siguiente.numero}
+                    {t('siguienteHistoria', { numero: siguiente.numero })}
                   </p>
                   <TarjetaSiguiente siguiente={siguiente} />
                 </>
@@ -1176,13 +1183,13 @@ export function Cierre ({ raiz, titulo, frases }: {
                   to="/"
                   className="boton-siguiente presionable mt-3.5 inline-flex items-center gap-2 rounded-md bg-brand-dark px-4 py-2 text-sm font-medium text-white hover:bg-brand hover:text-gray-900"
                 >
-                  Ver todas las historias <MangoTendido hacia="derecha" />
+                  {t('verTodas')} <MangoTendido hacia="derecha" />
                 </Link>
                 )}
             <div className="otras-salidas mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
-              {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">Volver a las historias</Link>}
-              <Link to="/explorar" className="underline underline-offset-2 hover:text-brand-dark">Explorar las preguntas</Link>
-              <Link to={`/datos?foco=${metodo}`} className="underline underline-offset-2 hover:text-brand-dark">Cómo se hizo</Link>
+              {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">{t('salida')}</Link>}
+              <Link to="/explorar" className="underline underline-offset-2 hover:text-brand-dark">{t('explorar')}</Link>
+              <Link to={`/datos?foco=${metodo}`} className="underline underline-offset-2 hover:text-brand-dark">{t('comoSeHizo')}</Link>
               <button
                 type="button"
                 onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
@@ -1190,7 +1197,7 @@ export function Cierre ({ raiz, titulo, frases }: {
               >
                 {/* Sin espacio antes: el subrayado lo tomaría solo, y la caja girada del ícono ya
                     deja su aire (1,5 em de caja para 0,9 de dibujo). */}
-                Volver al inicio<MangoTendido hacia="arriba" />
+                {t('volverInicio')}<MangoTendido hacia="arriba" />
               </button>
             </div>
           </div>

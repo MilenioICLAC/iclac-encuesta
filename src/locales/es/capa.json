@@ -1,0 +1,30 @@
+{
+  "salida": "Volver a las historias",
+  "salir": "Salir",
+  "avance": "Avance de la historia",
+  "metodo": "Método",
+  "anterior": "Anterior",
+  "siguiente": "Siguiente",
+  "invitarMouse": "Haz scroll para desplazarte",
+  "invitarTactil": "Desliza para desplazarte",
+  "historia": "Historia {{numero}}",
+  "recorrido": "Recorrido",
+  "siguienteHistoria": "Siguiente · Historia {{numero}}",
+  "leerHistoria": "Leer la historia {{numero}}: {{nombre}}",
+  "historiaDeTarjeta": "Historia {{numero}}: ",
+  "verTodas": "Ver todas las historias",
+  "explorar": "Explorar las preguntas",
+  "comoSeHizo": "Cómo se hizo",
+  "volverInicio": "Volver al inicio",
+  "valorBarra": "{{etiqueta}}: {{valor}} (n = {{n}})",
+  "menu": {
+    "titulo": "Percepciones sobre China en Chile",
+    "intro": "{{historias}} con la Encuesta de Percepciones sobre China en Chile, de ICLAC: {{olas}} ({{desde}} a {{hasta}}) y {{respuestas}} de {{personas}}, en un panel en línea.",
+    "historias": { "one": "{{n}} historia contada", "other": "{{n}} historias contadas" },
+    "olas": { "one": "{{n}} oleada", "other": "{{n}} oleadas" },
+    "respuestas": { "one": "{{n}} respuesta", "other": "{{n}} respuestas" },
+    "personas": { "one": "{{n}} persona", "other": "{{n}} personas" },
+    "enPalabras": { "1": "una", "2": "dos", "3": "tres", "4": "cuatro", "5": "cinco" },
+    "mas": "Más sobre la encuesta →"
+  }
+}

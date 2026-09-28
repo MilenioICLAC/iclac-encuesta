@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import Enfasis from './Enfasis'
+import { numero } from '../locale'
 import { tintaSobre } from '../nucleo/paleta'
 
 export interface FilaBarra {
@@ -50,6 +52,7 @@ interface Props {
  * una tabla escrita a mano.
  */
 export default function BarrasDeEscena ({ filas, max, formato, descripcion, altoFila = 26 }: Props) {
+  const { t } = useTranslation('capa')
   return (
     <figure className="barras-escena m-0">
       {/* Toda figura lleva su texto equivalente: lo que sigue es decoración para quien ve. */}
@@ -71,7 +74,7 @@ export default function BarrasDeEscena ({ filas, max, formato, descripcion, alto
               <div
                 className="relative rounded-sm bg-gray-100"
                 style={{ height: `var(--alto-fila-barra-ancho, var(--alto-fila-barra, ${altoFila}px))` }}
-                title={`${fila.etiqueta}: ${formato(fila.valor)} (n = ${fila.n})`}
+                title={t('valorBarra', { etiqueta: fila.etiqueta, valor: formato(fila.valor), n: numero(fila.n) })}
               >
                 <div
                   className="absolute inset-y-0 left-0 rounded-sm transition-opacity duration-300"

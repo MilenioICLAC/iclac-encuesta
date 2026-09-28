@@ -1,0 +1,95 @@
+{
+  "cabeza": {
+    "titulo": "探索调查中的任一问题",
+    "bajada": "调查中的任一问题，可逐轮查看，也可在可比的轮次之间对比。"
+  },
+  "controles": {
+    "pregunta": "问题",
+    "oleada": "调查轮次",
+    "corte": "分组依据",
+    "entreOleadas": "跨轮次对比",
+    "sinRepetidos": "排除参加过多轮调查的受访者",
+    "noSeHizoEn": "{{ola}}年调查未包含此题",
+    "noSeCompara": "此题不作跨轮次对比",
+    "corteNoSeAplica": "跨轮次对比时不分组",
+    "cortesDesactivados": "不分组",
+    "casosUno": "{{n}}名受访者 · {{corte}}",
+    "casos": "{{n}}名受访者 · {{corte}}",
+    "resumenSerie": "跨轮次对比 · 不分组"
+  },
+  "nota": {
+    "unPunto": "每轮调查一个点：{{olas}}。",
+    "unaBarra": "每轮调查一条柱形：{{olas}}。",
+    "categoriaNueva": "某轮调查中不存在的类别，在该轮没有点。",
+    "diez": "十",
+    "palabras": "图中为各轮平均提及率最高的{{n}}个词。",
+    "corteSerie": "跨轮次对比时不分组。",
+    "sinPunto": "无点：该组中提及该词的受访者少于{{minimo}}人。",
+    "corteFuera": "按{{corte}}分组不适用：该分组就是本题分为三段的结果。",
+    "comillas": "“{{texto}}”"
+  },
+  "vacia": {
+    "noSeHizo": "{{ola}}年调查未包含此题。",
+    "seHizoEn": "包含此题的轮次：",
+    "sinRespuestas": "当前筛选下没有回答。",
+    "sinDatos": "此题没有数据。"
+  },
+  "pie": {
+    "respuestasEnUno": "{{ola}}年有效回答：{{n}}份。",
+    "respuestasEn": "{{ola}}年有效回答：{{n}}份。",
+    "fueraDeSerie": "跨轮次对比涵盖{{olas}}年；{{ola}}年不在其中。",
+    "seCompara": "可在{{olas}}年之间对比。",
+    "soloEn": "仅{{ola}}年调查包含此题。",
+    "noSeCompara": "不作跨轮次对比。"
+  },
+  "figura": {
+    "menciones": "此题可多选，因此百分比之和超过100。",
+    "palabras": "每位受访者可提及多项内容，因此百分比之和超过100。",
+    "escasaOlas": "* 该轮有效回答少于{{n}}份。",
+    "escasaGrupos": "* 该组有效回答少于{{n}}份。",
+    "escasaFila": "* 该行有效回答少于{{n}}份。",
+    "menosMenciones": "提及少于{{n}}次",
+    "noSePregunto": "未询问",
+    "respuestas": "回答数",
+    "promedio": "平均分",
+    "conEtiqueta": "{{etiqueta}}：{{resto}}",
+    "deRespuestas": "{{base}}份回答中的{{n}}份",
+    "deCuantos": "（{{n}}/{{base}}）",
+    "ejeMenciones": "选择各选项的受访者占比",
+    "ejePalabras": "提及该词的受访者占比",
+    "ejeReparto": "有效回答占比",
+    "ejeTope": " · 坐标轴范围0至{{tope}}",
+    "promedioEscala": "平均分（0–100）",
+    "noRespondeAntes": "不愿回答：",
+    "noRespondeDespues": "。不计入平均分。",
+    "leyendaN": "括号内为回答数"
+  },
+  "posicionamiento": {
+    "aria": "智利应如何定位：各轮调查的完整分布",
+    "total": "每条柱形代表100%的回答。",
+    "frente": "{{a}}年对比{{b}}年：",
+    "pp": "个百分点"
+  },
+  "regresion": {
+    "aria": "{{etiqueta}}。{{cual}}。",
+    "todas": "全部三轮调查",
+    "ola": "{{ola}}年调查",
+    "pendiente": "斜率{{b}}［{{lo}}；{{hi}}］",
+    "r2": "R² {{r2}}% · n {{n}}",
+    "sinEl": " · 去除{{x}}",
+    "personas": "{{n}}人 · {{media}}"
+  },
+  "termometro": {
+    "eje": "评分（0–100）",
+    "ejeRecortado": "评分（0–100）· 坐标轴截取{{min}}–{{max}}"
+  },
+  "confianza": {
+    "ninguna": "没有",
+    "poca": "很少",
+    "algo": "一些",
+    "mucha": "很多",
+    "masEeuu": "更信任美国",
+    "igual": "相同",
+    "masChina": "更信任中国"
+  }
+}

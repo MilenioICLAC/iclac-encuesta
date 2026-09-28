@@ -1,5 +1,15 @@
 /** Contrato de lo que escribe `npm run etl:combinada`. Ver scripts/etl_combinada.mjs. */
 
+import type { Traducible } from '../locale'
+
+/*
+ * **Qué viaja en tres idiomas.** Los textos que se leen del catálogo del explorador (`preguntas`), de
+ * los contrastes y las palabras de las abiertas y de las nubes van como `Traducible`; se muestran con
+ * `traducido()` (o `palabraVisible()`, las palabras). Las traducciones viven en
+ * `scripts/lib/traducciones/` y el ETL falla si falta o sobra una. Lo demás (`variables`, `multiples`,
+ * `regiones`) sigue en español: son el diccionario del cliente, no textos de la interfaz.
+ */
+
 export type Ola = 2023 | 2024 | 2025
 
 export interface Categoria {
@@ -52,9 +62,9 @@ export interface Multiple {
  */
 export interface CategoriaPregunta {
   codigo: number | string
-  etiqueta: string
+  etiqueta: Traducible
   /** La etiqueta de las oleadas donde el código significa otra cosa (`p4`, `p15`). */
-  porOla?: Record<string, string>
+  porOla?: Record<string, Traducible>
   /** Solo en la serie: las oleadas donde existe la categoría (Boric en `p4`, solo 2023 y 2024). */
   olas?: number[]
 }
@@ -69,17 +79,17 @@ export interface SeriePregunta {
   filtro?: { variable: string, codigos: number[] }
   /** Por oleada, código de esa oleada → código de la serie (`p4` en 2025). */
   recodificar?: Record<string, Record<string, number>>
-  nota?: string
+  nota?: Traducible
 }
 
 export interface Pregunta {
   id: string
   /** La columna de la vista de una oleada; en una múltiple, el id del grupo. */
   variable: string
-  titulo: string
-  tituloPorOla?: Record<string, string>
-  enunciado: string
-  enunciadoPorOla?: Record<string, string>
+  titulo: Traducible
+  tituloPorOla?: Record<string, Traducible>
+  enunciado: Traducible
+  enunciadoPorOla?: Record<string, Traducible>
   tipo: 'ordinal' | 'nominal' | 'binaria' | 'multiple' | 'numerica'
   olas: number[]
   /** En orden de lectura. En una múltiple el código es la columna. */
@@ -90,12 +100,12 @@ export interface Pregunta {
   noResponde?: { variable: string, codigo: number }
   serie: SeriePregunta | null
   /** Por qué no se compara, cuando se hizo en más de una oleada. */
-  sinSerie?: string
+  sinSerie?: Traducible
   /** Cortes que no tienen sentido sobre esta pregunta (ideología sobre la ideología). */
   sinCortes?: string[]
-  poblacion?: string
-  poblacionPorOla?: Record<string, string>
-  nota?: string
+  poblacion?: Traducible
+  poblacionPorOla?: Record<string, Traducible>
+  nota?: Traducible
   /** Id de una medida de `contrastes` cuya advertencia acompaña a la pregunta. */
   advertencia?: string
   /** Pregunta abierta, como múltiple de palabras: cuántas muestra y el mínimo de menciones con corte (`ABIERTAS`). */
@@ -110,7 +120,8 @@ export interface Region {
 }
 
 export interface Palabra {
-  palabra: string
+  /** `palabra.es` es la que escribió la gente, y la clave con que se compara; se muestra con `palabraVisible`. */
+  palabra: Traducible
   n: number
 }
 
@@ -164,7 +175,7 @@ export interface Comparacion {
 
 export interface Medida {
   id: string
-  etiqueta: string
+  etiqueta: Traducible
   unidad: string
   /**
    * Lo que hay que decir junto a la cifra para que no se lea de más.
@@ -173,14 +184,14 @@ export interface Medida {
    * viene después de otra sobre fuentes de información) tiene que aparecer dondequiera que se
    * publique la serie, y si depende de que alguien se acuerde, un día no aparece.
    */
-  advertencia?: string
+  advertencia?: Traducible
   comparaciones: Comparacion[]
 }
 
 /** La misma pregunta contestada por la misma persona sobre dos países: la resta va dentro del caso. */
 export interface Brecha {
   id: string
-  etiqueta: string
+  etiqueta: Traducible
   unidad: string
   porOla: { ola: number, n: number, diferencia: number, ic: [number, number], p: number, holm?: Correccion[] }[]
 }
@@ -193,8 +204,10 @@ export interface Brecha {
  */
 export interface Grupo {
   id: string
-  etiqueta: string
+  etiqueta: Traducible
   unidad: string
+  /** El rótulo de cada tramo. `nombre` en `tramos`, `entre` y `tramo` es la clave, en español. */
+  nombres: Record<string, Traducible>
   porOla: {
     ola: number
     tramos: { nombre: string, media: number | null, n: number }[]
@@ -210,7 +223,7 @@ export interface Grupo {
  */
 export interface Regresion {
   id: string
-  etiqueta: string
+  etiqueta: Traducible
   x: string
   y: string
   rango: [number, number]
@@ -246,7 +259,7 @@ export interface Transversal {
   hasta: number
   cortes: {
     campo: string
-    etiqueta: string
+    etiqueta: Traducible
     total: number
     suben: number
     grupos: { grupo: string, diferencia: number }[]
@@ -254,14 +267,14 @@ export interface Transversal {
 }
 
 export interface Contrastes {
-  metodo: { prueba: string, rondas: number, semilla: number, intervalo: string, alcance: string }
+  metodo: { prueba: string, rondas: number, semilla: number, intervalo: string, alcance: Traducible }
   medidas: Medida[]
   brechas: Brecha[]
   grupos: Grupo[]
   regresiones: Regresion[]
   transversal: Transversal[]
   /** Las familias corregidas con Holm; `exploratoria` si se fijó después de ver la cifra. */
-  familias?: { id: string, etiqueta: string, exploratoria: boolean, pruebas: number }[]
+  familias?: { id: string, etiqueta: Traducible, exploratoria: boolean, pruebas: number }[]
 }
 
 export interface Encuesta {

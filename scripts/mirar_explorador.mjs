@@ -1,6 +1,9 @@
 // Recorre cada pregunta del explorador en sus tres estados y mide lo que se rompe a la vista.
 //
-//   node scripts/mirar_explorador.mjs [url base] [carpeta de capturas] [anchos separados por coma]
+//   node scripts/mirar_explorador.mjs [url base] [carpeta de capturas] [anchos separados por coma] [--idioma es|en|cn] [--puerto N]
+//
+// `--idioma` abre la página con `?lng=`, antes del `#` (así la lee el detector de `src/i18n.ts`), y
+// fuera del español agrega el idioma al nombre de cada captura.
 //
 // Por pregunta y ancho: una oleada sin corte, la misma con corte por edad, y entre oleadas. Mide
 // desborde horizontal del documento y de la tarjeta, líneas del título, rótulos de valor que se
@@ -14,9 +17,29 @@ import { mkdirSync, readFileSync } from 'node:fs'
 const require = createRequire(import.meta.url)
 const { chromium } = require(execFileSync('npm', ['root', '-g']).toString().trim() + '/playwright')
 
-const base = process.argv[2] ?? 'http://localhost:5180'
-const carpeta = process.argv[3] ?? 'capturas-explorador'
-const anchos = (process.argv[4] ?? '390,1512').split(',').map(Number)
+// `--idioma en` y `--puerto 5185` pueden ir en cualquier lugar; lo demás son los posicionales de
+// siempre. Sin url base, se mide contra `localhost` en ese puerto (por omisión 5180, el de
+// `npm run dev`, o la variable `PUERTO`): con varios servidores a la vez, cada uno mide el suyo.
+const argumentos = process.argv.slice(2)
+const opcion = (nombre, porOmision) => {
+  const i = argumentos.indexOf(nombre)
+  return i >= 0 ? argumentos.splice(i, 2)[1] : porOmision
+}
+const idioma = opcion('--idioma', 'es')
+if (!['es', 'en', 'cn'].includes(idioma)) {
+  console.error(`--idioma es, en o cn; llegó «${idioma}»`)
+  process.exit(1)
+}
+const puerto = Number(opcion('--puerto', process.env.PUERTO ?? 5180))
+if (!Number.isInteger(puerto) || puerto <= 0) {
+  console.error('--puerto lleva un número de puerto')
+  process.exit(1)
+}
+const sufijo = idioma === 'es' ? '' : `-${idioma}`
+
+const base = argumentos[0] ?? `http://localhost:${puerto}`
+const carpeta = argumentos[1] ?? 'capturas-explorador'
+const anchos = (argumentos[2] ?? '390,1512').split(',').map(Number)
 mkdirSync(carpeta, { recursive: true })
 
 const { preguntas } = JSON.parse(readFileSync('public/data/encuesta.json', 'utf8'))
@@ -30,7 +53,7 @@ for (const ancho of anchos) {
   const errores = []
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errores.push(m.text()) })
   page.on('pageerror', (e) => errores.push(e.message))
-  await page.goto(`${base}/#/explorar`)
+  await page.goto(`${base}/?lng=${idioma}#/explorar`)
   await page.waitForSelector('article h3')
 
   for (const p of preguntas) {
@@ -83,7 +106,7 @@ for (const ancho of anchos) {
       if (m.filas === 0 && nombre !== 'ola') problemas.push(`${donde}: la figura quedó vacía`)
       if (m.choques.length) problemas.push(`${donde}: rótulo sobre un punto (${m.choques.join('; ')})`)
       for (const e of errores) problemas.push(`${donde}: consola: ${e}`)
-      await page.locator('article').screenshot({ path: `${carpeta}/${p.id}-${nombre}-${ancho}.png` })
+      await page.locator('article').screenshot({ path: `${carpeta}/${p.id}-${nombre}-${ancho}${sufijo}.png` })
     }
   }
   await page.close()

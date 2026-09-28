@@ -1,0 +1,124 @@
+{
+  "app": {
+    "errorTitulo": "The data could not be loaded",
+    "errorAntes": "Reload the page. If the problem persists, contact us through",
+    "errorDespues": ".",
+    "cargando": "Loading…",
+    "nucleo": "Millennium Nucleus on the Impacts of China in Latin America and the Caribbean",
+    "instituciones": {
+      "minciencia": "Ministry of Science, Technology, Knowledge and Innovation · ANID",
+      "uc": "Pontifical Catholic University of Chile",
+      "uchile": "University of Chile",
+      "ucn": "Catholic University of the North",
+      "uta": "University of Tarapacá"
+    }
+  },
+  "datos": {
+    "titulo": "About the data",
+    "bajada": "What to know before citing a figure, and what supports each statement in the stories.",
+    "enEstaPagina": "On this page",
+    "indice": {
+      "citar": "Before citing",
+      "historias": "What supports each story",
+      "comoSeLee": "How a difference is tested",
+      "todas": "All comparisons"
+    },
+    "citarTitulo": "Before citing a figure",
+    "masSobre": "More about the survey →",
+    "historiasBajada": "Every statement that claims a change or a difference rests on one of these tests. In each row, the vertical line is zero, the dot is the difference, and the horizontal line is its {{p95}} interval. If the line crosses zero, the row says “no clear difference” and the story does not pick a winner.",
+    "metodo": "Method",
+    "comoSeLeeBajada": "The p-value, the interval, composition held constant, and why this is not a margin of error",
+    "todasTitulo": "All comparisons across waves",
+    "todasBajadaUna": "{{n}} measure in one table, including any that no story uses",
+    "todasBajada": "{{n}} measures in one table, including those that no story uses"
+  },
+  "metodo": {
+    "historia": "Story {{n}} · {{nombre}}",
+    "prueba": "{{n}} test",
+    "pruebas": "{{n}} tests",
+    "afirma": "What it claims: ",
+    "recta": "Why a handful of responses can tilt a regression line"
+  },
+  "contrastes": {
+    "medida": "Measure",
+    "sinDato": "no data",
+    "noPasa": "does not pass the correction",
+    "parejo": "no clear difference"
+  },
+  "descargas": {
+    "titulo": "Download the data",
+    "bajada": "The complete responses from the three waves, for reanalysis. The files are CSV, UTF-8 encoded and comma-separated.",
+    "idioma": "All files are in Spanish: the data, their variable names and response labels, and the documentation.",
+    "respuestas": "Responses",
+    "documentacion": "Documentation",
+    "fila": "{{n}} row",
+    "filas": "{{n}} rows",
+    "antes": "Before using them",
+    "archivos": {
+      "combinada": "All three waves together",
+      "oleada": "{{anio}} wave",
+      "diccionario": "Variable dictionary",
+      "valores": "Response labels",
+      "notas": "Notes on the data file",
+      "libro": "{{anio}} codebook",
+      "nota": "Methodological note on sampling",
+      "indice": "Design of the index of economic exposure to China by region",
+      "cuestionario": "{{anio}} questionnaire"
+    }
+  },
+  "ficha": {
+    "titulo": "Survey details",
+    "institucion": "Institution and purpose",
+    "aplicacion": "Fieldwork and questionnaire",
+    "oleada": "Wave",
+    "fechas": "Fieldwork dates",
+    "duracion": "Median duration",
+    "minutos": "{{n}} minutes",
+    "fuenteCampo": "Source: response records for each wave.",
+    "diseno": "Sample design",
+    "estrato": "Stratum",
+    "region": "Region",
+    "indice": "Index",
+    "total": "Total",
+    "fuentesEstratosA": "Sources: strata and index, methodological note",
+    "fuentesEstratosB": "; cases by region, combined data file",
+    "fin": ".",
+    "mapa": "Map of Chile by stratum of economic exposure to China.",
+    "casos": "Cases per wave",
+    "composicion": "Sample composition",
+    "categoria": "Category",
+    "fuenteComposicionA": "Source: combined data file",
+    "fuenteComposicionB": ". Percentages may not add up to 100 because of rounding.",
+    "alcance": "Scope of the figures",
+    "fuentes": "Sources",
+    "composicionRotulos": {
+      "grupos": {
+        "sexo": "Sex",
+        "edadr": "Age",
+        "nse": "Socioeconomic status",
+        "educacion": "Education"
+      },
+      "sexo": {
+        "1": "Male",
+        "2": "Female"
+      },
+      "nse": {
+        "999": "Not reported"
+      },
+      "educacion": {
+        "1": "No formal education",
+        "2": "Did not complete basic education",
+        "3": "Completed basic education",
+        "4": "Did not complete secondary education",
+        "5": "Completed secondary education",
+        "6": "Did not complete technical education",
+        "7": "Completed technical education or some university",
+        "8": "University degree",
+        "9": "Postgraduate degree",
+        "999": "Not reported"
+      },
+      "tramo": "{{desde}}–{{hasta}}",
+      "tramoAbierto": "{{desde}} or older"
+    }
+  }
+}

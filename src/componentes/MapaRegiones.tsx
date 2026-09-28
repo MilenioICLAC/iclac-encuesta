@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 /**
  * Las dieciséis regiones de Chile continental, con la geometría de simplemaps.
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function MapaRegiones ({ relleno, encendida = () => true, descripcion }: Props) {
+  const { t } = useTranslation('comun')
   const [geo, setGeo] = useState<Geometria | null>(null)
   useEffect(() => {
     let vivo = true
@@ -59,7 +61,8 @@ export default function MapaRegiones ({ relleno, encendida = () => true, descrip
           className="transition-opacity duration-500"
           style={{ opacity: encendida(r.codigo) ? 1 : 0.18 }}
         >
-          <title>{r.nombre}</title>
+          {/* El nombre en el idioma activo (`comun.json`, `regiones`); el del archivo es el del cliente. */}
+          <title>{t(`regiones.${r.codigo}`, { defaultValue: r.nombre })}</title>
         </path>
       ))}
     </svg>

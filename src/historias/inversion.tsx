@@ -6,9 +6,10 @@ import Puntos from '../componentes/Puntos'
 import { multirespuesta } from '../nucleo/agregar'
 import { topeDeBarras } from '../nucleo/escala'
 import { pasosDeOrden } from '../nucleo/paleta'
-import { decimal, numero, porcentaje } from '../locale'
+import { decimal, porcentaje, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
-import { casosDe, serieDeMedida } from './lectura'
+import { serieDeMedida } from './lectura'
+import { FICHA, TEXTOS } from './textos/inversion'
 
 /**
  * La historia «Inversión y Estado»: si el Estado debería poder frenar una inversión extranjera, y
@@ -23,9 +24,13 @@ import { casosDe, serieDeMedida } from './lectura'
  *
  * **Ninguna de las dos preguntas nombra a China**: hablan de empresas extranjeras. La nota lo dice,
  * porque en una encuesta sobre China el lector lo supone.
+ *
+ * **El componente calcula y compone; no escribe texto.** Toda la prosa, en los tres idiomas, está en
+ * `textos/inversion.tsx`, que recibe las cifras y las banderas en `Valores`.
  */
 export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, abierta: boolean }) {
   const navegar = useNavigate()
+  const idioma = useIdioma()
   const limitar = serieDeMedida(encuesta, 'limitar-inversiones')
   const podio = encuesta.contrastes?.brechas.find((b) => b.id === 'electrica-sobre-banca')?.porOla ?? []
   const grupo = encuesta.multiples.find((m) => m.id === 'p20')
@@ -45,14 +50,6 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
   const [primeraS, ultimaS] = [sectores[0], sectores[sectores.length - 1]]
   const orden = (s: typeof primeraS) => s.menciones.map((m) => m.columna).join()
   const mismoOrden = orden(primeraS) === orden(ultimaS)
-  const nombre = (columna: string) => {
-    const o = grupo.opciones.find((x) => x.columna === columna)?.opcion ?? columna
-    // Las opciones vienen como «del cobre», «de distribución eléctrica»: la fila lleva el sustantivo.
-    // «5G/telecomunicaciones» no cabe en la columna de nombres de un teléfono.
-    const limpio = o.replace(/^(del|de la|de)\s+/, '').replace('5G/telecomunicaciones', '5G y telecom.')
-    return limpio.charAt(0).toUpperCase() + limpio.slice(1)
-  }
-  const tres = primeraS.menciones.slice(0, 3)
   const podioFirme = podio.length === olasSectores.length && podio.every((b) => b.p < 0.05 && b.diferencia > 0)
     && orden({ ...primeraS, menciones: primeraS.menciones.slice(0, 3) }) === orden({ ...ultimaS, menciones: ultimaS.menciones.slice(0, 3) })
 
@@ -60,16 +57,20 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
 
   const primeraOla = limitar.puntos[0].ola
   const ultimaOla = limitar.puntos[limitar.puntos.length - 1].ola
-  const quieto = parejo(limitar)
-  // «Tres de cada cuatro» solo mientras las tres oleadas redondeen a eso.
-  const tresDeCuatro = limitar.puntos.every((p) => p.valor >= 70 && p.valor < 80)
-
-  const titularLimitar = quieto && tresDeCuatro
-    ? 'En todas las oleadas, tres de cada cuatro personas quieren que el Estado pueda frenar una inversión extranjera'
-    : 'Cuántos quieren que el Estado pueda frenar una inversión extranjera'
-  const titularSectores = podioFirme
-    ? `Donde más se quiere poder frenarla: ${tres.map((m) => nombre(m.columna).toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' y $1')}`
-    : 'En qué sectores se quiere poder frenarla'
+  const t = TEXTOS[idioma]({
+    primeraOla,
+    ultimaOla,
+    limitar: limitar.puntos,
+    quieto: parejo(limitar),
+    // «Tres de cada cuatro» solo mientras las tres oleadas redondeen a eso.
+    tresDeCuatro: limitar.puntos.every((p) => p.valor >= 70 && p.valor < 80),
+    advertencia: limitar.advertencia,
+    sectores: sectores.map((x) => ({ ola: x.ola, base: x.base, menciones: x.menciones.map((m) => ({ columna: m.columna, porcentaje: m.porcentaje })) })),
+    opcionEs: Object.fromEntries(grupo.opciones.map((o) => [o.columna, o.opcion])),
+    podioFirme,
+    mismoOrden,
+  })
+  const ficha = FICHA[idioma]
 
   const topeLimitar = topeDeBarras(limitar.puntos.map((p) => p.valor))
   // Eje de 0 a un múltiplo de 20, con marcas cada 20: con el tope de las barras (75) y tres marcas
@@ -78,9 +79,10 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
 
   // Los sectores como el termómetro: una fila por sector y un punto por oleada, en el mismo eje,
   // ordenados por la última. Pedido de Felipe (21-09-2026): las dos oleadas a la vista a la vez.
+  // La clave de cada fila es la columna, que no depende del idioma; el rótulo sí.
   const filasSectores = ultimaS.menciones.map((m) => ({
     clave: m.columna,
-    etiqueta: nombre(m.columna),
+    etiqueta: t.sector(m.columna),
     valores: sectores.map((x) => x.menciones.find((y) => y.columna === m.columna)?.porcentaje ?? null),
   }))
   const seriesSectores = sectores.map((x) => ({
@@ -90,26 +92,25 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
   }))
   const olasConSectores = sectores.map((x) => x.ola)
   const tonosSectores = sectores.map((x) => tonos[encuesta.olas.indexOf(x.ola)])
-  const describirSectores = (s: typeof primeraS) => `${s.ola}: ${s.menciones.map((m) => `${nombre(m.columna)} ${fmt(m.porcentaje)}`).join(', ')}`
 
   return (
     <CapaRecorrido
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
-      salida="Volver a las historias"
+      salida={t.salida}
       metodo="metodo-inversion"
-      titulo="Inversión y Estado"
+      titulo={ficha.nombre}
     >
       {(raiz) => (
         <>
-          <Portada raiz={raiz} titulo="¿Dónde poner límites a la inversión?">
+          <Portada raiz={raiz} titulo={ficha.pregunta}>
             <img
               src={`${import.meta.env.BASE_URL}icons/iclac.webp`}
               alt="ICLAC"
               className="logo-portada h-12 w-auto object-contain"
             />
             <h2 className="pregunta-portada my-auto max-w-[22ch] text-balance font-display text-[34px] font-semibold leading-[1.12] text-gray-900">
-              ¿Dónde poner límites a la inversión?
+              {ficha.pregunta}
             </h2>
           </Portada>
 
@@ -118,22 +119,16 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
             indice={1}
             raiz={raiz}
             dosColumnas
-            titulo={titularLimitar}
+            titulo={t.titularLimitar}
             cabecera={(activo) => (
               <AnioDelPaso olas={encuesta.olas} tonos={tonos} hasta={activo === 0 ? 0 : encuesta.olas.length - 1} />
             )}
-            frases={[
-              <>En {primeraOla}, el <strong>{fmt(limitar.puntos[0].valor)}</strong> prefería que el Estado pudiera bloquear inversiones que le quiten control sobre sectores estratégicos.</>,
-              <>
-                En {limitar.puntos.at(-2)!.ola}, el <strong>{fmt(limitar.puntos.at(-2)!.valor)}</strong>; en {ultimaOla}, el <strong>{fmt(limitar.puntos.at(-1)!.valor)}</strong>.
-                {quieto ? ' La misma mayoría, tres años seguidos.' : ' Esta vez la cifra sí se mueve.'}
-              </>,
-            ]}
+            frases={t.frasesLimitar}
             figura={(activo, reducido) => (
               <BarrasDeEscena
                 max={topeLimitar}
                 formato={fmt}
-                descripcion={`Prefiere que el Estado pueda limitar inversiones en sectores estratégicos, por oleada. ${limitar.puntos.map((p) => `${p.ola}: ${fmt(p.valor)}`).join('. ')}.`}
+                descripcion={t.descripcionLimitar}
                 filas={limitar.puntos.map((p, i) => ({
                   clave: String(p.ola),
                   etiqueta: String(p.ola),
@@ -145,16 +140,11 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
                 }))}
               />
             )}
-            nota={(
-              <p className="text-xs leading-snug text-gray-500">
-                {limitar.puntos.map((p, i) => `${i === 0 ? '' : i === limitar.puntos.length - 1 ? ' y ' : ', '}${casosDe(p.valor, p.n)} de ${numero(p.n)}`).join('')} personas
-                encuestadas. La pregunta habla de empresas extranjeras, no de China. {limitar.advertencia}
-              </p>
-            )}
+            nota={<p className="text-xs leading-snug text-gray-500">{t.notaLimitar}</p>}
           />
 
-          <Respiro raiz={raiz} indice={-1} titulo="¿Y en qué sectores?">
-            ¿Y en qué <strong>sectores</strong>?
+          <Respiro raiz={raiz} indice={-1} titulo={t.respiro.titulo}>
+            {t.respiro.cuerpo}
           </Respiro>
 
           {/* Escena 2: los sectores de `p20`, una oleada por paso. **Cambia de oleada sin cambiar de
@@ -163,57 +153,43 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
             indice={2}
             raiz={raiz}
             dosColumnas
-            titulo={titularSectores}
+            titulo={t.titularSectores}
             cabecera={(activo) => (
               <AnioDelPaso olas={encuesta.olas} tonos={tonos} hasta={encuesta.olas.indexOf(activo === 0 ? primeraS.ola : ultimaS.ola)} />
             )}
-            frases={[
-              <>
-                En {primeraS.ola}, de quienes querían poder limitar, el <strong>{fmt(tres[0].porcentaje)}</strong> marcó {nombre(tres[0].columna).toLowerCase()},
-                el <strong>{fmt(tres[1].porcentaje)}</strong> {nombre(tres[1].columna).toLowerCase()} y
-                el <strong>{fmt(tres[2].porcentaje)}</strong> {nombre(tres[2].columna).toLowerCase()}.
-              </>,
-              mismoOrden
-                ? <>En {ultimaS.ola} cambian las cifras, pero no el orden: <strong>los siete sectores quedan igual</strong>, de punta a punta.</>
-                : <>En {ultimaS.ola}: {nombre(ultimaS.menciones[0].columna).toLowerCase()} {fmt(ultimaS.menciones[0].porcentaje)}, {nombre(ultimaS.menciones[1].columna).toLowerCase()} {fmt(ultimaS.menciones[1].porcentaje)}.</>,
-            ]}
+            frases={t.frasesSectores}
             figura={(activo, reducido) => (
               <div className="flex flex-col gap-2">
-                <p className="sr-only">{`Sectores donde es más importante limitar la inversión extranjera, entre quienes quieren poder limitarla. ${sectores.map(describirSectores).join('. ')}.`}</p>
+                <p className="sr-only">{t.descripcionSectores}</p>
                 <Puntos
                   series={seriesSectores}
                   filas={filasSectores}
                   escala={{ min: 0, max: topeSectores }}
                   formato={(v) => decimal(v, 1)}
                   formatoEje={(v) => decimal(v, 0)}
-                  titulo={(fila, serie, valor) => `${fila.etiqueta} · ${serie.etiqueta}: ${fmt(valor)}`}
+                  titulo={(fila, serie, valor) => t.tituloPunto(fila.etiqueta, serie.etiqueta, valor)}
                   marcas={topeSectores / 20 + 1}
                   anchoEtiqueta="8.5rem"
                   compacto
                   altoFila={28}
                   radioCreciente
                   leyenda={false}
-                  unidadEje="% que lo marca"
+                  unidadEje={t.unidadEje}
                   rotular={seriesSectores.length - 1}
                   visible={(_fila, ola) => reducido || activo >= 1 || ola === String(primeraS.ola)}
                 />
                 <LeyendaDeOleadas olas={olasConSectores} tonos={tonosSectores} />
               </div>
             )}
-            nota={(
-              <p className="text-xs leading-snug text-gray-500">
-                Solo quienes quieren poder limitar ({sectores.map((x) => `${numero(x.base)} en ${x.ola}`).join(' y ')}). Cada
-                persona marca varios sectores: suman más de 100. Sin «otro». No se preguntó en {ultimaOla}.
-              </p>
-            )}
+            nota={<p className="text-xs leading-snug text-gray-500">{t.notaSectores}</p>}
           />
 
           <Cierre
             raiz={raiz}
-            titulo="Inversión y Estado"
+            titulo={ficha.nombre}
             frases={[
-              { escena: 1, texto: titularLimitar },
-              { escena: 2, texto: titularSectores },
+              { escena: 1, texto: t.titularLimitar },
+              { escena: 2, texto: t.titularSectores },
             ]}
           />
         </>
@@ -221,4 +197,3 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
     </CapaRecorrido>
   )
 }
-

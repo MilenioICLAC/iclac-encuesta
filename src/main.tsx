@@ -1,5 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+// Antes que la app: el idioma se detecta (`?lng=`, lo guardado, el navegador) antes del primer dibujo.
+import './i18n'
 import App from './App'
 import './index.css'
 

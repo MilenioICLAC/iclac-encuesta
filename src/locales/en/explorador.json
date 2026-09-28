@@ -1,0 +1,95 @@
+{
+  "cabeza": {
+    "titulo": "Explore any question",
+    "bajada": "Any question in the survey, one wave at a time or comparing the waves where comparison is possible."
+  },
+  "controles": {
+    "pregunta": "Question",
+    "oleada": "Wave",
+    "corte": "Break down by",
+    "entreOleadas": "Across waves",
+    "sinRepetidos": "Exclude people who answered in more than one wave",
+    "noSeHizoEn": "This question was not asked in {{ola}}",
+    "noSeCompara": "This question is not compared across waves",
+    "corteNoSeAplica": "Breakdowns do not apply across waves",
+    "cortesDesactivados": "Breakdowns off",
+    "casosUno": "{{n}} case · {{corte}}",
+    "casos": "{{n}} cases · {{corte}}",
+    "resumenSerie": "Across waves · breakdowns off"
+  },
+  "nota": {
+    "unPunto": "One dot per wave: {{olas}}.",
+    "unaBarra": "One bar per wave: {{olas}}.",
+    "categoriaNueva": " A category that did not exist in a wave has no dot there.",
+    "diez": "ten",
+    "palabras": " The {{n}} most-mentioned words, averaged across waves.",
+    "corteSerie": " Breakdowns do not apply across waves.",
+    "sinPunto": "No dot: fewer than {{minimo}} people in that group mentioned it.",
+    "corteFuera": "The breakdown by {{corte}} does not apply: it is this same question grouped into three bands.",
+    "comillas": "“{{texto}}”"
+  },
+  "vacia": {
+    "noSeHizo": "This question was not asked in {{ola}}.",
+    "seHizoEn": "It was asked in",
+    "sinRespuestas": "There are no responses in this selection.",
+    "sinDatos": "There are no data for this question."
+  },
+  "pie": {
+    "respuestasEnUno": "{{n}} valid response in {{ola}}.",
+    "respuestasEn": "{{n}} valid responses in {{ola}}.",
+    "fueraDeSerie": "The comparison across waves covers {{olas}}; {{ola}} is not included.",
+    "seCompara": "Compared across {{olas}}.",
+    "soloEn": "Asked only in {{ola}}.",
+    "noSeCompara": "Not compared across waves."
+  },
+  "figura": {
+    "menciones": "More than one option can be selected, so percentages add up to more than 100.",
+    "palabras": "Each person can name several things, so percentages add up to more than 100.",
+    "escasaOlas": "* Fewer than {{n}} responses in that wave.",
+    "escasaGrupos": "* Fewer than {{n}} responses in that group.",
+    "escasaFila": "* Fewer than {{n}} responses in that row.",
+    "menosMenciones": "Fewer than {{n}} mentions",
+    "noSePregunto": "Not asked",
+    "respuestas": "Responses",
+    "promedio": "Average",
+    "conEtiqueta": "{{etiqueta}}: {{resto}}",
+    "deRespuestas": "{{n}} of {{base}} responses",
+    "deCuantos": " ({{n}} of {{base}})",
+    "ejeMenciones": "Share who selected each option",
+    "ejePalabras": "Share who mentioned it",
+    "ejeReparto": "Share of valid responses",
+    "ejeTope": " · axis from 0 to {{tope}}",
+    "promedioEscala": "Average on a 0 to 100 scale",
+    "noRespondeAntes": "Preferred not to answer: ",
+    "noRespondeDespues": ". They are excluded from the average.",
+    "leyendaN": "responses in parentheses"
+  },
+  "posicionamiento": {
+    "aria": "How Chile should position itself: full distribution by wave",
+    "total": "Each bar represents 100% of responses.",
+    "frente": "{{a}} vs. {{b}}:",
+    "pp": " pp"
+  },
+  "regresion": {
+    "aria": "{{etiqueta}}. {{cual}}.",
+    "todas": "All three waves",
+    "ola": "{{ola}} wave",
+    "pendiente": "slope {{b}} [{{lo}}; {{hi}}]",
+    "r2": "R² {{r2}}% · n {{n}}",
+    "sinEl": " · without {{x}}",
+    "personas": "{{n}} people · {{media}}"
+  },
+  "termometro": {
+    "eje": "Rating from 0 to 100",
+    "ejeRecortado": "Rating from 0 to 100 · axis cropped to {{min}}–{{max}}"
+  },
+  "confianza": {
+    "ninguna": "None",
+    "poca": "Little",
+    "algo": "Some",
+    "mucha": "A great deal",
+    "masEeuu": "More in the United States",
+    "igual": "The same",
+    "masChina": "More in China"
+  }
+}

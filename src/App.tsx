@@ -9,8 +9,8 @@ import FichaTecnica from './componentes/FichaTecnica'
 import Contrastes, { ComoSeLee } from './componentes/Contrastes'
 import MetodoHistorias, { Plegable } from './componentes/MetodoHistorias'
 import Encabezado from './componentes/Encabezado'
-import { fijarIdioma, locale, numero, type Idioma } from './locale'
-import { TEXTOS } from './textos'
+import { useTranslation } from 'react-i18next'
+import { numero, plural, porcentaje, useIdioma, type Idioma } from './locale'
 import { HISTORIAS } from './historias/indice'
 import MenuHistorias from './historias/MenuHistorias'
 import { ProveedorTransicion } from './historias/Transicion'
@@ -40,14 +40,10 @@ export default function App () {
   // última, para que quien lee una historia y vuelve a explorar lo encuentre como lo dejó.
   const [busquedaExplorador, setBusquedaExplorador] = useState('')
 
-  // El idioma vive acá arriba y no en el encabezado: además de los textos del cromo gobierna el
-  // formato de los números, que se resuelve en `locale.ts` y lo usa toda la página.
-  const [idioma, setIdioma] = useState<Idioma>('es')
-  const cambiarIdioma = (siguiente: Idioma) => {
-    fijarIdioma(siguiente)
-    setIdioma(siguiente)
-    document.documentElement.lang = locale()
-  }
+  // El idioma lo guarda i18next (`i18n.ts`), no un estado de acá. `App` se suscribe para que al
+  // cambiarlo se vuelva a dibujar el árbol entero: los textos y el formato de los números.
+  useIdioma()
+  const { t } = useTranslation('paginas')
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/encuesta.json`)
@@ -59,18 +55,18 @@ export default function App () {
   if (error) {
     return (
       <main className="mx-auto max-w-2xl p-8">
-        <h1 className="font-display text-xl font-semibold">No se pudieron cargar los datos</h1>
+        <h1 className="font-display text-xl font-semibold">{t('app.errorTitulo')}</h1>
         <p className="mt-2 text-sm text-gray-600">{error}</p>
         <p className="mt-4 text-sm text-gray-600">
-          Recarga la página. Si el problema sigue, escríbenos a través de{' '}
-          <a href="https://iclac.cl/" className="text-brand-dark underline">iclac.cl</a>.
+          {t('app.errorAntes')}{' '}
+          <a href="https://iclac.cl/" className="text-brand-dark underline">iclac.cl</a>{t('app.errorDespues')}
         </p>
       </main>
     )
   }
 
   if (!encuesta) {
-    return <main className="mx-auto max-w-2xl p-8 text-sm text-gray-500">Cargando…</main>
+    return <main className="mx-auto max-w-2xl p-8 text-sm text-gray-500">{t('app.cargando')}</main>
   }
 
   return (
@@ -82,7 +78,7 @@ export default function App () {
       {/* La transición del menú a la portada cruza el cambio de ruta: vive fuera de `Routes`. */}
       <ProveedorTransicion>
       <Routes>
-        <Route element={<Marco idioma={idioma} onIdioma={cambiarIdioma} />}>
+        <Route element={<Marco />}>
           {/* La raíz es el menú de historias. `#/recorrido` era la historia única de antes: los
               enlaces ya repartidos llegan al menú. */}
           <Route index element={<MenuHistorias encuesta={encuesta} />} />
@@ -204,13 +200,15 @@ function RutaExplorador ({ encuesta, recordada, onRecordar }: { encuesta: Encues
  * (30-07-2026): el ministerio que lo firmaba ya no corresponde, y la marca Milenio sale con él.
  * Los de las universidades vienen del monitor en gris y con margen propio dentro de un lienzo de
  * 380 × 160; por eso van más altos que el SVG, que llega recortado al borde.
+ *
+ * `clave` es la del nombre en `paginas.json` (`app.instituciones`), que se lee en cada idioma.
  */
 const INSTITUCIONES = [
-  { src: 'minciencia-anid.svg', alt: 'Ministerio de Ciencia, Tecnología, Conocimiento e Innovación · ANID', href: 'https://anid.cl/', alto: 'h-12 sm:h-14' },
-  { src: 'uc.png', alt: 'Pontificia Universidad Católica de Chile', href: 'https://www.uc.cl/', alto: 'h-14 sm:h-16' },
-  { src: 'uchile.png', alt: 'Universidad de Chile', href: 'https://uchile.cl/', alto: 'h-14 sm:h-16' },
-  { src: 'ucn.png', alt: 'Universidad Católica del Norte', href: 'https://www.ucn.cl/', alto: 'h-14 sm:h-16' },
-  { src: 'uta.png', alt: 'Universidad de Tarapacá', href: 'https://www.uta.cl/', alto: 'h-14 sm:h-16' }
+  { src: 'minciencia-anid.svg', clave: 'minciencia', href: 'https://anid.cl/', alto: 'h-12 sm:h-14' },
+  { src: 'uc.png', clave: 'uc', href: 'https://www.uc.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'uchile.png', clave: 'uchile', href: 'https://uchile.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'ucn.png', clave: 'ucn', href: 'https://www.ucn.cl/', alto: 'h-14 sm:h-16' },
+  { src: 'uta.png', clave: 'uta', href: 'https://www.uta.cl/', alto: 'h-14 sm:h-16' }
 ]
 
 /**
@@ -224,7 +222,9 @@ const INSTITUCIONES = [
  * **El recorte del explorador no se pierde al cambiar de vista.** El estado vive en `App`, que no
  * se desmonta: quien elige 2025, lee una historia y vuelve a explorar sigue con 2025.
  */
-function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) => void }) {
+function Marco () {
+  const { t } = useTranslation()
+  const { t: tp } = useTranslation('paginas')
   const { pathname, search } = useLocation()
 
   // Cambiar de vista deja la vista nueva empezada por la mitad si se hereda el desplazamiento
@@ -235,12 +235,7 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-gray-50 text-gray-900">
-      <Encabezado idioma={idioma} onIdioma={onIdioma} />
-      {idioma !== 'es' && (
-        <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
-          {TEXTOS.soloCromo[idioma]}
-        </p>
-      )}
+      <Encabezado />
       <main className="flex-1">
         <Outlet />
       </main>
@@ -249,20 +244,20 @@ function Marco ({ idioma, onIdioma }: { idioma: Idioma, onIdioma: (i: Idioma) =>
           {INSTITUCIONES.map(l => (
             <li key={l.src}>
               <a href={l.href} target="_blank" rel="noopener noreferrer" className="block">
-                <img src={`${import.meta.env.BASE_URL}icons/${l.src}`} alt={l.alt} className={`w-auto object-contain ${l.alto}`} />
+                <img src={`${import.meta.env.BASE_URL}icons/${l.src}`} alt={tp(`app.instituciones.${l.clave}`)} className={`w-auto object-contain ${l.alto}`} />
               </a>
             </li>
           ))}
         </ul>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
           <span>
-            Núcleo Milenio Impactos de China en América Latina y el Caribe ·{' '}
+            {tp('app.nucleo')} ·{' '}
             <a href="https://iclac.cl/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-dark">
               iclac.cl
             </a>
           </span>
           <NavLink to="/datos" className="underline hover:text-brand-dark">
-            {TEXTOS.nav.datos[idioma]}
+            {t('nav.datos')}
           </NavLink>
         </div>
       </footer>
@@ -293,6 +288,31 @@ function abrir (nodo: HTMLElement) {
 function enfocar (nodo: HTMLElement) {
   const destino = nodo instanceof HTMLDetailsElement ? nodo.querySelector('summary') : nodo
   destino?.focus({ preventScroll: true })
+}
+
+/** Lo que necesita «Antes de citar una cifra»: cifras sin formato. */
+interface DatosCitar { olas: number[], n: Record<number, number>, repetidas: number }
+
+/** Las cuatro tarjetas de «Antes de citar una cifra», un bloque por idioma: la primera lleva cifras. */
+const CITAR: Record<Idioma, (d: DatosCitar) => [string, React.ReactNode][]> = {
+  es: (d) => [
+    ['Tres oleadas, tres muestras.', <>{d.olas.map((o) => `${o}: ${numero(d.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(d.repetidas)} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
+    ['Sin ponderar y sin margen de error.', 'Es un panel en línea, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
+    ['Porcentajes sobre respuestas efectivas.', 'Sin los que no contestaron. Cada figura muestra su base, que suele ser menor que el total.'],
+    ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador indica, pregunta por pregunta, si se puede comparar entre oleadas.'],
+  ],
+  en: (d) => [
+    ['Three waves, three samples.', <>Cases: {d.olas.map((o) => `${o}: ${numero(d.n[o])}`).join(' · ')}. No one is followed from one wave to the next: {numero(d.repetidas)} {plural(d.repetidas, { one: 'person', other: 'people' })} answered in more than one wave, and the data explorer lets you exclude them.</>],
+    ['Unweighted, with no margin of error.', 'The sample comes from the Netquest online panel and is not a probability sample: the figures describe the people surveyed and are not estimates for Chile.'],
+    ['Percentages of valid responses.', 'Those who did not answer are excluded. Each chart shows its number of valid responses, which is usually smaller than the total sample size.'],
+    ['Same name does not mean same question.', 'Some questions changed their wording or response options between waves. The data explorer indicates, question by question, whether they can be compared across waves.'],
+  ],
+  cn: (d) => [
+    ['三轮调查，三个样本。', <>样本量：{d.olas.map((o) => `${o}年${numero(d.n[o])}名`).join('，')}。各轮受访者并非同一批人：有{numero(d.repetidas)}人参加过多轮调查，数据探索工具可将其排除。</>],
+    ['未加权，不报告误差范围。', '样本来自Netquest在线样本库，并非概率样本：数据描述的是受访者本身，不用于推断智利总体。'],
+    ['百分比以有效回答为基数。', '不含未作答者。每张图都注明其基数，通常小于总样本量。'],
+    ['题目名称相同不等于题目相同。', '部分题目的措辞或答案选项在各轮间有改动。数据探索工具逐题标明能否跨轮次对比。'],
+  ],
 }
 
 function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
@@ -330,19 +350,16 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
     return () => { window.removeEventListener('beforeprint', abrir) }
   }, [])
 
+  const { t } = useTranslation('paginas')
+  const idioma = useIdioma()
   const c = encuesta.contrastes
-  const citar: [string, React.ReactNode][] = [
-    ['Tres oleadas, tres muestras.', <>{encuesta.olas.map((o) => `${o}: ${numero(encuesta.n[o])}`).join(' · ')} casos. No se sigue a nadie entre oleadas: {numero(personasRepetidas(encuesta))} personas contestaron más de una vez, y el explorador permite excluirlas.</>],
-    ['Sin ponderar y sin margen de error.', 'Es un panel en línea, no una muestra probabilística: las cifras describen a las personas encuestadas, no estiman a Chile.'],
-    ['Porcentajes sobre respuestas efectivas.', 'Sin los que no contestaron. Cada figura muestra su base, que suele ser menor que el total.'],
-    ['Mismo nombre no es misma pregunta.', 'Algunas cambiaron de enunciado o de categorías entre oleadas. El explorador indica, pregunta por pregunta, si se puede comparar entre oleadas.'],
-  ]
+  const citar = CITAR[idioma]({ olas: encuesta.olas, n: encuesta.n, repetidas: personasRepetidas(encuesta) })
 
   const indice: [string, string][] = [
-    ['citar', 'Antes de citar'],
-    ['historias', 'Qué sostiene cada historia'],
-    ['como-se-lee', 'Cómo se prueba una diferencia'],
-    ['todas', 'Todas las comparaciones'],
+    ['citar', t('datos.indice.citar')],
+    ['historias', t('datos.indice.historias')],
+    ['como-se-lee', t('datos.indice.comoSeLee')],
+    ['todas', t('datos.indice.todas')],
   ]
   const irA = (id: string) => {
     const nodo = document.getElementById(id)
@@ -355,11 +372,9 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 text-sm text-gray-600">
-      <h2 className="font-display text-2xl font-semibold text-gray-900">Sobre los datos</h2>
-      <p className="mt-2 max-w-2xl">
-        Lo que hay que saber antes de citar una cifra, y cómo se sostiene cada frase de las historias.
-      </p>
-      <nav aria-label="En esta página" className="mt-4 flex flex-wrap gap-2">
+      <h2 className="font-display text-2xl font-semibold text-gray-900">{t('datos.titulo')}</h2>
+      <p className="mt-2 max-w-2xl">{t('datos.bajada')}</p>
+      <nav aria-label={t('datos.enEstaPagina')} className="mt-4 flex flex-wrap gap-2">
         {indice.map(([id, texto]) => (
           <button key={id} type="button" onClick={() => { irA(id) }}
             className="presionable rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:border-brand-dark hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-dark">
@@ -368,7 +383,7 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
         ))}
       </nav>
 
-      <h3 id="citar" tabIndex={-1} className="mt-8 outline-none font-display text-base font-semibold text-gray-900">Antes de citar una cifra</h3>
+      <h3 id="citar" tabIndex={-1} className="mt-8 outline-none font-display text-base font-semibold text-gray-900">{t('datos.citarTitulo')}</h3>
       <ul className="mt-3 grid gap-3 sm:grid-cols-2">
         {citar.map(([titulo, texto]) => (
           <li key={titulo} className="rounded-lg border border-gray-200 bg-white p-3">
@@ -378,27 +393,23 @@ function SobreLosDatos ({ encuesta }: { encuesta: Encuesta }) {
         ))}
       </ul>
       <p className="mt-3 text-xs">
-        <NavLink to="/ficha" className="text-brand-dark underline hover:no-underline">Más sobre la encuesta →</NavLink>
+        <NavLink to="/ficha" className="text-brand-dark underline hover:no-underline">{t('datos.masSobre')}</NavLink>
       </p>
 
       {c && (
         <>
-          <h3 id="historias" tabIndex={-1} className="mt-10 outline-none font-display text-base font-semibold text-gray-900">Qué sostiene cada historia</h3>
-          <p className="mt-2 max-w-2xl">
-            Cada frase que afirma un cambio o una diferencia depende de una de estas pruebas. En cada fila,
-            la raya vertical es el cero, el punto es la diferencia y la línea, su intervalo del 95 %. Si
-            la línea cruza el cero, la fila dice «parejo» y la historia no elige ganador.
-          </p>
+          <h3 id="historias" tabIndex={-1} className="mt-10 outline-none font-display text-base font-semibold text-gray-900">{t('datos.indice.historias')}</h3>
+          <p className="mt-2 max-w-2xl">{t('datos.historiasBajada', { p95: porcentaje(95, 0) })}</p>
           <div className="mt-3">
             <MetodoHistorias encuesta={encuesta} />
           </div>
 
-          <h3 className="mt-10 font-display text-base font-semibold text-gray-900">Método</h3>
+          <h3 className="mt-10 font-display text-base font-semibold text-gray-900">{t('datos.metodo')}</h3>
           <div className="mt-3 rounded-lg border border-gray-200 bg-white px-4">
-            <Plegable id="como-se-lee" resumen={<><span className="font-medium text-gray-900">Cómo se prueba una diferencia</span><span className="block text-gray-500">El p, el intervalo, la composición fija y por qué no es margen de error</span></>}>
+            <Plegable id="como-se-lee" resumen={<><span className="font-medium text-gray-900">{t('datos.indice.comoSeLee')}</span><span className="block text-gray-500">{t('datos.comoSeLeeBajada')}</span></>}>
               <ComoSeLee rondas={c.metodo.rondas} />
             </Plegable>
-            <Plegable id="todas" resumen={<><span className="font-medium text-gray-900">Todas las comparaciones entre oleadas</span><span className="block text-gray-500">{numero(c.medidas.length)} medidas en una tabla, incluidas las que ninguna historia usa</span></>}>
+            <Plegable id="todas" resumen={<><span className="font-medium text-gray-900">{t('datos.todasTitulo')}</span><span className="block text-gray-500">{plural(c.medidas.length, { one: t('datos.todasBajadaUna', { n: numero(c.medidas.length) }), other: t('datos.todasBajada', { n: numero(c.medidas.length) }) })}</span></>}>
               <Contrastes contrastes={c} />
             </Plegable>
           </div>

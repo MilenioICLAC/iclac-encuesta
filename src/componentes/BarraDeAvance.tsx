@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMovimientoReducido } from '../nucleo/pasos'
 import { JUNCO } from './junco'
 
@@ -78,6 +79,7 @@ function hebras (X: number) {
 }
 
 export function BarraDeAvance ({ avance, marcas }: { avance: number, marcas: number[] }) {
+  const { t } = useTranslation('capa')
   const caja = useRef<HTMLDivElement>(null)
   const [ancho, setAncho] = useState(0)
   const reducido = useMovimientoReducido()
@@ -108,7 +110,7 @@ export function BarraDeAvance ({ avance, marcas }: { avance: number, marcas: num
     <div
       ref={caja}
       role="progressbar"
-      aria-label="Avance de la historia"
+      aria-label={t('avance')}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(avance * 100)}
