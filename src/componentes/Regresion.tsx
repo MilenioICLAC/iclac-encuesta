@@ -1,6 +1,7 @@
 import type { Recta, Regresion as Datos } from '../nucleo/tipos'
 import { decimal, numero, traducido } from '../locale'
 import { textoExplorador as t } from '../nucleo/explorador'
+import RotuloFigura from './RotuloFigura'
 
 /**
  * La figura del experimento: la nube de promedios sobre una escala, y la recta que se le ajusta.
@@ -45,13 +46,15 @@ interface Props {
   etiquetaIzquierda: string
   etiquetaDerecha: string
   unidadEje: string
+  /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
+  rotulo?: string
 }
 
 // Con signo siempre: un «0,83» al lado de un «−1,42» se lee como magnitud y no como dirección.
 // El menos tipográfico lo pone `decimal`.
 const cifra = (v: number) => `${v > 0 ? '+' : ''}${decimal(v, 2)}`
 
-export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiquetaIzquierda, etiquetaDerecha, unidadEje }: Props) {
+export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiquetaIzquierda, etiquetaDerecha, unidadEje, rotulo }: Props) {
   // El lienzo es ancho y bajo. Con 300 de alto, en un teléfono de 664 px (iPhone 12) la escena
   // medía 728 y el pie quedaba bajo el borde: la figura se escala al ancho, así que cada unidad
   // de alto del `viewBox` cuesta casi un píxel de pantalla.
@@ -99,6 +102,7 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
 
   return (
     <figure className="m-0">
+      <RotuloFigura>{rotulo}</RotuloFigura>
       <svg viewBox={`0 0 ${ANCHO} ${alto}`} className="w-full" role="img"
         aria-label={t('regresion.aria', { etiqueta: traducido(datos.etiqueta), cual: todas ? t('regresion.todas') : t('regresion.ola', { ola }) })}>
         {marcas.map((v) => (

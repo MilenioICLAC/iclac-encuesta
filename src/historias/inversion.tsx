@@ -129,6 +129,8 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
                 max={topeLimitar}
                 formato={fmt}
                 descripcion={t.descripcionLimitar}
+                rotulo={t.rotuloLimitar}
+                unidadEje={t.ejeLimitar}
                 filas={limitar.puntos.map((p, i) => ({
                   clave: String(p.ola),
                   etiqueta: String(p.ola),
@@ -160,8 +162,9 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
             frases={t.frasesSectores}
             figura={(activo, reducido) => (
               <div className="flex flex-col gap-2">
-                <p className="sr-only">{t.descripcionSectores}</p>
                 <Puntos
+                  rotulo={t.rotuloSectores}
+                  descripcion={t.descripcionSectores}
                   series={seriesSectores}
                   filas={filasSectores}
                   escala={{ min: 0, max: topeSectores }}

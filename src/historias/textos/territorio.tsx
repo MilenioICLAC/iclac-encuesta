@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { decimal, lista, numero, plural, porcentaje, type Idioma } from '../../locale'
+import { rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -81,7 +82,16 @@ export interface Contenido {
   titularEstrato: string
   frasesEstrato: ReactNode[]
   descripcionEstrato: string
+  /** El nombre del gráfico de cada escena, dentro de su figura (`RotuloFigura`). */
+  rotuloRiesgo: string
+  rotuloMapa: string
+  /** El de la escena 3. **Cambia el 29-09-2026**: nombraba las filas («Exposición económica a
+   *  China») y ahora nombra la medida, que es lo que el eje dibuja. */
   rotuloExposicion: string
+  rotuloRol: string
+  /** La unidad de la escala y el N, al pie de cada figura. Se calculan; no se transcriben. */
+  ejeRiesgo: string
+  ejeMapa: string
   unidadEjeEstrato: string
   tituloPuntoEstrato: (nivel: string, ola: string, valor: number) => string
   notaEstrato: ReactNode
@@ -187,8 +197,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         <>En {v.o3}, los cuatro niveles quedan <strong>entre {dec(v.rango3[0])} y {dec(v.rango3[1])} puntos</strong>.</>,
       ],
       descripcionEstrato: `Desacuerdo menos acuerdo con que el acercamiento con China trajo más riesgos que oportunidades, en puntos, según la exposición económica de su región. ${v.tramos.map((o) => `${o.ola}: ${o.tramos.map((t) => `${t.nivel} ${t.media === null ? 'sin casos' : dec(t.media)}`).join(', ')}`).join('. ')}.`,
-      rotuloExposicion: 'Exposición económica a China',
-      unidadEjeEstrato: 'puntos: desacuerdo − acuerdo',
+      rotuloRiesgo: 'Acuerdo con que trajo más riesgos',
+      rotuloMapa: 'Exposición económica de cada región',
+      rotuloExposicion: 'Desacuerdo menos acuerdo, por exposición',
+      rotuloRol: 'Qué es China para la comuna',
+      ejeRiesgo: `% de quienes contestaron · n = ${rangoDeEnes(v.enesRiesgo, (a, b) => `${a} a ${b}`)}. Cada barra suma 100.`,
+      ejeMapa: 'Así se agruparon las regiones; no es un resultado de la encuesta.',
+      unidadEjeEstrato: `Puntos: desacuerdo − acuerdo · n = ${rangoDeEnes(v.enesEstrato, (a, b) => `${a} a ${b}`)} por nivel y oleada`,
       tituloPuntoEstrato: (nivel, ola, valor) => `${nivel} · ${ola}: ${dec(valor)} puntos`,
       notaEstrato: (
         <>
@@ -210,7 +225,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>,
       ],
       descripcionRol: `Qué es China para su comuna, por oleada. ${v.roles.map((o) => `${o.ola}: ${o.valores.map((x) => `${rol[x.rol]} ${fmt(x.valor)}`).join(', ')}`).join('. ')}.`,
-      unidadEjeRol: '% de las personas',
+      unidadEjeRol: `% de quienes contestaron · n = ${rangoDeEnes(v.bases.map((x) => x.base), (a, b) => `${a} a ${b}`)}`,
       tituloPuntoRol: (r, ola, valor) => `${r} · ${ola}: ${fmt(valor)}`,
       notaRol: (
         <>
@@ -290,8 +305,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         <>In {v.o3}, the four levels fall <strong>between {dec(v.rango3[0])} and {dec(v.rango3[1])} percentage points</strong>.</>,
       ],
       descripcionEstrato: `Disagree minus agree that closer ties with China brought more risks than opportunities, in percentage points, by the economic exposure of the respondent’s region. ${v.tramos.map((o) => `${o.ola}: ${o.tramos.map((t) => `${t.nivel} ${t.media === null ? 'no cases' : dec(t.media)}`).join(', ')}`).join('. ')}.`,
-      rotuloExposicion: 'Economic exposure to China',
-      unidadEjeEstrato: 'percentage points: disagree − agree',
+      rotuloRiesgo: 'Agreement that it brought more risks',
+      rotuloMapa: 'Economic exposure of each region',
+      rotuloExposicion: 'Disagreement minus agreement, by exposure',
+      rotuloRol: 'What China is for their municipality',
+      ejeRiesgo: `% of those who answered · n = ${rangoDeEnes(v.enesRiesgo, (a, b) => `${a} to ${b}`)}. Each bar adds to 100.`,
+      ejeMapa: 'This is how the regions were grouped; it is not a survey result.',
+      unidadEjeEstrato: `Percentage points: disagree − agree · n = ${rangoDeEnes(v.enesEstrato, (a, b) => `${a} to ${b}`)} per level and wave`,
       tituloPuntoEstrato: (nivel, ola, valor) => `${nivel} · ${ola}: ${dec(valor)} ${pp(valor)}`,
       notaEstrato: (
         <>
@@ -316,7 +336,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>,
       ],
       descripcionRol: `What China is to respondents’ municipality, by wave. ${v.roles.map((o) => `${o.ola}: ${o.valores.map((x) => `${rol[x.rol]} ${fmt(x.valor)}`).join(', ')}`).join('. ')}.`,
-      unidadEjeRol: '% of respondents',
+      unidadEjeRol: `% of those who answered · n = ${rangoDeEnes(v.bases.map((x) => x.base), (a, b) => `${a} to ${b}`)}`,
       tituloPuntoRol: (r, ola, valor) => `${r} · ${ola}: ${fmt(valor)}`,
       notaRol: (
         <>
@@ -392,8 +412,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         <>{v.o3}年，四个等级都在<strong>{dec(v.rango3[0])}至{dec(v.rango3[1])}个百分点</strong>之间。</>,
       ],
       descripcionEstrato: `不同意减同意（关于与中国关系的拉近带来的风险多于机遇），单位为百分点，按受访者所在地区的对华经济关联度划分。${v.tramos.map((o) => `${o.ola}年：${o.tramos.map((t) => `${t.nivel}${t.media === null ? '无受访者' : dec(t.media)}`).join('，')}`).join('；')}。`,
-      rotuloExposicion: '对华经济关联度',
-      unidadEjeEstrato: '百分点：不同意−同意',
+      rotuloRiesgo: '认同“带来更多风险”的比例',
+      rotuloMapa: '各大区的对华经济关联度',
+      rotuloExposicion: '不同意减同意，按关联度',
+      rotuloRol: '中国对所在市镇意味着什么',
+      ejeRiesgo: `作答者占比（%）· n = ${rangoDeEnes(v.enesRiesgo, (a, b) => `${a}至${b}`)}。每条条形合计100。`,
+      ejeMapa: '各大区的分组方式，并非调查结果。',
+      unidadEjeEstrato: `百分点：不同意−同意 · n = ${rangoDeEnes(v.enesEstrato, (a, b) => `${a}至${b}`)}（按关联度与轮次）`,
       tituloPuntoEstrato: (nivel, ola, valor) => `${nivel} · ${ola}年：${dec(valor)}个百分点`,
       notaEstrato: (
         <>
@@ -416,7 +441,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>,
       ],
       descripcionRol: `对所在市镇而言中国是什么，按轮次：${v.roles.map((o) => `${o.ola}年：${o.valores.map((x) => `${rol[x.rol]}${fmt(x.valor)}`).join('，')}`).join('；')}。`,
-      unidadEjeRol: '受访者占比（%）',
+      unidadEjeRol: `作答者占比（%）· n = ${rangoDeEnes(v.bases.map((x) => x.base), (a, b) => `${a}至${b}`)}`,
       tituloPuntoRol: (r, ola, valor) => `${r} · ${ola}年：${fmt(valor)}`,
       notaRol: (
         <>

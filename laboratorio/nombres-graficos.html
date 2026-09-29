@@ -1,0 +1,1228 @@
+<title>Nombres de los gráficos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap">
+<style>
+  /*
+   * Dashboard de decisiones para los nombres de los gráficos de las historias.
+   *
+   * No es un laboratorio de composición: no se decide cómo se ve algo, se elige un texto entre tres
+   * para cada figura. Por eso la tarjeta no tiene visor ni selector de ancho; tiene el titular de la
+   * escena (para no repetirlo en el nombre), lo que la figura muestra, su texto equivalente actual y
+   * un enlace a la historia en la app.
+   *
+   * **Nada de lo que se lee acá está inventado**: los titulares, las descripciones y los dos nombres
+   * que ya existen salen de `src/historias/textos/*.tsx`, y las ubicaciones del código son reales.
+   *
+   * Dos decisiones por figura: el nombre (uno de tres, o uno escrito a mano) y el rótulo de eje, que
+   * ocho figuras no tienen porque `BarrasDeEscena` no tiene la prop.
+   */
+  :root {
+    color-scheme: light;
+    --papel: #FBFAF7; --superficie: #FFFFFF; --tinta: #101917; --tinta-suave: #5F6D6A;
+    --linea: #DFE4E2; --marca: #00A89C; --marca-oscura: #00776E;
+    --ok: #1F7A4D; --ok-fondo: #E7F4EC; --pend: #8A5A00; --pend-fondo: #FFF4DB;
+    --falta: #A3302A; --falta-fondo: #FBEAE8;
+    --g500: #6B7280; --g600: #4B5563; --g700: #374151;
+    --display: "Raleway", "Trebuchet MS", sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--cuerpo); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+  .envoltorio { max-width: 1100px; margin: 0 auto; padding: 20px 16px 64px; }
+  header h1 { font-family: var(--display); font-size: 24px; font-weight: 600; margin: 0; text-wrap: balance; }
+  header p { margin: 6px 0 0; color: var(--tinta-suave); font-size: 14px; max-width: 78ch; }
+  header p + p { margin-top: 8px; }
+  code { font-size: 12px; background: #F1F3F2; border-radius: 3px; padding: 1px 4px; }
+
+  .tablero { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 16px -16px 0; padding: 10px 16px; background: rgba(251,250,247,.96); border-bottom: 1px solid var(--linea); font-size: 13px; }
+  @media (max-width: 700px) { .tablero { position: static; } }
+  .tablero .cuenta { font-variant-numeric: tabular-nums; color: var(--g700); }
+  .tablero nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tablero nav a { color: var(--marca-oscura); text-decoration: none; border: 1px solid var(--linea); background: var(--superficie); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; white-space: nowrap; }
+  .tablero nav a .n { color: var(--pend); font-weight: 600; margin-left: 4px; }
+  .accion { border: 1px solid var(--linea); background: var(--superficie); color: var(--tinta); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .accion:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible, .opcion:focus-within { outline: 2px solid var(--marca-oscura); outline-offset: 2px; }
+
+  section.seccion { margin-top: 28px; scroll-margin-top: 64px; }
+  section.seccion > h2 { font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0; }
+  section.seccion > .bajada { margin: 4px 0 0; color: var(--tinta-suave); font-size: 13.5px; max-width: 80ch; }
+  section.seccion > .bajada a { color: var(--marca-oscura); }
+
+  article.figura { background: var(--superficie); border: 1px solid var(--linea); border-left: 3px solid var(--pend); border-radius: 10px; padding: 14px 16px; margin-top: 14px; scroll-margin-top: 64px; }
+  article.figura[data-listo="si"] { border-left-color: var(--ok); }
+  .cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+  .cabeza h3 { font-family: var(--display); font-size: 16px; font-weight: 600; margin: 0; }
+  .cabeza .donde { font-size: 12px; color: var(--g500); font-variant-numeric: tabular-nums; }
+  .insignia { font-size: 11.5px; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .insignia.sin { background: var(--falta-fondo); color: var(--falta); }
+  .insignia.con { background: var(--ok-fondo); color: var(--ok); }
+
+  dl { margin: 10px 0 0; display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 3px 12px; font-size: 13.5px; }
+  @media (max-width: 620px) { dl { grid-template-columns: 1fr; gap: 0 0; } dl dt { margin-top: 8px; } }
+  dt { color: var(--g500); }
+  dd { margin: 0; color: var(--g700); }
+  dd .titular { font-family: var(--display); font-weight: 600; color: var(--tinta); }
+  dd.equivalente { color: var(--g600); font-size: 13px; }
+
+  fieldset { border: 0; margin: 12px 0 0; padding: 0; }
+  fieldset > legend { font-size: 12px; color: var(--g500); padding: 0; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; font-weight: 500; }
+  .opciones { display: flex; flex-direction: column; gap: 6px; }
+  .opcion { display: flex; align-items: flex-start; gap: 9px; border: 1px solid var(--linea); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .opcion:has(input:checked) { border-color: var(--marca-oscura); background: #F2FBFA; }
+  .opcion input { margin: 3px 0 0; accent-color: var(--marca-oscura); flex: 0 0 auto; }
+  .opcion .texto { flex: 1 1 auto; min-width: 0; }
+  /* El nombre se muestra como se vería en la figura: 11 px, versalitas, gris 500 (territorio.tsx:292).
+     **Va suelta y no como `.opcion .comoSeVe`**: la vista previa la usa fuera de una opción, y como
+     descendiente el rótulo salía a 15 px, o sea mostrando un tamaño que la app no tiene. */
+  .comoSeVe { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .025em; color: var(--g500); }
+  .opcion .angulo { font-size: 12px; color: var(--g600); margin-top: 2px; }
+  /* Sueltas y no como `.opcion .largo`: la fila del eje las usa fuera de una opción, y como
+     descendientes salían a 15 px y se comían una línea entera (visto en la captura de 900 px).
+     **`flex: 0 1 auto` y `min-width: 0`, no `0 0 auto`:** el «hoy: …» del eje es un texto largo, y
+     con `0 0` no encoge y estira el documento a 921 px en todos los anchos (medido). El `nowrap`
+     queda solo donde el texto es corto de verdad, que es el contador de caracteres de cada opción. */
+  .largo { font-size: 11.5px; color: var(--g500); font-variant-numeric: tabular-nums; flex: 0 1 auto; min-width: 0; }
+  .opcion .largo { white-space: nowrap; flex: 0 0 auto; }
+  .eje .largo { line-height: 1.35; overflow-wrap: anywhere; }
+  .opcion .recomendado { font-size: 11px; color: var(--marca-oscura); font-weight: 600; margin-left: 6px; }
+  .opcion input[type="text"] { width: 100%; border: 1px solid var(--linea); border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px; }
+
+  .eje { margin-top: 12px; border-top: 1px dashed var(--linea); padding-top: 10px; }
+  .eje .fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .eje label.campo { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--g500); }
+  .eje input[type="text"] { flex: 1 1 auto; min-width: 0; border: 1px solid var(--linea); border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px; }
+
+  /* La vista previa: el rótulo arriba y el eje abajo, con la figura de por medio como un bloque
+     vacío. No dibuja los datos a propósito — lo que se decide acá es el texto, y una figura de
+     mentira invita a discutir la figura. Las medidas son las de la app: 11 px versalitas gris 500
+     para el rótulo (territorio.tsx:292) y 11 px gris 500 para el eje (Puntos.tsx:199-207). */
+  .vista { margin-top: 12px; }
+  .vista-titulo { margin: 0 0 6px; font-size: 12px; color: var(--g500); text-transform: uppercase; letter-spacing: .04em; font-weight: 500; }
+  .vista-caja { border: 1px solid var(--linea); border-radius: 8px; padding: 10px 12px; background: #fff; }
+  .vista-rotulo { margin: 0; }
+  .vista-figura { margin: 8px 0; height: 54px; border-radius: 4px; background: repeating-linear-gradient(135deg, #F3F5F4, #F3F5F4 6px, #EAEEEC 6px, #EAEEEC 12px); display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--g500); }
+  .vista-eje { margin: 0; font-size: 11px; line-height: 1.35; color: var(--g500); }
+  .vista-aviso { margin: 6px 0 0; font-size: 12px; color: var(--pend); }
+
+  .pie { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; font-size: 12.5px; }
+  .pie a { color: var(--marca-oscura); }
+  textarea { width: 100%; margin-top: 10px; min-height: 52px; border: 1px solid var(--linea); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; resize: vertical; background: var(--papel); }
+
+  .bloque { background: var(--superficie); border: 1px solid var(--linea); border-radius: 10px; padding: 14px 16px; margin-top: 28px; }
+  .bloque h2 { font-family: var(--display); font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+  .bloque p { margin: 0 0 8px; font-size: 13.5px; color: var(--g700); max-width: 80ch; }
+  pre { background: #F7F8F8; border: 1px solid var(--linea); border-radius: 8px; padding: 10px; overflow: auto; max-height: 340px; font-size: 11.5px; }
+  .copiado { font-size: 12.5px; color: var(--ok); }
+</style>
+
+<div class="envoltorio">
+  <header>
+    <h1>Nombres de los gráficos de las historias</h1>
+    <p id="intro"></p>
+    <p id="intro2"></p>
+  </header>
+
+  <div class="tablero">
+    <span class="cuenta" id="cuenta"></span>
+    <nav id="indice"></nav>
+    <button class="accion" id="ir-exportar" type="button">Ir a exportar</button>
+    <button class="accion" id="tomar-todo" type="button">Tomar todos los recomendados</button>
+    <button class="accion" id="limpiar" type="button">Borrar mis respuestas</button>
+  </div>
+
+  <main id="secciones"></main>
+
+  <div class="bloque" id="bloque-exportar">
+    <h2>Exportar</h2>
+    <p>Copia el JSON y pégalo en el chat. Lo aplico verbatim: los nombres se escriben en <code>src/historias/textos/&lt;id&gt;.tsx</code> en los tres idiomas.</p>
+    <textarea id="nota" placeholder="Nota general (opcional): criterio que quieras fijar para todos, o lo que haya que cambiar del conjunto."></textarea>
+    <p style="margin-top:10px"><button class="accion" id="exportar" type="button">Copiar JSON</button> <span class="copiado" id="copiado"></span></p>
+    <pre id="json" hidden></pre>
+  </div>
+</div>
+
+<!-- DATOS:INICIO -->
+<script>
+// Datos del laboratorio. Generados por armar.mjs: inventario leído del código + candidatos.
+window.__FIGURAS__ = [
+  {
+    "id": "mirada-termometro",
+    "historia": "mirada",
+    "escena": 1,
+    "titulo": "El termómetro de cinco países",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/recorrido.tsx:412",
+    "titularEscena": "En 2025 China pasa a Estados Unidos, pero Japón sigue liderando",
+    "muestra": "Termómetro de simpatía (`TERMOMETRO`, cinco países), media de cada país por oleada. Una fila por país, ordenadas por la última oleada; un punto por oleada, con radio creciente.",
+    "unidadBase": "Puntos de 0 a 100 (media), eje recortado por `escalaRedonda` y el recorte declarado en el rótulo.  ·  base: Quienes contestaron la pregunta de ese país en esa oleada; bases de `baseMinima` a `baseMaxima`, declaradas en la nota.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "HUECO: esta figura no tiene texto equivalente hoy.",
+    "candidatos": [
+      {
+        "nombre": "Simpatía media por cada país",
+        "angulo": "nombra la medida (media) y sobre qué (cada país)"
+      },
+      {
+        "nombre": "Cómo se evalúa a cada país",
+        "angulo": "nombra la acción del encuestado, no el estadístico"
+      },
+      {
+        "nombre": "Simpatía por país",
+        "angulo": "el más corto posible"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "Evaluación de 0 a 100 · eje recortado a {min}-{max} (`termometro.ejeRecortado`, vía `figuraTermometro`)",
+      "propuesta": "Evaluación de 0 a 100 · eje recortado a {min}–{max} · n = {baseMinima} a {baseMaxima}",
+      "porQue": "El rótulo de hoy ya declara la escala y el recorte; solo se le agrega el N, que hasta ahora vivía en la nota.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/mirada.tsx → clave nueva, p. ej. `rotuloTermometro`, en `Contenido` y en los tres idiomas"
+  },
+  {
+    "id": "mirada-ideologia",
+    "historia": "mirada",
+    "escena": 2,
+    "titulo": "La recta de la ideología",
+    "componente": "Regresion",
+    "ubicacion": "src/historias/recorrido.tsx:496",
+    "titularEscena": "La posición política no ordena la opinión sobre China de forma robusta",
+    "muestra": "Promedio de la evaluación de China por tramo de autoubicación política (escala 1–10), con la recta ajustada y su abanico de pendientes compatibles. El área del punto es el n del tramo.",
+    "unidadBase": "Eje vertical: evaluación de China, 0 a 100 (escala común a los cinco pasos, `escalaRegresion`). Eje horizontal: la escala de ideología 1–10, rotulada con `izquierda`/`derecha`.  ·  base: Paso 0–1: la primera oleada completa (`totalPrimera`). Paso 2: la primera oleada sin el tramo retirado (`sostiene.nRecta`). Paso 3: las tres oleadas con sus muestras completas.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "Solo `aria-label` del SVG: `regresion.aria` = «{etiqueta}. {cual}.» → p. ej. «Evaluación de China. Oleada 2023.» / «… Las tres oleadas.» (src/locales/es/explorador.json:74-76). No hay `sr-only` con las cifras.",
+    "candidatos": [
+      {
+        "nombre": "Evaluación de China por tramo político",
+        "angulo": "la medida y el eje sobre el que se reparte"
+      },
+      {
+        "nombre": "China según dónde se ubica cada persona",
+        "angulo": "nombra la base en lenguaje de la encuesta"
+      },
+      {
+        "nombre": "China y posición política",
+        "angulo": "el más corto; deja la unidad al eje"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«Evaluación de China de 0 a 100» (`unidadRecta`), dibujada dentro del SVG abajo a la izquierda (Regresion.tsx:112)",
+      "propuesta": "Evaluación de 0 a 100 · n = {totalPrimera}",
+      "porQue": "El texto de hoy dice «Evaluación de China»; como el nombre ya nombra a China, el eje se queda con la escala y el N. La base se dice una sola vez.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/mirada.tsx → clave nueva `rotuloIdeologia`"
+  },
+  {
+    "id": "mirada-palabras-china",
+    "historia": "mirada",
+    "escena": "3 (o 2 si no hay experimento)",
+    "titulo": "Palabras ante «China»",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/recorrido.tsx:565 (bloque `'china'`, rotulado en :564)",
+    "titularEscena": "En 2025, más de uno de cada diez escribe «Trump» cuando le nombran Estados Unidos",
+    "muestra": "Las cinco palabras más escritas ante «China» (`p4_1`, abierta contada por persona en el ETL), sin la palabra «china». Una fila por palabra, un punto por oleada.",
+    "unidadBase": "Porcentaje de personas que escribe esa palabra, con un decimal; tope común a los dos paneles (`topePalabras`).  ·  base: Quienes contestaron la abierta en esa oleada (`nubeEeuu.baseOla`, declaradas en `notaPalabras`).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": true,
+    "nombreActual": "China (`tm.bloqueChina`)",
+    "descripcion": "`tm.descripcionPalabras(filasChina, filasEeuu)`: «Lo primero que se le viene a la cabeza, en porcentaje de quienes contestaron, por oleada. China: … Estados Unidos: …» — una sola descripción para los dos paneles (recorrido.tsx:585).",
+    "candidatos": [
+      {
+        "nombre": "Lo que se asocia a China",
+        "angulo": "la medida en voz corriente; hace par con el panel de al lado"
+      },
+      {
+        "nombre": "Palabras que se escriben ante «China»",
+        "angulo": "describe el instrumento: pregunta abierta"
+      },
+      {
+        "nombre": "Ante «China»",
+        "angulo": "el más corto; se apoya en el par"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«% que la escribe» (`unidadPalabras`), repetido en los dos paneles",
+      "propuesta": "% que la escribe · n = {bases}",
+      "porQue": "Hoy dice «% que la escribe» y no dice sobre quiénes. El N estaba solo en la nota.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/mirada.tsx → `bloqueChina` (ya existe); el nombre de escena sería una clave nueva"
+  },
+  {
+    "id": "mirada-palabras-eeuu",
+    "historia": "mirada",
+    "escena": "3 (o 2 si no hay experimento)",
+    "titulo": "Palabras ante «Estados Unidos»",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/recorrido.tsx:565 (bloque `'eeuu'`, rotulado en :564)",
+    "titularEscena": "En 2025, más de uno de cada diez escribe «Trump» cuando le nombran Estados Unidos",
+    "muestra": "Las cinco palabras más escritas ante «Estados Unidos» (`p4_2`), sin «estados» ni «unidos». Una fila por palabra, un punto por oleada.",
+    "unidadBase": "Porcentaje de personas que escribe esa palabra, un decimal; el mismo tope que el panel de China.  ·  base: Quienes contestaron la abierta en esa oleada.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": true,
+    "nombreActual": "Estados Unidos (`tm.bloqueEeuu`)",
+    "descripcion": "La misma `tm.descripcionPalabras`, compartida con el panel de China.",
+    "candidatos": [
+      {
+        "nombre": "Lo que se asocia a Estados Unidos",
+        "angulo": "par exacto del panel de China"
+      },
+      {
+        "nombre": "Palabras que se escriben ante «Estados Unidos»",
+        "angulo": "describe el instrumento"
+      },
+      {
+        "nombre": "Ante «Estados Unidos»",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«% que la escribe» (`unidadPalabras`)",
+      "propuesta": "% que la escribe · n = {bases}",
+      "porQue": "El mismo rótulo que el panel de China: comparten tope y unidad.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/mirada.tsx → `bloqueEeuu` (ya existe)"
+  },
+  {
+    "id": "potencias-confianza",
+    "historia": "entre-potencias",
+    "escena": 1,
+    "titulo": "La confianza en cada potencia",
+    "componente": "Divergente",
+    "ubicacion": "src/historias/recorrido.tsx:619",
+    "titularEscena": "La confianza en China despega; la de Estados Unidos va y vuelve",
+    "muestra": "El reparto completo de `p24` (confianza en China) y `p25` (confianza en Estados Unidos): ninguna, poca, algo, mucha, a los dos lados de un cero común. Seis filas: dos bloques de país × tres oleadas.",
+    "unidadBase": "Puntos porcentuales; cada fila suma 100. El cero es el borde entre los dos lados, no una categoría.  ·  base: Quienes contestaron esa pregunta en esa oleada (`fila.base`, visible en el título emergente).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "HUECO: esta figura no tiene texto equivalente hoy.",
+    "candidatos": [
+      {
+        "nombre": "Confianza en cada potencia",
+        "angulo": "la medida, y «cada potencia» dice que son dos"
+      },
+      {
+        "nombre": "Confianza en China y en Estados Unidos",
+        "angulo": "nombra a los dos, sin abreviar"
+      },
+      {
+        "nombre": "La confianza, repartida",
+        "angulo": "el más corto; el reparto es lo que la figura muestra"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«Porcentaje de quienes contestaron. El 0 del eje es el borde entre los dos lados, y cada fila suma 100.» (`unidadConfianza`)",
+      "propuesta": "Porcentaje de quienes contestaron · n = {bases}. El 0 del eje es el borde entre los dos lados, y cada fila suma 100.",
+      "porQue": "El texto de hoy ya explica el cero y el 100; se le agrega el N.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/entre-potencias.tsx → clave nueva `rotuloConfianza`"
+  },
+  {
+    "id": "potencias-balanza",
+    "historia": "entre-potencias",
+    "escena": 2,
+    "titulo": "En quién se confía más",
+    "componente": "Divergente",
+    "ubicacion": "src/historias/recorrido.tsx:671",
+    "titularEscena": "La ventaja de China crece, y caen tanto el empate como Estados Unidos",
+    "muestra": "La comparación pareada dentro de cada persona entre `p24` y `p25`: «Más en Estados Unidos» / «La misma» / «Más en China». Una fila por oleada; la neutra va a caballo del cero.",
+    "unidadBase": "Puntos porcentuales, con un decimal (el mismo redondeo que la frase); cada fila suma 100.  ·  base: Quienes contestaron las DOS preguntas (`basesBalanza`, declaradas solo en la nota al pie).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "HUECO: esta figura no tiene texto equivalente hoy.",
+    "candidatos": [
+      {
+        "nombre": "En quién se confía más",
+        "angulo": "la medida exacta: una comparación, no un nivel"
+      },
+      {
+        "nombre": "En cuál de las dos se confía más",
+        "angulo": "explicita que la comparación es entre dos"
+      },
+      {
+        "nombre": "La comparación dentro de cada persona",
+        "angulo": "nombra el método, que es lo que la distingue de la escena anterior"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«Cada persona contesta por las dos potencias, así que la comparación va dentro del caso. «La misma» queda a caballo del cero.» (`unidadBalanza`)",
+      "propuesta": "% de quienes contestaron las dos preguntas · n = {bases}. «La misma» queda a caballo del cero.",
+      "porQue": "El rótulo de hoy no dice ni la unidad ni la base: solo habla del método. Esta es la corrección que recomendó la revisión.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/entre-potencias.tsx → clave nueva `rotuloBalanza`; el ajuste del eje es en `unidadBalanza`, que ya existe"
+  },
+  {
+    "id": "potencias-posicionamiento",
+    "historia": "entre-potencias",
+    "escena": 3,
+    "titulo": "Con quién alinearse",
+    "componente": "BarrasPosicionamiento",
+    "ubicacion": "src/historias/recorrido.tsx:744",
+    "titularEscena": "En 2025, alinearse con China supera a alinearse con Estados Unidos",
+    "muestra": "El reparto completo de `p26` (con qué potencia debería alinearse Chile), en el orden visual 2-3-4-1: una barra al 100 % por oleada, con los dos extremos rotulados al costado y la variación de la última oleada frente a la anterior.",
+    "unidadBase": "Porcentaje de respuestas; cada barra es el 100 %.  ·  base: Todas las personas de la oleada (`p26` no tiene faltantes; `basesP26` en la nota).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`aria-label` de la figura: `posicionamiento.aria` = «Cómo debería posicionarse Chile: reparto completo por oleada» (explorador.json:68). Además cada barra tiene su propio `aria-label` con el reparto leído.",
+    "candidatos": [
+      {
+        "nombre": "Con quién debería alinearse Chile",
+        "angulo": "la pregunta, que acá es la medida"
+      },
+      {
+        "nombre": "La posición preferida frente a las potencias",
+        "angulo": "nombra el concepto en vez de la pregunta"
+      },
+      {
+        "nombre": "El alineamiento preferido",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«Cada barra representa el 100 % de las respuestas.» (`posicionamiento.total`, FIJO dentro del componente, explorador.json:69)",
+      "propuesta": "Cada barra representa el 100 % de las respuestas · n = {basesP26}",
+      "porQue": "La frase ya existe escrita fija dentro del componente; se le agrega el N y pasa a ser prop.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/entre-potencias.tsx → clave nueva `rotuloP26` (el eje seguiría en `explorador.json`, donde ya vive)"
+  },
+  {
+    "id": "territorio-riesgo",
+    "historia": "territorio",
+    "escena": 1,
+    "titulo": "Riesgos u oportunidades",
+    "componente": "barras apiladas al 100 % escritas a mano (JSX en la escena)",
+    "ubicacion": "src/historias/territorio.tsx:198-233",
+    "titularEscena": "Hay más desacuerdo que acuerdo con que el acercamiento con China haya traído más riesgos que oportunidades",
+    "muestra": "`p7` colapsada en tres partes: «En desacuerdo» (códigos 1 y 2), «Indiferente» (3), «De acuerdo» (4 y 5). Una barra por oleada, con el número dentro de cada segmento y leyenda al pie.",
+    "unidadBase": "Porcentaje de respuestas; cada barra suma 100.  ·  base: Quienes contestaron `p7` en esa oleada (`r.base`, en el título emergente de cada segmento; `enesRiesgo` en la nota).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionRiesgo`: «Respuestas a si el acercamiento con China generó más riesgos que oportunidades, por oleada. 2023: En desacuerdo …, Indiferente …, De acuerdo …. …»",
+    "candidatos": [
+      {
+        "nombre": "Riesgos u oportunidades del acercamiento",
+        "angulo": "la medida entera, con los dos lados"
+      },
+      {
+        "nombre": "Acuerdo con que trajo más riesgos",
+        "angulo": "nombra el enunciado tal como se preguntó"
+      },
+      {
+        "nombre": "Riesgos y oportunidades",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de quienes contestaron · n = {enesRiesgo}. Cada barra suma 100.",
+      "porQue": "Hoy no tiene rótulo de eje. Son barras apiladas al 100 %, así que el rótulo tiene que decirlo.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/territorio.tsx → clave nueva `rotuloRiesgo`; el eje puede leer `posicionamiento.total` de `explorador.json` sin clave nueva"
+  },
+  {
+    "id": "territorio-mapa",
+    "historia": "territorio",
+    "escena": 2,
+    "titulo": "El mapa del diseño",
+    "componente": "MapaRegiones",
+    "ubicacion": "src/historias/territorio.tsx:253",
+    "titularEscena": "La encuesta compara regiones con distinto vínculo económico con China",
+    "muestra": "Las 16 regiones pintadas por su nivel de exposición económica a China (`region_impacto`, cuatro niveles), con una lista al lado que nombra las regiones de cada nivel. No hay medida: es el diseño muestral, no un resultado.",
+    "unidadBase": "Ninguna. Es una clasificación categórica.  ·  base: No aplica. La nota da las personas por nivel en la última oleada.",
+    "cambiaEntrePasos": "",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionMapa`: «Mapa de Chile por nivel de exposición económica a China. Muy alto: …. Alto: …. …» — va como `aria-label` del SVG.",
+    "candidatos": [
+      {
+        "nombre": "Exposición económica de cada región",
+        "angulo": "nombra la clasificación y sobre qué unidad"
+      },
+      {
+        "nombre": "Cómo se agruparon las regiones",
+        "angulo": "dice que es diseño muestral, no resultado"
+      },
+      {
+        "nombre": "Regiones por exposición",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "Clasificación del diseño de la muestra, no un resultado de la encuesta.",
+      "porQue": "Es un mapa categórico: no hay unidad ni N. Lo que sí hay que declarar es que no es un resultado, o se lee como uno.",
+      "noAplica": true
+    },
+    "dondeVive": "src/historias/textos/territorio.tsx → clave nueva `rotuloMapa`"
+  },
+  {
+    "id": "territorio-exposicion",
+    "historia": "territorio",
+    "escena": 3,
+    "titulo": "El riesgo por nivel de exposición",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/territorio.tsx:293 (rótulo en :292)",
+    "titularEscena": "La exposición económica de la región a China no ordena las respuestas",
+    "muestra": "El neto de `p7` (desacuerdo menos acuerdo, en puntos) por nivel de exposición de la región. Una fila por nivel, con su muestra de color; un punto por oleada. Eje con el cero adentro porque el neto puede ser negativo.",
+    "unidadBase": "Puntos de diferencia (desacuerdo − acuerdo), NO porcentaje de nada.  ·  base: Entre `enesEstrato[0]` y `enesEstrato[1]` personas por nivel y oleada; las oleadas nunca se suman.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": true,
+    "nombreActual": "Exposición económica a China (`t.rotuloExposicion`)",
+    "descripcion": "`t.descripcionEstrato`: «Desacuerdo menos acuerdo con que el acercamiento con China trajo más riesgos que oportunidades, en puntos, según la exposición económica de su región. 2023: Muy alto …, …»",
+    "candidatos": [
+      {
+        "nombre": "Riesgo neto según exposición de la región",
+        "angulo": "la medida (neto) y la base (nivel de la región)"
+      },
+      {
+        "nombre": "Desacuerdo menos acuerdo, por región",
+        "angulo": "dice la resta, que es lo que el eje muestra"
+      },
+      {
+        "nombre": "Riesgo neto por exposición",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«puntos: desacuerdo − acuerdo» (`unidadEjeEstrato`)",
+      "propuesta": "Puntos: desacuerdo − acuerdo · n = {enesEstrato} por nivel y oleada",
+      "porQue": "Se conserva el texto de hoy y se le suma el rango de N, que hoy está en la nota.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/territorio.tsx → `rotuloExposicion` (ya existe, líneas 190 y sus pares en en/cn)"
+  },
+  {
+    "id": "territorio-rol",
+    "historia": "territorio",
+    "escena": 4,
+    "titulo": "China en la comuna",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/territorio.tsx:336",
+    "titularEscena": "Para su comuna, China es ante todo un proveedor, en las tres oleadas",
+    "muestra": "`p8` (elección única): qué es China para su comuna. Cuatro filas en el orden proveedor, inversor, comprador, competidor; un punto por oleada.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 al múltiplo de 20 que cubre el máximo.  ·  base: Quienes contestaron `p8` en esa oleada (`bases`, en la nota).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionRol`: «Qué es China para su comuna, por oleada. 2023: Proveedor …, Inversor …, …»",
+    "candidatos": [
+      {
+        "nombre": "Qué es China para la comuna",
+        "angulo": "la pregunta, que acá es la medida"
+      },
+      {
+        "nombre": "El papel de China en la economía local",
+        "angulo": "nombra el concepto"
+      },
+      {
+        "nombre": "China en la comuna",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«% de las personas» (`unidadEjeRol`)",
+      "propuesta": "% de quienes contestaron · n = {bases}",
+      "porQue": "Hoy dice «% de las personas», que es ambiguo: la base son quienes contestaron, no la oleada entera.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/territorio.tsx → clave nueva `rotuloRol`"
+  },
+  {
+    "id": "inversion-limitar",
+    "historia": "inversion",
+    "escena": 1,
+    "titulo": "Poder limitar la inversión",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/inversion.tsx:128",
+    "titularEscena": "En todas las oleadas, tres de cada cuatro personas quieren que el Estado pueda frenar una inversión extranjera",
+    "muestra": "`limitar-inversiones`: prefiere que el Estado pueda bloquear inversiones que le quiten control sobre sectores estratégicos. Una barra por oleada, en la rampa de oleadas.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeDeBarras`, escrito junto a cada barra.  ·  base: Todas las personas encuestadas de la oleada (`p.n`, en la nota).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionLimitar`: «Prefiere que el Estado pueda limitar inversiones en sectores estratégicos, por oleada. 2023: … 2024: … 2025: ….»",
+    "candidatos": [
+      {
+        "nombre": "Poder limitar la inversión extranjera",
+        "angulo": "la medida completa; «poder» es lo que se pregunta"
+      },
+      {
+        "nombre": "Quiere que el Estado pueda frenarla",
+        "angulo": "nombra al sujeto de la acción"
+      },
+      {
+        "nombre": "Limitar la inversión extranjera",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de las personas encuestadas · n = {casos}",
+      "porQue": "Hoy no tiene rótulo. La base acá sí es toda la oleada, y conviene decirlo porque en la escena siguiente cambia.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/inversion.tsx → clave nueva `rotuloLimitar`; el eje, clave nueva `unidadEjeLimitar` (`unidadEje` ya está tomada por la escena 2)"
+  },
+  {
+    "id": "inversion-sectores",
+    "historia": "inversion",
+    "escena": 2,
+    "titulo": "En qué sectores",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/inversion.tsx:164",
+    "titularEscena": "Donde más se quiere poder frenarla: cobre, litio y distribución eléctrica",
+    "muestra": "`p20` (multirespuesta, sin «Otro»): en qué sectores es más importante poder limitar la inversión extranjera. Una fila por sector, ordenadas por la última oleada con datos; un punto por oleada.",
+    "unidadBase": "Porcentaje de menciones, un decimal; eje de 0 a un múltiplo de 20. Suman más de 100 porque cada persona marca varios.  ·  base: Solo quienes quieren poder limitar, en esa oleada (`s.base`, en la nota). Solo hay dos oleadas: no se preguntó en 2025.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionSectores`: «Sectores donde es más importante limitar la inversión extranjera, entre quienes quieren poder limitarla. 2023: Cobre …, Litio …, …»",
+    "candidatos": [
+      {
+        "nombre": "Sectores donde importa poder limitarla",
+        "angulo": "la medida y a qué se refiere «limitarla»"
+      },
+      {
+        "nombre": "En qué sectores se quiere el límite",
+        "angulo": "la pregunta en voz corriente"
+      },
+      {
+        "nombre": "Sectores del límite",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«% que lo marca» (`unidadEje`)",
+      "propuesta": "% de quienes quieren el límite · n = {base}. Suman más de 100: cada persona marca varios.",
+      "porQue": "Hoy dice «% que lo marca» sin decir sobre quiénes, y la base acá NO es la oleada entera: es un subconjunto. Se evita repetir «poder», que ya está en el nombre.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/inversion.tsx → clave nueva `rotuloSectores`"
+  },
+  {
+    "id": "cotidiana-cosas",
+    "historia": "china-cotidiana",
+    "escena": 1,
+    "titulo": "Qué hay cerca",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/cotidiana.tsx:207",
+    "titularEscena": "Entre 2023 y 2025 creció la proporción que vive cerca de un mall chino; la del restaurante quedó pareja",
+    "muestra": "Dos series en el mismo eje: vive a menos de diez cuadras de un mall chino (`mall-cerca`) y de un restaurante chino (`restaurante-cerca`). Seis filas rotuladas «Mall 2023», …, «Restaurante 2025».",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeDeBarras` calculado sobre las SEIS filas.  ·  base: Todas las personas encuestadas de la oleada.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionCosas`: «Vive a menos de diez cuadras de un mall chino y de un restaurante chino, por oleada. Mall 2023: … Restaurante 2025: ….»",
+    "candidatos": [
+      {
+        "nombre": "Mall y restaurante chinos cerca de casa",
+        "angulo": "las dos series, con la base implícita («de casa»)"
+      },
+      {
+        "nombre": "Qué se tiene cerca de donde se vive",
+        "angulo": "nombra el concepto, no las dos cosas"
+      },
+      {
+        "nombre": "Mall y restaurante cerca",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de las personas encuestadas · n = {n}",
+      "porQue": "Hoy no tiene rótulo. Es lo que cada persona dice tener cerca, sobre la oleada entera.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → claves nuevas `rotuloCosas` y `unidadCosas`"
+  },
+  {
+    "id": "cotidiana-personas",
+    "historia": "china-cotidiana",
+    "escena": 2,
+    "titulo": "El contacto con personas",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/cotidiana.tsx:235",
+    "titularEscena": "El contacto con personas de China queda parejo",
+    "muestra": "`conoce-china`: conoce personalmente a alguien de China o de ascendencia china. Una barra por oleada, rotuladas solo con el año.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeDeBarras` sobre las tres.  ·  base: Todas las personas encuestadas de la oleada.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionPersonas`: «Conoce personalmente a alguien de China o de ascendencia china, por oleada. 2023: … 2024: … 2025: ….»",
+    "candidatos": [
+      {
+        "nombre": "Conoce a alguien de China",
+        "angulo": "la medida, literal"
+      },
+      {
+        "nombre": "Contacto con personas de China",
+        "angulo": "nombra el concepto de la escena"
+      },
+      {
+        "nombre": "Conoce a alguien",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de las personas encuestadas · n = {casos} de {n}",
+      "porQue": "Hoy no tiene rótulo. La nota ya daba «casos de n»; se conserva esa forma.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → claves nuevas `rotuloPersonas` y `unidadPersonas`"
+  },
+  {
+    "id": "cotidiana-lugar",
+    "historia": "china-cotidiana",
+    "escena": 3,
+    "titulo": "Dónde ocurre el contacto",
+    "componente": "Puntos",
+    "ubicacion": "src/historias/cotidiana.tsx:272",
+    "titularEscena": "Cerca de un cuarto nombra el mall cuando se le pregunta dónde tiene contacto con personas chinas, las tres oleadas",
+    "muestra": "`p16` (abierta contada por persona): dónde ocurre el contacto con personas chinas. Cinco filas (las palabras más dichas, sin «chino»/«china»); un punto por oleada.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a un múltiplo de 10. Suman más de 100: se puede nombrar más de un lugar.  ·  base: Quienes contestaron la abierta en esa oleada (`lugar.bases`, en la nota).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionLugar`: «Dónde tiene contacto con personas de China, en porcentaje de quienes contestaron, por oleada. mall: … …»",
+    "candidatos": [
+      {
+        "nombre": "Dónde ocurre el contacto",
+        "angulo": "la medida, que es un lugar"
+      },
+      {
+        "nombre": "Lugares que se nombran",
+        "angulo": "dice que es una abierta: se nombra, no se elige"
+      },
+      {
+        "nombre": "Dónde es el contacto",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": true,
+      "actual": "«% que lo nombra» (`unidadLugar`)",
+      "propuesta": "% que lo nombra · n = {bases}. Suman más de 100: se puede nombrar más de un lugar.",
+      "porQue": "Se conserva «% que lo nombra» y se le agrega la base y la advertencia de que suman más de 100.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → clave nueva `rotuloLugar`"
+  },
+  {
+    "id": "cotidiana-buses-marca",
+    "historia": "china-cotidiana",
+    "escena": "4 (3 si no hay escena de lugar)",
+    "titulo": "La marca de los buses",
+    "componente": "barra partida al 100 % escrita a mano (JSX en la escena)",
+    "ubicacion": "src/historias/cotidiana.tsx:317-338",
+    "titularEscena": "Más de la mitad no sabía que los buses eléctricos de Santiago son de marcas chinas",
+    "muestra": "`p18e`: sabía o no que los buses eléctricos de Santiago son de marcas chinas. UNA barra partida en dos, con el rótulo y la cifra escritos dentro de cada mitad. Solo la oleada que preguntó (2025).",
+    "unidadBase": "Porcentaje; la barra entera es el 100 %.  ·  base: `buses.baseMarca`, las personas encuestadas en esa oleada (en `notaMarca`).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": true,
+    "nombreActual": "¿Sabía que los buses eléctricos son de marcas chinas? (`t.preguntaMarca`)",
+    "descripcion": "`t.descripcionBuses`, compartida con la figura de opinión: «En 2025. Sabía que los buses son de marcas chinas: no …, sí …. Ve bien la electrificación: Todas las personas …, …»",
+    "candidatos": [
+      {
+        "nombre": "Sabía que los buses son chinos",
+        "angulo": "la medida, corta y descriptiva"
+      },
+      {
+        "nombre": "Conocimiento de la marca de los buses",
+        "angulo": "nombra el concepto"
+      },
+      {
+        "nombre": "La marca de los buses",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "La barra entera es el 100 % · n = {baseMarca}, solo {ola}",
+      "porQue": "Hoy no tiene rótulo. Hay que decir que es una sola oleada, o se lee como serie.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → `preguntaMarca` (ya existe); el eje sería clave nueva `unidadMarca`"
+  },
+  {
+    "id": "cotidiana-buses-opinion",
+    "historia": "china-cotidiana",
+    "escena": "4 (3 si no hay escena de lugar)",
+    "titulo": "La flota eléctrica",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/cotidiana.tsx:355",
+    "titularEscena": "Más de la mitad no sabía que los buses eléctricos de Santiago son de marcas chinas",
+    "muestra": "`p18d`: ve bien (muy positivo o positivo) que el 30 % de la flota sea eléctrica. Tres filas: todas las personas, quienes sabían la marca, quienes no. Un solo color (`IDENTIDAD[0]`): los grupos no son una secuencia.",
+    "unidadBase": "Porcentaje, un decimal; eje FIJO de 0 a 100 (`max={100}`, el único del conjunto).  ·  base: Distinta por fila: `buses.baseOpinion` para «Todas las personas», y el n de cada grupo para las otras dos (en `notaOpinion`).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": true,
+    "nombreActual": "Ve bien que el 30 % de la flota sea eléctrica (`t.preguntaOpinion`)",
+    "descripcion": "La misma `t.descripcionBuses`, compartida con la barra partida.",
+    "candidatos": [
+      {
+        "nombre": "Opinión de la flota eléctrica",
+        "angulo": "la medida; corta, como pediste"
+      },
+      {
+        "nombre": "Ve bien la flota, según si sabía",
+        "angulo": "agrega el corte, que es lo que la figura compara"
+      },
+      {
+        "nombre": "La flota eléctrica",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de cada fila · n = {baseOpinion} en total; {nSabia} y {nNoSabia} por grupo",
+      "porQue": "Hoy no tiene rótulo, y es la única figura con tres bases distintas en tres filas: decirlo importa más acá que en ninguna otra.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → `preguntaOpinion` (ya existe); el eje sería clave nueva `unidadOpinionBuses`"
+  },
+  {
+    "id": "cotidiana-visto-serie",
+    "historia": "china-cotidiana",
+    "escena": "5 (4 si no hay escena de lugar)",
+    "titulo": "Haber visto racismo",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/cotidiana.tsx:417 (rama `activo < 2`), y :410 en la rama de movimiento reducido",
+    "titularEscena": "Entre 2023 y 2025 bajó la proporción que dice haber visto racismo contra personas chinas o asiáticas",
+    "muestra": "`racismo-visto`: dice haber visto racismo contra personas chinas o asiáticas. Una barra por oleada, en la rampa de oleadas.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeVisto`, calculado sobre la serie Y los dos grupos juntos.  ·  base: Todas las personas encuestadas de la oleada (`p.n`, en `notaSerieVisto`).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionVisto`: «Dice haber visto racismo contra personas chinas o asiáticas. Por oleada: 2023: … En 2025, según si conoce a alguien de China: No conoce: …, Conoce: ….» — cubre las dos figuras.",
+    "candidatos": [
+      {
+        "nombre": "Dice haber visto racismo",
+        "angulo": "la medida, con el «dice» que marca que es declarado"
+      },
+      {
+        "nombre": "Racismo visto, oleada por oleada",
+        "angulo": "agrega que es una serie"
+      },
+      {
+        "nombre": "Racismo visto",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de las personas encuestadas · n = {casos} de {n}",
+      "porQue": "Hoy no tiene rótulo. Esta mitad de la escena va sobre la oleada entera; la otra mitad no, y por eso llevan rótulos distintos.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → claves nuevas `rotuloVisto` y `unidadVisto`"
+  },
+  {
+    "id": "cotidiana-visto-grupos",
+    "historia": "china-cotidiana",
+    "escena": "5 (4 si no hay escena de lugar)",
+    "titulo": "Lo mismo, por contacto",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/cotidiana.tsx:417 (rama `activo >= 2`), y :411 en la rama de movimiento reducido",
+    "titularEscena": "Entre 2023 y 2025 bajó la proporción que dice haber visto racismo contra personas chinas o asiáticas",
+    "muestra": "La misma medida (`racismo-contacto`) partida en dos grupos de la última oleada: quienes no conocen y quienes conocen a alguien de China. Dos filas, un solo color, porque los grupos no son una secuencia.",
+    "unidadBase": "Porcentaje, un decimal; el MISMO eje que la serie (`topeVisto`), a propósito.  ·  base: El n de cada grupo (`contacto.conoce.n`, `contacto.noConoce.n`, en `notaContacto`).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "Vacía en la rama de movimiento reducido; en la rama normal comparte `t.descripcionVisto` con la serie.",
+    "candidatos": [
+      {
+        "nombre": "Racismo visto, según si conoce a alguien",
+        "angulo": "la medida y el corte que la parte"
+      },
+      {
+        "nombre": "La misma medida, partida por contacto",
+        "angulo": "dice explícito que es la misma de antes"
+      },
+      {
+        "nombre": "Según el contacto",
+        "angulo": "el más corto; se apoya en el rótulo anterior"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de cada grupo · n = {nNoConoce} y {nConoce}, solo {ola}",
+      "porQue": "Cambia la base respecto de la mitad anterior de la escena: sin rótulo propio, el lector cree que sigue leyendo lo mismo.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/cotidiana.tsx → claves nuevas `rotuloVistoGrupos` y `unidadVistoGrupos`"
+  },
+  {
+    "id": "vacuna-recuerdo",
+    "historia": "vacuna",
+    "escena": 1,
+    "titulo": "El recuerdo de Sinovac",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/vacuna.tsx:128",
+    "titularEscena": "Entre quienes recuerdan, tres de cada cuatro dicen haber recibido Sinovac, igual que en 2023",
+    "muestra": "`sinovac-recibio`: dice haber recibido al menos una dosis de Sinovac. Una barra por oleada.",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeDeBarras`.  ·  base: Quienes recuerdan: en la última oleada `p9` agregó «No recuerdo» y esas personas quedan fuera de la cifra (lo dice `notaRecuerdo`, con su cifra).",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionRecuerdo`: «Dice haber recibido al menos una dosis de Sinovac, entre quienes recuerdan, por oleada: 2023: … 2024: … 2025: ….»",
+    "candidatos": [
+      {
+        "nombre": "Dice haber recibido Sinovac",
+        "angulo": "la medida, con el «dice» que marca que es recuerdo"
+      },
+      {
+        "nombre": "Haber recibido Sinovac, entre quienes recuerdan",
+        "angulo": "explicita la base, que en la última oleada cambia"
+      },
+      {
+        "nombre": "Recibió Sinovac",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de quienes recuerdan · n = {casos} de {n}",
+      "porQue": "Hoy no tiene rótulo, y la base no es obvia: en la última oleada «No recuerdo» queda fuera de la cifra.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/vacuna.tsx → claves nuevas `rotuloRecuerdo` y `unidadRecuerdo`"
+  },
+  {
+    "id": "vacuna-opinion",
+    "historia": "vacuna",
+    "escena": 2,
+    "titulo": "La opinión de la vacuna",
+    "componente": "BarrasDeEscena",
+    "ubicacion": "src/historias/vacuna.tsx:154",
+    "titularEscena": "Entre quienes la recibieron, la buena opinión de Sinovac cae en 2024 y ahí se queda",
+    "muestra": "Dos series en el mismo eje: buena o muy buena opinión de Sinovac (`sinovac-buena`) y hubiese preferido Pfizer o Moderna (`prefiere-pfizer`). Seis filas rotuladas «Buena opinión 2023», …, «Prefería Pfizer 2025».",
+    "unidadBase": "Porcentaje, un decimal; eje de 0 a `topeDeBarras` sobre las SEIS filas.  ·  base: Solo quienes dicen haber recibido Sinovac (`p.n`, en `notaOpinion`). En 2023 estas preguntas se hacían solo a ellas y las otras oleadas se cuentan igual para poder comparar.",
+    "cambiaEntrePasos": "La figura cambia entre pasos: el nombre tiene que ser cierto en todos.",
+    "nombrado": false,
+    "nombreActual": null,
+    "descripcion": "`t.descripcionOpinion`: «Entre quienes recibieron Sinovac. Buena o muy buena opinión de la vacuna: 2023: … Hubiese preferido Pfizer o Moderna: ….»",
+    "candidatos": [
+      {
+        "nombre": "Opinión de quienes recibieron Sinovac",
+        "angulo": "la medida y la base, que acá es un subconjunto"
+      },
+      {
+        "nombre": "Buena opinión y preferencia por otra",
+        "angulo": "nombra las dos series que conviven"
+      },
+      {
+        "nombre": "Opinión de Sinovac",
+        "angulo": "el más corto"
+      }
+    ],
+    "recomendado": 0,
+    "eje": {
+      "tiene": false,
+      "actual": null,
+      "propuesta": "% de cada fila · n = {n}",
+      "porQue": "El nombre ya dice la base (quienes recibieron Sinovac), así que el eje se queda con la unidad y el N. La base se dice una sola vez.",
+      "noAplica": false
+    },
+    "dondeVive": "src/historias/textos/vacuna.tsx → claves nuevas `rotuloOpinion` y `unidadOpinion`"
+  }
+]
+</script>
+<!-- DATOS:FIN -->
+<script>
+(() => {
+  const CLAVE = 'lab-nombres-graficos-v1';
+  const APP = 'http://localhost:5182/#';
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+  const SECCIONES = [
+    { id: 'mirada', titulo: 'Historia 1 · La mirada', ruta: '/historias/mirada' },
+    { id: 'entre-potencias', titulo: 'Historia 2 · Entre dos potencias', ruta: '/historias/entre-potencias' },
+    { id: 'territorio', titulo: 'Historia 3 · Donde uno vive', ruta: '/historias/territorio' },
+    { id: 'inversion', titulo: 'Historia 4 · Inversión y Estado', ruta: '/historias/inversion' },
+    { id: 'china-cotidiana', titulo: 'Historia 5 · China cotidiana', ruta: '/historias/china-cotidiana' },
+    { id: 'vacuna', titulo: 'Historia 6 · La vacuna', ruta: '/historias/vacuna' },
+  ];
+
+  // Los datos los escribe Claude desde el inventario verificado en el código. Se reemplaza entero.
+  const FIGURAS = window.__FIGURAS__ || [];
+
+  let estado = { elecciones: {}, nota: '' };
+  try {
+    const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    // Leído por identificador y nunca por posición: una figura que ya no existe se ignora, y una
+    // nueva arranca sin elegir.
+    if (g && typeof g === 'object') {
+      if (g.elecciones && typeof g.elecciones === 'object') {
+        for (const [id, v] of Object.entries(g.elecciones)) {
+          if (!v || typeof v !== 'object') continue;
+          estado.elecciones[id] = {
+            eleccion: typeof v.eleccion === 'number' || v.eleccion === 'otro' ? v.eleccion : null,
+            propio: String(v.propio ?? ''),
+            eje: String(v.eje ?? ''),
+            comentario: String(v.comentario ?? ''),
+          };
+        }
+      }
+      if (typeof g.nota === 'string') estado.nota = g.nota;
+    }
+  } catch (e) { /* almacenamiento bloqueado o de una versión anterior */ }
+
+  const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* modo privado */ } };
+  const de = (id) => estado.elecciones[id] || { eleccion: null, propio: '', eje: '', comentario: '' };
+  const fijar = (id, cambio) => { estado.elecciones[id] = { ...de(id), ...cambio }; guardar(); };
+
+  /** El nombre elegido, sea de la lista o escrito a mano. Vacío si todavía no hay decisión. */
+  const nombreElegido = (f) => {
+    const e = de(f.id);
+    if (e.eleccion === 'otro') return e.propio.trim();
+    if (typeof e.eleccion === 'number') return f.candidatos[e.eleccion]?.nombre ?? '';
+    return '';
+  };
+  const listo = (f) => nombreElegido(f).length > 0;
+
+  const pintar = () => {
+    const main = $('secciones');
+    main.innerHTML = '';
+    for (const s of SECCIONES.filter((x) => FIGURAS.some((f) => f.historia === x.id))) {
+      const sec = document.createElement('section');
+      sec.className = 'seccion'; sec.id = `sec-${s.id}`;
+      const suyas = FIGURAS.filter((f) => f.historia === s.id);
+      sec.innerHTML = `<h2>${esc(s.titulo)}</h2><p class="bajada">${suyas.length} ${suyas.length === 1 ? 'figura' : 'figuras'}. <a href="${APP}${s.ruta}" target="_blank" rel="noopener">Abrir la historia en la app</a></p>`;
+      for (const f of suyas) sec.appendChild(tarjeta(f));
+      main.appendChild(sec);
+    }
+    contar();
+  };
+
+  const tarjeta = (f) => {
+    const e = de(f.id);
+    const art = document.createElement('article');
+    art.className = 'figura'; art.id = `f-${f.id}`;
+    art.dataset.listo = listo(f) ? 'si' : 'no';
+
+    const insignia = f.nombrado
+      ? `<span class="insignia con">ya tiene nombre</span>`
+      : `<span class="insignia sin">sin nombre</span>`;
+    const insigniaEje = f.eje.tiene
+      ? `<span class="insignia con">eje declarado</span>`
+      : `<span class="insignia sin">sin rótulo de eje</span>`;
+
+    const opciones = f.candidatos.map((c, i) => `
+      <label class="opcion">
+        <input type="radio" name="n-${esc(f.id)}" value="${i}" ${e.eleccion === i ? 'checked' : ''}>
+        <span class="texto">
+          <span class="comoSeVe">${esc(c.nombre)}</span>${f.recomendado === i ? '<span class="recomendado">recomendado</span>' : ''}
+          <span class="angulo">${esc(c.angulo)}</span>
+        </span>
+        <span class="largo">${c.nombre.length} car.</span>
+      </label>`).join('');
+
+    art.innerHTML = `
+      <div class="cabeza">
+        <h3>${esc(f.titulo)}</h3>
+        <span class="donde">escena ${f.escena} · ${esc(f.componente)} · ${esc(f.ubicacion)}</span>
+        ${insignia} ${insigniaEje}
+      </div>
+      <dl>
+        <dt>Titular de la escena</dt><dd><span class="titular">${esc(f.titularEscena)}</span></dd>
+        <dt>Qué muestra</dt><dd>${esc(f.muestra)}</dd>
+        <dt>Unidad y base</dt><dd>${esc(f.unidadBase)}</dd>
+        ${f.cambiaEntrePasos ? `<dt>Ojo</dt><dd>${esc(f.cambiaEntrePasos)}</dd>` : ''}
+        ${f.nombreActual ? `<dt>Nombre de hoy</dt><dd><span class="comoSeVe">${esc(f.nombreActual)}</span></dd>` : ''}
+        <dt>Texto equivalente</dt><dd class="equivalente">${esc(f.descripcion)}</dd>
+      </dl>
+
+      <fieldset>
+        <legend>Nombre del gráfico — elige uno</legend>
+        <div class="opciones">
+          ${opciones}
+          <label class="opcion">
+            <input type="radio" name="n-${esc(f.id)}" value="otro" ${e.eleccion === 'otro' ? 'checked' : ''}>
+            <span class="texto">
+              <input type="text" class="propio" placeholder="Escribir otro" value="${esc(e.propio)}">
+              <span class="angulo">El tuyo, si ninguno sirve.</span>
+            </span>
+            <span class="largo cuenta-propio">${e.propio.length} car.</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="eje">
+        <div class="fila">
+          <label class="campo">Rótulo de eje
+            <input type="text" class="campo-eje" value="${esc(e.eje || f.eje.propuesta || f.eje.actual || '')}">
+          </label>
+          ${f.eje.tiene ? `<span class="largo">hoy: ${esc(f.eje.actual)}</span>` : `<span class="largo">hoy no tiene</span>`}
+        </div>
+        ${f.eje.porQue ? `<p class="angulo" style="margin:6px 0 0;color:var(--g600);font-size:12px">${esc(f.eje.porQue)}</p>` : ''}
+      </div>
+
+      <div class="vista">
+        <p class="vista-titulo">Cómo queda la figura</p>
+        <div class="vista-caja">
+          <p class="comoSeVe vista-rotulo">—</p>
+          <div class="vista-figura" aria-hidden>la figura</div>
+          <p class="vista-eje">—</p>
+        </div>
+        <p class="vista-aviso" hidden></p>
+      </div>
+
+      <div class="pie">
+        <a href="${APP}/historias/${esc(f.historia)}" target="_blank" rel="noopener">Ver la historia</a>
+        <span style="color:var(--g500)">Se escribe en ${esc(f.dondeVive)}</span>
+      </div>
+      <textarea aria-label="Comentario" placeholder="Comentario (opcional)">${esc(e.comentario)}</textarea>`;
+
+    const refrescar = () => {
+      art.dataset.listo = listo(f) ? 'si' : 'no';
+      // **El rótulo y el eje se miran juntos.** Con el criterio de Felipe los dos hablan de la base
+      // (el nombre dice la medida y su base; el eje, la unidad y el N), así que la redundancia es un
+      // riesgo real y solo se ve mirando las dos líneas en su lugar.
+      const nombre = nombreElegido(f);
+      const eje = (de(f.id).eje || f.eje.propuesta || f.eje.actual || '').trim();
+      art.querySelector('.vista-rotulo').textContent = nombre || '(sin nombre)';
+      art.querySelector('.vista-eje').textContent = eje || '(sin rótulo de eje)';
+      // Palabras de cuatro letras o más que aparecen en los dos, ignorando tildes y mayúsculas.
+      // Las funcionales quedan fuera: «cada» repetido no es redundancia, y un aviso que salta por
+      // eso deja de leerse, que es el mismo defecto que un validador que grita sobre datos sanos.
+      const VACIAS = new Set(['cada', 'para', 'como', 'mismo', 'misma', 'segun', 'esta', 'este', 'sino', 'pero']);
+      const normal = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const palabras = (s) => new Set((normal(s).match(/[a-z]{4,}/g) || []).filter((w) => !VACIAS.has(w)));
+      const enEje = palabras(eje);
+      const repetidas = [...palabras(nombre)].filter((w) => enEje.has(w));
+      const aviso = art.querySelector('.vista-aviso');
+      aviso.hidden = repetidas.length === 0;
+      aviso.textContent = repetidas.length ? `Se repite entre el nombre y el eje: ${repetidas.join(', ')}.` : '';
+      contar();
+    };
+    art.querySelectorAll(`input[name="n-${f.id}"]`).forEach((r) => r.addEventListener('change', () => {
+      fijar(f.id, { eleccion: r.value === 'otro' ? 'otro' : Number(r.value) });
+      refrescar();
+    }));
+    const propio = art.querySelector('.propio');
+    propio.addEventListener('input', (ev) => {
+      const radio = art.querySelector(`input[name="n-${f.id}"][value="otro"]`);
+      radio.checked = true;
+      fijar(f.id, { eleccion: 'otro', propio: ev.target.value });
+      art.querySelector('.cuenta-propio').textContent = `${ev.target.value.length} car.`;
+      refrescar();
+    });
+    art.querySelector('.campo-eje').addEventListener('input', (ev) => { fijar(f.id, { eje: ev.target.value }); refrescar(); });
+    art.querySelector('textarea').addEventListener('input', (ev) => { fijar(f.id, { comentario: ev.target.value }); });
+    refrescar();
+    return art;
+  };
+
+  const contar = () => {
+    const hechas = FIGURAS.filter(listo).length;
+    $('cuenta').textContent = `${FIGURAS.length - hechas} sin elegir · ${hechas} elegidas, de ${FIGURAS.length}`;
+    $('indice').innerHTML = SECCIONES.filter((x) => FIGURAS.some((f) => f.historia === x.id)).map((s) => {
+      const n = FIGURAS.filter((f) => f.historia === s.id && !listo(f)).length;
+      return `<a href="#sec-${s.id}">${esc(s.titulo.replace(/^Historia \d · /, ''))}${n ? `<span class="n">${n}</span>` : ''}</a>`;
+    }).join('');
+  };
+
+  $('nota').value = estado.nota;
+  $('nota').addEventListener('input', (e) => { estado.nota = e.target.value; guardar(); });
+  $('ir-exportar').addEventListener('click', () => $('bloque-exportar').scrollIntoView({ behavior: 'smooth' }));
+  $('tomar-todo').addEventListener('click', () => {
+    // Atajo para arrancar: pone el recomendado en todas las que no tienen elección, y no pisa las
+    // que ya elegiste.
+    for (const f of FIGURAS) if (de(f.id).eleccion === null) fijar(f.id, { eleccion: f.recomendado });
+    pintar();
+  });
+  $('limpiar').addEventListener('click', () => {
+    if (!confirm('¿Borrar todas tus respuestas de este navegador?')) return;
+    estado = { elecciones: {}, nota: '' }; guardar(); $('nota').value = ''; pintar();
+  });
+  $('exportar').addEventListener('click', () => {
+    const texto = JSON.stringify({
+      laboratorio: 'nombres-graficos',
+      fecha: new Date().toISOString(),
+      figuras: FIGURAS.map((f) => {
+        const e = de(f.id);
+        return {
+          id: f.id,
+          historia: f.historia,
+          escena: f.escena,
+          nombre: nombreElegido(f) || null,
+          deLaLista: typeof e.eleccion === 'number' ? e.eleccion : null,
+          eje: (e.eje || f.eje.propuesta || f.eje.actual || '').trim() || null,
+          ejeCambia: (e.eje || '').trim() !== '' && (e.eje || '').trim() !== (f.eje.actual || ''),
+          comentario: e.comentario,
+        };
+      }),
+      nota: estado.nota,
+    }, null, 2);
+    const pre = $('json');
+    const aMano = () => { pre.hidden = false; pre.textContent = texto; $('copiado').textContent = 'No se pudo copiar: selecciona el texto de abajo.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(() => { $('copiado').textContent = 'Copiado. Pégalo en el chat.'; pre.hidden = false; pre.textContent = texto; }, aMano);
+    else aMano();
+  });
+
+  const sinNombre = FIGURAS.filter((f) => !f.nombrado).length;
+  const sinEje = FIGURAS.filter((f) => !f.eje.tiene && !f.eje.noAplica).length;
+  $('intro').textContent = `${FIGURAS.length} figuras en las seis historias. ${sinNombre} no tienen nombre y ${sinEje} no declaran la unidad de su eje. Para cada una hay tres candidatos; elige uno o escribe el tuyo.`;
+  $('intro2').innerHTML = 'El nombre es el rótulo de 11 px en versalitas que va encima de la figura, como <span class="comoSeVe">Exposición económica a China</span> en «Donde uno vive». No repite el titular de la escena: el titular dice qué significa, el nombre dice qué se está viendo. Las opciones se muestran tal como se verían en la figura.';
+
+  pintar();
+})();
+</script>

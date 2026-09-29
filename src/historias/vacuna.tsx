@@ -130,6 +130,8 @@ export function HistoriaVacuna ({ encuesta, abierta }: { encuesta: Encuesta, abi
                 max={topeRecuerdo}
                 formato={fmt}
                 descripcion={t.descripcionRecuerdo}
+                rotulo={t.rotuloRecuerdo}
+                unidadEje={t.ejeRecuerdo}
               />
             )}
             nota={<p className="text-xs leading-snug text-gray-500">{t.notaRecuerdo}</p>}
@@ -155,6 +157,8 @@ export function HistoriaVacuna ({ encuesta, abierta }: { encuesta: Encuesta, abi
                 max={topeOpinion}
                 formato={fmt}
                 descripcion={t.descripcionOpinion}
+                rotulo={t.rotuloOpinion}
+                unidadEje={t.ejeOpinion}
                 filas={[
                   ...barrasDeSerie(buena, 'buena', t.barraBuena, (i) => reducido || i <= activo, !reducido && activo <= 2 ? activo : undefined),
                   ...barrasDeSerie(pfizer, 'pfizer', t.barraPfizer, () => reducido || activo >= 3),

@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { textoExplorador as t } from '../nucleo/explorador'
+import RotuloFigura from './RotuloFigura'
 
 /**
  * Gráfico de puntos: una fila por entidad, un punto por grupo sobre esa misma fila.
@@ -108,6 +109,16 @@ interface Props {
   /** Unidad de la escala, junto al eje. Escrita acá se lee una vez; escrita en el relato hay que
    *  repetirla en cada frase. */
   unidadEje?: string
+  /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
+  rotulo?: string
+  /**
+   * Qué dice la figura, para quien no la ve.
+   *
+   * **Faltaba.** Cada punto llevaba su `title`, pero no había ninguna frase que resumiera la figura
+   * entera: quien usa lector de pantalla tenía que recorrer fila por fila para hacerse una idea.
+   * Lo tenían `BarrasDeEscena` y `MapaRegiones`, y estas no (29-09-2026).
+   */
+  descripcion?: string
   /** La leyenda al pie. Se apaga cuando quien usa la figura pone la suya, como el recorrido, que
    *  la necesita arriba y como rampa: dos leyendas de lo mismo es peor que ninguna. */
   leyenda?: boolean
@@ -138,8 +149,8 @@ interface Props {
 export default function Puntos ({
   series, filas, escala, formato, formatoEje = formato, titulo, marcas = 3,
   anchoEtiqueta = '5.5rem', rotular = 'extremos', visible, compacto = false,
-  altoFila = ALTO_FILA, radioCreciente = false, unidadEje, leyenda = true, rotulosLargos = false,
-  esquivar = false, entrada = true,
+  altoFila = ALTO_FILA, radioCreciente = false, unidadEje, rotulo, descripcion, leyenda = true,
+  rotulosLargos = false, esquivar = false, entrada = true,
 }: Props) {
   // El lienzo de la primera fila, guardado en estado y no en una ref: si la primera fila cambia
   // (otra pregunta en la misma vista), el observador tiene que pasar al nodo nuevo (Codex).
@@ -174,8 +185,15 @@ export default function Puntos ({
   } as React.CSSProperties
   const rejilla = compacto ? 'fila-puntos compacta' : 'fila-puntos'
 
+  // **`<figure>` solo cuando hay algo que rotular.** El rótulo es un `<figcaption>` y tiene que ir
+  // dentro de la figura que nombra; pero el explorador ya envuelve estos puntos en su propio
+  // `<figure>` (`FiguraExplorador`), y una figura dentro de otra deja dos leyendas para un mismo
+  // gráfico. Sin rótulo ni descripción propia, esto vuelve a ser el `<div>` de antes.
+  const Caja = (rotulo || descripcion ? 'figure' : 'div') as 'figure' | 'div'
   return (
-    <div>
+    <Caja className={rotulo || descripcion ? 'm-0' : undefined}>
+      <RotuloFigura>{rotulo}</RotuloFigura>
+      {descripcion && <p className="sr-only">{descripcion}</p>}
       {/* Eje arriba. Va sobre el mismo lienzo que los puntos, márgenes incluidos, o las marcas
           quedan corridas respecto de lo que rotulan. */}
       <div className={`${rejilla} items-end`} style={ancho}>
@@ -373,6 +391,6 @@ export default function Puntos ({
           </li>
         ))}
       </ul>
-    </div>
+    </Caja>
   )
 }

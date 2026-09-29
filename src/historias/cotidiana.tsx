@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
 import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from '../componentes/CapaRecorrido'
 import BarrasDeEscena from '../componentes/BarrasDeEscena'
+import RotuloFigura from '../componentes/RotuloFigura'
 import Enfasis from '../componentes/Enfasis'
 import { topeDeBarras } from '../nucleo/escala'
 import { IDENTIDAD, NEUTRO, pasosDeOrden, tintaSobre } from '../nucleo/paleta'
@@ -208,6 +209,8 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                 max={topeCosas}
                 formato={fmt}
                 descripcion={t.descripcionCosas}
+                rotulo={t.rotuloCosas}
+                unidadEje={t.ejeCosas}
                 filas={[
                   ...barrasDeSerie(mall, 'mall', t.barraMall, (i) => reducido || activo > 0 || i === 0, reducido ? undefined : (activo === 0 ? 0 : activo === 1 ? mall.puntos.length - 1 : undefined)),
                   ...barrasDeSerie(restaurante, 'restaurante', t.barraRestaurante, () => reducido || activo >= 2),
@@ -236,6 +239,8 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                 max={topePersonas}
                 formato={fmt}
                 descripcion={t.descripcionPersonas}
+                rotulo={t.rotuloPersonas}
+                unidadEje={t.ejePersonas}
                 filas={barrasDeSerie(conoce, 'conoce', '', (i) => reducido || activo >= 1 || i === 0, reducido || activo !== 0 ? undefined : 0)}
               />
             )}
@@ -268,8 +273,9 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                     className="flex flex-col gap-2 min-[900px]:[--ancho-etiqueta-ancho:var(--ancho-palabra-escritorio)]"
                     style={{ '--ancho-palabra-escritorio': t.anchoPalabra.escritorio } as CSSProperties}
                   >
-                    <p className="sr-only">{t.descripcionLugar}</p>
                     <Puntos
+                      rotulo={t.rotuloLugar}
+                      descripcion={t.descripcionLugar}
                       series={encuesta.olas.map((ola, i) => ({ clave: String(ola), etiqueta: String(ola), color: tonos[i] }))}
                       filas={filasContacto}
                       escala={{ min: 0, max: topeContacto }}
@@ -316,7 +322,8 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               const partes = [noSabia, siSabia].filter((x): x is NonNullable<typeof x> => Boolean(x))
               const barraPartida = (
                 <figure className="m-0">
-                  <p className="mb-2 text-sm font-semibold text-gray-800">{t.preguntaMarca}</p>
+                  <RotuloFigura>{t.preguntaMarca}</RotuloFigura>
+                  <p className="sr-only">{t.descripcionMarca}</p>
                   <div className="flex h-[38px] w-full overflow-hidden rounded-sm" aria-hidden>
                     {partes.map((x) => {
                       const fondo = x.codigo === 2 ? tonoBuses : NEUTRO
@@ -334,6 +341,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                       )
                     })}
                   </div>
+                  <p className="mt-2 text-[10px] leading-tight text-gray-500">{t.ejeMarca}</p>
                 </figure>
               )
               const filasOpinion = [
@@ -350,13 +358,17 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                   })),
               ]
               const barrasOpinion = (
-                <figure className="m-0">
-                  <p className="mb-2 text-sm font-semibold text-gray-800">{t.preguntaOpinion}</p>
-                  <BarrasDeEscena filas={filasOpinion} max={100} formato={fmt} descripcion={t.descripcionBuses} />
-                </figure>
+                <BarrasDeEscena
+                  filas={filasOpinion}
+                  max={100}
+                  formato={fmt}
+                  descripcion={t.descripcionBuses}
+                  rotulo={t.preguntaOpinion}
+                  unidadEje={t.ejeOpinion}
+                />
               )
               if (reducido) return <div className="flex flex-col gap-5">{barraPartida}{barrasOpinion}</div>
-              return activo === 0 ? <><p className="sr-only">{t.descripcionBuses}</p>{barraPartida}</> : barrasOpinion
+              return activo === 0 ? barraPartida : barrasOpinion
             }}
             nota={(activo, reducido) => {
               const deLaMarca = nota(t.notaMarca)
@@ -407,8 +419,16 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               if (reducido) {
                 return (
                   <div className="flex flex-col gap-3">
-                    <BarrasDeEscena filas={serie} max={topeVisto} formato={fmt} descripcion={t.descripcionVisto} />
-                    <BarrasDeEscena filas={grupos} max={topeVisto} formato={fmt} descripcion="" />
+                    <BarrasDeEscena
+                      filas={serie} max={topeVisto} formato={fmt}
+                      descripcion={t.descripcionVisto}
+                      rotulo={t.rotuloVistoSerie} unidadEje={t.ejeVistoSerie}
+                    />
+                    <BarrasDeEscena
+                      filas={grupos} max={topeVisto} formato={fmt}
+                      descripcion={t.descripcionContacto}
+                      rotulo={t.rotuloVistoGrupos} unidadEje={t.ejeVistoGrupos}
+                    />
                   </div>
                 )
               }
@@ -417,7 +437,9 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                   filas={activo >= 2 ? grupos : serie}
                   max={topeVisto}
                   formato={fmt}
-                  descripcion={t.descripcionVisto}
+                  descripcion={activo >= 2 ? t.descripcionContacto : t.descripcionVisto}
+                  rotulo={activo >= 2 ? t.rotuloVistoGrupos : t.rotuloVistoSerie}
+                  unidadEje={activo >= 2 ? t.ejeVistoGrupos : t.ejeVistoSerie}
                 />
               )
             }}

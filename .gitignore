@@ -56,3 +56,5 @@ public/laboratorio-sinan.html
 public/laboratorio-viaje.html
 # Y el de la tarjeta del cierre: `npm run lab:tarjeta` a partir de `laboratorio/tarjeta-cierre.html`.
 public/laboratorio-tarjeta.html
+# Y el de los nombres de los gráficos: `npm run lab:nombres` a partir de `laboratorio/nombres-graficos.html`.
+public/laboratorio-nombres.html

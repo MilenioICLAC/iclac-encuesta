@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { decimal, lista, numero, plural, porcentaje, type Idioma } from '../../locale'
-import { cardinal } from '../lectura'
+import { cardinal, rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -94,6 +94,16 @@ export interface Contenido {
   izquierda: string
   derecha: string
   unidadRecta: string
+  /** El nombre de cada gráfico, dentro de su figura (`RotuloFigura`). */
+  /**
+   * Qué dice la figura del termómetro, para quien no la ve.
+   *
+   * **Faltaba**: cada punto llevaba su `title`, pero no había ninguna frase que resumiera la figura
+   * entera, así que había que recorrerla punto por punto para hacerse una idea (29-09-2026).
+   */
+  descripcionTermometro: (filas: { etiqueta: string, valores: (number | null)[] }[], olas: number[]) => string
+  rotuloTermometro: string
+  rotuloRecta: string
   notaRecta: (etapa: EtapaRecta) => ReactNode
   /** La marca de una pendiente cuyo intervalo cruza el cero, en la leyenda del último paso. */
   pendienteNula: string
@@ -168,7 +178,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>,
       ],
       puntoTermometro: (pais, ola, valor, base) => `${pais} · ${ola}: ${decimal(valor)} sobre 100 (n = ${numero(base)})`,
-      unidadTermometro: (_escala, espanol) => espanol,
+      unidadTermometro: (_escala, espanol) => `${espanol} · n = ${rangoDeEnes([v.baseMinima, v.baseMaxima], (a, b) => `${a} a ${b}`)}`,
       notaTermometro: (
         <>
           Un punto por oleada, promedio de quienes contestaron. Bases de{' '}
@@ -208,7 +218,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · izquierda',
       derecha: 'derecha · 10',
-      unidadRecta: 'Evaluación de China de 0 a 100',
+      unidadRecta: 'Evaluación de 0 a 100',
+      descripcionTermometro: (filas, olas) => `Evaluación media de cada país, de 0 a 100, por oleada. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
+      rotuloTermometro: 'Simpatía media por cada país',
+      rotuloRecta: 'Evaluación de China por tramo político',
       notaRecta: (etapa) => (
         <>
           Cada punto es un promedio; su tamaño dice cuánta gente hay.{' '}
@@ -241,10 +254,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>Con Estados Unidos, en {v.saltoTrump.desde} «Trump» lo escribía el {pct(v.saltoTrump.a)}. En {v.saltoTrump.hasta}, el <strong>{pct(v.saltoTrump.b)}</strong>.</>
           : <>Con Estados Unidos: {comillas(v.palabrasEeuu)}.</>,
       ],
-      bloqueChina: 'China',
-      bloqueEeuu: 'Estados Unidos',
+      bloqueChina: 'Lo que se asocia a China',
+      bloqueEeuu: 'Lo que se asocia a Estados Unidos',
       puntoPalabra: (bloque, palabra, ola, valor) => `${bloque} · «${palabra}» · ${ola}: ${pct(valor)}`,
-      unidadPalabras: '% que la escribe',
+      unidadPalabras: `% que la escribe · n = ${rangoDeEnes(v.basesPalabras, (a, b) => `${a} a ${b}`)}`,
       descripcionPalabras: (china, eeuu) => `Lo primero que se le viene a la cabeza, en porcentaje de quienes contestaron, por oleada. China: ${lectura(china)}. Estados Unidos: ${lectura(eeuu)}.`,
       notaPalabras: (
         <>
@@ -294,8 +307,8 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       puntoTermometro: (pais, ola, valor, base) => `${pais} · ${ola}: ${decimal(valor)} out of 100 (n = ${numero(base)})`,
       unidadTermometro: (escala) => (escala.min > 0 || escala.max < 100
-        ? `Rating from 0 to 100 · axis cut to ${numero(escala.min)}–${numero(escala.max)}`
-        : 'Rating from 0 to 100'),
+        ? `Rating from 0 to 100 · axis cut to ${numero(escala.min)}–${numero(escala.max)} · n = ${rangoDeEnes([v.baseMinima, v.baseMaxima], (a, b) => `${a} to ${b}`)}`
+        : `Rating from 0 to 100 · n = ${rangoDeEnes([v.baseMinima, v.baseMaxima], (a, b) => `${a} to ${b}`)}`),
       notaTermometro: (
         <>
           One dot per wave: the average of those who answered. Valid responses from N = {numero(v.baseMinima)} to{' '}
@@ -335,7 +348,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · left',
       derecha: 'right · 10',
-      unidadRecta: 'Opinion of China, 0 to 100',
+      unidadRecta: 'Rating from 0 to 100',
+      descripcionTermometro: (filas, olas) => `Average rating of each country, from 0 to 100, by wave. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
+      rotuloTermometro: 'Average warmth towards each country',
+      rotuloRecta: 'Opinion of China by political position',
       notaRecta: (etapa) => (
         <>
           Each dot is an average; its size shows how many people it holds.{' '}
@@ -368,10 +384,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>For the United States, in {v.saltoTrump.desde}, {pct(v.saltoTrump.a)} wrote “Trump.” In {v.saltoTrump.hasta}, <strong>{pct(v.saltoTrump.b)}</strong>.</>
           : <>For the United States: {comillas(v.palabrasEeuu)}.</>,
       ],
-      bloqueChina: 'China',
-      bloqueEeuu: 'United States',
+      bloqueChina: 'What is associated with China',
+      bloqueEeuu: 'What is associated with the United States',
       puntoPalabra: (bloque, palabra, ola, valor) => `${bloque} · “${palabra}” · ${ola}: ${pct(valor)}`,
-      unidadPalabras: '% who write it',
+      unidadPalabras: `% who write it · n = ${rangoDeEnes(v.basesPalabras, (a, b) => `${a} to ${b}`)}`,
       descripcionPalabras: (china, eeuu) => `The first thing that comes to mind, as a percentage of those who answered, by wave. China: ${lectura(china)}. United States: ${lectura(eeuu)}.`,
       notaPalabras: (
         <>
@@ -416,8 +432,8 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       puntoTermometro: (pais, ola, valor, base) => `${pais} · ${ola}年：${decimal(valor)}分（满分100，n = ${numero(base)}）`,
       unidadTermometro: (escala) => (escala.min > 0 || escala.max < 100
-        ? `评分0–100 · 坐标轴截取${numero(escala.min)}–${numero(escala.max)}`
-        : '评分0–100'),
+        ? `评分0–100 · 坐标轴截取${numero(escala.min)}–${numero(escala.max)} · n = ${rangoDeEnes([v.baseMinima, v.baseMaxima], (a, b) => `${a}至${b}`)}`
+        : `评分0–100 · n = ${rangoDeEnes([v.baseMinima, v.baseMaxima], (a, b) => `${a}至${b}`)}`),
       notaTermometro: (
         <>
           每轮一个点，为作答者的平均分。有效回答：N = {numero(v.baseMinima)}至{numero(v.baseMaxima)}，因国家和轮次而异。“难分高下”与“领先”比较的是同一受访者给两国的评分。
@@ -446,7 +462,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · 左',
       derecha: '右 · 10',
-      unidadRecta: '对中国的好感度（0–100）',
+      unidadRecta: '好感度（0–100）',
+      descripcionTermometro: (filas, olas) => `各国的平均评分（0–100），按轮次。` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
+      rotuloTermometro: '各国的平均好感度',
+      rotuloRecta: '按政治立场看对华好感度',
       notaRecta: (etapa) => (
         <>
           每个点为一个平均值，点的大小表示人数。
@@ -476,10 +495,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>提到美国，{v.saltoTrump.desde}年有{pct(v.saltoTrump.a)}的受访者写下“特朗普（Trump）”；{v.saltoTrump.hasta}年为<strong>{pct(v.saltoTrump.b)}</strong>。</>
           : <>提到美国：{comillas(v.palabrasEeuu)}。</>,
       ],
-      bloqueChina: '中国',
-      bloqueEeuu: '美国',
+      bloqueChina: '与中国相关联的词',
+      bloqueEeuu: '与美国相关联的词',
       puntoPalabra: (bloque, palabra, ola, valor) => `${bloque} · “${palabra}” · ${ola}年：${pct(valor)}`,
-      unidadPalabras: '写下该词的受访者占比（%）',
+      unidadPalabras: `写下该词的受访者占比（%）· n = ${rangoDeEnes(v.basesPalabras, (a, b) => `${a}至${b}`)}`,
       descripcionPalabras: (china, eeuu) => `首先想到的词，占作答者的百分比，按轮次。中国：${lectura(china)}。美国：${lectura(eeuu)}。`,
       notaPalabras: (
         <>

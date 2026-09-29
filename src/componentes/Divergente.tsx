@@ -1,6 +1,7 @@
 import type React from 'react'
 import Enfasis from './Enfasis'
 import { tintaSobre } from '../nucleo/paleta'
+import RotuloFigura from './RotuloFigura'
 
 /**
  * Barras apiladas **divergentes**: una fila por entidad, los segmentos repartidos a los dos lados
@@ -63,6 +64,11 @@ interface Props {
   anchoEtiqueta?: string
   /** Unidad del eje. Se escribe una vez acá y no en cada frase del relato. */
   unidadEje?: string
+  /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
+  rotulo?: string
+  /** Qué dice la figura, para quien no la ve. Cada segmento tenía su `title`, pero no había ninguna
+   *  frase que resumiera la figura entera (29-09-2026). */
+  descripcion?: string
   leyenda?: boolean
   /** Ancho mínimo del segmento, en porcentaje del lienzo, para escribirle el número adentro. */
   minimoRotulo?: number
@@ -80,15 +86,15 @@ const MINIMO_ROTULO = 11
 
 export default function Divergente ({
   categorias, filas, extremo, formato, visible, altoFila = 30, anchoEtiqueta = '3.5rem',
-  unidadEje, leyenda = true, titulo, enfatizar, minimoRotulo = MINIMO_ROTULO,
+  unidadEje, rotulo, descripcion, leyenda = true, titulo, enfatizar, minimoRotulo = MINIMO_ROTULO,
 }: Props) {
   // Un punto porcentual, en porcentaje del ancho del lienzo. El lienzo va de −extremo a +extremo.
   const unidad = 50 / extremo
   const marcas = [-50, -25, 0, 25, 50].filter((m) => Math.abs(m) <= extremo)
 
   return (
-    <div
-      className="divergente flex flex-col"
+    <figure
+      className="divergente m-0 flex flex-col"
       style={{
         // Dos nombres y cadena de respaldo: un valor en el atributo `style` le gana a cualquier
         // media query, así que el ancestro necesita poder pasarlo por encima (ver CLAUDE.md).
@@ -96,6 +102,8 @@ export default function Divergente ({
         '--ancho-etiqueta-divergente': anchoEtiqueta,
       } as React.CSSProperties}
     >
+      <RotuloFigura>{rotulo}</RotuloFigura>
+      {descripcion && <p className="sr-only">{descripcion}</p>}
       <div className="flex flex-col gap-[3px]">
         {filas.map((fila, i) => {
           const encendida = visible ? visible(fila.clave) : true
@@ -210,6 +218,6 @@ export default function Divergente ({
           ))}
         </ul>
       )}
-    </div>
+    </figure>
   )
 }

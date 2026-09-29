@@ -340,6 +340,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     caeElEmpate: Math.abs(caeElEmpate?.diferencia ?? 0),
     caeEeuu: Math.abs(caeEeuu?.diferencia ?? 0),
     basesBalanza: balanza?.filas.map((f) => f.base) ?? [],
+    basesConfianza: confianzaFigura?.filas.map((f) => f.base) ?? [],
     eeuuSerieBalanza,
     vuelcoP26,
     proChina: proChina.map((p) => p.valor),
@@ -410,6 +411,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               frases={tm.frasesTermometro}
               figura={(activo) => (
                 <Puntos
+                  rotulo={tm.rotuloTermometro}
+                  descripcion={tm.descripcionTermometro(figura.filas, encuesta.olas)}
                   series={serieTermometro}
                   filas={figura.filas}
                   escala={figura.escala}
@@ -494,6 +497,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 frases={tm.frasesIdeologia}
                 figura={(activo) => (
                   <Regresion
+                    rotulo={tm.rotuloRecta}
                     datos={regresion}
                     ola={primeraOla}
                     escala={{ ...escalaRegresion, paso: Math.max(5, Math.round((escalaRegresion.max - escalaRegresion.min) / 3)) }}
@@ -561,8 +565,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               figura={(activo, reducido) => {
                 const bloque = (titulo: string, filas: typeof filasChina, clave: string) => (
                   <div key={clave} className="flex flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{titulo}</p>
                     <Puntos
+                      rotulo={titulo}
                       series={seriesPalabras}
                       filas={filas}
                       escala={{ min: 0, max: topePalabras }}
@@ -617,6 +621,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               frases={tp.frasesConfianza}
               figura={(activo, reducido) => (confianzaFigura && (
                 <Divergente
+                  rotulo={tp.rotuloConfianza}
+                  descripcion={tp.descripcionConfianza(confianzaFigura.filas, confianzaFigura.categorias.map((c) => ({ etiqueta: tp.categoriaConfianza(c.clave, c.etiqueta) })))}
                   categorias={confianzaFigura.categorias.map((c) => ({ ...c, etiqueta: tp.categoriaConfianza(c.clave, c.etiqueta) }))}
                   filas={confianzaFigura.filas.map((f) => ({ ...f, grupo: f.clave.startsWith('p24-') ? tp.grupoChina : tp.grupoEeuu }))}
                   extremo={confianzaFigura.extremo}
@@ -669,6 +675,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 frases={tp.frasesBalanza}
                 figura={(activo, reducido) => (
                   <Divergente
+                    rotulo={tp.rotuloBalanza}
+                    descripcion={tp.descripcionBalanza(balanza.filas, balanza.categorias.map((c) => ({ etiqueta: tp.categoriaBalanza(c.clave, c.etiqueta) })))}
                     categorias={balanza.categorias.map((c) => ({ ...c, etiqueta: tp.categoriaBalanza(c.clave, c.etiqueta) }))}
                     filas={balanza.filas}
                     extremo={balanza.extremo}
@@ -742,6 +750,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               frases={tp.frasesP26}
               figura={(activo, reducido) => (
                 <BarrasPosicionamiento
+                  rotulo={tp.rotuloP26}
+                  unidadEje={tp.ejeP26}
                   olas={encuesta.olas}
                   // Los rótulos van por código, desde el módulo de textos: los del libro de códigos
                   // que trae la variable están solo en español.

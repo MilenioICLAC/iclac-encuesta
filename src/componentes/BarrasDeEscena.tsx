@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import Enfasis from './Enfasis'
+import RotuloFigura from './RotuloFigura'
 import { numero } from '../locale'
 import { tintaSobre } from '../nucleo/paleta'
 
@@ -19,6 +20,17 @@ export interface FilaBarra {
 
 interface Props {
   filas: FilaBarra[]
+  /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
+  rotulo?: string
+  /**
+   * Unidad de la escala y su base, al pie.
+   *
+   * **Estas barras no dibujan eje**: el número va escrito al lado de cada una, así que el «%» se ve
+   * pero no sobre quiénes está calculado. Hasta el 29-09-2026 eso vivía solo en la nota al pie, y
+   * la nota se va a un pop-up: sin esta línea la base deja de estar a la vista, que es el hecho 2
+   * de `CLAUDE.md` («con el N a la vista»).
+   */
+  unidadEje?: string
   /**
    * El tope del eje, en la unidad de los valores.
    *
@@ -51,10 +63,11 @@ interface Props {
  * salía del ancho en el teléfono. La tinta la decide la luminancia del relleno (`tintaSobre`), no
  * una tabla escrita a mano.
  */
-export default function BarrasDeEscena ({ filas, max, formato, descripcion, altoFila = 26 }: Props) {
+export default function BarrasDeEscena ({ filas, max, formato, descripcion, rotulo, unidadEje, altoFila = 26 }: Props) {
   const { t } = useTranslation('capa')
   return (
     <figure className="barras-escena m-0">
+      <RotuloFigura>{rotulo}</RotuloFigura>
       {/* Toda figura lleva su texto equivalente: lo que sigue es decoración para quien ve. */}
       <p className="sr-only">{descripcion}</p>
       <div
@@ -102,6 +115,9 @@ export default function BarrasDeEscena ({ filas, max, formato, descripcion, alto
           )
         })}
       </div>
+      {/* La unidad al pie, con el mismo tamaño y tono que la de `Puntos` (10 px, gris 500): las dos
+          figuras conviven en la misma historia y una diferencia de un píxel se lee como jerarquía. */}
+      {unidadEje && <p className="mt-2 text-[10px] leading-tight text-gray-500">{unidadEje}</p>}
     </figure>
   )
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { decimal, lista, numero, porcentaje, type Idioma } from '../../locale'
-import { casosDe } from '../lectura'
+import { casosDe, rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -44,11 +44,17 @@ export interface Contenido {
   frasesRecuerdo: ReactNode[]
   /** Lo que lee un lector de pantalla en vez de la figura. */
   descripcionRecuerdo: string
+  /** El nombre del gráfico, dentro de la figura (`RotuloFigura`): la medida y su base. */
+  rotuloRecuerdo: string
+  /** La unidad de la escala y el N, al pie de la figura. Se calcula; no se transcribe. */
+  ejeRecuerdo: string
   notaRecuerdo: ReactNode
   respiro: { titulo: string, cuerpo: ReactNode }
   titularOpinion: string
   frasesOpinion: ReactNode[]
   descripcionOpinion: string
+  rotuloOpinion: string
+  ejeOpinion: string
   /** El rótulo de las barras de cada serie, antes del año. */
   barraBuena: string
   barraPfizer: string
@@ -90,6 +96,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const ultima = v.recibio.at(-1)!
     return {
       salida: 'Volver a las historias',
+      rotuloRecuerdo: 'Dice haber recibido Sinovac',
+      ejeRecuerdo: `% de quienes contestaron · n = ${rangoDeEnes(v.recibio.map((p) => p.n), (a, b) => `${a} a ${b}`)}`,
+      rotuloOpinion: 'Opinión de quienes recibieron Sinovac',
+      ejeOpinion: `% de cada fila · n = ${rangoDeEnes([...v.buena, ...v.pfizer].map((p) => p.n), (a, b) => `${a} a ${b}`)}`,
       titularRecuerdo,
       frasesRecuerdo: [
         <>En {v.primeraOla}, el <strong>{fmt(v.recibio[0].valor)}</strong> decía haber recibido al menos una dosis de Sinovac.</>,
@@ -150,6 +160,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const diferencia = v.primerTramo?.diferencia ?? 0
     return {
       salida: 'Back to stories',
+      rotuloRecuerdo: 'Say they received Sinovac',
+      ejeRecuerdo: `% of those who answered · n = ${rangoDeEnes(v.recibio.map((p) => p.n), (a, b) => `${a} to ${b}`)}`,
+      rotuloOpinion: 'Views among those who received it',
+      ejeOpinion: `% of each row · n = ${rangoDeEnes([...v.buena, ...v.pfizer].map((p) => p.n), (a, b) => `${a} to ${b}`)}`,
       titularRecuerdo,
       frasesRecuerdo: [
         <>In {v.primeraOla}, <strong>{fmt(v.recibio[0].valor)}</strong> said they had received at least one dose of the Sinovac vaccine.</>,
@@ -211,6 +225,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const porOlaCn = (puntos: Punto[]) => puntos.map((p) => `${p.ola}年：${fmt(p.valor)}`).join('；')
     return {
       salida: '返回数据故事',
+      rotuloRecuerdo: '表示接种过科兴疫苗',
+      ejeRecuerdo: `作答者占比（%）· n = ${rangoDeEnes(v.recibio.map((p) => p.n), (a, b) => `${a}至${b}`)}`,
+      rotuloOpinion: '接种者对疫苗的评价',
+      ejeOpinion: `各行的占比（%）· n = ${rangoDeEnes([...v.buena, ...v.pfizer].map((p) => p.n), (a, b) => `${a}至${b}`)}`,
       titularRecuerdo,
       frasesRecuerdo: [
         <>{v.primeraOla}年，<strong>{fmt(v.recibio[0].valor)}</strong>的受访者表示至少接种过一剂科兴疫苗。</>,
