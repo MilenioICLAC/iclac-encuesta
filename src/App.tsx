@@ -245,13 +245,20 @@ function Marco () {
             </li>
           ))}
         </ul>
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
-          <span>
-            {tp('app.nucleo')} ·{' '}
-            <a href="https://iclac.cl/" target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-dark">
-              iclac.cl
-            </a>
-          </span>
+        {/* Quién lo hizo. Las instituciones ya están arriba con su logo, cada uno enlazado al
+            suyo, e iclac.cl sigue a un clic desde el logo del encabezado en todas las vistas.
+            El nombre no se traduce. */}
+        {/* Centrado y no `justify-between`: con los logos centrados arriba y un solo ítem acá,
+            alineado a la izquierda quedaba como un resto de la línea anterior. */}
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
+          <a
+            href="https://www.linkedin.com/in/felipesotojorquera/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-brand-dark"
+          >
+            Felipe Soto Jorquera
+          </a>
         </div>
       </footer>
     </div>
