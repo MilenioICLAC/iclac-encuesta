@@ -155,10 +155,12 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
   tarjetas del menú, cuya caja copia la transición en el clic. **Los `hover:` solo existen con puntero
   fino** (`hoverOnlyWhenSupported` en `tailwind.config.js`): nada que solo se descubra con el cursor.
   Por qué, y lo que no se aplicó de las skills de diseño externas: un registro de decisiones interno.
-- **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** En inglés y chino una franja
-  declara que la traducción es un borrador pendiente de revisión de ICLAC. Las claves de datos siguen en
+- **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** Las claves de datos siguen en
   español (valores de `casos`, palabras de las abiertas, colores por `'<pregunta>:<código>'`); solo se traducen los rótulos.
 - **El encabezado replica el de iclac.cl** (88 px escritorio, 60 teléfono, sombra y no borde; nav
-  completo desde `lg`). El estado del explorador vive en `App` y sobrevive al cambio de vista.
+  completo desde `lg`) y **es el mismo que el del mapa de inversiones**: los cuatro ítems son texto,
+  sin caja ni color propio, y solo los dos modos de lectura (historias y explorador) llevan ícono,
+  de trazo 1,8 a 16 px. Llegando desde iclac.cl, dos encabezados distintos se leen como dos sitios.
+  El estado del explorador vive en `App` y sobrevive al cambio de vista.
 - **Commits** en español, en presente y describiendo el efecto («El recorrido estrena cierre y
   portada»). Solo cuando Felipe lo pide.

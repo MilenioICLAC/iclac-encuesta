@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
@@ -21,8 +21,10 @@ import { useIdioma, type Idioma } from '../locale'
  * del borde de la pantalla. El alto no se escribe a mano en ninguna de las dos, porque cambia
  * con el ancho (60 px en teléfono, 88 en escritorio) y dos números a mano se desincronizan.
  *
- * **La franja de borrador va adentro**, bajo la fila del logo: fuera del encabezado su alto no entraba
- * en `--alto-encabezado` y la barra del explorador se pegaba encima de ella.
+ * **Ningún ítem del nav lleva caja.** Los cuatro son texto, y lo único que distingue a los dos
+ * modos de lectura (las historias y el explorador) es su ícono, igual que en el mapa de
+ * inversiones. Una píldora de color en un solo ítem hace que los dos encabezados de ICLAC se lean
+ * como dos sitios distintos, que es justo lo que copiarlo venía a evitar.
  */
 
 const IDIOMAS: { codigo: Idioma, etiqueta: string }[] = [
@@ -32,23 +34,45 @@ const IDIOMAS: { codigo: Idioma, etiqueta: string }[] = [
 ]
 
 /**
- * El ícono del recorrido: un triángulo de reproducción.
+ * El ícono de las historias: un triángulo de reproducción.
  *
- * El recorrido no es una página más del sitio, es algo que se mira y que dura: el ícono lo dice
- * antes de que el lector haga clic. Se exporta porque el botón de la portada usa el mismo glifo,
- * que es lo que ata las dos entradas al mismo lugar.
+ * Una historia no es una página más del sitio, es algo que se mira y que dura: el ícono lo dice
+ * antes de que el lector haga clic.
+ *
+ * De trazo y no relleno, del mismo grosor y tamaño que el del explorador y que los del mapa de
+ * inversiones: un solo glifo macizo entre íconos de línea se lee como un botón perdido.
  */
 export function IconoRecorrido ({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
-      <path d="M8 5.5v13a1 1 0 0 0 1.54.84l10-6.5a1 1 0 0 0 0-1.68l-10-6.5A1 1 0 0 0 8 5.5Z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden className={className}>
+      <path strokeLinejoin="round" d="M8.5 5.6v12.8L19 12 8.5 5.6Z" />
     </svg>
   )
 }
 
-const NAV: { a: string, clave: 'recorrido' | 'explorar' | 'descargas' | 'ficha' }[] = [
-  { a: '/', clave: 'recorrido' },
-  { a: '/explorar', clave: 'explorar' },
+/**
+ * El ícono del explorador: una línea que sube hasta una punta.
+ *
+ * Es el glifo con que el mapa de inversiones marca su vista de tendencias, y acá cumple lo mismo:
+ * decir que el explorador es un instrumento y no una página de texto.
+ */
+export function IconoExplorador ({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 17.5l5.5-5.5 3.5 3 8-8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 7H20v4.5" />
+    </svg>
+  )
+}
+
+// El ícono solo lo llevan los dos modos de lectura; las dos páginas de texto van sin él.
+const NAV: {
+  a: string
+  clave: 'recorrido' | 'explorar' | 'descargas' | 'ficha'
+  icono?: ComponentType<{ className?: string }>
+}[] = [
+  { a: '/', clave: 'recorrido', icono: IconoRecorrido },
+  { a: '/explorar', clave: 'explorar', icono: IconoExplorador },
   { a: '/descargas', clave: 'descargas' },
   { a: '/ficha', clave: 'ficha' },
 ]
@@ -84,6 +108,10 @@ export default function Encabezado () {
     return () => { observador.disconnect() }
   }, [])
 
+  // El menú de teléfono se cierra con cualquier cambio de ruta, no solo al tocar uno de sus ítems:
+  // si no, volver con el botón atrás deja el panel abierto encima de la vista nueva.
+  useEffect(() => { setMenuAbierto(false) }, [pathname])
+
   const botonesIdioma = (
     <div className="flex gap-1 text-sm" role="group" aria-label={t('idioma')}>
       {IDIOMAS.map((l) => (
@@ -105,12 +133,16 @@ export default function Encabezado () {
     </div>
   )
 
+  // El ítem de las historias no lo puede marcar `NavLink` solo: su destino es `/`, que es prefijo
+  // de todo, y sin `end` quedaría activo en las cuatro vistas. Los otros tres sí se marcan solos.
+  const marcado = (clave: string, isActive: boolean) => (clave === 'recorrido' ? enRecorrido : isActive)
+
   return (
     <header
       ref={caja}
-      className={`sticky top-0 z-40 bg-white ${SOMBRA}`}
+      className={`sticky top-0 z-40 bg-white px-4 py-3 sm:px-6 md:py-[0.625rem] ${SOMBRA}`}
     >
-      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 md:py-[0.625rem]">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <a href="https://iclac.cl/" target="_blank" rel="noopener noreferrer" className="shrink-0">
             {/* 68 px en md+ es el alto exacto con que iclac.cl dibuja este mismo logo. */}
@@ -129,27 +161,19 @@ export default function Encabezado () {
             al lado de un título largo, entre 768 y 1023 px no queda ancho y el h1 se parte en
             varias líneas estirando el encabezado. */}
         <div className="hidden shrink-0 items-center gap-4 lg:flex">
+          {/* 13 px en Raleway es el tamaño del menú de iclac.cl. Lo que no se copia son sus
+              mayúsculas con letter-spacing: en chino no hacen nada. */}
           <nav className="flex items-center gap-4 font-display text-[0.8125rem]">
-            {NAV.map((n) => (n.clave === 'recorrido'
-              ? (
-                <NavLink
-                  key={n.a}
-                  to={n.a}
-                  className={`presionable flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-                    enRecorrido
-                      ? 'border-brand-dark bg-brand-dark font-semibold text-white'
-                      : 'border-brand-dark/40 text-brand-dark hover:bg-brand hover:text-gray-900'
-                  }`}
-                >
-                  <IconoRecorrido className="h-3 w-3 shrink-0" />
-                  {t(`nav.${n.clave}`)}
-                </NavLink>
-                )
-              : (
-                <NavLink key={n.a} to={n.a} className={clase}>
-                  {t(`nav.${n.clave}`)}
-                </NavLink>
-                )))}
+            {NAV.map((n) => (
+              <NavLink
+                key={n.a}
+                to={n.a}
+                className={({ isActive }) => `flex items-center gap-1.5 ${clase({ isActive: marcado(n.clave, isActive) })}`}
+              >
+                {n.icono && <n.icono className="h-4 w-4 shrink-0" />}
+                {t(`nav.${n.clave}`)}
+              </NavLink>
+            ))}
           </nav>
           <span className="h-5 w-px bg-gray-300" aria-hidden />
           {botonesIdioma}
@@ -170,14 +194,6 @@ export default function Encabezado () {
         </button>
       </div>
 
-      {/* Solo fuera del español, que es el original: la traducción la escribimos nosotros y ICLAC
-          todavía no la revisa. Sin el aviso, un error de traducción se leería como postura de ICLAC. */}
-      {t('borrador') && (
-        <p className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
-          {t('borrador')}
-        </p>
-      )}
-
       {menuAbierto && (
         <div className="absolute inset-x-0 top-full z-40 flex flex-col gap-1 border-b border-gray-200 bg-white px-4 py-3 shadow-lg lg:hidden">
           <nav className="flex flex-col font-display text-sm">
@@ -185,14 +201,13 @@ export default function Encabezado () {
               <NavLink
                 key={n.a}
                 to={n.a}
-                onClick={() => { setMenuAbierto(false) }}
-                className={({ isActive }) => `flex items-center gap-2 rounded px-2 py-2 hover:bg-brand hover:text-gray-900 ${
-                  n.clave === 'recorrido'
-                    ? (enRecorrido ? 'font-semibold text-brand-dark' : 'text-brand-dark')
-                    : clase({ isActive })
+                className={({ isActive }) => `flex items-center gap-2 rounded px-2 py-2 ${
+                  marcado(n.clave, isActive)
+                    ? 'bg-gray-100 font-semibold text-gray-900'
+                    : 'text-gray-600 hover:bg-brand hover:text-gray-900'
                 }`}
               >
-                {n.clave === 'recorrido' && <IconoRecorrido className="h-3 w-3 shrink-0" />}
+                {n.icono && <n.icono className="h-4 w-4 shrink-0" />}
                 {t(`nav.${n.clave}`)}
               </NavLink>
             ))}
