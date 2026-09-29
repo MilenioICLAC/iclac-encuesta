@@ -11,7 +11,7 @@ import MapaRegiones from './MapaRegiones'
 
 /**
  * La «Ficha técnica»: la encuesta en sí (quién, cómo, diseño, muestra, alcance), no lo que hace la
- * página, que va en «Sobre los datos».
+ * página, que va en el pop-up de método de cada historia.
  *
  * **Solo descriptiva.** Cada frase se sostiene en un hecho verificado; nada califica el diseño. El
  * texto se redactó con Codex sobre un expediente de hechos y se decidió en el laboratorio
@@ -129,7 +129,8 @@ const PROSA: Record<Idioma, Prosa> = {
     transversales: (d) => <>
       Las tres oleadas son cortes transversales: no se sigue a las personas entre una y otra.{' '}
       {numero(d.repetidas)} personas participaron en más de una ({numero(d.enDos)} en dos y {numero(d.enTres)} en
-      las tres), lo que corresponde a {numero(d.filasRepetidas)} registros.<Ref n="3" />
+      las tres), lo que corresponde a {numero(d.filasRepetidas)} registros.<Ref n="3" /> El explorador
+      permite excluir esas respuestas repetidas.
     </>,
     composicion: (d) => <>
       Número de casos y porcentaje sobre el total de cada oleada, sin ponderar. Las edades observadas van
@@ -140,8 +141,9 @@ const PROSA: Record<Idioma, Prosa> = {
       Las cifras describen las respuestas de las personas participantes y no se extrapolan a la población
       de Chile ni de sus regiones. La selección es no probabilística y ninguna oleada dispone de factores
       de expansión. Por eso los resultados se presentan sin ponderar, sobre respuestas efectivas, con el
-      número de casos indicado y sin margen de error. No se dispone de una tasa de respuesta
-      documentada.<Ref n="1, 2, 3" />
+      número de casos indicado y sin margen de error. Los porcentajes se calculan sin las personas que
+      no contestaron cada pregunta, y cada figura indica su base, que suele ser menor que el total de
+      la oleada. No se dispone de una tasa de respuesta documentada.<Ref n="1, 2, 3" />
     </>,
     comparables: (explorador) => <>
       Algunas preguntas cambiaron de enunciado o de categorías entre oleadas; solo se comparan entre
@@ -199,7 +201,8 @@ const PROSA: Record<Idioma, Prosa> = {
     transversales: (d) => <>
       The three waves are cross-sectional surveys: no one is followed from one wave to the next.{' '}
       {numero(d.repetidas)} people answered in more than one wave ({numero(d.enDos)} in two and {numero(d.enTres)} in
-      all three), which corresponds to {numero(d.filasRepetidas)} records.<Ref n="3" />
+      all three), which corresponds to {numero(d.filasRepetidas)} records.<Ref n="3" /> The data explorer
+      can exclude those repeated responses.
     </>,
     composicion: (d) => <>
       Number of cases and percentage of each wave&apos;s total, unweighted. Observed ages range
@@ -210,7 +213,9 @@ const PROSA: Record<Idioma, Prosa> = {
       The figures describe the responses of the people who took part and are not extrapolated to the
       population of Chile or its regions. Selection is non-probabilistic. None of the waves has survey
       weights. Results are therefore presented unweighted, based on valid responses, with the number of
-      cases shown, and with no margin of error. No documented response rate is available.<Ref n="1, 2, 3" />
+      cases shown, and with no margin of error. Percentages are calculated excluding those who did not
+      answer each question, and every chart states its base, which is usually smaller than the wave
+      total. No documented response rate is available.<Ref n="1, 2, 3" />
     </>,
     comparables: (explorador) => <>
       Some questions changed their wording or response options between waves. Only those that stayed
@@ -248,13 +253,13 @@ const PROSA: Record<Idioma, Prosa> = {
       本网站使用的数据文件包含{lista(d.olas.map((o, i) => `${o}年${numero(d.n[o])}名${i === 0 ? '受访者' : ''}`))}，共{numero(d.respuestas)}条记录。<Ref n="3" />2025年为实施实验模块扩大了样本，因此该轮样本量约为前几轮的两倍。
     </>,
     transversales: (d) => <>
-      三轮调查均为横截面调查：各轮受访者并非同一批人。有{numero(d.repetidas)}人参加过多轮调查（{numero(d.enDos)}人参加两轮，{numero(d.enTres)}人参加全部三轮），对应{numero(d.filasRepetidas)}条记录。<Ref n="3" />
+      三轮调查均为横截面调查：各轮受访者并非同一批人。有{numero(d.repetidas)}人参加过多轮调查（{numero(d.enDos)}人参加两轮，{numero(d.enTres)}人参加全部三轮），对应{numero(d.filasRepetidas)}条记录。<Ref n="3" />数据探索工具可排除这些重复回答。
     </>,
     composicion: (d) => <>
       各类别的受访者人数及其占该轮总样本量的百分比，未加权。观察到的年龄范围为：{lista(d.olas.map((o) => `${o}年${numero(d.edades[o].min)}至${numero(d.edades[o].max)}岁`))}；中位数分别为{lista(d.olas.map((o) => numero(d.edades[o].mediana)))}岁。<Ref n="3" />
     </>,
     alcance: <>
-      这些数据描述的是参与者的回答，不外推至智利或其各地区的总体人口。受访者以非概率方式选取。各轮调查均无权重。因此，结果未加权，以有效回答为基数，注明样本量，不报告误差范围。目前没有可查的应答率记录。<Ref n="1, 2, 3" />
+      这些数据描述的是参与者的回答，不外推至智利或其各地区的总体人口。受访者以非概率方式选取。各轮调查均无权重。因此，结果未加权，以有效回答为基数，注明样本量，不报告误差范围。百分比不含未作答者，每张图都注明其基数，通常小于该轮的总样本量。目前没有可查的应答率记录。<Ref n="1, 2, 3" />
     </>,
     comparables: (explorador) => <>
       部分题目的措辞或答案选项在各轮间有改动；只有保持完全一致的题目才做跨轮次对比，投票意向除外：该题按候选人比较，并附注释。{explorador}逐题标明这一点。

@@ -1,23 +1,25 @@
 # Visualizador de la Encuesta de Percepciones sobre China en Chile
 
-Publica los resultados de la encuesta anual de ICLAC en dos tramos: un **recorrido** que cuenta qué
-encontró la encuesta y qué se movió entre oleadas, y un **tablero** para consultar un año concreto. El
-sitio son cinco vistas con URL propia (portada del recorrido, tablero, explorador, descargas y sobre
-los datos), con el encabezado de iclac.cl. En español, inglés y chino: hoy el nav y el encabezado están
-traducidos, el contenido de las figuras todavía no.
+Publica los resultados de la encuesta anual de ICLAC en dos tramos: seis **historias** que cuentan qué
+encontró la encuesta y qué se movió entre oleadas, y un **explorador** para consultar cualquier
+pregunta en una oleada. El sitio son cuatro vistas con URL propia (historias, explorador, descargas y
+ficha técnica), con el encabezado de iclac.cl. En español, inglés y chino, con una franja que declara
+que las dos traducciones son un borrador pendiente de revisión de ICLAC.
 
-**El recorrido publica su método.** «Cómo se hizo el recorrido», dentro de «Sobre los datos», dice
-qué sostiene cada afirmación y qué tiene prohibido hacer la animación. Se llega desde la barra de la
-capa y desde su cierre.
+**Cada figura publica su método.** Desde donde antes iba su pie se abre un pop-up con esa nota y con
+las pruebas que sostienen lo que la figura muestra; la barra de la capa y el cierre abren el de la
+historia entera, y el menú, la metodología completa con todas las comparaciones. Dicen qué sostiene
+cada afirmación y qué tiene prohibido hacer la animación.
 
 **Las diferencias entre oleadas van contrastadas.** El ETL calcula, para cada comparación que el
 producto muestra, una prueba de permutación, un intervalo bootstrap y la misma diferencia con la
 composición de edad y sexo fija. La muestra no es probabilística, así que **no son margen de error**:
 comparan las oleadas entre sí. El método y sus límites están en `.claude/CLAUDE.md` y publicados en
-la vista «Sobre los datos».
+los pop-ups de método.
 
 **Estado: E1 en curso.** Visualizador funcionando con paridad casi completa contra el monitor actual:
-recorrido, 27 módulos, nubes de palabras, explorador de 72 preguntas y descargas. Las tres oleadas
+seis historias, nubes de palabras, explorador de 72 preguntas y descargas. El tablero que reconstruía
+el monitor módulo por módulo salió de la app el 22-09-2026. Las tres oleadas
 tienen prueba de aceptación contra cifras publicadas por ICLAC. Alcance y calendario en
 `../admin/cotizaciones/cotizacion_iclac_fases2y3_felipe.pdf`, enviada a ICLAC el 14-08-2026.
 

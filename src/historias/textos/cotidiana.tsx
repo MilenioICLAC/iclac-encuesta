@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { decimal, lista, numero, porcentaje, type Idioma } from '../../locale'
-import { casosDe } from '../lectura'
+import { casosDe, rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -80,6 +80,9 @@ export interface Contenido {
   titularCosas: string
   frasesCosas: ReactNode[]
   descripcionCosas: string
+  /** El nombre del gráfico de cada escena (`RotuloFigura`) y la unidad con su N al pie. */
+  rotuloCosas: string
+  ejeCosas: string
   /** El rótulo de las barras de cada serie, antes del año. */
   barraMall: string
   barraRestaurante: string
@@ -88,11 +91,14 @@ export interface Contenido {
   titularPersonas: string
   frasesPersonas: ReactNode[]
   descripcionPersonas: string
+  rotuloPersonas: string
+  ejePersonas: string
   notaPersonas: ReactNode
   respiroLugar: { titulo: string, cuerpo: ReactNode }
   titularLugar: string
   frasesLugar: ReactNode[]
   descripcionLugar: string
+  rotuloLugar: string
   /** El título al pasar sobre un punto: palabra, oleada y valor ya formateado. */
   tituloPunto: (palabra: string, ola: string, valor: string) => string
   unidadLugar: string
@@ -109,7 +115,13 @@ export interface Contenido {
   todas: string
   quienesSabian: string
   quienesNoSabian: string
+  /** El texto equivalente de la **primera** figura de la escena: la barra partida de la marca.
+   *  No existía: en movimiento normal se apoyaba en la descripción de la figura de opinión, y
+   *  con movimiento reducido, donde se dibujan las dos, se quedaba sin ninguna (29-09-2026). */
+  descripcionMarca: string
   descripcionBuses: string
+  ejeMarca: string
+  ejeOpinion: string
   notaMarca: ReactNode
   notaOpinion: ReactNode
   respiroVisto: { titulo: string, cuerpo: ReactNode }
@@ -119,6 +131,14 @@ export interface Contenido {
   grupoConoce: string
   grupoNoConoce: string
   descripcionVisto: string
+  /** El texto equivalente de la **segunda** figura de la escena: los dos grupos de contacto.
+   *  Iba vacío (`descripcion=""`), así que esa mitad de la escena no tenía equivalente. */
+  descripcionContacto: string
+  /** La escena cambia de figura **y de base** a mitad de camino: dos rótulos y dos ejes. */
+  rotuloVistoSerie: string
+  ejeVistoSerie: string
+  rotuloVistoGrupos: string
+  ejeVistoGrupos: string
   notaSerieVisto: ReactNode
   notaContacto: ReactNode
 }
@@ -164,6 +184,19 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const [, segunda, tercera] = v.conoce
     return {
       salida: 'Volver a las historias',
+      rotuloCosas: 'Mall y restaurante chinos cerca de casa',
+      ejeCosas: `% de las personas encuestadas · n = ${rangoDeEnes([...v.mall, ...v.restaurante].map((x) => x.n), (a, b) => `${a} a ${b}`)}`,
+      rotuloPersonas: 'Conoce a alguien de China',
+      ejePersonas: `% de las personas encuestadas · n = ${rangoDeEnes(v.conoce.map((x) => x.n), (a, b) => `${a} a ${b}`)}`,
+      rotuloLugar: 'Dónde ocurre el contacto',
+      descripcionMarca: `Sabía que los buses eléctricos de Santiago son de marcas chinas, en ${v.buses.ola}: lo sabía el ${porcentaje(v.buses.siSabia ?? 0, 1)}; no lo sabía el ${porcentaje(v.buses.noSabia ?? 0, 1)}.`,
+      ejeMarca: `La barra entera es el 100 % · n = ${numero(v.buses.baseMarca)}, solo ${v.buses.ola}`,
+      ejeOpinion: `% de cada fila · n = ${numero(v.buses.baseOpinion)} en total; ${numero(v.buses.sabian?.n ?? 0)} y ${numero(v.buses.noSabian?.n ?? 0)} por grupo`,
+      rotuloVistoSerie: 'Dice haber visto racismo',
+      ejeVistoSerie: `% de las personas encuestadas · n = ${rangoDeEnes(v.racismo.map((x) => x.n), (a, b) => `${a} a ${b}`)}`,
+      rotuloVistoGrupos: 'Racismo visto, según si conoce a alguien',
+      descripcionContacto: `Dice haber visto racismo en ${v.contacto.ola}, según si conoce a alguien de China: quienes no conocen, ${decimal(v.contacto.noConoce?.media ?? 0, 1)} %; quienes conocen, ${decimal(v.contacto.conoce?.media ?? 0, 1)} %.`,
+      ejeVistoGrupos: `% de cada grupo · n = ${numero(v.contacto.noConoce?.n ?? 0)} y ${numero(v.contacto.conoce?.n ?? 0)}, solo ${v.contacto.ola}`,
       titularCosas: v.mallCrece && v.restauranteParejo
         ? `Entre ${v.primeraOla} y ${v.ultimaOla} creció la proporción que vive cerca de un mall chino; la del restaurante quedó pareja`
         : 'Qué tan cerca queda China del barrio',
@@ -212,7 +245,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         : [],
       descripcionLugar: `Dónde tiene contacto con personas de China, en porcentaje de quienes contestaron, por oleada. ${(lugar?.filas ?? []).map((f) => `${f.etiqueta}: ${f.valores.map((x) => (x === null ? 'sin dato' : fmt(x))).join(', ')}`).join('. ')}.`,
       tituloPunto: (palabra, ola, valor) => `«${palabra}» · ${ola}: ${valor}`,
-      unidadLugar: '% que lo nombra',
+      unidadLugar: `% que lo nombra · n = ${rangoDeEnes(v.lugar?.bases ?? [], (a, b) => `${a} a ${b}`)}. Suman más de 100: se puede nombrar más de un lugar.`,
       anchoPalabra: { telefono: '6rem', escritorio: '9.5rem' },
       notaLugar: lugar && (
         <>
@@ -232,10 +265,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>Quienes sabían la marca la ven aún mejor: <strong>{fmt(buses.sabian?.media ?? 0)}</strong> contra <strong>{fmt(buses.noSabian?.media ?? 0)}</strong>.</>
           : <>Entre quienes sabían la marca y quienes no, queda <strong>parejo</strong>: {fmt(buses.sabian?.media ?? 0)} contra {fmt(buses.noSabian?.media ?? 0)}.</>,
       ],
-      preguntaMarca: '¿Sabía que los buses eléctricos son de marcas chinas?',
+      preguntaMarca: 'Sabía que los buses son chinos',
       noLoSabia: 'No lo sabía',
       loSabia: 'Lo sabía',
-      preguntaOpinion: `Ve bien que el ${porcentaje(30, 0)} de la flota sea eléctrica`,
+      preguntaOpinion: 'Ve bien la flota, según si sabía',
       todas: 'Todas las personas',
       quienesSabian: 'Quienes lo sabían',
       quienesNoSabian: 'Quienes no lo sabían',
@@ -304,6 +337,19 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const [, segunda, tercera] = v.conoce
     return {
       salida: 'Back to stories',
+      rotuloCosas: 'Chinese mall and restaurant nearby',
+      ejeCosas: `% of people surveyed · n = ${rangoDeEnes([...v.mall, ...v.restaurante].map((x) => x.n), (a, b) => `${a} to ${b}`)}`,
+      rotuloPersonas: 'Knows someone from China',
+      ejePersonas: `% of people surveyed · n = ${rangoDeEnes(v.conoce.map((x) => x.n), (a, b) => `${a} to ${b}`)}`,
+      rotuloLugar: 'Where the contact happens',
+      descripcionMarca: `Knew that Santiago’s electric buses are from Chinese brands, in ${v.buses.ola}: ${porcentaje(v.buses.siSabia ?? 0, 1)} knew; ${porcentaje(v.buses.noSabia ?? 0, 1)} did not.`,
+      ejeMarca: `The whole bar is 100 % · n = ${numero(v.buses.baseMarca)}, ${v.buses.ola} only`,
+      ejeOpinion: `% of each row · n = ${numero(v.buses.baseOpinion)} in total; ${numero(v.buses.sabian?.n ?? 0)} and ${numero(v.buses.noSabian?.n ?? 0)} by group`,
+      rotuloVistoSerie: 'Says they have seen racism',
+      ejeVistoSerie: `% of people surveyed · n = ${rangoDeEnes(v.racismo.map((x) => x.n), (a, b) => `${a} to ${b}`)}`,
+      rotuloVistoGrupos: 'Racism seen, by whether they know someone',
+      descripcionContacto: `Say they have seen racism in ${v.contacto.ola}, by whether they know someone from China: those who do not, ${decimal(v.contacto.noConoce?.media ?? 0, 1)} %; those who do, ${decimal(v.contacto.conoce?.media ?? 0, 1)} %.`,
+      ejeVistoGrupos: `% of each group · n = ${numero(v.contacto.noConoce?.n ?? 0)} and ${numero(v.contacto.conoce?.n ?? 0)}, ${v.contacto.ola} only`,
       titularCosas: v.mallCrece && v.restauranteParejo
         ? `Between ${v.primeraOla} and ${v.ultimaOla}, the share living near a Chinese-run variety store (mall chino) grew; for Chinese restaurants, there is no clear difference`
         : 'How close China is to the neighborhood',
@@ -352,7 +398,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         : [],
       descripcionLugar: `Where they have contact with people from China, as a share of those who answered, by wave. ${(lugar?.filas ?? []).map((f) => `${f.etiqueta}: ${f.valores.map((x) => (x === null ? 'no data' : fmt(x))).join(', ')}`).join('. ')}.`,
       tituloPunto: (palabra, ola, valor) => `“${palabra}” · ${ola}: ${valor}`,
-      unidadLugar: '% who mention it',
+      unidadLugar: `% who mention it · n = ${rangoDeEnes(v.lugar?.bases ?? [], (a, b) => `${a} to ${b}`)}. They add to more than 100: more than one place can be named.`,
       anchoPalabra: { telefono: '10.5rem', escritorio: '12.5rem' },
       notaLugar: lugar && (
         <>
@@ -372,10 +418,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>Those who knew the brand view it even more positively: <strong>{fmt(buses.sabian?.media ?? 0)}</strong> versus <strong>{fmt(buses.noSabian?.media ?? 0)}</strong>.</>
           : <>Between those who knew the brand and those who did not, there is <strong>no clear difference</strong>: {fmt(buses.sabian?.media ?? 0)} versus {fmt(buses.noSabian?.media ?? 0)}.</>,
       ],
-      preguntaMarca: 'Did you know that the electric buses are from Chinese brands?',
+      preguntaMarca: 'Knew the buses are Chinese',
       noLoSabia: 'Did not know',
       loSabia: 'Knew',
-      preguntaOpinion: `Sees it as positive that ${porcentaje(30, 0)} of the fleet is electric`,
+      preguntaOpinion: 'Positive view of the fleet, by awareness',
       todas: 'All respondents',
       quienesSabian: 'Those who knew',
       quienesNoSabian: 'Those who did not know',
@@ -445,6 +491,19 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const [, segunda, tercera] = v.conoce
     return {
       salida: '返回数据故事',
+      rotuloCosas: '住处附近有中国商场与餐厅',
+      ejeCosas: `受访者占比（%）· n = ${rangoDeEnes([...v.mall, ...v.restaurante].map((x) => x.n), (a, b) => `${a}至${b}`)}`,
+      rotuloPersonas: '认识来自中国的人',
+      ejePersonas: `受访者占比（%）· n = ${rangoDeEnes(v.conoce.map((x) => x.n), (a, b) => `${a}至${b}`)}`,
+      rotuloLugar: '接触发生的场所',
+      descripcionMarca: `${v.buses.ola}年，是否知道圣地亚哥的电动公交车为中国品牌：知道者${porcentaje(v.buses.siSabia ?? 0, 1)}，不知道者${porcentaje(v.buses.noSabia ?? 0, 1)}。`,
+      ejeMarca: `整条条形为100 % · n = ${numero(v.buses.baseMarca)}，仅${v.buses.ola}年`,
+      ejeOpinion: `各行的占比（%）· n = ${numero(v.buses.baseOpinion)}（合计）；分组为${numero(v.buses.sabian?.n ?? 0)}与${numero(v.buses.noSabian?.n ?? 0)}`,
+      rotuloVistoSerie: '表示见过种族歧视',
+      ejeVistoSerie: `受访者占比（%）· n = ${rangoDeEnes(v.racismo.map((x) => x.n), (a, b) => `${a}至${b}`)}`,
+      rotuloVistoGrupos: '见过歧视，按是否认识中国人',
+      descripcionContacto: `${v.contacto.ola}年表示见过种族歧视，按是否认识来自中国的人：不认识者${decimal(v.contacto.noConoce?.media ?? 0, 1)} %；认识者${decimal(v.contacto.conoce?.media ?? 0, 1)} %。`,
+      ejeVistoGrupos: `各组的占比（%）· n = ${numero(v.contacto.noConoce?.n ?? 0)}与${numero(v.contacto.conoce?.n ?? 0)}，仅${v.contacto.ola}年`,
       titularCosas: v.mallCrece && v.restauranteParejo
         ? `${v.primeraOla}年至${v.ultimaOla}年间，住在华人经营的百货店（mall chino）附近的比例上升；中餐馆一项则难分高下`
         : '中国离街坊有多近',
@@ -488,7 +547,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         : [],
       descripcionLugar: `与来自中国的人在何处接触，占作答者的百分比，按轮次。${(lugar?.filas ?? []).map((f) => `${f.etiqueta}：${f.valores.map((x) => (x === null ? '无数据' : fmt(x))).join('、')}`).join('。')}。`,
       tituloPunto: (palabra, ola, valor) => `“${palabra}” · ${ola}年：${valor}`,
-      unidadLugar: '提及比例（%）',
+      unidadLugar: `提及比例（%）· n = ${rangoDeEnes(v.lugar?.bases ?? [], (a, b) => `${a}至${b}`)}。总和超过100：可提及多个场所。`,
       anchoPalabra: { telefono: '8.5rem', escritorio: '10.5rem' },
       notaLugar: lugar && (
         <>
@@ -507,10 +566,10 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
           ? <>知道这些公交车是中国品牌的受访者评价更为正面：<strong>{fmt(buses.sabian?.media ?? 0)}</strong>对<strong>{fmt(buses.noSabian?.media ?? 0)}</strong>。</>
           : <>知道与不知道这些公交车是中国品牌的受访者之间<strong>难分高下</strong>：{fmt(buses.sabian?.media ?? 0)}对{fmt(buses.noSabian?.media ?? 0)}。</>,
       ],
-      preguntaMarca: '您是否知道电动公交车是中国品牌？',
+      preguntaMarca: '知道公交车是中国品牌',
       noLoSabia: '不知道',
       loSabia: '知道',
-      preguntaOpinion: `正面看待车队中${porcentaje(30, 0)}为电动车`,
+      preguntaOpinion: '对车队的正面看法，按是否知情',
       todas: '全体受访者',
       quienesSabian: '知道的受访者',
       quienesNoSabian: '不知道的受访者',

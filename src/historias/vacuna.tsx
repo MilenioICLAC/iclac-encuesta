@@ -1,6 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
 import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from '../componentes/CapaRecorrido'
+import { MEDIDAS } from './medidas'
 import BarrasDeEscena from '../componentes/BarrasDeEscena'
 import { distribucion } from '../nucleo/agregar'
 import { topeDeBarras } from '../nucleo/escala'
@@ -97,7 +98,8 @@ export function HistoriaVacuna ({ encuesta, abierta }: { encuesta: Encuesta, abi
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
       salida={t.salida}
-      metodo="metodo-vacuna"
+      metodo="vacuna"
+      encuesta={encuesta}
       titulo={ficha.nombre}
     >
       {(raiz) => (
@@ -130,9 +132,12 @@ export function HistoriaVacuna ({ encuesta, abierta }: { encuesta: Encuesta, abi
                 max={topeRecuerdo}
                 formato={fmt}
                 descripcion={t.descripcionRecuerdo}
+                rotulo={t.rotuloRecuerdo}
+                unidadEje={t.ejeRecuerdo}
               />
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaRecuerdo}</p>}
+            nota={t.notaRecuerdo}
+            medidas={MEDIDAS.vacuna.recuerdo}
           />
 
           <Respiro raiz={raiz} indice={-1} titulo={t.respiro.titulo}>
@@ -155,13 +160,16 @@ export function HistoriaVacuna ({ encuesta, abierta }: { encuesta: Encuesta, abi
                 max={topeOpinion}
                 formato={fmt}
                 descripcion={t.descripcionOpinion}
+                rotulo={t.rotuloOpinion}
+                unidadEje={t.ejeOpinion}
                 filas={[
                   ...barrasDeSerie(buena, 'buena', t.barraBuena, (i) => reducido || i <= activo, !reducido && activo <= 2 ? activo : undefined),
                   ...barrasDeSerie(pfizer, 'pfizer', t.barraPfizer, () => reducido || activo >= 3),
                 ]}
               />
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaOpinion}</p>}
+            nota={t.notaOpinion}
+            medidas={MEDIDAS.vacuna.opinion}
           />
 
           <Cierre

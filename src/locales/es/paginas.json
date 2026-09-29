@@ -1,10 +1,10 @@
 {
   "app": {
+    "desarrollo": "Desarrollado por:",
     "errorTitulo": "No se pudieron cargar los datos",
     "errorAntes": "Recarga la página. Si el problema sigue, escríbenos a través de",
     "errorDespues": ".",
     "cargando": "Cargando…",
-    "nucleo": "Núcleo Milenio Impactos de China en América Latina y el Caribe",
     "instituciones": {
       "minciencia": "Ministerio de Ciencia, Tecnología, Conocimiento e Innovación · ANID",
       "uc": "Pontificia Universidad Católica de Chile",
@@ -12,25 +12,6 @@
       "ucn": "Universidad Católica del Norte",
       "uta": "Universidad de Tarapacá"
     }
-  },
-  "datos": {
-    "titulo": "Sobre los datos",
-    "bajada": "Lo que hay que saber antes de citar una cifra, y cómo se sostiene cada frase de las historias.",
-    "enEstaPagina": "En esta página",
-    "indice": {
-      "citar": "Antes de citar",
-      "historias": "Qué sostiene cada historia",
-      "comoSeLee": "Cómo se prueba una diferencia",
-      "todas": "Todas las comparaciones"
-    },
-    "citarTitulo": "Antes de citar una cifra",
-    "masSobre": "Más sobre la encuesta →",
-    "historiasBajada": "Cada frase que afirma un cambio o una diferencia depende de una de estas pruebas. En cada fila, la raya vertical es el cero, el punto es la diferencia y la línea, su intervalo del {{p95}}. Si la línea cruza el cero, la fila dice «parejo» y la historia no elige ganador.",
-    "metodo": "Método",
-    "comoSeLeeBajada": "El p, el intervalo, la composición fija y por qué no es margen de error",
-    "todasTitulo": "Todas las comparaciones entre oleadas",
-    "todasBajadaUna": "{{n}} medida en una tabla, incluidas las que ninguna historia usa",
-    "todasBajada": "{{n}} medidas en una tabla, incluidas las que ninguna historia usa"
   },
   "metodo": {
     "historia": "Historia {{n}} · {{nombre}}",

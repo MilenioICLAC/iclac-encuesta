@@ -7,6 +7,8 @@ import { participacion } from '../nucleo/agregar'
 import { HISTORIAS } from './indice'
 import { ContenidoTarjeta, TARJETA } from './TarjetaHistoria'
 import { useTransicionHistoria } from './contextoTransicion'
+import { BotonMetodo } from '../componentes/PopupMetodo'
+import Contrastes, { ComoSeLee } from '../componentes/Contrastes'
 
 /**
  * La raíz del sitio: una tarjeta por historia.
@@ -26,6 +28,7 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
   const { iniciar, enCurso, volviendoDe } = useTransicionHistoria()
   const tarjetas = useRef<(HTMLAnchorElement | null)[]>([])
   const { t } = useTranslation('capa')
+  const c = encuesta.contrastes
 
   // La frase entera es una plantilla por idioma (`capa.json`, `menu.intro`); acá solo se arman los
   // grupos de número y sustantivo, con la forma que pide cada número (el chino no tiene plural). Las
@@ -75,6 +78,36 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
         {intro}{' '}
         <Link to="/ficha" className="text-brand-dark underline hover:no-underline">{t('menu.mas')}</Link>
       </p>
+      {/* **La metodología es del conjunto, y por eso vive acá.** Cada historia publica en su
+          cierre las pruebas que la sostienen; esta tabla trae las de las seis juntas, incluidas
+          las que ninguna historia usa, y no es de ninguna en particular. Era la única parte de la vista «Sobre los datos» que no está en la Ficha
+          técnica (Felipe, 29-09-2026). */}
+      {c && (
+        <p className="mt-1.5 text-sm">
+          <BotonMetodo
+            etiqueta={t('menu.metodologia')}
+            titulo={t('menu.metodologiaTitulo')}
+            className="text-brand-dark underline hover:no-underline"
+            ancho
+          >
+            <div className="flex flex-col gap-4">
+              <ComoSeLee rondas={c.metodo.rondas} />
+              <div>
+                <h3 className="font-display text-sm font-semibold text-gray-900">{t('menu.todas')}</h3>
+                <p className="mt-1 text-xs">
+                  {plural(c.medidas.length, {
+                    one: t('menu.todasBajadaUna', { n: numero(c.medidas.length) }),
+                    other: t('menu.todasBajada', { n: numero(c.medidas.length) }),
+                  })}
+                </p>
+                <div className="mt-2">
+                  <Contrastes contrastes={c} />
+                </div>
+              </div>
+            </div>
+          </BotonMetodo>
+        </p>
+      )}
       {/* Durante la transición los originales quedan transparentes, no `invisible`: con
           `visibility: hidden` el enlace elegido perdía el foco y la lista salía del árbol
           accesible (medido por Codex, 22-09-2026). Fuera del tabulador mientras dura.

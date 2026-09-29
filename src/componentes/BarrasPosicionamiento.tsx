@@ -2,6 +2,7 @@ import { decimal, idioma, porcentaje } from '../locale'
 import { textoExplorador as t } from '../nucleo/explorador'
 import './BarrasPosicionamiento.css'
 import Enfasis from './Enfasis'
+import RotuloFigura from './RotuloFigura'
 
 interface Categoria {
   clave: string
@@ -17,11 +18,21 @@ interface Props {
   reparto: Categoria[]
   mostrarUltima: boolean
   reducido: boolean
+  /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
+  rotulo?: string
+  /**
+   * Unidad de la escala y su base, al pie.
+   *
+   * **Antes era una frase escrita fija acá dentro** (`posicionamiento.total`), que decía que cada
+   * barra es el 100 % pero no sobre cuántas personas. Pasa a prop para que la escena le agregue el
+   * N, como el resto de las figuras; sin ella se conserva la frase de siempre y nada cambia.
+   */
+  unidadEje?: string
 }
 
 /** Una fila por oleada, siempre sobre el total de respuestas. El espacio de la
  * última fila se reserva desde el inicio: animar la entrada no desplaza las demás. */
-export default function BarrasPosicionamiento ({ olas, reparto, mostrarUltima, reducido }: Props) {
+export default function BarrasPosicionamiento ({ olas, reparto, mostrarUltima, reducido, rotulo, unidadEje }: Props) {
   const ultima = olas.length - 1
   const extremos = reparto.filter((c) => c.clave === '1' || c.clave === '2')
   const nombre = (c: Categoria) => c.corta ?? c.etiqueta
@@ -29,7 +40,8 @@ export default function BarrasPosicionamiento ({ olas, reparto, mostrarUltima, r
 
   return (
     <figure className="barras-posicionamiento" aria-label={t('posicionamiento.aria')}>
-      <p className="text-xs text-gray-500">{t('posicionamiento.total')}</p>
+      <RotuloFigura>{rotulo}</RotuloFigura>
+      <p className="text-xs text-gray-500">{unidadEje ?? t('posicionamiento.total')}</p>
       <div className="p26-filas">
         {olas.map((ola, i) => {
           const final = i === ultima

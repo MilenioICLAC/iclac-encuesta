@@ -64,6 +64,11 @@ del otro por veinte píxeles.
 - **Que sea legible:** tamaño de fuente calculado de números y rótulos, y contraste del texto sobre su
   relleno real.
 - **Consola sin errores** ni advertencias de React.
+- **El estado se lee en el instante del evento, no al final de la ráfaga.** Un script que tabula
+  catorce veces y recién entonces mira dónde quedó el foco reporta como oculto un control que
+  estaba a la vista cuando lo recibió: las tabulaciones siguientes movieron el scroll. Se mide con
+  un `focusin` que anota lo que importa en ese momento (29-09-2026: 1 de 3 corridas «fallaba» así,
+  y con el listener salieron 672 de 672 correctas).
 - **Con movimiento reducido:** `page.emulateMedia({ reducedMotion: 'reduce' })`. La figura arranca
   completa, las frases no se superponen, sin pista.
 - **Con teclado:** `PageDown` y flechas de punta a punta pasan por todos los pasos sin saltarse

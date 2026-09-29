@@ -2,7 +2,7 @@ import { decimal } from '../locale'
 import type { Correccion } from './tipos'
 
 /**
- * Cómo se lee una prueba del artefacto, en las historias y en «Sobre los datos».
+ * Cómo se lee una prueba del artefacto, en las historias y en sus pop-ups de método.
  *
  * **Una diferencia se afirma si pasa tres cosas** (Felipe, 23-09-2026): p nominal bajo 0,05, el
  * intervalo sin cruzar el cero y, si la prueba es de una familia de hipótesis, su p corregido por

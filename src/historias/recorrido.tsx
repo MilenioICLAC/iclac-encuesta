@@ -14,6 +14,7 @@ import { corregido } from '../nucleo/prueba'
 import { NEUTRO, pasosDeOrden, semantico } from '../nucleo/paleta'
 import { decimal, palabraVisible, traducido, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { describir, filasDePalabras, lector, serieDeMedida } from './lectura'
 import { FICHA as FICHA_MIRADA, TEXTOS as TEXTOS_MIRADA, type EtapaRecta } from './textos/mirada'
 import { FICHA as FICHA_POTENCIAS, TEXTOS as TEXTOS_POTENCIAS } from './textos/entre-potencias'
@@ -200,7 +201,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
   // mismo con menos: que el eje político no ordena la opinión sobre China. El experimento además
   // muestra **por qué** el monitor publicado encuentra un gradiente donde no lo hay, y eso solo se
   // puede contar mostrándolo. El hallazgo que se perdió (las dos puntas suben) sigue publicado en
-  // «Sobre los datos».
+  // el pop-up de método de la historia.
   /**
    * **El vuelco de `p26`, comprobado antes de titularlo.** Tres condiciones: las dos primeras
    * oleadas favorecen a Estados Unidos, la última a China, y las tres pasan el contraste. Sin las
@@ -264,6 +265,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     ? primeraDeLaSerie.puntos.reduce((mejor, q) => (q.n > mejor.n ? q : mejor), primeraDeLaSerie.puntos[0])
     : null
   const totalPrimera = primeraDeLaSerie ? primeraDeLaSerie.puntos.reduce((s, q) => s + q.n, 0) : 0
+  // La base de cada oleada de la recta, para el rótulo de eje del paso que dibuja las tres.
+  const enesRecta = (regresion?.porOla ?? []).map((o) => o.puntos.reduce((s, q) => s + q.n, 0))
 
   // El puente entre las dos mitades de la escena: el alza no viene de un sector. Se nombran los
   // cortes donde **todos** los grupos se mueven en la misma dirección; el que tiene una excepción
@@ -314,6 +317,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     sostiene: sostiene ? { n: sostiene.n, x: sostiene.x, b: sostiene.recta.b, nRecta: sostiene.recta.n } : null,
     icSostiene: [icSostiene?.[0] ?? 0, icSostiene?.[1] ?? 0],
     totalPrimera,
+    enesRecta,
     puntoMasPoblado: puntoMasPoblado ? { x: puntoMasPoblado.x, n: puntoMasPoblado.n } : null,
     trumpSube,
     trumpSobreDiez: ultimoTrump >= 10,
@@ -340,6 +344,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     caeElEmpate: Math.abs(caeElEmpate?.diferencia ?? 0),
     caeEeuu: Math.abs(caeEeuu?.diferencia ?? 0),
     basesBalanza: balanza?.filas.map((f) => f.base) ?? [],
+    basesConfianza: confianzaFigura?.filas.map((f) => f.base) ?? [],
     eeuuSerieBalanza,
     vuelcoP26,
     proChina: proChina.map((p) => p.valor),
@@ -357,7 +362,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
         abierta={abierta}
         alCerrar={() => { navegar('/') }}
         salida={t.salida}
-        metodo={`metodo-${parte === 'mirada' ? 'mirada' : 'entre-potencias'}`}
+        encuesta={encuesta}
+        metodo={parte === 'mirada' ? 'mirada' : 'entre-potencias'}
         titulo={ficha.nombre}
       >
         {(raiz) => (
@@ -405,11 +411,17 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               // Y donde el intervalo cruza el cero se dice «parejos», no se elige un ganador.
               // Y donde el intervalo cruza el cero se dice «parejos», no se elige un ganador. **La frase
               // dice lo que la figura muestra**: la brecha pareada sostiene la afirmación y vive en el
-              // pie y en «Sobre los datos». Y no «ningún país se movió más de 1,0 puntos», que no se
+              // pie y en el pop-up de método. Y no «ningún país se movió más de 1,0 puntos», que no se
               // puede calibrar: con los contrastes se afirma algo más fuerte sin número arbitrario.
               frases={tm.frasesTermometro}
+              // La leyenda va bajo la figura, en la esquina de abajo a la derecha: el lector la
+              // busca cuando ya vio los puntos, no antes. Va dentro de la figura y no en el pie,
+              // que desde el 29-09-2026 se abre en un pop-up y no está a la vista.
               figura={(activo) => (
+                <div className="flex flex-col gap-1">
                 <Puntos
+                  rotulo={tm.rotuloTermometro}
+                  descripcion={tm.descripcionTermometro(figura.filas, encuesta.olas)}
                   series={serieTermometro}
                   filas={figura.filas}
                   escala={figura.escala}
@@ -432,25 +444,11 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   rotular={encuesta.olas.length - 1}
                   visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
                 />
-              )}
-              nota={(
-                // La leyenda va acá, en la esquina de abajo a la derecha del gráfico: el lector la
-                // busca cuando ya vio los puntos, no antes.
-                // El pie mide **lo mismo que la figura**, y por eso va en columna y no al lado de
-                // la leyenda: compartiendo fila, el texto se encogía a 140 px bajo un gráfico de
-                // 328 y la escena crecía 49 px de puro salto de línea.
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs leading-snug text-gray-500">
-                    {/* **Corto porque el alto está contado.** En un iPhone 12 la escena tiene 621 px
-                        útiles y con el pie largo medía 697: el enlace al tablero quedaba bajo el
-                        borde. Lo que se fue es la explicación de «parejos» con su intervalo, que es
-                        material de método y vive completo en «Cómo se hizo el recorrido», a un
-                        toque desde la barra. */}
-                    {tm.notaTermometro}
-                  </p>
                   <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
                 </div>
               )}
+              nota={tm.notaTermometro}
+              medidas={MEDIDAS.mirada.termometro}
             />
 
             {/* **El puente entre las dos historias, ahora como pausa y no como paso.**
@@ -492,8 +490,15 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 // **El intervalo tiene que decir de qué es**, y ninguna frase repite la cifra de
                 // personas que la anterior acaba de dar.
                 frases={tm.frasesIdeologia}
-                figura={(activo) => (
+                figura={(activo, reducido) => (
+                  <div className="flex flex-col gap-1">
                   <Regresion
+                    rotulo={tm.rotuloRecta}
+                    // **La única figura sin texto equivalente con datos.** El `aria-label` del
+                    // `svg` dice de qué oleada es; lo que cambia en cada paso (retirar el punto,
+                    // dibujar las tres rectas) y con qué cifras solo estaba escrito en la nota al
+                    // pie, que desde el 29-09-2026 vive en el pop-up.
+                    descripcion={tm.notaRecta(etapaRecta(activo, reducido))}
                     datos={regresion}
                     ola={primeraOla}
                     escala={{ ...escalaRegresion, paso: Math.max(5, Math.round((escalaRegresion.max - escalaRegresion.min) / 3)) }}
@@ -502,24 +507,17 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     paso={activo + 1}
                     etiquetaIzquierda={tm.izquierda}
                     etiquetaDerecha={tm.derecha}
-                    unidadEje={tm.unidadRecta}
+                    // **El eje declara la base del paso.** La figura cambia de base al retirar el
+                    // punto y al pasar a las tres oleadas; un N fijo sería falso en dos de los
+                    // cuatro pasos, y por eso en la fase A se había quedado sin ninguno.
+                    unidadEje={tm.unidadRecta(etapaRecta(activo, reducido))}
                   />
-                )}
-                nota={(activo, reducido) => (
-                  // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que
-                  // retira un punto seguiría declarando la muestra entera. La leyenda de oleadas
-                  // aparece solo en el último, que es donde el color pasa a significar un año:
-                  // antes hay una sola oleada en la figura y la clave ofrecería dos colores que
-                  // no están dibujados.
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs leading-snug text-gray-500">
-                      {/* Corto a propósito: el eje ya dice qué es 1 y qué es 10, y en un teléfono
-                          de 664 px de alto cada línea del pie se la quita a la figura. */}
-                      {tm.notaRecta(etapaRecta(activo, reducido))}
-                    </p>
                     {/* La leyenda del último paso lleva la pendiente de cada oleada: en la figura,
                         dos de las tres rectas terminan a menos de un punto y sus rótulos se pisan.
-                        Acá el color ata cada cifra a su recta y no hay nada que se superponga. */}
+                        Acá el color ata cada cifra a su recta y no hay nada que se superponga.
+                        Aparece solo en el último paso, que es donde el color pasa a significar un
+                        año: antes hay una sola oleada dibujada y la clave ofrecería dos colores
+                        que no están. */}
                     {(activo >= 3 || reducido) && (
                       <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
                         {encuesta.olas.map((ola, i) => {
@@ -540,6 +538,11 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     )}
                   </div>
                 )}
+                // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que retira
+                // un punto seguiría declarando la muestra entera.
+                nota={(activo, reducido) => tm.notaRecta(etapaRecta(activo, reducido))}
+                medidas={MEDIDAS.mirada.ideologia}
+                recta
               />
             )}
 
@@ -561,8 +564,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               figura={(activo, reducido) => {
                 const bloque = (titulo: string, filas: typeof filasChina, clave: string) => (
                   <div key={clave} className="flex flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{titulo}</p>
                     <Puntos
+                      rotulo={titulo}
                       series={seriesPalabras}
                       filas={filas}
                       escala={{ min: 0, max: topePalabras }}
@@ -589,11 +592,11 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   </div>
                 )
               }}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tm.notaPalabras}
-                </p>
-              )}
+              nota={tm.notaPalabras}
+              // Un paso monta China y el otro Estados Unidos: las pruebas siguen a la figura.
+              medidas={(activo, reducido) => (reducido
+                ? [...MEDIDAS.mirada.palabrasChina, ...MEDIDAS.mirada.palabrasEeuu]
+                : activo === 0 ? MEDIDAS.mirada.palabrasChina : MEDIDAS.mirada.palabrasEeuu)}
             />
               </>
             )}
@@ -617,6 +620,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               frases={tp.frasesConfianza}
               figura={(activo, reducido) => (confianzaFigura && (
                 <Divergente
+                  rotulo={tp.rotuloConfianza}
+                  descripcion={tp.descripcionConfianza(confianzaFigura.filas, confianzaFigura.categorias.map((c) => ({ etiqueta: tp.categoriaConfianza(c.clave, c.etiqueta) })))}
                   categorias={confianzaFigura.categorias.map((c) => ({ ...c, etiqueta: tp.categoriaConfianza(c.clave, c.etiqueta) }))}
                   filas={confianzaFigura.filas.map((f) => ({ ...f, grupo: f.clave.startsWith('p24-') ? tp.grupoChina : tp.grupoEeuu }))}
                   extremo={confianzaFigura.extremo}
@@ -638,11 +643,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   titulo={(fila, categoria, valor) => tp.segmento(`${fila.grupo ?? ''} ${fila.etiqueta}`, categoria.etiqueta, valor, fila.base)}
                 />
               ))}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tp.notaConfianza}
-                </p>
-              )}
+              nota={tp.notaConfianza}
+              medidas={MEDIDAS['entre-potencias'].confianza}
             />
 
             {/* **La segunda pausa, y por la misma razón que la primera.** Acá el recorrido cambia
@@ -669,6 +671,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 frases={tp.frasesBalanza}
                 figura={(activo, reducido) => (
                   <Divergente
+                    rotulo={tp.rotuloBalanza}
+                    descripcion={tp.descripcionBalanza(balanza.filas, balanza.categorias.map((c) => ({ etiqueta: tp.categoriaBalanza(c.clave, c.etiqueta) })))}
                     categorias={balanza.categorias.map((c) => ({ ...c, etiqueta: tp.categoriaBalanza(c.clave, c.etiqueta) }))}
                     filas={balanza.filas}
                     extremo={balanza.extremo}
@@ -687,11 +691,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     titulo={(fila, categoria, valor) => tp.segmento(fila.etiqueta, categoria.etiqueta, valor, fila.base)}
                   />
                 )}
-                nota={(
-                  <p className="text-xs leading-snug text-gray-500">
-                    {tp.notaBalanza}
-                  </p>
-                )}
+                nota={tp.notaBalanza}
+                medidas={MEDIDAS['entre-potencias'].balanza}
               />
             )}
 
@@ -742,6 +743,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               frases={tp.frasesP26}
               figura={(activo, reducido) => (
                 <BarrasPosicionamiento
+                  rotulo={tp.rotuloP26}
+                  unidadEje={tp.ejeP26}
                   olas={encuesta.olas}
                   // Los rótulos van por código, desde el módulo de textos: los del libro de códigos
                   // que trae la variable están solo en español.
@@ -754,11 +757,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   reducido={reducido}
                 />
               )}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tp.notaP26}
-                </p>
-              )}
+              nota={tp.notaP26}
+              medidas={MEDIDAS['entre-potencias'].posicionamiento}
             />
               </>
             )}

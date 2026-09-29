@@ -15,6 +15,14 @@
   "verTodas": "Ver todas las historias",
   "explorar": "Explorar las preguntas",
   "comoSeHizo": "Cómo se hizo",
+  "cerrarMetodo": "Cerrar",
+  "metodoFigura": "Cómo se hizo esta figura",
+  "metodoHistoria": "Cómo se hizo esta historia",
+  "pruebas": "Las pruebas que la sostienen",
+  "pruebasComoLeer": "Cada frase que afirma un cambio o una diferencia depende de una de estas pruebas. En cada fila, la raya vertical es el cero, el punto es la diferencia y la línea, su intervalo del {{p95}}. Si la línea cruza el cero, la fila dice «parejo» y la historia no elige ganador.",
+  "comoSeLee": "Cómo se prueba una diferencia",
+  "comoSeLeeBajada": "El p, el intervalo, la composición fija y por qué no es margen de error",
+  "recta": "Por qué un puñado de respuestas puede inclinar una recta",
   "volverInicio": "Volver al inicio",
   "valorBarra": "{{etiqueta}}: {{valor}} (n = {{n}})",
   "menu": {
@@ -25,6 +33,11 @@
     "respuestas": { "one": "{{n}} respuesta", "other": "{{n}} respuestas" },
     "personas": { "one": "{{n}} persona", "other": "{{n}} personas" },
     "enPalabras": { "1": "una", "2": "dos", "3": "tres", "4": "cuatro", "5": "cinco" },
+    "metodologia": "Cómo se probó cada diferencia",
+    "metodologiaTitulo": "Metodología",
+    "todas": "Todas las comparaciones entre oleadas",
+    "todasBajadaUna": "{{n}} medida en una tabla, incluidas las que ninguna historia usa",
+    "todasBajada": "{{n}} medidas en una tabla, incluidas las que ninguna historia usa",
     "mas": "Más sobre la encuesta →"
   }
 }

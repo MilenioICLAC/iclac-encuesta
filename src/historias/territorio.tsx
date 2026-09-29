@@ -4,12 +4,14 @@ import type { Encuesta } from '../nucleo/tipos'
 import CapaRecorrido, { Cierre, Escena, Portada, Respiro } from '../componentes/CapaRecorrido'
 import Puntos from '../componentes/Puntos'
 import MapaRegiones from '../componentes/MapaRegiones'
+import RotuloFigura from '../componentes/RotuloFigura'
 import { distribucion } from '../nucleo/agregar'
 import { corregido } from '../nucleo/prueba'
 import { CONFIANZA, EXPOSICION, NEUTRO, pasosDeOrden, tintaSobre } from '../nucleo/paleta'
 import { ESTRATOS, estrato } from '../nucleo/modulos'
 import { decimal, lista, porcentaje, traducido, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { serieDeMedida } from './lectura'
 import { FICHA, TEXTOS } from './textos/territorio'
 
@@ -171,7 +173,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
       salida={t.salida}
-      metodo="metodo-territorio"
+      metodo="territorio"
+      encuesta={encuesta}
       titulo={ficha.nombre}
     >
       {(raiz) => (
@@ -196,7 +199,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
             titulo={t.titularRiesgo}
             frases={t.frasesRiesgo}
             figura={(activo, reducido) => (
-              <div className="riesgo-partes flex flex-col gap-2.5">
+              <figure className="riesgo-partes m-0 flex flex-col gap-2.5">
+                <RotuloFigura>{t.rotuloRiesgo}</RotuloFigura>
                 <p className="sr-only">{t.descripcionRiesgo}</p>
                 {repartoP7.map((r, i) => (
                   <div
@@ -230,9 +234,11 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                     </li>
                   ))}
                 </ul>
-              </div>
+                <p className="text-[10px] leading-tight text-gray-500">{t.ejeRiesgo}</p>
+              </figure>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaRiesgo}</p>}
+            nota={t.notaRiesgo}
+            medidas={MEDIDAS.territorio.riesgo}
           />
 
           <Respiro raiz={raiz} indice={-1} titulo={t.respiroRegion.titulo}>
@@ -249,7 +255,9 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
             titulo={t.titularMapa}
             frases={t.frasesMapa}
             figura={() => (
-              <div className="flex items-center gap-4">
+              <figure className="m-0 flex flex-col">
+                <RotuloFigura>{t.rotuloMapa}</RotuloFigura>
+                <div className="flex items-center gap-4">
                 <MapaRegiones
                   relleno={(codigo) => colorEstrato(regiones.find((r) => r.codigo === codigo)?.estrato ?? '')}
                   descripcion={t.descripcionMapa}
@@ -266,9 +274,12 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                     </li>
                   ))}
                 </ul>
-              </div>
+                </div>
+                <p className="mt-2 text-[10px] leading-tight text-gray-500">{t.ejeMapa}</p>
+              </figure>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaMapa}</p>}
+            nota={t.notaMapa}
+            medidas={MEDIDAS.territorio.mapa}
           />
 
           <Respiro raiz={raiz} indice={-2} titulo={t.respiroExposicion.titulo}>
@@ -288,9 +299,9 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
             frases={t.frasesEstrato}
             figura={(activo, reducido) => (
               <div className="flex flex-col gap-2">
-                <p className="sr-only">{t.descripcionEstrato}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{t.rotuloExposicion}</p>
                 <Puntos
+                  rotulo={t.rotuloExposicion}
+                  descripcion={t.descripcionEstrato}
                   series={seriesEstrato}
                   filas={filasEstrato}
                   escala={{ min: pisoNeto, max: techoNeto }}
@@ -310,7 +321,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <LeyendaDeOleadas olas={olasEstrato.map((o) => o.ola)} tonos={seriesEstrato.map((s) => s.color)} />
               </div>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaEstrato}</p>}
+            nota={t.notaEstrato}
+            medidas={MEDIDAS.territorio.estrato}
           />
 
           <Respiro raiz={raiz} indice={-3} titulo={t.respiroRol.titulo}>
@@ -332,8 +344,9 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
             frases={t.frasesRol}
             figura={(activo, reducido) => (
               <div className="flex flex-col gap-2">
-                <p className="sr-only">{t.descripcionRol}</p>
                 <Puntos
+                  rotulo={t.rotuloRol}
+                  descripcion={t.descripcionRol}
                   series={seriesRol}
                   filas={filasRol}
                   escala={{ min: 0, max: topeRol }}
@@ -353,7 +366,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
               </div>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaRol}</p>}
+            nota={t.notaRol}
+            medidas={MEDIDAS.territorio.rol}
           />
 
           <Cierre

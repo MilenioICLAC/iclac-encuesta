@@ -4,11 +4,12 @@ import { firme, nominal, valorP } from '../nucleo/prueba'
 import { entreCifraYUnidad, unidadDeDiferencia, unidadDePendiente } from './unidades'
 
 /**
- * Una prueba del artefacto, dibujada: el único lugar donde se escribe un contraste en «Sobre los datos».
+ * Una prueba del artefacto, dibujada: el único lugar donde se escribe un contraste.
  *
  * **Un contraste, un renderer.** Antes la misma diferencia salía en la tabla general, en el bloque de
  * brechas, en el método de cada historia y en las afirmaciones de «La mirada», cada una con su
- * formato y su criterio. Ahora las historias piden sus contrastes por id y todos pasan por acá.
+ * formato y su criterio. Ahora las figuras piden sus contrastes por id (`src/historias/medidas.ts`)
+ * y todos pasan por acá.
  *
  * **Una fila afirma lo que afirma la historia** (`firme`, en `src/nucleo/prueba.ts`): p nominal, intervalo
  * y, si la prueba es de una familia, Holm. Lo que pasa el nominal pero no la corrección lo dice.

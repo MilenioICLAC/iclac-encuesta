@@ -1,10 +1,10 @@
 {
   "app": {
+    "desarrollo": "开发者：",
     "errorTitulo": "数据加载失败",
     "errorAntes": "请刷新页面。如问题仍然存在，请通过",
     "errorDespues": "与我们联系。",
     "cargando": "加载中…",
-    "nucleo": "中国对拉丁美洲和加勒比影响千禧年研究中心",
     "instituciones": {
       "minciencia": "智利科学、技术、知识与创新部 · ANID",
       "uc": "智利天主教大学",
@@ -12,25 +12,6 @@
       "ucn": "北方天主教大学",
       "uta": "塔拉帕卡大学"
     }
-  },
-  "datos": {
-    "titulo": "关于数据",
-    "bajada": "引用数据前需要了解的事项，以及数据故事中每句话的依据。",
-    "enEstaPagina": "本页内容",
-    "indice": {
-      "citar": "引用之前",
-      "historias": "每个数据故事的依据",
-      "comoSeLee": "如何检验差异",
-      "todas": "全部对比"
-    },
-    "citarTitulo": "引用数据之前",
-    "masSobre": "更多调查说明 →",
-    "historiasBajada": "每句声称存在变化或差异的表述，都以以下某项检验为依据。每行中，竖线表示零，圆点表示差异，横线表示其{{p95}}区间。若横线跨过零，该行标注“难分高下”，数据故事也不判定孰高孰低。",
-    "metodo": "方法",
-    "comoSeLeeBajada": "p值、区间、固定构成，以及为何这不是误差范围",
-    "todasTitulo": "全部跨轮次对比",
-    "todasBajadaUna": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
-    "todasBajada": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标"
   },
   "metodo": {
     "historia": "数据故事{{n}} · {{nombre}}",

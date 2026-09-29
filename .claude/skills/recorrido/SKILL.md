@@ -94,8 +94,12 @@ termina en cero (un registro de decisiones interno).
   que describe la figura anterior contradice a la actual.
 - **Lo que sigue a una historia es otra** (Felipe, 22-09-2026). El tablero salió de la app ese mismo
   día; el cierre ofrece además el explorador.
-- **Cada historia publica su método** en «Sobre los datos» (`#/datos?foco=metodo-<id>`, armado desde `indice.tsx`), enlazado
-  desde la barra (oculto bajo 640 px). Una frase sin prueba ahí no debería estar en el recorrido.
+- **Cada figura publica su método en un pop-up** (29-09-2026): la nota que iba al pie más los
+  contrastes que la sostienen (`src/historias/medidas.ts`, prop `medidas` de `Escena`, que puede
+  depender del paso). El de la historia entera lo abren el «Método» de la barra (oculto bajo 640 px)
+  y el «Cómo se hizo» del cierre. Una frase sin prueba ahí no debería estar en el recorrido. El
+  pop-up escucha el teclado **en fase de captura** sobre `document` y corta la propagación: si no,
+  `Escape` cierra la historia entera y las flechas mueven el recorrido de atrás.
 - **Contar el método vale cuando el método es el hallazgo**, y solo si retirar el punto da vuelta la
   conclusión; si no, esos pasos no se dibujan.
 - **Pocos pasos:** dos minutos de lectura, tres o cuatro frases por escena. Las cifras se calculan
@@ -186,6 +190,14 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   anclajes se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
   nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, compartida con
   las marcas de la barra). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
+  **El botón de la portada va por el mismo `irA`** (contexto `Avance`), no por el alto de su sección:
+  con el texto que corre eso dejaba la primera frase 306 px más abajo que la flecha (29-09-2026).
+- **Con movimiento reducido se avanza una pantalla, no una parada** (0,85 del alto, en `irA`). Sin
+  pista no hay pasos, y las pausas no sirven de parada porque comparten tramo de scroll con la escena
+  que las precede: yendo de parada en parada, «La mirada» iba de la portada al cierre en tres teclas
+  sin mostrar una figura (29-09-2026). Con una pantalla por acción se pasa por las tres escenas y las
+  dos pausas. La excepción es el botón de la portada, que sigue usando el alto de su sección para
+  dejar la escena 1 justo al empezar.
 - **Los botones existen por quien no tiene rueda** (Fran, 25-09-2026): un clic en la barra de scroll
   baja 87,5 % de la pantalla y se saltaba frases; arrastrarla mueve de 10 a 23 px por píxel. Van abajo
   a la derecha y **solo con puntero fino** (`.flechas-recorrido`, media query de puntero, no de ancho).

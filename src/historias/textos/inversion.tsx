@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { lista, numero, porcentaje, type Idioma } from '../../locale'
-import { cardinal, casosDe } from '../lectura'
+import { cardinal, casosDe, rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -43,15 +43,21 @@ export interface Contenido {
   titularLimitar: string
   frasesLimitar: ReactNode[]
   descripcionLimitar: string
+  /** El nombre del gráfico, dentro de la figura (`RotuloFigura`): la medida y su base. */
+  rotuloLimitar: string
+  /** La unidad de la escala y el N, al pie de la figura. Se calcula; no se transcribe. */
+  ejeLimitar: string
   notaLimitar: ReactNode
   respiro: { titulo: string, cuerpo: ReactNode }
   titularSectores: string
   frasesSectores: ReactNode[]
   descripcionSectores: string
+  rotuloSectores: string
   notaSectores: ReactNode
   /** El nombre de un sector como fila de la figura. */
   sector: (columna: string) => string
-  /** El rótulo del eje de los sectores. */
+  /** El rótulo del eje de los sectores: la unidad, la base y el N.
+   *  **La base no es la oleada entera**: solo contesta `p20` quien quiere poder limitar. */
   unidadEje: string
   /** El título emergente de un punto de la figura de sectores. */
   tituloPunto: (sector: string, ola: string, valor: number) => string
@@ -125,6 +131,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const ultima = v.limitar.at(-1)!
     return {
       salida: 'Volver a las historias',
+      rotuloLimitar: 'Poder limitar la inversión extranjera',
+      ejeLimitar: `% de las personas encuestadas · n = ${rangoDeEnes(v.limitar.map((p) => p.n), (a, b) => `${a} a ${b}`)}`,
+      rotuloSectores: 'Sectores donde importa poder limitarla',
       titularLimitar,
       frasesLimitar: [
         <>En {v.primeraOla}, el <strong>{fmt(v.limitar[0].valor)}</strong> prefería que el Estado pudiera bloquear inversiones que le quiten control sobre sectores estratégicos.</>,
@@ -160,7 +169,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>
       ),
       sector,
-      unidadEje: '% que lo marca',
+      unidadEje: `% de quienes quieren el límite · n = ${rangoDeEnes(v.sectores.map((x) => x.base), (a, b) => `${a} a ${b}`)}. Suman más de 100: cada persona marca varios.`,
       tituloPunto: (s, ola, valor) => `${s} · ${ola}: ${fmt(valor)}`,
     }
   },
@@ -180,6 +189,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const ultima = v.limitar.at(-1)!
     return {
       salida: 'Back to stories',
+      rotuloLimitar: 'Power to limit foreign investment',
+      ejeLimitar: `% of people surveyed · n = ${rangoDeEnes(v.limitar.map((p) => p.n), (a, b) => `${a} to ${b}`)}`,
+      rotuloSectores: 'Sectors where the power matters most',
       titularLimitar,
       frasesLimitar: [
         <>In {v.primeraOla}, <strong>{fmt(v.limitar[0].valor)}</strong> preferred that the state be able to block investments that would cost it control over strategic sectors.</>,
@@ -215,7 +227,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>
       ),
       sector,
-      unidadEje: '% choosing it',
+      unidadEje: `% of those who want the power · n = ${rangoDeEnes(v.sectores.map((x) => x.base), (a, b) => `${a} to ${b}`)}. They add to more than 100: each person marks several.`,
       tituloPunto: (s, ola, valor) => `${s} · ${ola}: ${fmt(valor)}`,
     }
   },
@@ -235,6 +247,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     const ultima = v.limitar.at(-1)!
     return {
       salida: '返回数据故事',
+      rotuloLimitar: '希望能够限制外国投资',
+      ejeLimitar: `受访者占比（%）· n = ${rangoDeEnes(v.limitar.map((p) => p.n), (a, b) => `${a}至${b}`)}`,
+      rotuloSectores: '最需要限制的行业',
       titularLimitar,
       frasesLimitar: [
         <>{v.primeraOla}年，<strong>{fmt(v.limitar[0].valor)}</strong>的受访者希望国家能够阻止那些会使其失去对战略性行业控制权的投资。</>,
@@ -268,7 +283,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
         </>
       ),
       sector,
-      unidadEje: '选择比例（%）',
+      unidadEje: `希望设限者中的占比（%）· n = ${rangoDeEnes(v.sectores.map((x) => x.base), (a, b) => `${a}至${b}`)}。总和超过100：每人可多选。`,
       tituloPunto: (s, ola, valor) => `${s} · ${ola}年：${fmt(valor)}`,
     }
   },

@@ -15,6 +15,14 @@
   "verTodas": "查看全部数据故事",
   "explorar": "探索调查问题",
   "comoSeHizo": "分析方法",
+  "cerrarMetodo": "关闭",
+  "metodoFigura": "本图的制作方法",
+  "metodoHistoria": "本数据故事的制作方法",
+  "pruebas": "支持本图的检验",
+  "pruebasComoLeer": "每句声称存在变化或差异的表述，都以以下某项检验为依据。每行中，竖线表示零，圆点表示差异，横线表示其{{p95}}区间。若横线跨过零，该行标注“难分高下”，数据故事也不判定孰高孰低。",
+  "comoSeLee": "如何检验差异",
+  "comoSeLeeBajada": "p值、区间、固定构成，以及为何这不是误差范围",
+  "recta": "为何少数回答就能使直线倾斜",
   "volverInicio": "回到开头",
   "valorBarra": "{{etiqueta}}：{{valor}}（n = {{n}}）",
   "menu": {
@@ -25,6 +33,11 @@
     "respuestas": { "one": "{{n}}份回答", "other": "{{n}}份回答" },
     "personas": { "one": "{{n}}名受访者", "other": "{{n}}名受访者" },
     "enPalabras": { "1": "一", "2": "两", "3": "三", "4": "四", "5": "五" },
+    "metodologia": "如何检验各项差异",
+    "metodologiaTitulo": "方法说明",
+    "todas": "全部跨轮次对比",
+    "todasBajadaUna": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
+    "todasBajada": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
     "mas": "关于本调查的更多信息 →"
   }
 }

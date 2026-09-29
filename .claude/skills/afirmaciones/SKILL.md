@@ -23,7 +23,7 @@ Las reglas que no caducan. Qué frase publicada estaba mal y cómo se midió cad
   cero y, si la prueba es de una familia, Holm bajo 0,05 en cada familia (`firme` en
   `src/nucleo/prueba.ts`; Felipe, 23-09-2026). Si no, se dice «parejos»: no se elige ganador por el
   signo del promedio, y si la figura muestra promedios distintos, la nota dice de dónde sale. Las
-  historias y «Sobre los datos» leen el mismo criterio y no pueden contradecirse.
+  historias y los pop-ups de método leen el mismo criterio y no pueden contradecirse.
 - **Holm vive en el ETL, no en la historia.** Las familias están en `FAMILIAS`
   (`scripts/lib/contrastes.mjs`) y cada prueba trae `holm: [{ familia, p }]`; se lee con `corregido`,
   que devuelve `NaN` si falta y así no deja afirmar nada. Una familia nueva se declara ahí y en

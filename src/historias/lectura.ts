@@ -105,6 +105,24 @@ export function casosDe (pct: number, n: number) {
   return numero(Math.round((pct * n) / 100))
 }
 
+/**
+ * El N de una figura, para su rótulo de eje.
+ *
+ * Un número solo si todas las bases coinciden, y el rango si no. **No se escribe a mano:** una cifra
+ * transcrita envejece con la oleada siguiente (skill `afirmaciones`). Y va el rango y no la lista
+ * completa porque el rótulo tiene una línea: con tres oleadas, «1.203 de 1.228, 1.198 de 1.224 y
+ * 1.211 de 1.228» no es un rótulo, es la nota al pie.
+ *
+ * `unir` lo pasa cada idioma, porque «a» no es «to» ni «至».
+ */
+export function rangoDeEnes (enes: number[], unir: (min: string, max: string) => string) {
+  const validos = enes.filter((n) => Number.isFinite(n) && n > 0)
+  if (validos.length === 0) return ''
+  const min = Math.min(...validos)
+  const max = Math.max(...validos)
+  return min === max ? numero(min) : unir(numero(min), numero(max))
+}
+
 
 /**
  * Las palabras de una respuesta abierta como filas de `Puntos`: una fila por palabra y un valor por

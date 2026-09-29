@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { decimal, lista, numero, porcentaje, type Idioma } from '../../locale'
+import { rangoDeEnes } from '../lectura'
 import type { FichaHistoria } from './tipos'
 
 /**
@@ -28,6 +29,8 @@ export interface Valores {
   caeElEmpate: number
   caeEeuu: number
   basesBalanza: number[]
+  /** Las bases de cada fila de la figura de confianza, para su rótulo de eje. */
+  basesConfianza: number[]
   eeuuSerieBalanza: Prueba | null
   // `p26`.
   vuelcoP26: boolean
@@ -48,6 +51,15 @@ export interface Contenido {
   /** El rótulo de cada categoría de confianza (`clave` de `CATEGORIAS`), o el que ya trae la figura. */
   categoriaConfianza: (clave: string, original: string) => string
   unidadConfianza: string
+  /** El nombre de cada gráfico, dentro de su figura (`RotuloFigura`). */
+  /** Qué dicen las dos figuras divergentes, para quien no las ve. Faltaban (29-09-2026). */
+  descripcionConfianza: (filas: { etiqueta: string, valores: number[] }[], categorias: { etiqueta: string }[]) => string
+  descripcionBalanza: (filas: { etiqueta: string, valores: number[] }[], categorias: { etiqueta: string }[]) => string
+  rotuloConfianza: string
+  rotuloBalanza: string
+  rotuloP26: string
+  /** La unidad y el N de la figura de `p26`, que antes estaban escritos fijos en el componente. */
+  ejeP26: string
   /** El texto emergente de un segmento de las dos figuras divergentes. */
   segmento: (fila: string, categoria: string, valor: number, base: number) => string
   notaConfianza: ReactNode
@@ -111,7 +123,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     grupoChina: 'China',
     grupoEeuu: 'Estados Unidos',
     categoriaConfianza: (_clave, original) => original,
-    unidadConfianza: 'Porcentaje de quienes contestaron. El 0 del eje es el borde entre los dos lados, y cada fila suma 100.',
+    unidadConfianza: `Porcentaje de quienes contestaron · n = ${rangoDeEnes(v.basesConfianza, (a, b) => `${a} a ${b}`)}. El 0 del eje es el borde entre los dos lados, y cada fila suma 100.`,
+    descripcionConfianza: (filas, categorias) => `Reparto de la confianza, en porcentaje de quienes contestaron. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    descripcionBalanza: (filas, categorias) => `En cuál de las dos potencias se confía más, dentro de cada persona. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    rotuloConfianza: 'Confianza en cada potencia',
+    rotuloBalanza: 'En quién se confía más',
+    rotuloP26: 'Con quién debería alinearse Chile',
+    ejeP26: `Cada barra representa el 100 % de las respuestas · n = ${rangoDeEnes(v.basesP26, (a, b) => `${a} a ${b}`)}`,
     segmento: (fila, categoria, valor, base) => `${fila} · ${categoria}: ${decimal(valor, 1)} % (n = ${numero(base)})`,
     notaConfianza: (
       <>
@@ -140,7 +158,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       </>,
     ],
     categoriaBalanza: (_clave, original) => original,
-    unidadBalanza: 'Cada persona contesta por las dos potencias, así que la comparación va dentro del caso. «La misma» queda a caballo del cero.',
+    unidadBalanza: `% de quienes contestaron las dos preguntas · n = ${rangoDeEnes(v.basesBalanza, (a, b) => `${a} a ${b}`)}. La categoría «La misma» va centrada en el cero.`,
     notaBalanza: (
       <>
         Sobre quienes contestaron las dos preguntas: {v.basesBalanza.map(numero).join(', ')} personas.
@@ -202,7 +220,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     grupoChina: 'China',
     grupoEeuu: 'United States',
     categoriaConfianza: (clave, original) => ({ mucha: 'A great deal', algo: 'Some', poca: 'Little', ninguna: 'None' } as Record<string, string>)[clave] ?? original,
-    unidadConfianza: 'Percentage of those who answered. The 0 on the axis is the boundary between the two sides, and each row adds up to 100.',
+    unidadConfianza: `Percentage of those who answered · n = ${rangoDeEnes(v.basesConfianza, (a, b) => `${a} to ${b}`)}. The 0 on the axis is the boundary between the two sides, and each row adds up to 100.`,
+    descripcionConfianza: (filas, categorias) => `Distribution of trust, as a percentage of those who answered. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    descripcionBalanza: (filas, categorias) => `Which of the two powers is trusted more, within each person. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    rotuloConfianza: 'Trust in each power',
+    rotuloBalanza: 'Which one is trusted more',
+    rotuloP26: 'Who Chile should align with',
+    ejeP26: `Each bar is 100 % of the responses · n = ${rangoDeEnes(v.basesP26, (a, b) => `${a} to ${b}`)}`,
     segmento: (fila, categoria, valor, base) => `${fila} · ${categoria}: ${pct(valor)} (n = ${numero(base)})`,
     notaConfianza: (
       <>
@@ -229,7 +253,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       </>,
     ],
     categoriaBalanza: (clave, original) => ({ eeuu: 'More in the United States', igual: 'The same', china: 'More in China' } as Record<string, string>)[clave] ?? original,
-    unidadBalanza: 'Each person answers about both powers, so the comparison is made within each case. “The same” straddles zero.',
+    unidadBalanza: `% of those who answered both questions · n = ${rangoDeEnes(v.basesBalanza, (a, b) => `${a} to ${b}`)}. “The same” is centred on zero.`,
     notaBalanza: (
       <>
         Based on those who answered both questions: {lista(v.basesBalanza.map(numero))} people.
@@ -287,7 +311,13 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
     grupoChina: '中国',
     grupoEeuu: '美国',
     categoriaConfianza: (clave, original) => ({ mucha: '很多', algo: '一些', poca: '很少', ninguna: '没有' } as Record<string, string>)[clave] ?? original,
-    unidadConfianza: '占作答者的百分比。坐标轴上的0为两侧的分界，每行合计为100。',
+    unidadConfianza: `占作答者的百分比 · n = ${rangoDeEnes(v.basesConfianza, (a, b) => `${a}至${b}`)}。坐标轴上的0为两侧的分界，每行合计为100。`,
+    descripcionConfianza: (filas, categorias) => `信任度分布，占作答者的百分比。` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    descripcionBalanza: (filas, categorias) => `在同一受访者内部，更信任哪一方。` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => `${categorias[i]?.etiqueta ?? ""} ${decimal(v, 1)}`).join(", ")}`).join(". "),
+    rotuloConfianza: '对两大国的信任度',
+    rotuloBalanza: '更信任哪一方',
+    rotuloP26: '智利应更靠近谁',
+    ejeP26: `每条条形为全部回答的100 % · n = ${rangoDeEnes(v.basesP26, (a, b) => `${a}至${b}`)}`,
     segmento: (fila, categoria, valor, base) => `${fila} · ${categoria}：${pct(valor)}（n = ${numero(base)}）`,
     notaConfianza: (
       <>
@@ -308,7 +338,7 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       </>,
     ],
     categoriaBalanza: (clave, original) => ({ eeuu: '更信任美国', igual: '相同', china: '更信任中国' } as Record<string, string>)[clave] ?? original,
-    unidadBalanza: '每位受访者都对两个大国作答，因此比较在同一受访者内部进行。“相同”横跨0点。',
+    unidadBalanza: `两题均作答者中的占比（%）· n = ${rangoDeEnes(v.basesBalanza, (a, b) => `${a}至${b}`)}。“相同”类别以0为中心。`,
     notaBalanza: (
       <>
         基数为两题均作答的受访者：分别为{lista(v.basesBalanza.map(numero))}人。三个类别合计为100，一个类别的增加即另外两个类别的减少：该图并不表明是同一批人改变了立场。{v.primeraOla}年至{v.ultimaOla}年间，更信任美国者的占比{v.eeuuSerieBalanza && v.eeuuSerieBalanza.p >= 0.05 ? '前后难分高下' : `变化${decimal(v.eeuuSerieBalanza?.diferencia ?? 0)}个百分点`}。
