@@ -1,4 +1,5 @@
 import type { Encuesta } from '../nucleo/tipos'
+import { medidasDe } from './medidas'
 import type { Traducible } from '../locale'
 import { fichaDe } from './textos/tipos'
 import { FICHA as FICHA_VACUNA } from './textos/vacuna'
@@ -24,7 +25,9 @@ import { HistoriaVacuna } from './vacuna'
  *
  * `hallazgo` es lo que la tarjeta del menú promete. **No lleva cifras**: una cifra escrita acá
  * envejece con la oleada siguiente, y la que importa está dentro de la historia, calculada.
- * `medidas` son los contrastes que la sostienen, y con ellos se arma su sección de método.
+ * `medidas` son los contrastes que la sostienen, y con ellos se arma su pop-up de método. Salen de
+ * `medidas.ts`, que los asigna figura por figura: la lista de la historia es la de sus figuras
+ * juntas, en su orden, y no una segunda copia que se pueda desfasar.
  *
  * **Nombre, pregunta y hallazgo van en los tres idiomas** (`traducido()` al mostrarlos). Los de una
  * historia con módulo de textos salen de su `FICHA` (`textos/<id>.tsx`, con `fichaDe`); los demás
@@ -45,42 +48,42 @@ export const HISTORIAS: Historia[] = [
     id: 'mirada',
     bloque: 1,
     ...fichaDe(FICHA_MIRADA),
-    medidas: ['termometro-china', 'termometro-eeuu', 'termometro-japon', 'termometro-corea', 'termometro-francia', 'opinion-china', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china', 'ideologia-china', 'palabra-trump', 'palabra-tecnologia'],
+    medidas: medidasDe('mirada'),
     Componente: HistoriaMirada,
   },
   {
     id: 'entre-potencias',
     bloque: 2,
     ...fichaDe(FICHA_POTENCIAS),
-    medidas: ['confia-china', 'confia-eeuu', 'confianza-china', 'confianza-eeuu', 'mas-confianza-china', 'mas-confianza-eeuu', 'empate-confianza', 'brecha-confianza', 'no-alineamiento', 'ventaja-china-p26'],
+    medidas: medidasDe('entre-potencias'),
     Componente: HistoriaEntrePotencias,
   },
   {
     id: 'territorio',
     bloque: 3,
     ...fichaDe(FICHA_TERRITORIO),
-    medidas: ['riesgo-desacuerdo', 'riesgo-indiferente', 'riesgo-comuna', 'riesgo-desacuerdo-sobre-acuerdo', 'riesgo-neto-exposicion', 'riesgo-estrato', 'p8-proveedor', 'p8-inversor', 'p8-proveedor-sobre-inversor', 'p8-proveedor-sobre-comprador', 'p8-proveedor-sobre-competidor'],
+    medidas: medidasDe('territorio'),
     Componente: HistoriaTerritorio,
   },
   {
     id: 'inversion',
     bloque: 4,
     ...fichaDe(FICHA_INVERSION),
-    medidas: ['limitar-inversiones', 'electrica-sobre-banca'],
+    medidas: medidasDe('inversion'),
     Componente: HistoriaInversion,
   },
   {
     id: 'china-cotidiana',
     bloque: 5,
     ...fichaDe(FICHA_COTIDIANA),
-    medidas: ['mall-cerca', 'restaurante-cerca', 'conoce-china', 'palabra-mall', 'palabra-buena', 'buses-sabia', 'racismo-visto', 'racismo-contacto'],
+    medidas: medidasDe('china-cotidiana'),
     Componente: HistoriaChinaCotidiana,
   },
   {
     id: 'vacuna',
     bloque: 6,
     ...fichaDe(FICHA_VACUNA),
-    medidas: ['sinovac-recibio', 'sinovac-buena', 'prefiere-pfizer'],
+    medidas: medidasDe('vacuna'),
     Componente: HistoriaVacuna,
   },
 ]

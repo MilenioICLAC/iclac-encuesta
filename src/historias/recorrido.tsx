@@ -14,6 +14,7 @@ import { corregido } from '../nucleo/prueba'
 import { NEUTRO, pasosDeOrden, semantico } from '../nucleo/paleta'
 import { decimal, palabraVisible, traducido, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { describir, filasDePalabras, lector, serieDeMedida } from './lectura'
 import { FICHA as FICHA_MIRADA, TEXTOS as TEXTOS_MIRADA, type EtapaRecta } from './textos/mirada'
 import { FICHA as FICHA_POTENCIAS, TEXTOS as TEXTOS_POTENCIAS } from './textos/entre-potencias'
@@ -200,7 +201,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
   // mismo con menos: que el eje político no ordena la opinión sobre China. El experimento además
   // muestra **por qué** el monitor publicado encuentra un gradiente donde no lo hay, y eso solo se
   // puede contar mostrándolo. El hallazgo que se perdió (las dos puntas suben) sigue publicado en
-  // «Sobre los datos».
+  // el pop-up de método de la historia.
   /**
    * **El vuelco de `p26`, comprobado antes de titularlo.** Tres condiciones: las dos primeras
    * oleadas favorecen a Estados Unidos, la última a China, y las tres pasan el contraste. Sin las
@@ -358,7 +359,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
         abierta={abierta}
         alCerrar={() => { navegar('/') }}
         salida={t.salida}
-        metodo={`metodo-${parte === 'mirada' ? 'mirada' : 'entre-potencias'}`}
+        encuesta={encuesta}
+        metodo={parte === 'mirada' ? 'mirada' : 'entre-potencias'}
         titulo={ficha.nombre}
       >
         {(raiz) => (
@@ -406,10 +408,14 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
               // Y donde el intervalo cruza el cero se dice «parejos», no se elige un ganador.
               // Y donde el intervalo cruza el cero se dice «parejos», no se elige un ganador. **La frase
               // dice lo que la figura muestra**: la brecha pareada sostiene la afirmación y vive en el
-              // pie y en «Sobre los datos». Y no «ningún país se movió más de 1,0 puntos», que no se
+              // pie y en el pop-up de método. Y no «ningún país se movió más de 1,0 puntos», que no se
               // puede calibrar: con los contrastes se afirma algo más fuerte sin número arbitrario.
               frases={tm.frasesTermometro}
+              // La leyenda va bajo la figura, en la esquina de abajo a la derecha: el lector la
+              // busca cuando ya vio los puntos, no antes. Va dentro de la figura y no en el pie,
+              // que desde el 29-09-2026 se abre en un pop-up y no está a la vista.
               figura={(activo) => (
+                <div className="flex flex-col gap-1">
                 <Puntos
                   rotulo={tm.rotuloTermometro}
                   descripcion={tm.descripcionTermometro(figura.filas, encuesta.olas)}
@@ -435,25 +441,11 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   rotular={encuesta.olas.length - 1}
                   visible={(pais, ola) => pasosEncendidos[activo]?.(pais, Number(ola)) ?? true}
                 />
-              )}
-              nota={(
-                // La leyenda va acá, en la esquina de abajo a la derecha del gráfico: el lector la
-                // busca cuando ya vio los puntos, no antes.
-                // El pie mide **lo mismo que la figura**, y por eso va en columna y no al lado de
-                // la leyenda: compartiendo fila, el texto se encogía a 140 px bajo un gráfico de
-                // 328 y la escena crecía 49 px de puro salto de línea.
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs leading-snug text-gray-500">
-                    {/* **Corto porque el alto está contado.** En un iPhone 12 la escena tiene 621 px
-                        útiles y con el pie largo medía 697: el enlace al tablero quedaba bajo el
-                        borde. Lo que se fue es la explicación de «parejos» con su intervalo, que es
-                        material de método y vive completo en «Cómo se hizo el recorrido», a un
-                        toque desde la barra. */}
-                    {tm.notaTermometro}
-                  </p>
                   <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
                 </div>
               )}
+              nota={tm.notaTermometro}
+              medidas={MEDIDAS.mirada.termometro}
             />
 
             {/* **El puente entre las dos historias, ahora como pausa y no como paso.**
@@ -495,9 +487,15 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 // **El intervalo tiene que decir de qué es**, y ninguna frase repite la cifra de
                 // personas que la anterior acaba de dar.
                 frases={tm.frasesIdeologia}
-                figura={(activo) => (
+                figura={(activo, reducido) => (
+                  <div className="flex flex-col gap-1">
                   <Regresion
                     rotulo={tm.rotuloRecta}
+                    // **La única figura sin texto equivalente con datos.** El `aria-label` del
+                    // `svg` dice de qué oleada es; lo que cambia en cada paso (retirar el punto,
+                    // dibujar las tres rectas) y con qué cifras solo estaba escrito en la nota al
+                    // pie, que desde el 29-09-2026 vive en el pop-up.
+                    descripcion={tm.notaRecta(etapaRecta(activo, reducido))}
                     datos={regresion}
                     ola={primeraOla}
                     escala={{ ...escalaRegresion, paso: Math.max(5, Math.round((escalaRegresion.max - escalaRegresion.min) / 3)) }}
@@ -508,22 +506,12 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     etiquetaDerecha={tm.derecha}
                     unidadEje={tm.unidadRecta}
                   />
-                )}
-                nota={(activo, reducido) => (
-                  // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que
-                  // retira un punto seguiría declarando la muestra entera. La leyenda de oleadas
-                  // aparece solo en el último, que es donde el color pasa a significar un año:
-                  // antes hay una sola oleada en la figura y la clave ofrecería dos colores que
-                  // no están dibujados.
-                  <div className="flex flex-col gap-1">
-                    <p className="text-xs leading-snug text-gray-500">
-                      {/* Corto a propósito: el eje ya dice qué es 1 y qué es 10, y en un teléfono
-                          de 664 px de alto cada línea del pie se la quita a la figura. */}
-                      {tm.notaRecta(etapaRecta(activo, reducido))}
-                    </p>
                     {/* La leyenda del último paso lleva la pendiente de cada oleada: en la figura,
                         dos de las tres rectas terminan a menos de un punto y sus rótulos se pisan.
-                        Acá el color ata cada cifra a su recta y no hay nada que se superponga. */}
+                        Acá el color ata cada cifra a su recta y no hay nada que se superponga.
+                        Aparece solo en el último paso, que es donde el color pasa a significar un
+                        año: antes hay una sola oleada dibujada y la clave ofrecería dos colores
+                        que no están. */}
                     {(activo >= 3 || reducido) && (
                       <ul className="ml-auto flex flex-wrap items-center justify-end gap-x-3.5 gap-y-1">
                         {encuesta.olas.map((ola, i) => {
@@ -544,6 +532,11 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     )}
                   </div>
                 )}
+                // **El pie dice lo que la figura muestra en este paso.** Fijo, el paso que retira
+                // un punto seguiría declarando la muestra entera.
+                nota={(activo, reducido) => tm.notaRecta(etapaRecta(activo, reducido))}
+                medidas={MEDIDAS.mirada.ideologia}
+                recta
               />
             )}
 
@@ -593,11 +586,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   </div>
                 )
               }}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tm.notaPalabras}
-                </p>
-              )}
+              nota={tm.notaPalabras}
+              medidas={MEDIDAS.mirada.palabras}
             />
               </>
             )}
@@ -644,11 +634,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   titulo={(fila, categoria, valor) => tp.segmento(`${fila.grupo ?? ''} ${fila.etiqueta}`, categoria.etiqueta, valor, fila.base)}
                 />
               ))}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tp.notaConfianza}
-                </p>
-              )}
+              nota={tp.notaConfianza}
+              medidas={MEDIDAS['entre-potencias'].confianza}
             />
 
             {/* **La segunda pausa, y por la misma razón que la primera.** Acá el recorrido cambia
@@ -695,11 +682,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     titulo={(fila, categoria, valor) => tp.segmento(fila.etiqueta, categoria.etiqueta, valor, fila.base)}
                   />
                 )}
-                nota={(
-                  <p className="text-xs leading-snug text-gray-500">
-                    {tp.notaBalanza}
-                  </p>
-                )}
+                nota={tp.notaBalanza}
+                medidas={MEDIDAS['entre-potencias'].balanza}
               />
             )}
 
@@ -764,11 +748,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                   reducido={reducido}
                 />
               )}
-              nota={(
-                <p className="text-xs leading-snug text-gray-500">
-                  {tp.notaP26}
-                </p>
-              )}
+              nota={tp.notaP26}
+              medidas={MEDIDAS['entre-potencias'].posicionamiento}
             />
               </>
             )}

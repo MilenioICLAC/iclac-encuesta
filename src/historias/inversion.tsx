@@ -8,6 +8,7 @@ import { topeDeBarras } from '../nucleo/escala'
 import { pasosDeOrden } from '../nucleo/paleta'
 import { decimal, porcentaje, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { serieDeMedida } from './lectura'
 import { FICHA, TEXTOS } from './textos/inversion'
 
@@ -98,7 +99,8 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
       salida={t.salida}
-      metodo="metodo-inversion"
+      metodo="inversion"
+      encuesta={encuesta}
       titulo={ficha.nombre}
     >
       {(raiz) => (
@@ -142,7 +144,8 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
                 }))}
               />
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaLimitar}</p>}
+            nota={t.notaLimitar}
+            medidas={MEDIDAS.inversion.limitar}
           />
 
           <Respiro raiz={raiz} indice={-1} titulo={t.respiro.titulo}>
@@ -184,7 +187,8 @@ export function HistoriaInversion ({ encuesta, abierta }: { encuesta: Encuesta, 
                 <LeyendaDeOleadas olas={olasConSectores} tonos={tonosSectores} />
               </div>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaSectores}</p>}
+            nota={t.notaSectores}
+            medidas={MEDIDAS.inversion.sectores}
           />
 
           <Cierre

@@ -11,6 +11,7 @@ import { decimal, numero, porcentaje, useIdioma } from '../locale'
 import { distribucion } from '../nucleo/agregar'
 import Puntos from '../componentes/Puntos'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { filasDePalabras, serieDeMedida } from './lectura'
 import { FICHA, TEXTOS } from './textos/cotidiana'
 
@@ -170,14 +171,17 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
     marca: marca === i,
   }))
 
-  const nota = (contenido: ReactNode) => <p className="text-xs leading-snug text-gray-500">{contenido}</p>
+  // El pie ya no va bajo la figura sino dentro del pop-up de método, que pone la tipografía:
+  // acá solo queda el párrafo.
+  const nota = (contenido: ReactNode) => <p>{contenido}</p>
 
   return (
     <CapaRecorrido
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
       salida={t.salida}
-      metodo="metodo-china-cotidiana"
+      metodo="china-cotidiana"
+      encuesta={encuesta}
       titulo={ficha.nombre}
     >
       {(raiz) => (
@@ -218,6 +222,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               />
             )}
             nota={nota(t.notaCosas)}
+            medidas={MEDIDAS['china-cotidiana'].cosas}
           />
 
           <Respiro raiz={raiz} indice={-1} titulo={t.respiroPersonas.titulo}>
@@ -245,6 +250,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               />
             )}
             nota={nota(t.notaPersonas)}
+            medidas={MEDIDAS['china-cotidiana'].personas}
           />
 
           {hayLugar && (
@@ -296,6 +302,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
                   </div>
                 )}
                 nota={nota(t.notaLugar)}
+                medidas={MEDIDAS['china-cotidiana'].lugar}
               />
             </>
           )}
@@ -376,6 +383,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               if (reducido) return <div className="flex flex-col gap-2">{deLaMarca}{deLaOpinion}</div>
               return activo === 0 ? deLaMarca : deLaOpinion
             }}
+            medidas={MEDIDAS['china-cotidiana'].buses}
           />
 
           <Respiro raiz={raiz} indice={-4} titulo={t.respiroVisto.titulo}>
@@ -452,6 +460,7 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               if (reducido) return <div className="flex flex-col gap-2">{deLaSerie}{delContacto}</div>
               return activo >= 2 ? delContacto : deLaSerie
             }}
+            medidas={MEDIDAS['china-cotidiana'].visto}
           />
 
           <Cierre

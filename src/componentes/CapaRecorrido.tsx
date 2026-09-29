@@ -8,6 +8,9 @@ import { NumeroHistoria, Siguiente, type HistoriaSiguiente } from './siguiente'
 import { CucharaBoton, CucharaPortada, MangoTendido } from './Sinan'
 import { useTranslation } from 'react-i18next'
 import { idioma, traducido } from '../locale'
+import type { Encuesta } from '../nucleo/tipos'
+import { BotonMetodo, CuerpoMetodo, MetodoDeHistoria } from './PopupMetodo'
+import { DatosMetodo } from './contextoMetodo'
 
 /**
  * El recorrido vive en una capa propia, no en el scroll de la página.
@@ -154,9 +157,6 @@ function paradaVecina (capa: HTMLElement, desde: number, sentido: number) {
 
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
-/** La sección de método de la historia, para que el cierre la ofrezca sin que cada historia la repita. */
-const Metodo = createContext('metodo-recorrido')
-
 /**
  * Si un elemento puede recibir el foco de verdad, no solo hacer juego con el selector.
  *
@@ -176,11 +176,14 @@ interface Props {
   abierta: boolean
   alCerrar: () => void
   titulo: string
+  /** De acá salen los contrastes que el pop-up de método dibuja. */
+  encuesta: Encuesta
   /**
-   * La sección de «Sobre los datos» que explica esta historia. Cada historia publica su propio
-   * método: el enlace de la barra lleva al de la que se está leyendo, no al de otra.
+   * Qué historia se está leyendo (`mirada`, `territorio`, …). Con eso el pop-up de método arma el
+   * de esta historia y no el de otra. Antes era el ancla de una sección de «Sobre los datos», que
+   * salió del sitio (29-09-2026).
    */
-  metodo?: string
+  metodo: string
   /** Qué dice el botón de salida, que dice a dónde lleva. Sin la prop, «Volver a las historias» en el idioma activo. */
   salida?: string
   /** Recibe el contenedor con scroll: el observador de los pasos mide contra él y no contra la
@@ -188,7 +191,8 @@ interface Props {
   children: (raiz: HTMLElement | null) => React.ReactNode
 }
 
-export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'metodo-recorrido', salida, children }: Props) {
+export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, metodo, salida, children }: Props) {
+  const datosMetodo = useMemo(() => ({ encuesta, historia: metodo, nombre: titulo }), [encuesta, metodo, titulo])
   const { t } = useTranslation('capa')
   const capa = useRef<HTMLDivElement | null>(null)
   const cerrar = useRef<HTMLButtonElement | null>(null)
@@ -403,6 +407,9 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
   }
 
   return (
+    // El pop-up de método lo abren la barra, cada figura y el cierre: la capa publica una vez de
+    // qué historia y de qué datos se arma, en vez de que cada pieza lo reciba por props.
+    <DatosMetodo.Provider value={datosMetodo}>
     <div
       role="dialog"
       aria-modal="true"
@@ -428,12 +435,13 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
         {/* El método, a mano desde cualquier paso: el lector que duda de una cifra la está viendo
             en ese momento, no al final. En teléfono no cabe junto a la salida y se queda solo el
             enlace del cierre. */}
-        <Link
-          to={`/datos?foco=${metodo}`}
+        <BotonMetodo
+          etiqueta={t('metodo')}
+          titulo={t('metodoHistoria')}
           className="hidden shrink-0 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark sm:inline"
         >
-          {t('metodo')}
-        </Link>
+          <MetodoDeHistoria />
+        </BotonMetodo>
 
         {/* El botón dice a dónde lleva. «Cerrar» no dice nada sobre qué pasa después, y salir de
             un relato para caer en la nada es peor que no poder salir. */}
@@ -470,10 +478,9 @@ export default function CapaRecorrido ({ abierta, alCerrar, titulo, metodo = 'me
       </div>
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
-      <Registro.Provider value={informar}>
-        <Metodo.Provider value={metodo}>{children(raiz)}</Metodo.Provider>
-      </Registro.Provider>
+      <Registro.Provider value={informar}>{children(raiz)}</Registro.Provider>
     </div>
+    </DatosMetodo.Provider>
   )
 }
 
@@ -680,7 +687,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
  * Con `prefers-reduced-motion` el párrafo va entero también en el teléfono: quien pide menos
  * movimiento ve todo, no una versión recortada.
  */
-export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, raiz, dosColumnas = false }: {
+export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, medidas, recta = false, raiz, dosColumnas = false }: {
   /** Qué número de escena es, la clave con que se registra en la capa. Va explícito y no contado solo: las
    *  escenas se escriben a mano en la página, y un contador implícito se desordena en silencio
    *  al mover una. */
@@ -707,6 +714,13 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
    *  figura (la 1 pasa de países a tramos ideológicos), el pie tiene que cambiar con ella o queda
    *  describiendo una figura que ya no está. */
   nota?: React.ReactNode | ((activo: number, reducido: boolean) => React.ReactNode)
+  /**
+   * Los contrastes que sostienen esta figura, por id (`src/historias/medidas.ts`). Van al pop-up
+   * de método junto con la nota.
+   */
+  medidas?: string[]
+  /** El diagnóstico de la recta, que solo tiene sentido en la figura de ideología de «La mirada». */
+  recta?: boolean
   raiz: HTMLElement | null
   /**
    * En escritorio, el relato a la izquierda y la figura a la derecha (ver `.escena.en-columnas` en
@@ -716,6 +730,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
    */
   dosColumnas?: boolean
 }) {
+  const { t } = useTranslation('capa')
   const { activo, refs, reducido } = usePasoActivo(frases.length, raiz)
   const escena = useRef<HTMLDivElement | null>(null)
   const seccion = useRef<HTMLElement | null>(null)
@@ -866,7 +881,25 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         >
           {cabecera?.(activo)}
           {dibujo}
-          {nota && <div className="mt-2">{typeof nota === 'function' ? nota(activo, reducido) : nota}</div>}
+          {/* **El pie se abre, no se lee al paso.** Antes la nota iba acá en letra chica y era lo
+              que declaraba la base; desde la convención de nombres (29-09-2026) eso lo dicen el
+              nombre de la figura y su rótulo de eje, y la nota se junta con las pruebas de la
+              figura en un pop-up. Una línea fija en vez de dos o tres variables: el bloque de la
+              figura deja de pagar el pie más largo de toda la escena. */}
+          <div className="mt-2">
+            <BotonMetodo
+              etiqueta={t('metodoFigura')}
+              titulo={t('metodoFigura')}
+              className="text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark"
+              tabIndex={enVista ? undefined : -1}
+            >
+              <CuerpoMetodo
+                nota={typeof nota === 'function' ? nota(activo, reducido) : nota}
+                medidas={medidas ?? []}
+                recta={recta}
+              />
+            </BotonMetodo>
+          </div>
         </div>
         )}
       </div>
@@ -1086,7 +1119,6 @@ export function Cierre ({ raiz, titulo, frases }: {
   const { t } = useTranslation('capa')
   const siguiente = useContext(Siguiente)
   const numero = useContext(NumeroHistoria)
-  const metodo = useContext(Metodo)
   // Una frase por paso, y uno más para la salida.
   const pasos = frases.length + 1
   const { activo, refs, reducido } = usePasoActivo(pasos, raiz)
@@ -1189,7 +1221,13 @@ export function Cierre ({ raiz, titulo, frases }: {
             <div className="otras-salidas mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
               {siguiente && <Link to="/" className="underline underline-offset-2 hover:text-brand-dark">{t('salida')}</Link>}
               <Link to="/explorar" className="underline underline-offset-2 hover:text-brand-dark">{t('explorar')}</Link>
-              <Link to={`/datos?foco=${metodo}`} className="underline underline-offset-2 hover:text-brand-dark">{t('comoSeHizo')}</Link>
+              <BotonMetodo
+                etiqueta={t('comoSeHizo')}
+                titulo={t('metodoHistoria')}
+                className="underline underline-offset-2 hover:text-brand-dark"
+              >
+                <MetodoDeHistoria />
+              </BotonMetodo>
               <button
                 type="button"
                 onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}

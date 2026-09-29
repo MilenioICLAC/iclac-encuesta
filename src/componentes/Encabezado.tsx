@@ -46,12 +46,11 @@ export function IconoRecorrido ({ className }: { className?: string }) {
   )
 }
 
-const NAV: { a: string, clave: 'recorrido' | 'explorar' | 'descargas' | 'ficha' | 'datos' }[] = [
+const NAV: { a: string, clave: 'recorrido' | 'explorar' | 'descargas' | 'ficha' }[] = [
   { a: '/', clave: 'recorrido' },
   { a: '/explorar', clave: 'explorar' },
   { a: '/descargas', clave: 'descargas' },
   { a: '/ficha', clave: 'ficha' },
-  { a: '/datos', clave: 'datos' },
 ]
 
 // El encabezado de iclac.cl no se separa con borde sino con sombra. Es la misma constante del

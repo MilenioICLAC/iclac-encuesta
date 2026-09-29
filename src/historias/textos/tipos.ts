@@ -6,7 +6,7 @@ import type { Idioma, Traducible } from '../../locale'
  * Cada módulo exporta dos cosas, **con los tres idiomas como claves de primer nivel**:
  *
  * - `FICHA: Record<Idioma, FichaHistoria>`, lo que el menú, el cierre de la historia anterior y
- *   «Sobre los datos» dicen de ella sin calcular nada;
+ *   el pop-up de método dicen de ella sin calcular nada;
  * - `TEXTOS: Record<Idioma, (v: Valores) => Contenido>`, toda la prosa de la historia. `Valores` son
  *   las cifras y las banderas estadísticas que calcula el componente, una sola vez; `Contenido`, cada
  *   titular, frase, nota y descripción que la historia muestra. El componente calcula y compone; no

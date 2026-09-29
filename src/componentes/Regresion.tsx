@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Recta, Regresion as Datos } from '../nucleo/tipos'
 import { decimal, numero, traducido } from '../locale'
 import { textoExplorador as t } from '../nucleo/explorador'
@@ -48,13 +49,22 @@ interface Props {
   unidadEje: string
   /** El nombre del gráfico: la medida y su base. Ver `RotuloFigura`. */
   rotulo?: string
+  /**
+   * El texto equivalente, con los datos del paso: pendiente, intervalo y sobre cuántas respuestas.
+   *
+   * **La escena la pasa por paso y no es fija.** El `aria-label` del `svg` dice de qué oleada es la
+   * figura, que no alcanza: cada paso cambia lo que muestra (retira un punto, dibuja las tres
+   * rectas) y sobre qué base. Hasta que la nota al pie se fue al pop-up, esa nota era el único
+   * lugar donde esas cifras estaban escritas.
+   */
+  descripcion?: ReactNode
 }
 
 // Con signo siempre: un «0,83» al lado de un «−1,42» se lee como magnitud y no como dirección.
 // El menos tipográfico lo pone `decimal`.
 const cifra = (v: number) => `${v > 0 ? '+' : ''}${decimal(v, 2)}`
 
-export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiquetaIzquierda, etiquetaDerecha, unidadEje, rotulo }: Props) {
+export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiquetaIzquierda, etiquetaDerecha, unidadEje, rotulo, descripcion }: Props) {
   // El lienzo es ancho y bajo. Con 300 de alto, en un teléfono de 664 px (iPhone 12) la escena
   // medía 728 y el pie quedaba bajo el borde: la figura se escala al ancho, así que cada unidad
   // de alto del `viewBox` cuesta casi un píxel de pantalla.
@@ -103,6 +113,7 @@ export default function Regresion ({ datos, ola, escala, tonos, paso, olas, etiq
   return (
     <figure className="m-0">
       <RotuloFigura>{rotulo}</RotuloFigura>
+      {descripcion && <p className="sr-only">{descripcion}</p>}
       <svg viewBox={`0 0 ${ANCHO} ${alto}`} className="w-full" role="img"
         aria-label={t('regresion.aria', { etiqueta: traducido(datos.etiqueta), cual: todas ? t('regresion.todas') : t('regresion.ola', { ola }) })}>
         {marcas.map((v) => (

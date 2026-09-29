@@ -11,6 +11,7 @@ import { CONFIANZA, EXPOSICION, NEUTRO, pasosDeOrden, tintaSobre } from '../nucl
 import { ESTRATOS, estrato } from '../nucleo/modulos'
 import { decimal, lista, porcentaje, traducido, useIdioma } from '../locale'
 import { AnioDelPaso, LeyendaDeOleadas } from './comun'
+import { MEDIDAS } from './medidas'
 import { serieDeMedida } from './lectura'
 import { FICHA, TEXTOS } from './textos/territorio'
 
@@ -172,7 +173,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
       abierta={abierta}
       alCerrar={() => { navegar('/') }}
       salida={t.salida}
-      metodo="metodo-territorio"
+      metodo="territorio"
+      encuesta={encuesta}
       titulo={ficha.nombre}
     >
       {(raiz) => (
@@ -235,7 +237,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <p className="text-[10px] leading-tight text-gray-500">{t.ejeRiesgo}</p>
               </figure>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaRiesgo}</p>}
+            nota={t.notaRiesgo}
+            medidas={MEDIDAS.territorio.riesgo}
           />
 
           <Respiro raiz={raiz} indice={-1} titulo={t.respiroRegion.titulo}>
@@ -275,7 +278,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <p className="mt-2 text-[10px] leading-tight text-gray-500">{t.ejeMapa}</p>
               </figure>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaMapa}</p>}
+            nota={t.notaMapa}
+            medidas={MEDIDAS.territorio.mapa}
           />
 
           <Respiro raiz={raiz} indice={-2} titulo={t.respiroExposicion.titulo}>
@@ -317,7 +321,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <LeyendaDeOleadas olas={olasEstrato.map((o) => o.ola)} tonos={seriesEstrato.map((s) => s.color)} />
               </div>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaEstrato}</p>}
+            nota={t.notaEstrato}
+            medidas={MEDIDAS.territorio.estrato}
           />
 
           <Respiro raiz={raiz} indice={-3} titulo={t.respiroRol.titulo}>
@@ -361,7 +366,8 @@ export function HistoriaTerritorio ({ encuesta, abierta }: { encuesta: Encuesta,
                 <LeyendaDeOleadas olas={encuesta.olas} tonos={tonos} />
               </div>
             )}
-            nota={<p className="text-xs leading-snug text-gray-500">{t.notaRol}</p>}
+            nota={t.notaRol}
+            medidas={MEDIDAS.territorio.rol}
           />
 
           <Cierre

@@ -469,6 +469,26 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
 .escena-recorrido:has(+ .respiro-recorrido[data-cruzada]) > .escena {
   opacity: 0;
   pointer-events: none;
+  /* **Y fuera del tabulador, no solo del puntero.** Desde que cada figura ofrece su método en un
+     botón, la escena desvanecida bajo la pausa tenía un control que el Tab alcanzaba y el ojo no.
+     `visibility` lo saca del orden de tabulación y del árbol de accesibilidad, y es el mismo
+     criterio que ya usa la trampa de foco de la capa (`checkVisibility`). No alcanza con que la
+     escena esté fuera de la banda de lectura: su sección sigue cruzándola por debajo de la pausa,
+     que va montada sobre ella. */
+  visibility: hidden;
+}
+
+/* El ocultado espera a que termine el fundido y el mostrado no espera nada; si no, la escena
+   reaparecería invisible medio segundo al volver atrás. Solo con movimiento: sin él no hay fundido
+   que esperar, y el bloque de `prefers-reduced-motion` apaga la transición entera. */
+@media (prefers-reduced-motion: no-preference) {
+  .escena-recorrido > .escena {
+    transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+  }
+
+  .escena-recorrido:has(+ .respiro-recorrido[data-cruzada]) > .escena {
+    transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 500ms;
+  }
 }
 
 .escena-recorrido + .respiro-recorrido .bloque-texto {

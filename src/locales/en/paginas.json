@@ -13,25 +13,6 @@
       "uta": "University of Tarapacá"
     }
   },
-  "datos": {
-    "titulo": "About the data",
-    "bajada": "What to know before citing a figure, and what supports each statement in the stories.",
-    "enEstaPagina": "On this page",
-    "indice": {
-      "citar": "Before citing",
-      "historias": "What supports each story",
-      "comoSeLee": "How a difference is tested",
-      "todas": "All comparisons"
-    },
-    "citarTitulo": "Before citing a figure",
-    "masSobre": "More about the survey →",
-    "historiasBajada": "Every statement that claims a change or a difference rests on one of these tests. In each row, the vertical line is zero, the dot is the difference, and the horizontal line is its {{p95}} interval. If the line crosses zero, the row says “no clear difference” and the story does not pick a winner.",
-    "metodo": "Method",
-    "comoSeLeeBajada": "The p-value, the interval, composition held constant, and why this is not a margin of error",
-    "todasTitulo": "All comparisons across waves",
-    "todasBajadaUna": "{{n}} measure in one table, including any that no story uses",
-    "todasBajada": "{{n}} measures in one table, including those that no story uses"
-  },
   "metodo": {
     "historia": "Story {{n}} · {{nombre}}",
     "prueba": "{{n}} test",
