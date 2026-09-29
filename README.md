@@ -3,8 +3,7 @@
 Publica los resultados de la encuesta anual de ICLAC en dos tramos: seis **historias** que cuentan qué
 encontró la encuesta y qué se movió entre oleadas, y un **explorador** para consultar cualquier
 pregunta en una oleada. El sitio son cuatro vistas con URL propia (historias, explorador, descargas y
-ficha técnica), con el encabezado de iclac.cl. En español, inglés y chino, con una franja que declara
-que las dos traducciones son un borrador pendiente de revisión de ICLAC.
+ficha técnica), con el encabezado de iclac.cl. En español, inglés y chino.
 
 **Cada figura publica su método.** Desde donde antes iba su pie se abre un pop-up con esa nota y con
 las pruebas que sostienen lo que la figura muestra; la barra de la capa y el cierre abren el de la
