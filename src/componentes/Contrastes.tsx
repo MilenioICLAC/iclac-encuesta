@@ -8,8 +8,10 @@ import { entreCifraYUnidad, unidadDeDiferencia } from './unidades'
 /**
  * Qué diferencias entre oleadas superan el azar de la propia muestra.
  *
- * **Va en «Sobre los datos» y no en las figuras**, y esa es la decisión de diseño: quien mira una
- * figura está leyendo un resultado, y quien llega acá está por citarlo.
+ * **Va en el pop-up de metodología del menú y no en las figuras**, y esa es la decisión de diseño:
+ * quien mira una figura está leyendo un resultado, y quien abre esta tabla está por citarlo. En el
+ * menú y no en una historia porque trae las medidas de las seis juntas, incluidas las que ninguna
+ * usa (Felipe, 29-09-2026).
  *
  * Los números vienen calculados del ETL (`scripts/lib/contraste.mjs`): son diez mil permutaciones
  * por comparación, que no es trabajo del navegador de nadie.
@@ -32,7 +34,7 @@ const COMO_SE_LEE: Record<Idioma, (rondas: number) => ReactNode[]> = {
       abiertas) se corrigen con el método de Holm: probar varias a la vez aumenta la chance
       de que alguna pase por azar, y la corrección lo compensa.</>,
     <><T>Qué se afirma.</T> Una diferencia se afirma, en las historias
-      y en esta página, si su p queda bajo {decimal(0.05, 2)}, su intervalo no contiene el cero y, cuando es parte de
+      y en estas tablas, si su p queda bajo {decimal(0.05, 2)}, su intervalo no contiene el cero y, cuando es parte de
       una familia, también pasa la corrección. Si pasa lo primero pero no la corrección, la fila lo dice;
       si no, dice «parejo».</>,
     <><T>Edad y sexo fijos.</T> Cada diferencia entre oleadas lleva
@@ -54,7 +56,7 @@ const COMO_SE_LEE: Record<Idioma, (rondas: number) => ReactNode[]> = {
     <><T>The family correction.</T> Hypotheses tested together (those of the same story, or the four words
       from the open-ended answers) are corrected with the Holm method: testing several at once raises the
       chance that one passes by chance, and the correction offsets this.</>,
-    <><T>What is claimed.</T> A difference is claimed, in the stories and on this page, if its p-value is
+    <><T>What is claimed.</T> A difference is claimed, in the stories and in these tables, if its p-value is
       below {decimal(0.05, 2)}, its interval does not contain zero, and, when it belongs to a family, it also
       passes the correction. If it passes the first two but not the correction, the row says so; otherwise,
       it says “no clear difference.”</>,
@@ -69,7 +71,7 @@ const COMO_SE_LEE: Record<Idioma, (rondas: number) => ReactNode[]> = {
     <><T>p值。</T>将所比较的内容随机打乱{numero(rondas)}次，统计有多少次打乱得到的差异不小于实际观察到的差异。跨轮次比较时打乱年份；比较同一受访者内部的差距时，打乱每个差值的正负号；组间比较时，打乱每人所属的组；拟合直线时，在量表各刻度之间打乱观点。p值为{decimal(0.7, 2)}表示十次随机打乱中有七次得到相同或更大的差异。</>,
     <><T>区间。</T>对回答进行自助法重抽样（bootstrap），取重抽样结果中{porcentaje(95, 0)}的范围。</>,
     <><T>检验族校正。</T>一起检验的假设（同一数据故事中的假设，或开放式问题回答中的四个词）采用Holm校正：同时检验多项假设会提高其中某项偶然通过的可能，校正可抵消这一影响。</>,
-    <><T>断言标准。</T>在数据故事和本页中，只有同时满足以下条件才断言存在差异：p值低于{decimal(0.05, 2)}，区间不含零，且若属于某个检验族，还须通过校正。若满足前两项但未通过校正，该行会注明；否则标注“难分高下”。</>,
+    <><T>断言标准。</T>在数据故事和这些表格中，只有同时满足以下条件才断言存在差异：p值低于{decimal(0.05, 2)}，区间不含零，且若属于某个检验族，还须通过校正。若满足前两项但未通过校正，该行会注明；否则标注“难分高下”。</>,
     <><T>固定年龄与性别。</T>每项跨轮次差异还附有一个将两轮调查调整为相同年龄和性别构成后的版本。若两者相近，受访者的年龄和性别不能解释该变化；但其他构成差异仍可能存在。</>,
     <><T>以上均非误差范围。</T>样本不是概率样本：这些数字只用于各轮调查之间的比较，不用于推断智利总体。计算可重复：同一数据文件总是得到相同的结果。</>,
   ],

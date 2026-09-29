@@ -42,7 +42,7 @@ function enfocable (el: HTMLElement) {
 /** Las teclas que la capa se queda para mover el recorrido, y que acá tienen que scrollear el panel. */
 const DEL_SCROLL = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' ']
 
-function Popup ({ titulo, alCerrar, children }: { titulo: string, alCerrar: () => void, children: ReactNode }) {
+function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string, alCerrar: () => void, ancho?: boolean, children: ReactNode }) {
   const { t } = useTranslation('capa')
   const panel = useRef<HTMLDivElement | null>(null)
   const id = useId()
@@ -105,7 +105,7 @@ function Popup ({ titulo, alCerrar, children }: { titulo: string, alCerrar: () =
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
-        className="flex max-h-[85svh] w-full max-w-2xl flex-col overflow-hidden rounded-t-xl bg-white shadow-xl outline-none sm:max-h-[80svh] sm:rounded-xl"
+        className={`flex max-h-[85svh] w-full flex-col overflow-hidden rounded-t-xl bg-white shadow-xl outline-none sm:max-h-[80svh] sm:rounded-xl ${ancho ? 'max-w-4xl' : 'max-w-2xl'}`}
       >
         <div className="flex shrink-0 items-start gap-3 border-b border-gray-200 px-4 py-3 sm:px-5">
           <h2 id={id} className="min-w-0 flex-1 font-display text-base font-semibold text-gray-900">{titulo}</h2>
@@ -136,10 +136,12 @@ function Popup ({ titulo, alCerrar, children }: { titulo: string, alCerrar: () =
  * hasta montarse. Cerrado no hay nada en el documento, así que tampoco entra en la trampa de foco
  * de la capa.
  */
-export function BotonMetodo ({ etiqueta, titulo, className, tabIndex, children }: {
+export function BotonMetodo ({ etiqueta, titulo, className, tabIndex, ancho = false, children }: {
   etiqueta: ReactNode
   titulo: string
   className?: string
+  /** Para lo que trae una tabla: con el ancho de lectura, las tres columnas de medidas se parten. */
+  ancho?: boolean
   /**
    * `-1` saca el botón del tabulador sin sacarlo del documento. Lo usa la escena que no está en la
    * banda de lectura: desvanecida bajo una pausa queda a opacidad cero, y un foco que se ve en
@@ -155,7 +157,7 @@ export function BotonMetodo ({ etiqueta, titulo, className, tabIndex, children }
       <button type="button" tabIndex={tabIndex} onClick={() => { setAbierto(true) }} className={className}>
         {etiqueta}
       </button>
-      {abierto && <Popup titulo={titulo} alCerrar={cerrar}>{children}</Popup>}
+      {abierto && <Popup titulo={titulo} alCerrar={cerrar} ancho={ancho}>{children}</Popup>}
     </>
   )
 }

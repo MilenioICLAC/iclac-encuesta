@@ -33,6 +33,11 @@
     "respuestas": { "one": "{{n}} respuesta", "other": "{{n}} respuestas" },
     "personas": { "one": "{{n}} persona", "other": "{{n}} personas" },
     "enPalabras": { "1": "una", "2": "dos", "3": "tres", "4": "cuatro", "5": "cinco" },
+    "metodologia": "Cómo se probó cada diferencia",
+    "metodologiaTitulo": "Metodología",
+    "todas": "Todas las comparaciones entre oleadas",
+    "todasBajadaUna": "{{n}} medida en una tabla, incluidas las que ninguna historia usa",
+    "todasBajada": "{{n}} medidas en una tabla, incluidas las que ninguna historia usa",
     "mas": "Más sobre la encuesta →"
   }
 }

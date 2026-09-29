@@ -33,6 +33,11 @@
     "respuestas": { "one": "{{n}}份回答", "other": "{{n}}份回答" },
     "personas": { "one": "{{n}}名受访者", "other": "{{n}}名受访者" },
     "enPalabras": { "1": "一", "2": "两", "3": "三", "4": "四", "5": "五" },
+    "metodologia": "如何检验各项差异",
+    "metodologiaTitulo": "方法说明",
+    "todas": "全部跨轮次对比",
+    "todasBajadaUna": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
+    "todasBajada": "{{n}}项指标汇总于一张表，包括未被任何数据故事使用的指标",
     "mas": "关于本调查的更多信息 →"
   }
 }
