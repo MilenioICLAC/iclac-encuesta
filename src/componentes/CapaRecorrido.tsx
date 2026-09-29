@@ -100,12 +100,12 @@ function paradasDeCambio (capa: HTMLElement) {
   const tope = capa.scrollHeight - capa.clientHeight
   const arriba = capa.getBoundingClientRect().top - capa.scrollTop
   /*
-   * **Con movimiento reducido esta lista son la portada, las pausas y el final.** No hay pista, así
-   * que no hay `.paso-recorrido`, y avanzar con la tecla o la flecha salta de pausa en pausa sin
-   * parar en ninguna escena (medido el 29-09-2026: de la portada al cierre en tres teclas, sin ver
-   * una figura). Agregar `.escena-recorrido` a la lista no alcanza: la parada de la escena y la de
-   * la pausa que la sigue quedan a 14 px, y `paradaVecina` las cuenta como un solo cambio. Queda
-   * pendiente; por eso el botón de la portada conserva su propio destino en ese caso.
+   * **Esta lista no se usa con movimiento reducido.** Sin pista no hay `.paso-recorrido`, y
+   * quedarían solo la portada, las pausas y el final: avanzar por ahí saltaba de pausa en pausa
+   * sin parar en ninguna escena (medido el 29-09-2026: de la portada al cierre en tres teclas, sin
+   * ver una figura). Separar escena y pausa no se puede, porque en ese modo comparten tramo de
+   * scroll a propósito (la escena se lee mientras sube). En ese modo `irA` avanza una pantalla y
+   * no consulta estas paradas.
    */
   const lista = paradas(capa, '.portada-recorrido, .respiro-recorrido, .paso-recorrido')
   if (lista[lista.length - 1] !== tope) lista.push(tope)
@@ -242,14 +242,27 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
   const irA = useCallback((sentido: number) => {
     const el = capa.current
     if (!el) return false
+    // Quien pide menos movimiento no quiere ver el recorrido pasar volando.
+    const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    /*
+     * **Con movimiento reducido no hay paradas que valgan: se avanza una pantalla.** Sin pista no
+     * hay pasos, y las únicas paradas son las pausas, que en ese modo comparten tramo de scroll
+     * con la escena que las precede (la escena se lee mientras sube). Ir de parada en parada
+     * saltaba de pausa en pausa sin parar en ninguna escena. Una pantalla menos un poco es lo que
+     * hace `PageDown`, que es lo que la tecla ya hace en este modo.
+     */
+    if (quieto) {
+      const antes = el.scrollTop
+      el.scrollBy({ top: sentido * 0.85 * el.clientHeight, behavior: 'auto' })
+      destino.current = null
+      return el.scrollTop !== antes
+    }
     const d = destino.current
     const pendiente = d !== null && performance.now() - d.t < 1200 && Math.abs(el.scrollTop - d.y) > 4
     const y = paradaVecina(el, pendiente ? d.y : el.scrollTop, sentido)
     if (y === undefined) return false
     destino.current = { y, t: performance.now() }
-    // Quien pide menos movimiento no quiere ver el recorrido pasar volando.
-    const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    el.scrollTo({ top: y, behavior: quieto ? 'auto' : 'smooth' })
+    el.scrollTo({ top: y, behavior: 'smooth' })
     return true
   }, [])
   useEffect(() => {
@@ -557,9 +570,8 @@ export function Portada ({ raiz, titulo, children }: {
     // primera frase por debajo de donde la deja cualquier otra forma de avanzar (medido el
     // 29-09-2026: 306 px a 1512).
     //
-    // **Salvo con movimiento reducido**, donde no hay pasos y la primera parada está ya sobre la
-    // pausa que sigue a la escena 1: avanzar por ella la saltearía entera. El alto de la portada
-    // la deja justo al empezar (ver `paradasDeCambio`).
+    // **Salvo con movimiento reducido**, donde `irA` avanza una pantalla y se quedaría 171 px
+    // antes del comienzo de la escena 1. El alto de la portada la deja justo al empezar.
     const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (!quieto && irA?.(1)) return
     raiz.scrollTo({ top: nodo.offsetHeight, behavior: quieto ? 'auto' : 'smooth' })

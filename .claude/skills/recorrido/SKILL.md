@@ -190,6 +190,14 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   anclajes se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
   nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, compartida con
   las marcas de la barra). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
+  **El botón de la portada va por el mismo `irA`** (contexto `Avance`), no por el alto de su sección:
+  con el texto que corre eso dejaba la primera frase 306 px más abajo que la flecha (29-09-2026).
+- **Con movimiento reducido se avanza una pantalla, no una parada** (0,85 del alto, en `irA`). Sin
+  pista no hay pasos, y las pausas no sirven de parada porque comparten tramo de scroll con la escena
+  que las precede: yendo de parada en parada, «La mirada» iba de la portada al cierre en tres teclas
+  sin mostrar una figura (29-09-2026). Con una pantalla por acción se pasa por las tres escenas y las
+  dos pausas. La excepción es el botón de la portada, que sigue usando el alto de su sección para
+  dejar la escena 1 justo al empezar.
 - **Los botones existen por quien no tiene rueda** (Fran, 25-09-2026): un clic en la barra de scroll
   baja 87,5 % de la pantalla y se saltaba frases; arrastrarla mueve de 10 a 23 px por píxel. Van abajo
   a la derecha y **solo con puntero fino** (`.flechas-recorrido`, media query de puntero, no de ancho).
