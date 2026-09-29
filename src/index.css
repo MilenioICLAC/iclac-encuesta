@@ -466,6 +466,22 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
   pointer-events: auto;
 }
 
+/*
+ * El fondo del pop-up de método mide **el viewport visible ahora**, no el de `inset: 0`.
+ *
+ * Un `position: fixed; inset: 0` se estira al viewport grande, el de la barra del navegador
+ * escondida. En un teléfono real, con la barra a la vista, su borde de abajo queda por debajo de
+ * lo que se ve, y como el panel va pegado abajo (`items-end`), se sale de la pantalla. El emulador
+ * no reproduce esa barra y por eso medía cero (Felipe lo vio en su teléfono, 29-09-2026).
+ *
+ * `svh` queda de respaldo donde no haya `dvh`: ahí el panel flota un poco sobre el borde, que es
+ * el error inofensivo de los dos.
+ */
+.fondo-popup {
+  height: 100svh;
+  height: 100dvh;
+}
+
 .escena-recorrido > .escena,
 .escena-recorrido + .respiro-recorrido .bloque-texto {
   transition: opacity 500ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);

@@ -98,7 +98,7 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
     // Encima de la capa (`z-50`) y de los portales de la transición (`z-[60]` y `z-[61]`).
     // En teléfono sube desde abajo y ocupa el ancho; desde `sm` va centrado.
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-gray-900/40 sm:items-center sm:p-6"
+      className="fondo-popup fixed inset-x-0 top-0 z-[70] flex items-end justify-center bg-gray-900/40 sm:items-center sm:p-6"
       // `mousedown` y no `click`: soltar el botón sobre el fondo después de seleccionar texto
       // dentro del panel cerraría el pop-up a mitad de una copia.
       onMouseDown={(e) => { if (e.target === e.currentTarget) alCerrar() }}
@@ -109,7 +109,9 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
-        className={`flex max-h-[85svh] w-full flex-col overflow-hidden rounded-t-xl bg-white shadow-xl outline-none sm:max-h-[80svh] sm:rounded-xl ${ancho ? 'max-w-4xl' : 'max-w-2xl'}`}
+        // El tope va en porcentaje del fondo, que ya mide el viewport visible: con `svh` propio,
+        // el panel volvía a medir contra una pantalla que no es la que se ve.
+        className={`flex max-h-[85%] w-full flex-col overflow-hidden rounded-t-xl bg-white shadow-xl outline-none sm:max-h-[80%] sm:rounded-xl ${ancho ? 'max-w-4xl' : 'max-w-2xl'}`}
       >
         <div className="flex shrink-0 items-start gap-3 border-b border-gray-200 px-4 py-3 sm:px-5">
           <h2 id={id} className="min-w-0 flex-1 font-display text-base font-semibold text-gray-900">{titulo}</h2>
@@ -129,7 +131,7 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
         <div
           ref={contenido}
           tabIndex={-1}
-          className="overflow-y-auto overscroll-contain px-4 py-4 text-sm leading-snug text-gray-600 outline-none sm:px-5"
+          className="overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 text-sm leading-snug text-gray-600 outline-none sm:px-5 sm:pb-4"
         >
           {children}
         </div>

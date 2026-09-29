@@ -158,6 +158,16 @@ function paradaVecina (capa: HTMLElement, desde: number, sentido: number) {
 const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 
 /**
+ * Ir a la parada siguiente o anterior, para las piezas de adentro.
+ *
+ * **Lo necesita la portada.** Su botón hace lo mismo que el gesto (skill `recorrido`), y hasta el
+ * 29-09-2026 scrolleaba al alto de su propia sección, que no es la parada de la primera escena. En
+ * el teléfono no se notaba, porque la escena va pegada; en escritorio, con el texto que corre, el
+ * botón dejaba la primera frase 306 px más abajo que la flecha (medido a 1512 px).
+ */
+const Avance = createContext<((sentido: number) => boolean) | null>(null)
+
+/**
  * Si un elemento puede recibir el foco de verdad, no solo hacer juego con el selector.
  *
  * `checkVisibility()` es lo correcto donde exista; el respaldo es contar cajas, que da cero con
@@ -229,7 +239,9 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     const y = paradaVecina(el, pendiente ? d.y : el.scrollTop, sentido)
     if (y === undefined) return false
     destino.current = { y, t: performance.now() }
-    el.scrollTo({ top: y, behavior: 'smooth' })
+    // Quien pide menos movimiento no quiere ver el recorrido pasar volando.
+    const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ top: y, behavior: quieto ? 'auto' : 'smooth' })
     return true
   }, [])
   useEffect(() => {
@@ -478,7 +490,9 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       </div>
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
-      <Registro.Provider value={informar}>{children(raiz)}</Registro.Provider>
+      <Registro.Provider value={informar}>
+        <Avance.Provider value={irA}>{children(raiz)}</Avance.Provider>
+      </Registro.Provider>
     </div>
     </DatosMetodo.Provider>
   )
@@ -509,6 +523,7 @@ export function Portada ({ raiz, titulo, children }: {
   const seccion = useRef<HTMLElement | null>(null)
   const alto = useAltoDe(raiz)
   const informar = useContext(Registro)
+  const irA = useContext(Avance)
   const [enVista, setEnVista] = useState(true)
 
   useEffect(() => {
@@ -529,7 +544,16 @@ export function Portada ({ raiz, titulo, children }: {
   const avanzar = () => {
     const nodo = seccion.current
     if (!raiz || !nodo) return
+    // **Lo mismo que la flecha y que la tecla**, no el alto de esta sección: con el texto que
+    // corre, la parada de la primera escena no es donde termina la portada, y el botón dejaba la
+    // primera frase por debajo de donde la deja cualquier otra forma de avanzar (medido el
+    // 29-09-2026: 306 px a 1512).
+    //
+    // **Salvo con movimiento reducido**, donde no hay pasos y las paradas son solo las de las
+    // pausas: ahí la primera parada está **después** de la escena 1, y avanzar por ella la
+    // saltearía entera. El alto de la portada sí la deja justo al empezar.
     const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!quieto && irA?.(1)) return
     raiz.scrollTo({ top: nodo.offsetHeight, behavior: quieto ? 'auto' : 'smooth' })
   }
 
