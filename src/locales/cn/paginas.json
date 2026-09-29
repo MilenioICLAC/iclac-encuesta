@@ -1,5 +1,6 @@
 {
   "app": {
+    "desarrollo": "开发者：",
     "errorTitulo": "数据加载失败",
     "errorAntes": "请刷新页面。如问题仍然存在，请通过",
     "errorDespues": "与我们联系。",

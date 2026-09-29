@@ -250,7 +250,8 @@ function Marco () {
             El nombre no se traduce. */}
         {/* Centrado y no `justify-between`: con los logos centrados arriba y un solo ítem acá,
             alineado a la izquierda quedaba como un resto de la línea anterior. */}
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-4 text-xs text-gray-500">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-1.5 gap-y-2 px-4 py-4 text-xs text-gray-500">
+          <span>{tp('app.desarrollo')}</span>
           <a
             href="https://www.linkedin.com/in/felipesotojorquera/"
             target="_blank"

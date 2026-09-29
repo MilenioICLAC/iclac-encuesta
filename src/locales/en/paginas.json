@@ -1,5 +1,6 @@
 {
   "app": {
+    "desarrollo": "Developed by:",
     "errorTitulo": "The data could not be loaded",
     "errorAntes": "Reload the page. If the problem persists, contact us through",
     "errorDespues": ".",

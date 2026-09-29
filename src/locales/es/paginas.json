@@ -1,5 +1,6 @@
 {
   "app": {
+    "desarrollo": "Desarrollado por:",
     "errorTitulo": "No se pudieron cargar los datos",
     "errorAntes": "Recarga la página. Si el problema sigue, escríbenos a través de",
     "errorDespues": ".",
