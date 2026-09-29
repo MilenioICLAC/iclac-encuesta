@@ -99,6 +99,14 @@ function paradas (contenedor: HTMLElement, selector: string) {
 function paradasDeCambio (capa: HTMLElement) {
   const tope = capa.scrollHeight - capa.clientHeight
   const arriba = capa.getBoundingClientRect().top - capa.scrollTop
+  /*
+   * **Con movimiento reducido esta lista son la portada, las pausas y el final.** No hay pista, así
+   * que no hay `.paso-recorrido`, y avanzar con la tecla o la flecha salta de pausa en pausa sin
+   * parar en ninguna escena (medido el 29-09-2026: de la portada al cierre en tres teclas, sin ver
+   * una figura). Agregar `.escena-recorrido` a la lista no alcanza: la parada de la escena y la de
+   * la pausa que la sigue quedan a 14 px, y `paradaVecina` las cuenta como un solo cambio. Queda
+   * pendiente; por eso el botón de la portada conserva su propio destino en ese caso.
+   */
   const lista = paradas(capa, '.portada-recorrido, .respiro-recorrido, .paso-recorrido')
   if (lista[lista.length - 1] !== tope) lista.push(tope)
   for (const paso of capa.querySelectorAll<HTMLElement>('.paso-recorrido')) {
@@ -549,9 +557,9 @@ export function Portada ({ raiz, titulo, children }: {
     // primera frase por debajo de donde la deja cualquier otra forma de avanzar (medido el
     // 29-09-2026: 306 px a 1512).
     //
-    // **Salvo con movimiento reducido**, donde no hay pasos y las paradas son solo las de las
-    // pausas: ahí la primera parada está **después** de la escena 1, y avanzar por ella la
-    // saltearía entera. El alto de la portada sí la deja justo al empezar.
+    // **Salvo con movimiento reducido**, donde no hay pasos y la primera parada está ya sobre la
+    // pausa que sigue a la escena 1: avanzar por ella la saltearía entera. El alto de la portada
+    // la deja justo al empezar (ver `paradasDeCambio`).
     const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (!quieto && irA?.(1)) return
     raiz.scrollTo({ top: nodo.offsetHeight, behavior: quieto ? 'auto' : 'smooth' })
