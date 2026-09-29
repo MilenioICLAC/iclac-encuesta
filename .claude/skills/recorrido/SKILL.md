@@ -94,8 +94,12 @@ termina en cero (un registro de decisiones interno).
   que describe la figura anterior contradice a la actual.
 - **Lo que sigue a una historia es otra** (Felipe, 22-09-2026). El tablero salió de la app ese mismo
   día; el cierre ofrece además el explorador.
-- **Cada historia publica su método** en «Sobre los datos» (`#/datos?foco=metodo-<id>`, armado desde `indice.tsx`), enlazado
-  desde la barra (oculto bajo 640 px). Una frase sin prueba ahí no debería estar en el recorrido.
+- **Cada figura publica su método en un pop-up** (29-09-2026): la nota que iba al pie más los
+  contrastes que la sostienen (`src/historias/medidas.ts`, prop `medidas` de `Escena`, que puede
+  depender del paso). El de la historia entera lo abren el «Método» de la barra (oculto bajo 640 px)
+  y el «Cómo se hizo» del cierre. Una frase sin prueba ahí no debería estar en el recorrido. El
+  pop-up escucha el teclado **en fase de captura** sobre `document` y corta la propagación: si no,
+  `Escape` cierra la historia entera y las flechas mueven el recorrido de atrás.
 - **Contar el método vale cuando el método es el hallazgo**, y solo si retirar el punto da vuelta la
   conclusión; si no, esos pasos no se dibujan.
 - **Pocos pasos:** dos minutos de lectura, tres o cuatro frases por escena. Las cifras se calculan

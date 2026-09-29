@@ -45,6 +45,7 @@ const DEL_SCROLL = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp',
 function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string, alCerrar: () => void, ancho?: boolean, children: ReactNode }) {
   const { t } = useTranslation('capa')
   const panel = useRef<HTMLDivElement | null>(null)
+  const contenido = useRef<HTMLDivElement | null>(null)
   const id = useId()
   // Como el cierre llega distinto en cada render desde el botón, va por referencia: con él como
   // dependencia, el efecto se rearmaría en cada dibujo y el foco volvería al principio.
@@ -53,9 +54,12 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
 
   useEffect(() => {
     const anterior = document.activeElement as HTMLElement | null
-    // El panel es el destino del foco y el que scrollea: con el foco en el botón de cerrar, las
-    // flechas no mueven nada.
-    panel.current?.focus()
+    // **El foco va al que scrollea, no al panel.** El navegador mueve el ancestro scrolleable del
+    // elemento enfocado, y el panel no lo es: su `overflow` está oculto y quien scrollea es su
+    // hijo. Con el foco en el panel, la tabla de 36 medidas (2.891 px de alto) no se podía
+    // recorrer con teclado: las flechas no movían ni el pop-up ni el recorrido de atrás
+    // (medido el 29-09-2026, hallazgo de Codex).
+    ;(contenido.current ?? panel.current)?.focus()
 
     const alTeclear = (e: KeyboardEvent) => {
       const nodo = panel.current
@@ -76,10 +80,10 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
       if (e.key !== 'Tab') return
       e.stopPropagation()
       const focos = [...nodo.querySelectorAll<HTMLElement>(FOCOS)].filter(enfocable)
-      if (focos.length === 0) { e.preventDefault(); nodo.focus(); return }
+      if (focos.length === 0) { e.preventDefault(); (contenido.current ?? nodo).focus(); return }
       e.preventDefault()
-      // Con el foco en el panel (que no está en la lista) el índice es −1: hacia adelante toca el
-      // primero y hacia atrás el último.
+      // Con el foco en el contenido (que no está en la lista, porque su `tabIndex` es −1) el
+      // índice es −1: hacia adelante toca el primero y hacia atrás el último.
       const i = focos.indexOf(document.activeElement as HTMLElement)
       focos[e.shiftKey ? (i <= 0 ? focos.length : i) - 1 : (i + 1) % focos.length].focus()
     }
@@ -120,7 +124,13 @@ function Popup ({ titulo, alCerrar, ancho = false, children }: { titulo: string,
             </svg>
           </button>
         </div>
-        <div className="overflow-y-auto overscroll-contain px-4 py-4 text-sm leading-snug text-gray-600 sm:px-5">
+        {/* `tabIndex={-1}` para poder recibir el foco sin entrar en el tabulador: es el destino
+            del foco al abrir, y así las flechas y `PageDown` lo recorren. */}
+        <div
+          ref={contenido}
+          tabIndex={-1}
+          className="overflow-y-auto overscroll-contain px-4 py-4 text-sm leading-snug text-gray-600 outline-none sm:px-5"
+        >
           {children}
         </div>
       </div>

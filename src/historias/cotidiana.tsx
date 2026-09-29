@@ -383,7 +383,11 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               if (reducido) return <div className="flex flex-col gap-2">{deLaMarca}{deLaOpinion}</div>
               return activo === 0 ? deLaMarca : deLaOpinion
             }}
-            medidas={MEDIDAS['china-cotidiana'].buses}
+            // La primera figura es la marca y la segunda la opinión: una sola lista ofrecía el
+            // contraste de la opinión como prueba de la marca.
+            medidas={(activo, reducido) => (reducido
+              ? [...MEDIDAS['china-cotidiana'].busesMarca, ...MEDIDAS['china-cotidiana'].busesOpinion]
+              : activo === 0 ? MEDIDAS['china-cotidiana'].busesMarca : MEDIDAS['china-cotidiana'].busesOpinion)}
           />
 
           <Respiro raiz={raiz} indice={-4} titulo={t.respiroVisto.titulo}>
@@ -460,7 +464,9 @@ export function HistoriaChinaCotidiana ({ encuesta, abierta }: { encuesta: Encue
               if (reducido) return <div className="flex flex-col gap-2">{deLaSerie}{delContacto}</div>
               return activo >= 2 ? delContacto : deLaSerie
             }}
-            medidas={MEDIDAS['china-cotidiana'].visto}
+            medidas={(activo, reducido) => (reducido
+              ? [...MEDIDAS['china-cotidiana'].vistoSerie, ...MEDIDAS['china-cotidiana'].vistoContacto]
+              : activo >= 2 ? MEDIDAS['china-cotidiana'].vistoContacto : MEDIDAS['china-cotidiana'].vistoSerie)}
           />
 
           <Cierre

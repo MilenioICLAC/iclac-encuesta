@@ -57,6 +57,8 @@ export interface Valores {
   sostiene: { n: number, x: number, b: number, nRecta: number } | null
   icSostiene: [number, number]
   totalPrimera: number
+  /** La base de cada oleada de la recta, para el paso que dibuja las tres. */
+  enesRecta: number[]
   puntoMasPoblado: { x: number, n: number } | null
   // Escena 3: las palabras.
   trumpSube: boolean
@@ -93,7 +95,7 @@ export interface Contenido {
   frasesIdeologia: ReactNode[]
   izquierda: string
   derecha: string
-  unidadRecta: string
+  unidadRecta: (etapa: EtapaRecta) => string
   /** El nombre de cada gráfico, dentro de su figura (`RotuloFigura`). */
   /**
    * Qué dice la figura del termómetro, para quien no la ve.
@@ -218,7 +220,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · izquierda',
       derecha: 'derecha · 10',
-      unidadRecta: 'Evaluación de 0 a 100',
+      unidadRecta: (etapa) => `Evaluación de 0 a 100 · n = ${etapa === 'todas'
+        ? rangoDeEnes(v.enesRecta, (a, b) => `${a} a ${b}`)
+        : numero(etapa === 'sin' ? (v.sostiene?.nRecta ?? 0) : v.totalPrimera)}`,
       descripcionTermometro: (filas, olas) => `Evaluación media de cada país, de 0 a 100, por oleada. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
       rotuloTermometro: 'Simpatía media por cada país',
       rotuloRecta: 'Evaluación de China por tramo político',
@@ -348,7 +352,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · left',
       derecha: 'right · 10',
-      unidadRecta: 'Rating from 0 to 100',
+      unidadRecta: (etapa) => `Rating from 0 to 100 · n = ${etapa === 'todas'
+        ? rangoDeEnes(v.enesRecta, (a, b) => `${a} to ${b}`)
+        : numero(etapa === 'sin' ? (v.sostiene?.nRecta ?? 0) : v.totalPrimera)}`,
       descripcionTermometro: (filas, olas) => `Average rating of each country, from 0 to 100, by wave. ` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
       rotuloTermometro: 'Average warmth towards each country',
       rotuloRecta: 'Opinion of China by political position',
@@ -462,7 +468,9 @@ export const TEXTOS: Record<Idioma, (v: Valores) => Contenido> = {
       ],
       izquierda: '1 · 左',
       derecha: '右 · 10',
-      unidadRecta: '好感度（0–100）',
+      unidadRecta: (etapa) => `好感度（0–100） · n = ${etapa === 'todas'
+        ? rangoDeEnes(v.enesRecta, (a, b) => `${a}至${b}`)
+        : numero(etapa === 'sin' ? (v.sostiene?.nRecta ?? 0) : v.totalPrimera)}`,
       descripcionTermometro: (filas, olas) => `各国的平均评分（0–100），按轮次。` + filas.map((f) => `${f.etiqueta}: ${f.valores.map((v, i) => v === null ? null : `${olas[i]} ${decimal(v, 1)}`).filter(Boolean).join(", ")}`).join(". "),
       rotuloTermometro: '各国的平均好感度',
       rotuloRecta: '按政治立场看对华好感度',

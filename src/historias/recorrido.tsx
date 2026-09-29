@@ -265,6 +265,8 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     ? primeraDeLaSerie.puntos.reduce((mejor, q) => (q.n > mejor.n ? q : mejor), primeraDeLaSerie.puntos[0])
     : null
   const totalPrimera = primeraDeLaSerie ? primeraDeLaSerie.puntos.reduce((s, q) => s + q.n, 0) : 0
+  // La base de cada oleada de la recta, para el rótulo de eje del paso que dibuja las tres.
+  const enesRecta = (regresion?.porOla ?? []).map((o) => o.puntos.reduce((s, q) => s + q.n, 0))
 
   // El puente entre las dos mitades de la escena: el alza no viene de un sector. Se nombran los
   // cortes donde **todos** los grupos se mueven en la misma dirección; el que tiene una excepción
@@ -315,6 +317,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
     sostiene: sostiene ? { n: sostiene.n, x: sostiene.x, b: sostiene.recta.b, nRecta: sostiene.recta.n } : null,
     icSostiene: [icSostiene?.[0] ?? 0, icSostiene?.[1] ?? 0],
     totalPrimera,
+    enesRecta,
     puntoMasPoblado: puntoMasPoblado ? { x: puntoMasPoblado.x, n: puntoMasPoblado.n } : null,
     trumpSube,
     trumpSobreDiez: ultimoTrump >= 10,
@@ -504,7 +507,10 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                     paso={activo + 1}
                     etiquetaIzquierda={tm.izquierda}
                     etiquetaDerecha={tm.derecha}
-                    unidadEje={tm.unidadRecta}
+                    // **El eje declara la base del paso.** La figura cambia de base al retirar el
+                    // punto y al pasar a las tres oleadas; un N fijo sería falso en dos de los
+                    // cuatro pasos, y por eso en la fase A se había quedado sin ninguno.
+                    unidadEje={tm.unidadRecta(etapaRecta(activo, reducido))}
                   />
                     {/* La leyenda del último paso lleva la pendiente de cada oleada: en la figura,
                         dos de las tres rectas terminan a menos de un punto y sus rótulos se pisan.
@@ -587,7 +593,10 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
                 )
               }}
               nota={tm.notaPalabras}
-              medidas={MEDIDAS.mirada.palabras}
+              // Un paso monta China y el otro Estados Unidos: las pruebas siguen a la figura.
+              medidas={(activo, reducido) => (reducido
+                ? [...MEDIDAS.mirada.palabrasChina, ...MEDIDAS.mirada.palabrasEeuu]
+                : activo === 0 ? MEDIDAS.mirada.palabrasChina : MEDIDAS.mirada.palabrasEeuu)}
             />
               </>
             )}

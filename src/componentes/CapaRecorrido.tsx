@@ -717,8 +717,11 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   /**
    * Los contrastes que sostienen esta figura, por id (`src/historias/medidas.ts`). Van al pop-up
    * de método junto con la nota.
+   *
+   * **Puede depender del paso**, por la misma razón que `nota`: una escena que cambia de figura
+   * cambia de pruebas, y ofrecer las de la figura siguiente es peor que no ofrecer ninguna.
    */
-  medidas?: string[]
+  medidas?: string[] | ((activo: number, reducido: boolean) => string[])
   /** El diagnóstico de la recta, que solo tiene sentido en la figura de ideología de «La mirada». */
   recta?: boolean
   raiz: HTMLElement | null
@@ -895,7 +898,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
             >
               <CuerpoMetodo
                 nota={typeof nota === 'function' ? nota(activo, reducido) : nota}
-                medidas={medidas ?? []}
+                medidas={(typeof medidas === 'function' ? medidas(activo, reducido) : medidas) ?? []}
                 recta={recta}
               />
             </BotonMetodo>

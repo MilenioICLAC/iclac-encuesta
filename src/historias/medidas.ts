@@ -13,6 +13,12 @@
  * Una figura puede no tener prueba: el mapa de exposición de «Donde uno vive» es descriptivo, y su
  * pop-up muestra la nota sola. Que la lista esté vacía es distinto de que falte, y por eso va
  * escrita.
+ *
+ * **Y una escena puede tener dos figuras**, una por paso: las palabras de «La mirada» (China y
+ * Estados Unidos), los buses y el racismo de «China cotidiana». Cada una lleva su clave, y la
+ * escena elige cuál pasa al pop-up según el paso. Con una sola lista por escena, el pop-up del
+ * primer paso de los buses ofrecía como prueba un contraste de la figura siguiente (Codex,
+ * 29-09-2026).
  */
 export const MEDIDAS = {
   mirada: {
@@ -21,7 +27,8 @@ export const MEDIDAS = {
       'opinion-china', 'brecha-china-eeuu', 'brecha-japon-china', 'dispersion-china',
     ],
     ideologia: ['ideologia-china'],
-    palabras: ['palabra-trump', 'palabra-tecnologia'],
+    palabrasChina: ['palabra-tecnologia'],
+    palabrasEeuu: ['palabra-trump'],
   },
   'entre-potencias': {
     confianza: ['confia-china', 'confia-eeuu', 'confianza-china', 'confianza-eeuu'],
@@ -45,8 +52,11 @@ export const MEDIDAS = {
     cosas: ['mall-cerca', 'restaurante-cerca'],
     personas: ['conoce-china'],
     lugar: ['palabra-mall', 'palabra-buena'],
-    buses: ['buses-sabia'],
-    visto: ['racismo-visto', 'racismo-contacto'],
+    // La marca de los buses es descriptiva: lo que se contrasta es la opinión según si se sabía.
+    busesMarca: [],
+    busesOpinion: ['buses-sabia'],
+    vistoSerie: ['racismo-visto'],
+    vistoContacto: ['racismo-contacto'],
   },
   vacuna: {
     recuerdo: ['sinovac-recibio'],
