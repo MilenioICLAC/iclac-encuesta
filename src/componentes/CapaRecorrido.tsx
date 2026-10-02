@@ -44,7 +44,7 @@ import { DatosMetodo } from './contextoMetodo'
  *
  * **La barra no nombra piezas.** «Escena», «pausa», «paso», «portada» y «cierre» son vocabulario
  * nuestro (Felipe, 22-09-2026): al lector le sirve saber cuánto le falta, no cómo llamamos a cada
- * tramo. Eso lo dicen las marcas de la barra de avance.
+ * tramo.
  */
 interface EstadoEscena {
   indice: number
@@ -69,8 +69,7 @@ interface EstadoEscena {
  * el borde de un paso ahí, el paso toca la banda de lectura, que termina en el 55 %. Medido sin
  * imán el 22-09-2026: cada frase cambia a menos de 8 px de su marca.
  *
- * La usan el teclado y las marcas de la barra: si midieran distinto, la marca diría que el paso
- * está en un lugar y la flecha llevaría a otro.
+ * La usan el teclado y las flechas de la pantalla, por `paradasDeCambio`.
  */
 function paradas (contenedor: HTMLElement, selector: string) {
   const arriba = contenedor.getBoundingClientRect().top - contenedor.scrollTop
@@ -297,33 +296,6 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
   // La pieza en vista, y si ninguna lo está todavía (primer cuadro), la portada.
   const actual = lista.find((e) => e.enVista) ?? escenas[0] ?? lista[0]
 
-  /*
-   * Las marcas de la barra: una línea en cada lugar donde cambia algo (un paso o un respiro), en
-   * fracción del recorrido. Así la barra dice cuánto scroll falta para lo próximo, sin nombrarlo.
-   * Se miden con la misma función que el teclado, y se rehacen cuando
-   * cambia el alto de algo: la geometría de la pista se fija después del primer cuadro.
-   */
-  const [marcas, setMarcas] = useState<number[]>([])
-  useEffect(() => {
-    const contenedor = raiz
-    if (!abierta || !contenedor) return
-    const medir = () => {
-      const tope = contenedor.scrollHeight - contenedor.clientHeight
-      if (tope <= 0) { setMarcas([]); return }
-      const nuevas = paradas(contenedor, '.respiro-recorrido, .paso-recorrido')
-        .map((y) => y / tope)
-        // Ni el inicio ni el final llevan marca: ahí la barra ya tiene su borde.
-        .filter((f) => f > 0.002 && f < 0.998)
-      setMarcas((previas) =>
-        previas.length === nuevas.length && previas.every((f, i) => Math.abs(f - nuevas[i]) < 0.0005) ? previas : nuevas)
-    }
-    medir()
-    const observador = new ResizeObserver(medir)
-    observador.observe(contenedor)
-    for (const hijo of contenedor.children) observador.observe(hijo)
-    return () => { observador.disconnect() }
-  }, [abierta, raiz, lista.length])
-
   useEffect(() => {
     if (!abierta) return
     const anterior = document.activeElement as HTMLElement | null
@@ -454,10 +426,9 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       style={{ '--subida-tras-pausa': SUBIDA_TRAS_PAUSA, '--lectura-texto-corre': LECTURA_TEXTO_CORRE } as React.CSSProperties}
     >
       <div ref={barra} className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
-        {/* Cuánto falta, y cuánto hasta lo próximo: la tinta avanza con el scroll y cada línea es
-            un lugar donde algo cambia. Sin rótulo: cómo se llama cada tramo es vocabulario nuestro.
-            Las líneas son cortes blancos, así cortan igual la tinta y lo que falta. */}
-        <BarraDeAvance avance={avance} marcas={marcas} />
+        {/* Cuánto falta: la tinta avanza con el scroll, sin rótulo (cómo se llama cada tramo es
+            vocabulario nuestro) y sin cortes, ni en lo recorrido ni en lo que falta. */}
+        <BarraDeAvance avance={avance} />
 
         {/* El titular de lo que está en pantalla, para quien no ve la barra. `polite` y no
             `assertive`: avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}

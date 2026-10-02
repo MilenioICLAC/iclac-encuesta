@@ -8,8 +8,8 @@ import { JUNCO } from './junco'
  *
  * Decidida en el laboratorio `barra-barco` (25-09-2026), a partir de una ilustración de Felipe:
  * del dibujo quedaron el barco y la tinta; los colores son los de la barra de antes (la tinta en
- * `brand-dark`, lo que falta en gris 200) y las marcas siguen siendo cortes blancos, uno en cada
- * lugar donde algo cambia.
+ * `brand-dark`, lo que falta en gris 200). **El dibujo no se corta** (Felipe, 02-10-2026): ni la
+ * tinta ni lo que falta llevan las marcas blancas que antes señalaban cada cambio.
  *
  * La ola tiene período fijo en píxeles, contado desde el borde izquierdo: la tinta y el riel
  * comparten fase y un ancho distinto no estira la ola. Por eso se dibuja con el ancho medido y no
@@ -22,7 +22,6 @@ const PERIODO = 40 // px, largo de una ola
 const GROSOR = 6 // px, la tinta
 const BARCO = 20 // px, alto visible del junco
 const INCLINACION = 0.5 // «se inclina un poco»: la mitad de la pendiente de la ola
-const CORTE = 4 // px, cada marca (laboratorio `pausa-corta`: Felipe los pidió un poco más anchos que 2)
 
 const TINTA = '#00776E' // brand-dark
 const RIEL = '#E5E7EB' // gray-200
@@ -78,7 +77,7 @@ function hebras (X: number) {
   })
 }
 
-export function BarraDeAvance ({ avance, marcas }: { avance: number, marcas: number[] }) {
+export function BarraDeAvance ({ avance }: { avance: number }) {
   const { t } = useTranslation('capa')
   const caja = useRef<HTMLDivElement>(null)
   const [ancho, setAncho] = useState(0)
@@ -104,7 +103,6 @@ export function BarraDeAvance ({ avance, marcas }: { avance: number, marcas: num
   const by = ola(bx) + HUNDIDO
   // Se inclina con la ola; con movimiento reducido, derecho.
   const angulo = reducido ? 0 : (Math.atan(pendiente(bx)) * 180 / Math.PI) * INCLINACION
-  const franja = { y: MEDIA - AMPLITUD - GROSOR, alto: 2 * (AMPLITUD + GROSOR) }
 
   return (
     <div
@@ -121,10 +119,6 @@ export function BarraDeAvance ({ avance, marcas }: { avance: number, marcas: num
         <svg aria-hidden width={W} height={ALTO_BARRA} viewBox={`0 0 ${W} ${ALTO_BARRA}`} className="absolute inset-0 block overflow-visible">
           <path fill={RIEL} d={cinta(X, W, ola, () => Math.max(2, GROSOR * 0.55))} />
           {hebras(X).map((d, i) => <path key={i} fill={TINTA} d={d} />)}
-          {/* Las marcas cortan la franja de la ola, no el barco. */}
-          {marcas.map((f) => (
-            <rect key={f} fill="#fff" x={f * W - CORTE / 2} y={franja.y} width={CORTE} height={franja.alto} />
-          ))}
           <g transform={`translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${angulo.toFixed(2)}) scale(${escala.toFixed(4)}) translate(${-JUNCO.ancho / 2} ${-JUNCO.quilla})`}>
             <path d={JUNCO.mastiles} stroke={NEGRO} strokeWidth={JUNCO.mastil} fill="none" strokeLinecap="round" />
             <path d={JUNCO.velas} fill={NEGRO} />
