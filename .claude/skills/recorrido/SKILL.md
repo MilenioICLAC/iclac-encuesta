@@ -25,9 +25,9 @@ Todo vive en la capa (`CapaRecorrido`, `fixed inset-0`, con barra superior medid
 | Cierre | `Cierre` | −99 |
 
 **La barra no nombra piezas** (Felipe, 22-09-2026): «escena», «pausa», «paso», «portada» y «cierre»
-son vocabulario interno. La barra de avance lleva un corte blanco de 4 px en cada paso y cada respiro,
-medida en la parada de cada uno (`paradas`, la misma función del teclado): dice cuánto scroll falta
-para lo próximo. Con movimiento reducido no hay pasos y quedan solo las de los respiros.
+son vocabulario interno. La barra de avance **no se corta** (Felipe, 02-10-2026): ni lo recorrido ni
+lo que falta llevan marcas; hasta esa fecha había un corte blanco de 4 px en cada paso y cada respiro.
+Dice cuánto falta, no qué viene.
 Se dibuja como una ola de tinta que deja atrás un junco negro (`BarraDeAvance.tsx`, laboratorio
 `barra-barco`, 25-09-2026): tinta de 6 px en tres hebras en `brand-dark`, lo que falta en gris 200,
 ola de 1,5 px y 40 px de largo con período fijo en píxeles (no se estira con el ancho), y un barco
@@ -188,8 +188,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   seguidas cuentan desde el último destino pedido, no desde el scroll a mitad de camino. La tecla se
   consume siempre dentro de la capa (en la portada el navegador aplicaba su scroll de 40 px). Los
   anclajes se miden con `getBoundingClientRect().top − (capa.getBoundingClientRect().top − capa.scrollTop)`,
-  nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, compartida con
-  las marcas de la barra). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
+  nunca con `offsetTop`, **menos el `scroll-margin-top` del elemento** (función `paradas`, de la que
+  sale `paradasDeCambio`). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
   **El botón de la portada va por el mismo `irA`** (contexto `Avance`), no por el alto de su sección:
   con el texto que corre eso dejaba la primera frase 306 px más abajo que la flecha (29-09-2026).
 - **Con movimiento reducido se avanza una pantalla, no una parada** (0,85 del alto, en `irA`). Sin
@@ -240,8 +240,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   columnas vive en variables (`--columnas-escena` y afines) que comparten escena y tarjetas.
   Colchones sin cambio (0,55 y 0,45). En teléfono no cambió nada. Bajo 1100 px de ancho o 700 de
   alto las tarjetas van a 28 px: a 900×700, con 34, dos frases medían 442 px y no cabían enteras.
-  `useConsulta` lee la media query al crear el estado, no un cuadro después (si no, las marcas
-  saltan al entrar). El destino pendiente de las flechas dura lo que un scroll suave (1,2 s) y se
+  `useConsulta` lee la media query al crear el estado, no un cuadro después (si no, la geometría
+  salta al entrar). El destino pendiente de las flechas dura lo que un scroll suave (1,2 s) y se
   olvida con la rueda o el dedo: con el destino viejo, un clic tras la rueda devolvía 589 px.
 
 ## Accesibilidad
@@ -251,8 +251,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   en texto (`sr-only`, `aria-live="polite"`), sin número de escena ni de paso.
 - Trampa de foco con los focos **filtrados por visibilidad** (`checkVisibility()`, respaldo
   `getClientRects().length > 0`), foco al abrir y devuelto al cerrar.
-- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista** (y la barra marca solo
-  los respiros), cuchara de la portada quieta, sin emanata; el énfasis estático se queda.
+- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista**, cuchara de la portada quieta, sin emanata; el énfasis estático se queda.
 
 ## Lo que no se hace
 
@@ -282,7 +281,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
    pasos saltados ni acciones sin cambio; con el texto que corre, cada llegada deja la frase centrada
    en la figura, entera y en tinta plena. `Shift+Tab` no escapa.
 7. Con movimiento reducido: todo encendido, frases sin superponerse, sin pista.
-8. Con `mouse.wheel` en los dos sentidos: cada frase cambia sobre su marca de la barra, y la salida se alcanza.
+8. Con `mouse.wheel` en los dos sentidos: cada frase cambia en su parada y la salida se alcanza.
 9. Si vino de un laboratorio: contra el JSON, parámetro por parámetro, textos verbatim.
 10. Lo que el emulador no reproduce (barra del navegador móvil) se reporta como no verificado.
 
