@@ -153,7 +153,7 @@ export function preparar (destino) {
   return manifiesto
 }
 
-const esEjecutable = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())
+const esEjecutable = process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())
 if (esEjecutable) {
   const { values } = parseArgs({ options: { out: { type: 'string' } } })
   const destino = resolve(values.out ?? 'public/descargas')

@@ -34,9 +34,12 @@ public/laboratorio-portada.html
 # Y el de la historia «China cotidiana»: `npm run lab:cotidiana` a partir de `laboratorio/china-cotidiana.html`.
 public/laboratorio-cotidiana.html
 
-# docs/ y referencia/ se versionan a propósito: el proyecto se trabaja desde dos
-# máquinas y no viajan. Las dos se limpian antes del traspaso a ICLAC,
-# no al escribirlas. Ver docs/README.md y referencia/README.md.
+# Documentación interna y monitor en R: viven en la documentación interna (privado),
+# carpeta encuesta/. Se ignoran, no porque sean derivados, sino porque este
+# repositorio se traspasa a ICLAC: si alguien los clona acá para trabajar, un
+# `git add .` los volvería a meter en un repo que es del cliente.
+docs/
+referencia/
 
 # Índice local de code-review-graph (se regenera con `code-review-graph build`)
 .code-review-graph/
