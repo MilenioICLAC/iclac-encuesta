@@ -16,11 +16,30 @@ composición de edad y sexo fija. La muestra no es probabilística, así que **n
 comparan las oleadas entre sí. El método y sus límites están en `.claude/CLAUDE.md` y publicados en
 los pop-ups de método.
 
-**Estado: E1 en curso.** Visualizador funcionando con paridad casi completa contra el monitor actual:
-seis historias, nubes de palabras, explorador de 72 preguntas y descargas. El tablero que reconstruía
-el monitor módulo por módulo salió de la app el 22-09-2026. Las tres oleadas
-tienen prueba de aceptación contra cifras publicadas por ICLAC. Alcance y calendario en
-`../admin/cotizaciones/cotizacion_iclac_fases2y3_felipe.pdf`, enviada a ICLAC el 14-08-2026.
+**Qué hay hoy.** Seis historias, nubes de palabras, un explorador de 44 preguntas (37 se comparan
+entre oleadas) y las descargas de las bases. El tablero que reconstruía módulo por módulo el monitor
+actual salió de la app el 22-09-2026: el explorador lo reemplaza. La oleada 2023 tiene prueba de
+aceptación contra las cifras que ICLAC publicó en el Policy Paper 03.
+
+## Cómo correrlo
+
+Requiere Node 22 (`.nvmrc`).
+
+```bash
+npm ci
+npm run datos      # genera public/data/encuesta.json, public/descargas/ y la geometría de las regiones
+npm run dev        # http://localhost:5180
+```
+
+**`npm run datos` no es opcional**: los datos del sitio son derivados de `data/sources/` y están en
+`.gitignore`. Sin ellos la app compila y se queda cargando.
+
+```bash
+npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar un cambio
+npm run build      # typecheck + vite build, a dist/
+```
+
+El despliegue es Netlify (`netlify.toml`): corre `npm run datos && npm run build` y publica `dist/`.
 
 ---
 
@@ -66,21 +85,18 @@ guarda en la documentación interna.
 
 ```
 data/sources/    las bases de las tres oleadas; empezar por su README.md
-data/schema/     el contrato de datos (se define en E2)
-scripts/         ETL y validadores
+scripts/         ETL, validadores y pruebas (scripts/lib/ trae el catálogo del explorador y los contrastes)
+src/             la aplicación: historias/, componentes/, nucleo/, locales/ (es, en, cn)
+laboratorio/     páginas de composición con las que se decidió el diseño; no se publican con el sitio
+public/          estáticos; los datos y las descargas se generan con `npm run datos`
 ```
 
 `.claude/CLAUDE.md` explica **por qué** las decisiones son las que son: los hechos de los datos que
 cuesta caro volver a descubrir.
 
-La documentación interna del proyecto vive **fuera de este repositorio**, en un
-repositorio privado del equipo. Ahí están el estado del proyecto, el devlog, la cola de lo que
-hay que pedirle o decirle a ICLAC, los planes por sprint y el código del monitor en R. **Los
+La documentación interna del desarrollo **no forma parte de este repositorio**: el estado del
+proyecto, el devlog, la cola de lo que hay que pedirle o decirle a ICLAC, los planes por sprint y el
+código del monitor en R. **Los
 identificadores `C<n>` que aparecen en comentarios del código** (por ejemplo `C9`, `C10`) son entradas
 de esa cola de correcciones; el hecho siempre está escrito en el comentario, la entrada solo agrega el
 contexto.
-
-## Traspaso
-
-El repositorio nace en cuenta personal y **se transfiere a ICLAC al cierre del producto**, igual que se
-hizo con el repositorio de inversiones. El traspaso es un entregable, no un trámite.
