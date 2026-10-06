@@ -1,3 +1,5 @@
+<p align="center"><img src="public/icon-192.png" alt="El junco, ícono del visualizador" width="120"></p>
+
 # Visualizador de la Encuesta de Percepciones sobre China en Chile
 
 Publica los resultados de la encuesta anual de ICLAC en dos tramos: seis **historias** que cuentan qué
