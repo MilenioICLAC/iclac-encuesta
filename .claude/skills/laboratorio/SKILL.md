@@ -1,6 +1,6 @@
 ---
 name: laboratorio
-description: Método para decidir la composición de algo visible del visualizador ICLAC (una escena, la portada, el cierre o una figura del explorador) antes de tocar el código, con un laboratorio HTML servido desde el servidor de desarrollo y el JSON que exporta. Se usa cuando Felipe pide opciones o «un laboratorio», cuando pide «hazme preguntas para pulir» sobre algo visual, y cuando pega un JSON con `"laboratorio": ...`.
+description: Método para decidir la composición de algo visible del visualizador ICLAC (una escena, la portada, el cierre o una figura del explorador) antes de tocar el código, con un laboratorio HTML servido desde el servidor de desarrollo y el JSON que exporta. Se usa cuando el usuario pide opciones o «un laboratorio», cuando pide «hazme preguntas para pulir» sobre algo visual, y cuando pega un JSON con `"laboratorio": ...`.
 ---
 
 # Laboratorio: la composición se decide mirando
