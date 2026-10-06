@@ -18,7 +18,7 @@ import { FICHA, TEXTOS } from './textos/inversion'
  *
  * Bloque 4 de la guía de contexto de ICLAC. (El riesgo que se ve en China, que fue su primera
  * escena, pasó a «Donde uno vive» el 22-09-2026.) Sus dos afirmaciones se sostienen (registro en
- * `la documentación interna`): la mayoría que quiere poder limitar
+ * la documentación interna, `hipotesis-guia`): la mayoría que quiere poder limitar
  * (`p19`) no se mueve en las tres oleadas, y los sectores más marcados (`p20`, solo 2023 y 2024)
  * son cobre, litio y distribución eléctrica. El tercer puesto contra el cuarto es lo único que esa
  * frase arriesga, y tiene su contraste (`electrica-sobre-banca`).

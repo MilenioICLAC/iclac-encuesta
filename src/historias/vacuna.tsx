@@ -15,7 +15,7 @@ import { FICHA, TEXTOS } from './textos/vacuna'
  * La historia «La vacuna»: qué quedó de Sinovac en la memoria y en la opinión.
  *
  * Bloque 6 de la guía de contexto de ICLAC. Lo que se sostiene (registro en
- * `la documentación interna`):
+ * la documentación interna, `hipotesis-guia`):
  *
  * - quien dice haberla recibido es la misma proporción en las tres oleadas (`sinovac-recibio`);
  * - en 2025 la encuesta agrega «No recuerdo» y lo marca cerca de uno de cada seis: un nivel, sin

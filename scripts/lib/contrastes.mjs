@@ -458,7 +458,7 @@ function comparar (casosA, casosB, medidaDeclarada, opciones) {
  * pruebas y la página leen el mismo número (Felipe, 23-09-2026).
  *
  * Las de la guía se declararon antes de correr los contrastes (registro en
- * `la documentación interna`); las marcadas `exploratoria` se fijaron
+ * la documentación interna, `hipotesis-guia`); las marcadas `exploratoria` se fijaron
  * después de ver la cifra. Una prueba puede estar en dos familias (el estrato de 2023): lleva las dos
  * correcciones, y se afirma solo si pasa todas.
  *

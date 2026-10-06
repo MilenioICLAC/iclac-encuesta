@@ -60,7 +60,7 @@ tiene tres cifras distintas circulando para el mismo dato.
 ICLAC publica hoy https://iclac.cl/monitor-de-opinion-publica/, que embebe una app Shiny alojada en la
 cuenta personal de un tercero. Su código lo escribió Bastián Olea Herrera y sirve como **especificación
 del tablero, no como dependencia**: no es código nuestro y nada de acá lo ejecuta ni lo importa. Se
-guarda en la documentación interna, en `encuesta/referencia/monitor_r/`.
+guarda en la documentación interna.
 
 ## Cómo está organizado
 
@@ -73,8 +73,8 @@ scripts/         ETL y validadores
 `.claude/CLAUDE.md` explica **por qué** las decisiones son las que son: los hechos de los datos que
 cuesta caro volver a descubrir.
 
-La documentación interna del proyecto vive **fuera de este repositorio**, en `la documentación interna`
-(privado), carpeta `encuesta/`. Ahí están el estado del proyecto, el devlog, la cola de lo que
+La documentación interna del proyecto vive **fuera de este repositorio**, en un
+repositorio privado del equipo. Ahí están el estado del proyecto, el devlog, la cola de lo que
 hay que pedirle o decirle a ICLAC, los planes por sprint y el código del monitor en R. **Los
 identificadores `C<n>` que aparecen en comentarios del código** (por ejemplo `C9`, `C10`) son entradas
 de esa cola de correcciones; el hecho siempre está escrito en el comentario, la entrada solo agrega el

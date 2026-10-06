@@ -1,9 +1,8 @@
 # CLAUDE.md — Visualizador de la encuesta ICLAC
 
-Reglas que no caducan, un mapa y dónde está el resto. **Lo que falta hacer** vive en
-`la documentación interna documentación interna` (repo privado `la documentación interna`). **Por
-qué algo es como es** vive en los ADR de la misma carpeta, `docs/adr/` (índice en su `README.md`).
-Acá no va historia: si una regla necesita su anécdota para entenderse, la anécdota va a un ADR.
+Reglas que no caducan, un mapa y dónde está el resto. **Lo que falta hacer** y **por
+qué algo es como es** viven en la documentación interna, fuera de este repositorio. Acá no va
+historia.
 
 ## Qué es
 
@@ -13,7 +12,7 @@ Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una
 - **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
   menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
   («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
-- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas (un registro de decisiones interno); pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas (un registro de decisiones interno); el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`) y **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`).
+- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas; pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas; el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`) y **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`).
 
 **El método no tiene vista propia: se abre donde está la figura** (Felipe, 29-09-2026, a pedido de
 ICLAC). Cada figura de una historia abre en un pop-up su nota y las pruebas que la sostienen; el
@@ -24,8 +23,7 @@ no existe: sus hashes llegan al menú.
 El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
 de un tercero, **salió de la app** (Felipe, 22-09-2026): sumaba las oleadas activas en cada módulo.
 `#/tablero` lleva al explorador. El código del monitor (de Bastián Olea, especificación y no
-dependencia) sigue en `la documentación interna`, y el inventario
-figura por figura en `encuesta/docs/sprint_1/paridad_monitor.md` del mismo repo.
+dependencia) se conserva en la documentación interna, con el inventario figura por figura.
 
 ## Mapa del código
 
@@ -36,9 +34,9 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | Dónde | Qué hay |
 |---|---|
 | `src/App.tsx` | Rutas y páginas que no son historias: `App` (rutas), `Marco` (159, encabezado) |
-| `src/historias/` | `indice.tsx` (registro: id, bloque, pregunta, hallazgo, contrastes que la sostienen), `MenuHistorias.tsx` (la raíz), `TarjetaHistoria.tsx` (la tarjeta, que dibujan el menú, el cierre en miniatura y la transición), `Transicion.tsx` (del menú o de un cierre a la portada, con la cuchara que viaja y se divide; un registro de decisiones interno), una historia por archivo (`recorrido.tsx` tiene `La mirada` y `Entre dos potencias`, partidas del recorrido viejo; `territorio`, `inversion`, `cotidiana`, `vacuna`), `comun.tsx` (`AnioDelPaso`, `LeyendaDeOleadas`), `medidas.ts` (qué contraste sostiene cuál figura; de ahí sale la lista de cada historia) y `lectura.ts` (`lector`, `serieDeMedida`, `casosDe`) |
-| `src/componentes/CapaRecorrido.tsx` | La capa: `paradasDeCambio` (94, adónde llevan teclado y flechas), `CapaRecorrido` (189, props `encuesta`, `metodo` —qué historia arma el pop-up— y `salida`; `irA` y las flechas «Anterior»/«Siguiente»), `Portada` (492), `Respiro` (565), `Escena` (679; en escritorio el texto corre, un registro de decisiones interno), `Pista` (922, con las tarjetas de frase), `TarjetaSiguiente` (1019, la historia siguiente en el cierre), `Cierre` (1075) |
-| `src/componentes/Sinan.tsx` | Los íconos de dirección, la cuchara del sinan (un registro de decisiones interno): `CucharaPortada` (portada, tarjetas y la que viaja), `CucharaBoton` («Anterior»/«Siguiente»), `MangoTendido` (flechas de texto del cierre) |
+| `src/historias/` | `indice.tsx` (registro: id, bloque, pregunta, hallazgo, contrastes que la sostienen), `MenuHistorias.tsx` (la raíz), `TarjetaHistoria.tsx` (la tarjeta, que dibujan el menú, el cierre en miniatura y la transición), `Transicion.tsx` (del menú o de un cierre a la portada, con la cuchara que viaja y se divide), una historia por archivo (`recorrido.tsx` tiene `La mirada` y `Entre dos potencias`, partidas del recorrido viejo; `territorio`, `inversion`, `cotidiana`, `vacuna`), `comun.tsx` (`AnioDelPaso`, `LeyendaDeOleadas`), `medidas.ts` (qué contraste sostiene cuál figura; de ahí sale la lista de cada historia) y `lectura.ts` (`lector`, `serieDeMedida`, `casosDe`) |
+| `src/componentes/CapaRecorrido.tsx` | La capa: `paradasDeCambio` (94, adónde llevan teclado y flechas), `CapaRecorrido` (189, props `encuesta`, `metodo` —qué historia arma el pop-up— y `salida`; `irA` y las flechas «Anterior»/«Siguiente»), `Portada` (492), `Respiro` (565), `Escena` (679; en escritorio el texto corre), `Pista` (922, con las tarjetas de frase), `TarjetaSiguiente` (1019, la historia siguiente en el cierre), `Cierre` (1075) |
+| `src/componentes/Sinan.tsx` | Los íconos de dirección, la cuchara del sinan: `CucharaPortada` (portada, tarjetas y la que viaja), `CucharaBoton` («Anterior»/«Siguiente»), `MangoTendido` (flechas de texto del cierre) |
 | `src/componentes/junco.ts` | El dibujo del junco, única copia: lo dibuja `BarraDeAvance` y de él sale el ícono de la app |
 | `src/nucleo/pasos.ts` | `usePasoActivo`, `pasoActivo`, `useMovimientoReducido` |
 | `src/nucleo/modulos.ts` | `TERMOMETRO`, `CORTES` (los de la barra del explorador), `variableDe` |
@@ -53,7 +51,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 | `scripts/lib/traducciones/` | EN y CN del catálogo, los contrastes y las palabras de las abiertas; el español sigue en su fuente y `validarTraducciones` hace fallar el ETL si falta o sobra una clave |
 | `src/index.css` | Estilos globales, incluidas las medidas de la capa (`--barra-capa`, `--alto-capa`) |
 | `scripts/etl_combinada.mjs` | ETL de producción: `data/sources/combinada/ICLAC_2023_2025_combinada.xlsx` → `public/data/encuesta.json` (`olas`, `variables`, `multiples`, `preguntas`, `casos`, `contrastes`, …) |
-| `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en `encuesta/docs/explorador/` de la documentación interna |
+| `scripts/lib/preguntas_explorador.mjs` | El catálogo del explorador: título, enunciado, orden de categorías, etiquetas por oleada y qué se compara, pregunta por pregunta; el ETL lo valida contra los datos y falla si no cuadra. Procedencia en la documentación interna |
 | `scripts/lib/abiertas.mjs` | Las preguntas abiertas (`ABIERTAS` en el catálogo) como múltiples de palabras: marca por persona si contestó y cada palabra candidata, sin el texto |
 | `scripts/lib/ficha.mjs` | Campo de cada oleada (`endtime`, `duration`) e índice de exposición del archivo de diseño, a `encuesta.ficha`; se detiene si el índice no cuadra con `impacto()` |
 | `scripts/lib/contraste.mjs`, `contrastes.mjs` | Permutación y bootstrap; qué comparaciones se publican y sus familias de Holm (`FAMILIAS`; skill `afirmaciones`) |
@@ -69,7 +67,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 ## Comandos
 
 ```bash
-npm run dev          # Vite en 5180; desde otra máquina: http://localhost:5180
+npm run dev          # Vite en 5180
 npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar algo
 npm run datos        # etl:combinada + descargas
 npm run iconos       # rehace el ícono de la app desde el junco
@@ -111,7 +109,7 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
 4. **Los libros de códigos no cuadran con sus datos.** Se verifica contra los datos, nunca contra el
    libro. Los `.dta` de 2023 están en utf-8: cortar en el primer NUL **antes** de decodificar; los de
    2024 no traen value labels. A las etiquetas de `comuna` de 2023 les falta la sílaba «vi» («ña del
-   Mar»): se documenta y no se parcha (`C10`, en `generales/correcciones_cliente.md` de la documentación interna).
+   Mar»): se documenta y no se parcha (`C10`, en la cola de correcciones de la documentación interna).
 5. **La muestra no aguanta cortes profundos.** En 2025 (1.228 casos) educación deja un grupo de 2 y
    región × educación da mediana de 6,5 por celda. **Un corte a la vez, y agrupado antes de ofrecerlo**
    (macrozonas, no 16 regiones).
@@ -154,7 +152,6 @@ Cada uno cambia lo que se puede construir. Detalle y procedencia en `data/source
 - **Un control que se presiona se hunde** (`.presionable` en `src/index.css`, 0,97 en 160 ms), salvo las
   tarjetas del menú, cuya caja copia la transición en el clic. **Los `hover:` solo existen con puntero
   fino** (`hoverOnlyWhenSupported` en `tailwind.config.js`): nada que solo se descubra con el cursor.
-  Por qué, y lo que no se aplicó de las skills de diseño externas: un registro de decisiones interno.
 - **Un control que no hace nada no se publica; uno que hace la mitad dice cuál.** Las claves de datos siguen en
   español (valores de `casos`, palabras de las abiertas, colores por `'<pregunta>:<código>'`); solo se traducen los rótulos.
 - **El encabezado replica el de iclac.cl** (88 px escritorio, 60 teléfono, sombra y no borde; nav

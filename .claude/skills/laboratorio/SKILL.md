@@ -7,8 +7,8 @@ description: Método para decidir la composición de algo visible del visualizad
 
 Felipe decide composición mirándola, no leyendo un diff, y su respuesta llega como JSON exportado
 desde el laboratorio. **En el recorrido es obligatorio** (portada, escenas, respiros, cierre); en el
-explorador, para cualquier cambio de forma de una figura. Por qué existe y qué costó cada regla:
-un registro de decisiones interno, en `la documentación interna`.
+explorador, para cualquier cambio de forma de una figura. Por qué existe y qué costó cada regla
+está en la documentación interna.
 
 ## Flujo
 
@@ -31,8 +31,8 @@ un registro de decisiones interno, en `la documentación interna`.
 - **Script:** en `package.json`,
   `"lab:<tema>": "node scripts/laboratorio.mjs laboratorio/<tema>.html public/laboratorio-<tema>.html"`,
   y la salida en `.gitignore`: es herramienta, no producto.
-- **Enlace:** `http://localhost:5180/laboratorio-<tema>.html` (la máquina Linux, por
-  la red local; el servidor es `npm run dev`). El del recorrido, por ser el primero, es `laboratorio.html`.
+- **Enlace:** `http://localhost:5180/laboratorio-<tema>.html` (el servidor es `npm run dev`; desde
+  otra máquina, por su nombre de host o su IP en el mismo puerto). El del recorrido, por ser el primero, es `laboratorio.html`.
 - **No se publica como artefacto.** Un artefacto es de la cuenta que lo publica, y Felipe trabaja
   desde dos.
 - **Plantilla:** `laboratorio/portada-recorrido.html` es el más reciente y trae todo lo de abajo.
@@ -79,7 +79,7 @@ explorador (24-09-2026) la usó así: ocultó los controles de la app y leyó de
 títulos por oleada y el N.
 
 Cuando lo que se decide es una figura con datos que la app todavía no tiene, sirve la otra técnica
-(laboratorio `abiertas`, 24-09-2026, cerrado y borrado; un registro de decisiones interno): un `laboratorio/<tema>.tsx` que
+(laboratorio `abiertas`, 24-09-2026, cerrado y borrado): un `laboratorio/<tema>.tsx` que
 importa el componente real de `src/` (Vite transforma cualquier `.tsx` bajo la raíz) y le arma el
 modelo con conteos agregados que genera un script aparte. La página necesita el preámbulo de
 `@vitejs/plugin-react` a mano (`/@react-refresh` y `__vite_plugin_react_preamble_installed__`), y el
@@ -97,5 +97,5 @@ comprueba con un `tsconfig` temporal que lo incluya.
 | `laboratorio/pausa-corta.html` | `npm run lab:pausa` | decidido y aplicado (25-09-2026): pausa quieta un paso, la escena siguiente sube 0,4, frase de la pausa que corre en escritorio, cortes de 4 px; falta podar |
 | `laboratorio/sinan.html` | `npm run lab:sinan` | decidido y aplicado (25-09-2026) en `Sinan.tsx`: «Cuchara que baja» (Claude) en la portada, la misma sin círculo a 26 px en los botones (nota de Felipe; el tamaño lo eligió Claude, sin JSON), «Mango tendido» (Codex) en «→» y «↑» del cierre, no en las tarjetas del menú; falta podar. Variantes de Codex (gpt-6-astra) entre `CODEX:INICIO` y `CODEX:FIN`, iframe con la app |
 | `laboratorio/cuchara-viaje.html` | `npm run lab:viaje` | decidido y aplicado (25-09-2026) en `Transicion.tsx` y `TarjetaHistoria.tsx`: cuchara de la portada a 28 px flotando juntas, bajo el título con brújula, pausa 150, división 450, escalón 60, curva marcada; falta podar. Tiene dos defectos propios que no están en la app (Codex): la cámara lenta no se restaura al terminar y Escape deja la capa hasta el tiempo límite. Informe de Codex con propuestas de diseño no aplicadas (curva que no cruce el título, tiempos más cortos, flotar solo al pasar) en el tmp de la sesión 3c624c56 |
-| `laboratorio/tarjeta-cierre.html` | `npm run lab:tarjeta` | decidido (25-09-2026) sin JSON: Felipe pidió fusionar con la «Propuesta» (rótulo, nombre, 448 px); falta podar. Aplica la composición con estilos sobre la app real y sobre la copia de la transición (un registro de decisiones interno) |
+| `laboratorio/tarjeta-cierre.html` | `npm run lab:tarjeta` | decidido (25-09-2026) sin JSON: Felipe pidió fusionar con la «Propuesta» (rótulo, nombre, 448 px); falta podar. Aplica la composición con estilos sobre la app real y sobre la copia de la transición |
 | `laboratorio/la-encuesta.html` | `npm run lab:la-encuesta` | cerrado, falta podar: JSON aplicado el 24-09-2026 en `FichaTecnica.tsx` (la pestaña es «Ficha técnica»); se hizo sin iframe porque la pestaña no existía |

@@ -34,8 +34,8 @@ public/laboratorio-portada.html
 # Y el de la historia «China cotidiana»: `npm run lab:cotidiana` a partir de `laboratorio/china-cotidiana.html`.
 public/laboratorio-cotidiana.html
 
-# Documentación interna y monitor en R: viven en la documentación interna (privado),
-# carpeta encuesta/. Se ignoran, no porque sean derivados, sino porque este
+# Documentación interna y monitor en R: viven en un repositorio privado del equipo.
+# Se ignoran, no porque sean derivados, sino porque este
 # repositorio se traspasa a ICLAC: si alguien los clona acá para trabajar, un
 # `git add .` los volvería a meter en un repo que es del cliente.
 docs/

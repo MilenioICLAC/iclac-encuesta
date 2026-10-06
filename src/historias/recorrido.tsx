@@ -75,7 +75,7 @@ function Recorrido ({ encuesta, abierta, parte }: { encuesta: Encuesta, abierta:
   // Una fila por país y un punto por oleada, ordenadas por la última oleada. Con tres
   // encuestas sueltas una línea prometería interpolación que no existe, y cinco líneas que se
   // cruzan obligarían a distinguir todos los pares de color contra todos, que es el caso donde
-  // la paleta topa en tres (un registro de decisiones interno). Acá el color son las tres oleadas y el nombre del país
+  // la paleta topa en tres. Acá el color son las tres oleadas y el nombre del país
   // carga la identidad, así que el tope alcanza justo.
   const termometro = TERMOMETRO.map((p) => ({
     ...p,

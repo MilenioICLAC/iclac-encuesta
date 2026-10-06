@@ -16,7 +16,7 @@ import { DatosMetodo } from './contextoMetodo'
  * El recorrido vive en una capa propia, no en el scroll de la página.
  *
  * **Por qué separado.** Una historia y el explorador se leen distinto: la historia tiene un orden
- * y afirma cosas, el explorador es para consultar y no afirma nada (un registro de decisiones interno). Mezclados en un
+ * y afirma cosas, el explorador es para consultar y no afirma nada. Mezclados en un
  * scroll, el lector no sabe cuándo dejó de leer un relato y empezó a usar una herramienta, y el
  * scroll de la historia le secuestra la rueda a quien solo quería consultar.
  *

@@ -455,7 +455,7 @@ describe('lo que el recorrido afirma sobre las oleadas', () => {
  * **Las hipótesis de la guía de contexto de ICLAC (02-09-2026), una familia por bloque.**
  *
  * Cada familia se declaró antes de correr los contrastes (registro en
- * `la documentación interna`), y la historia de su bloque afirma
+ * la documentación interna, `hipotesis-guia`), y la historia de su bloque afirma
  * solo lo que sobrevive a Holm dentro de ella. Lo que cae se prueba también: una historia que
  * dijera lo contrario el día que entre una oleada nueva tiene que hacer fallar esto.
  */

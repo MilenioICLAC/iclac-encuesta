@@ -5,8 +5,8 @@ description: Reglas para que una frase, titular, pie o cifra del visualizador IC
 
 # Afirmaciones: qué puede decir el visualizador
 
-Las reglas que no caducan. Qué frase publicada estaba mal y cómo se midió cada una: un registro de decisiones interno, en
-`la documentación interna`.
+Las reglas que no caducan. Qué frase publicada estaba mal y cómo se midió cada una, está en
+la documentación interna.
 
 ## Lo que no se negocia
 

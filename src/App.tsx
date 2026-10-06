@@ -27,7 +27,7 @@ import type { Vista } from './nucleo/explorador'
  * en el monitor actual. Un solo control además impide cruzar dos variables, que es una regla del
  * producto y no una preferencia.
  *
- * Lo que falta está en `la documentación interna`, no en la interfaz.
+ * Lo que falta está en la documentación interna (`estado.md`), no en la interfaz.
  */
 
 export default function App () {

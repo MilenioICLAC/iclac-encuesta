@@ -5,9 +5,8 @@ description: Reglas para construir y modificar el recorrido con scroll (scrollyt
 
 # El recorrido con scroll
 
-Solo reglas vigentes. De dónde salió cada una, con sus mediciones: un registro de decisiones interno (scroll y capa),
-0021 (laboratorio), 0022 (geometría), 0023 (composición), 0026 (historias en vez del tablero), 0027 (barra sin nombres y sin imán), 0028 (frases y pausa con movimiento), 0034 (en escritorio el texto corre; flechas y teclado al próximo cambio), en `la documentación interna`,
-`encuesta/docs/adr/`. Lo que queda pendiente: `encuesta/docs/estado.md` §2.2.
+Solo reglas vigentes. De dónde salió cada una, con sus mediciones, y lo que queda pendiente, está
+en la documentación interna.
 
 **Antes de cambiar la composición de algo visible, skill `laboratorio`.** Antes de escribir una frase
 o una cifra, skill `afirmaciones`. Antes de dar algo por cerrado, skill `verificar-navegador` y la
@@ -62,7 +61,7 @@ cambia la clase o el estilo del título de la portada, la transición lo sigue s
 estilo calculado), pero el selector `.pregunta-portada` tiene que seguir existiendo en las seis. El relleno de la
 tarjeta es `RELLENO` (`TarjetaHistoria.tsx`), el mismo en el menú y en la copia elegida: escrito a
 mano en las dos, la pregunta arranca corrida. Las dos preguntas se cruzan con un blur de 2 px que
-termina en cero (un registro de decisiones interno).
+termina en cero.
 
 ## Editorial
 

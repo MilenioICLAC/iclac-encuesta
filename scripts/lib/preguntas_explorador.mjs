@@ -6,7 +6,7 @@
  * no se toca (`variables[].etiqueta` sigue siendo su texto, con sus prefijos y sus cortes a 255
  * caracteres): acá va lo que lee la persona. Cada entrada salió de una ficha revisada contra los
  * datos de las tres oleadas, no contra el libro de códigos (campaña del 23-09-2026; fichas y
- * cruce con Codex en `la documentación interna`).
+ * cruce con Codex en la documentación interna).
  *
  * `validarPreguntas` la cruza con los datos en cada corrida del ETL y **falla** si un código de
  * los datos no tiene etiqueta, si una etiqueta cambia de sentido entre oleadas sin que la entrada

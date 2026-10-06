@@ -16,7 +16,7 @@ import MapaRegiones from './MapaRegiones'
  * **Solo descriptiva.** Cada frase se sostiene en un hecho verificado; nada califica el diseño. El
  * texto se redactó con Codex sobre un expediente de hechos y se decidió en el laboratorio
  * `laboratorio/la-encuesta.html` (24-09-2026); la procedencia de cada frase está en
- * `la documentación interna`.
+ * la documentación interna.
  *
  * **Los párrafos van en `PROSA`, un bloque por idioma**, porque llevan cifras, referencias y enlaces
  * en medio y el orden de la frase cambia con el idioma; los rótulos cortos, en `paginas.json` (`ficha.*`).

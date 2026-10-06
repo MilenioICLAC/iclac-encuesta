@@ -7,7 +7,7 @@ description: Cómo mirar y medir en un navegador de verdad (Playwright, ya insta
 
 `typecheck`, `lint` y las pruebas no ven nada de lo visible. **Hay navegador en esta máquina**: antes
 de decir que no, se busca. El 06-09-2026 se entregó sin mirar y los tres defectos que reportó el
-cliente estaban en el primer render (un registro de decisiones interno).
+cliente estaban en el primer render.
 
 ## Arranque
 

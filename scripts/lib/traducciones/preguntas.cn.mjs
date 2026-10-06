@@ -2,7 +2,7 @@
 //
 // Las claves no se tocan: el ETL falla si falta o sobra una (`validar.mjs`). Generado por
 // `node scripts/etl_combinada.mjs --esqueleto` y traducido a mano. Términos según el glosario
-// (`la documentación interna`); donde el libro oficial CN tiene un error
+// (el glosario de traducción, en la documentación interna); donde el libro oficial CN tiene un error
 // documentado en el alineado, manda el glosario y se anota «desvío». `// sin libro`: ningún libro
 // trae la pregunta (o esa versión), la traducción es nuestra.
 //

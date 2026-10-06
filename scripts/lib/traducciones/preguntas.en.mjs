@@ -3,7 +3,7 @@
 // Cada valor empieza igual al español y se reemplaza por la traducción. Las claves no se tocan:
 // el ETL falla si falta o sobra una (`validar.mjs`). Generado por `node scripts/etl_combinada.mjs --esqueleto`.
 //
-// Procedencia (glosario, `la documentación interna`, sección 4): donde
+// Procedencia (glosario de traducción, en la documentación interna, sección 4): donde
 // el libro EN 2023/2024 trae el texto, va el oficial salvo los desvíos del glosario (número de
 // término entre paréntesis). `// sin libro` marca lo que ningún libro traduce y tradujimos nosotros.
 // Los títulos son nuestros siempre. Donde el rótulo del catálogo difiere del rótulo español del

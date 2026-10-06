@@ -15,7 +15,7 @@ import RotuloFigura from './RotuloFigura'
  * **Por qué puntos y no líneas ni barras.** Con tres oleadas, una línea promete interpolación
  * que no existe: son tres encuestas sueltas, no un valor continuo muestreado. Y con varias
  * entidades a la vez las líneas se cruzan y el color tiene que distinguir todos los pares
- * contra todos, que es el caso donde la paleta validada topa en tres (un registro de decisiones interno). Con los
+ * contra todos, que es el caso donde la paleta validada topa en tres. Con los
  * puntos en la fila de la entidad, la distancia entre ellos es el cambio y el nombre de la
  * fila carga la identidad.
  */
