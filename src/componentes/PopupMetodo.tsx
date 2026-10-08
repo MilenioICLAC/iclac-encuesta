@@ -12,7 +12,7 @@ import { MEDIDAS, medidasDe, type IdHistoria } from '../historias/medidas'
 /**
  * El método, en un pop-up: uno por figura y uno por historia.
  *
- * **Por qué dejó de ser una página.** El método vivía en «Sobre los datos» (`#/datos`), una vista
+ * **Por qué dejó de ser una página.** El método vivía en «Sobre los datos» (`/datos`), una vista
  * aparte a la que se llegaba desde la barra de la capa y desde el cierre. ICLAC pidió retirarla
  * (29-09-2026), y con ella se va el viaje de ida y vuelta: quien duda de una cifra la está mirando
  * en ese momento, no al final ni en otra pantalla.

@@ -27,7 +27,7 @@ import { DatosMetodo } from './contextoMetodo'
  * El foco se lleva al botón de cierre al abrir y vuelve a donde estaba al cerrar, el `Tab` no se
  * escapa a la página de atrás, y el cuerpo queda sin scroll mientras la capa está abierta.
  *
- * **La capa es una ruta, no un estado suelto.** Vive en `#/recorrido`, y de ahí salen tres cosas
+ * **La capa es una ruta, no un estado suelto.** Vive en `/recorrido`, y de ahí salen tres cosas
  * gratis: el gesto de atrás del teléfono la cierra (es el gesto de cerrar en Android), se puede
  * enlazar, y quien entra al sitio por la raíz cae adentro sin que nadie tenga que apretar nada.
  * Antes la capa se metía sola al historial con `pushState`; con la ruta encima eso duplicaba
@@ -1200,8 +1200,8 @@ export function Cierre ({ raiz, titulo, frases }: {
                   >
                     {i + 1}
                   </span>
-                  {/* Un botón y no un enlace: las rutas van por hash, y un `href="#escena-3"`
-                      navegaría a una ruta que no existe. La frase futura sigue en el documento,
+                  {/* Un botón y no un enlace: un `href="#escena-3"` no es una ruta de la app, y
+                      el router lo trataría como una dirección que no existe. La frase futura sigue en el documento,
                       pero fuera del tabulador: con opacidad cero no se ve dónde está el foco. */}
                   <button
                     type="button"

@@ -202,7 +202,7 @@
     preparar()
   }
 
-  document.getElementById('menu').addEventListener('click', () => { W().location.hash = '#/' })
+  document.getElementById('menu').addEventListener('click', () => { W().location.assign('/encuesta-percepciones/') })
   const elegir = document.getElementById('elegir')
   for (let i = 0; i < 6; i++) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = String(i + 1)
@@ -215,7 +215,7 @@
         a.scrollIntoView({ block: 'center' })
         setTimeout(() => a.dispatchEvent(new (W().MouseEvent)('click', { bubbles: true, cancelable: true, button: 0 })), 250)
       }
-      if (!d.querySelector('ol a')) W().location.hash = '#/'
+      if (!d.querySelector('ol a')) W().location.assign('/encuesta-percepciones/')
       ir()
     })
     elegir.append(b)
@@ -525,6 +525,6 @@
     esperar()
   })
   pintarControles(); dimensionar(); medir()
-  visor.src = '/#/'
+  visor.src = '/encuesta-percepciones/'
 })()
 </script>

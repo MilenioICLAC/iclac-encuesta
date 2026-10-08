@@ -30,7 +30,7 @@ Requiere Node 22 (`.nvmrc`).
 ```bash
 npm ci
 npm run datos      # genera public/data/encuesta.json, public/descargas/ y la geometría de las regiones
-npm run dev        # http://localhost:5180
+npm run dev        # http://localhost:5180/encuesta-percepciones/
 ```
 
 **`npm run datos` no es opcional**: los datos del sitio son derivados de `data/sources/` y están en

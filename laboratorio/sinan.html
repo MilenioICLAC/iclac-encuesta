@@ -552,7 +552,7 @@ window.VARIANTES_CODEX = [
     visor.style.transform = escala < 1 ? `scale(${escala})` : ''
     caja.style.width = Math.round(w * escala) + 'px'; caja.style.height = Math.round(h * escala) + 'px'
   }
-  function cargar (ruta) { visor.src = ruta || `/#/historias/${estado.historia}` }
+  function cargar (ruta) { visor.src = ruta || `/encuesta-percepciones/historias/${estado.historia}` }
 
   function cambio (k) {
     guardar(); pintarControles()
@@ -636,7 +636,7 @@ window.VARIANTES_CODEX = [
     b.addEventListener('click', () => {
       const doc = docApp(); const capa = doc?.querySelector('.capa-recorrido')
       const destino = b.dataset.ir
-      if (destino === 'menu') { cargar('/#/'); return }
+      if (destino === 'menu') { cargar('/encuesta-percepciones/'); return }
       if (!capa) { cargar(); setTimeout(() => b.click(), 900); return }
       const tope = capa.scrollHeight - capa.clientHeight
       capa.scrollTo({ top: destino === 'portada' ? 0 : destino === 'medio' ? Math.round(tope / 2) : tope, behavior: 'auto' })

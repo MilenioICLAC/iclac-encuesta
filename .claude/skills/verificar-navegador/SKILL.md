@@ -12,7 +12,7 @@ cliente estaban en el primer render.
 ## Arranque
 
 - Servidor: `npm run dev` en segundo plano, puerto 5180. Comprobar con
-  `curl -sI http://localhost:5180/ | head -1` antes de lanzar otro.
+  `curl -sI http://localhost:5180/encuesta-percepciones/ | head -1` antes de lanzar otro.
 - Los scripts de medición van al scratchpad de la sesión, no al repositorio.
 - Playwright global (1.62), sin ruta de navegador:
 
@@ -25,7 +25,7 @@ const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 page.on('console', m => m.type() === 'error' && console.log('consola:', m.text()))
 page.on('pageerror', e => console.log('error:', e.message))
-await page.goto('http://localhost:5180/#/')
+await page.goto('http://localhost:5180/encuesta-percepciones/')
 ```
 
 ## Instrumentos que ya existen

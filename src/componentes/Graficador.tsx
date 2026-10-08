@@ -19,7 +19,7 @@ import { lista, numero, plural, traducido, useIdioma } from '../locale'
  *
  * Los controles, pregunta incluida, y el título del explorador viven en `BarraEstado`, pegada arriba.
  *
- * El estado vive en `App`, y la dirección lo refleja (`#/explorar?p=p7&vista=serie`): así sobrevive
+ * El estado vive en `App`, y la dirección lo refleja (`/explorar?p=p7&vista=serie`): así sobrevive
  * al cambio de vista y se puede mandar un enlace a una pregunta en un estado exacto.
  */
 

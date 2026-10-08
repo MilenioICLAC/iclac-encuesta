@@ -527,9 +527,9 @@
       ev.preventDefault();
       if (a.dataset.accion === 'inicio') { visor.scrollTo({ top: 0, behavior: 'smooth' }); avisar('En la app vuelve a la portada del recorrido'); return; }
       const destinos = {
-        tablero: 'En la app lleva a #/tablero',
-        explorador: 'En la app lleva a #/explorar',
-        metodo: 'En la app lleva a #/datos?foco=metodo-recorrido',
+        tablero: 'En la app lleva a /tablero',
+        explorador: 'En la app lleva a /explorar',
+        metodo: 'En la app lleva a /datos?foco=metodo-recorrido',
       };
       avisar(a.dataset.escena ? `En la app vuelve a la escena ${a.dataset.escena}` : destinos[a.dataset.accion]);
     };

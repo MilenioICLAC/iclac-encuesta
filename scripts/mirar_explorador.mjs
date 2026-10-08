@@ -53,7 +53,7 @@ for (const ancho of anchos) {
   const errores = []
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errores.push(m.text()) })
   page.on('pageerror', (e) => errores.push(e.message))
-  await page.goto(`${base}/?lng=${idioma}#/explorar`)
+  await page.goto(`${base}/encuesta-percepciones/explorar?lng=${idioma}`)
   await page.waitForSelector('article h3')
 
   for (const p of preguntas) {
@@ -65,8 +65,8 @@ for (const ancho of anchos) {
     ]
     for (const [nombre, q] of estados) {
       errores.length = 0
-      await page.evaluate((h) => { window.location.hash = h }, `#/explorar?${q}`)
-      await page.waitForFunction((t) => document.querySelector('article h3')?.textContent?.length > 0 && document.location.hash.includes(t), p.id)
+      await page.evaluate((h) => { history.pushState(null, '', h); dispatchEvent(new PopStateEvent('popstate')) }, `/encuesta-percepciones/explorar?${q}&lng=${idioma}`)
+      await page.waitForFunction((t) => document.querySelector('article h3')?.textContent?.length > 0 && document.location.search.includes(t), p.id)
       await page.waitForTimeout(260) // lo que dura la transición de las barras
       const m = await page.evaluate(() => {
         const art = document.querySelector('article')

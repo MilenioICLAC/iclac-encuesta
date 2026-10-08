@@ -23,8 +23,8 @@ import paginasCn from './locales/cn/paginas.json'
  * pasa por acá: vive en `src/historias/textos/`, en TypeScript, porque sus frases eligen el texto
  * según las pruebas y una plantilla ICU las alejaría de la condición que las sostiene.
  *
- * **El menú de iclac.cl llega con `?lng=en|cn`**, según el idioma del WordPress. Con `HashRouter` el
- * parámetro va antes del `#`: `/?lng=en#/explorar`, no `#/explorar?lng=en`, que el detector no lee.
+ * **El menú de iclac.cl llega con `?lng=en|cn`**, según el idioma del WordPress. Con `BrowserRouter` va en
+ * la misma query que el estado del explorador: `/explorar?lng=en&p=p7`.
  * Después manda lo guardado en `localStorage`, y al final el idioma del navegador.
  *
  * El código interno del chino es `cn`, como en mapa_FDI y en el menú de iclac.cl; el de `Intl` y el

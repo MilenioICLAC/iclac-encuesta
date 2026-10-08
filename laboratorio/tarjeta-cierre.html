@@ -182,8 +182,8 @@
 
   function alCierre () {
     const w = visor.contentWindow
-    const ruta = `#/historias/${estado.historia}`
-    if (w.location.hash !== ruta) w.location.hash = ruta
+    const ruta = `/encuesta-percepciones/historias/${estado.historia}`
+    if (w.location.pathname !== ruta) w.location.assign(ruta)
     const bajar = (n = 0) => {
       const capa = D()?.querySelector('.capa-recorrido')
       if (!capa || !D().querySelector('.tarjeta-siguiente')) { if (n < 40) setTimeout(() => bajar(n + 1), 150); return }
@@ -227,6 +227,6 @@
     visor.contentWindow.addEventListener('hashchange', () => setTimeout(aplicar, 50))
   })
   pintarControles(); dimensionar()
-  visor.src = `/#/historias/${estado.historia}`
+  visor.src = `/encuesta-percepciones/historias/${estado.historia}`
 })()
 </script>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { HashRouter, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
 import type { Encuesta } from './nucleo/tipos'
 import { filtrar } from './nucleo/agregar'
 import BarraEstado from './componentes/BarraEstado'
@@ -68,16 +68,14 @@ export default function App () {
   }
 
   return (
-    // **Rutas por hash y no por ruta limpia.** El sitio todavía no tiene servidor elegido, y
-    // `/explorar` como ruta real necesita que ese servidor devuelva el index en cualquier ruta.
-    // Con hash funciona en cualquier hosting estático, incluido abrir el `dist/` a mano. Cuando
-    // haya servidor con reescritura, esto pasa a `BrowserRouter` y no cambia nada más.
-    <HashRouter>
+    // Rutas limpias bajo la base del sitio (`/encuesta-percepciones/`). Necesitan que el servidor devuelva
+    // el index en cualquier ruta: `netlify.toml` lo hace, y `vite preview` también.
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       {/* La transición del menú a la portada cruza el cambio de ruta: vive fuera de `Routes`. */}
       <ProveedorTransicion>
       <Routes>
         <Route element={<Marco />}>
-          {/* La raíz es el menú de historias. `#/recorrido` era la historia única de antes: los
+          {/* La raíz es el menú de historias. `/recorrido` era la historia única de antes: los
               enlaces ya repartidos llegan al menú. */}
           <Route index element={<MenuHistorias encuesta={encuesta} />} />
           <Route path="recorrido" element={<Navigate to="/" replace />} />
@@ -112,12 +110,12 @@ export default function App () {
         </Route>
       </Routes>
       </ProveedorTransicion>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
 
 /**
- * El explorador con su estado en la dirección: `#/explorar?p=p7&vista=serie&ola=2024&corte=edad_rec`.
+ * El explorador con su estado en la dirección: `/explorar?p=p7&vista=serie&ola=2024&corte=edad_rec`.
  *
  * **La dirección es la única fuente**, no una copia de un estado de React: con dos fuentes, el
  * primer render escribía los valores por omisión encima del enlace que se acababa de abrir. Un
@@ -213,7 +211,7 @@ const INSTITUCIONES = [
  *
  * **Cada destino del nav es una vista con su URL.** Antes era una sola página con anclas, y una
  * página que se scrollea sin fin no se recorre: se abandona. Separada en vistas, cada una entra
- * en una o dos pantallas, el botón de atrás del navegador funciona, y un enlace a `#/descargas`
+ * en una o dos pantallas, el botón de atrás del navegador funciona, y un enlace a `/descargas`
  * lleva a las descargas.
  *
  * **El recorte del explorador no se pierde al cambiar de vista.** El estado vive en `App`, que no
@@ -224,7 +222,7 @@ function Marco () {
   const { pathname, search } = useLocation()
 
   // Cambiar de vista deja la vista nueva empezada por la mitad si se hereda el desplazamiento
-  // de la anterior, que es más larga. **Salvo cuando la URL pide un estado** (`#/explorar?p=…`):
+  // de la anterior, que es más larga. **Salvo cuando la URL pide un estado** (`/explorar?p=…`):
   // ahí el destino lo fija ella, y mandar la vista arriba deshace el salto que el propio enlace
   // acaba de hacer.
   useEffect(() => { if (!search) window.scrollTo(0, 0) }, [pathname, search])

@@ -14,28 +14,35 @@
   # Los scripts del ETL usan Node moderno; el default de Netlify se mueve solo con el tiempo.
   NODE_VERSION = "22"
 
-# **Las rutas van por hash (`#/tablero`), así que hoy esto no hace falta.** Queda puesto porque
-# el día que `HashRouter` pase a `BrowserRouter` (ver CLAUDE.md) el sitio se rompería en cada
-# recarga de una ruta interna, y el síntoma no se parece a la causa.
+# El sitio vive en `/encuesta-percepciones/` (ver `vite.config.ts`): `app.iclac.cl` reenvía esa ruta
+# a este sitio de Netlify sin quitarla. Quien llegue a la raíz de este dominio va a la ruta.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/"
+  to = "/encuesta-percepciones/"
+  status = 301
+
+# **Las rutas son reales (`/encuesta-percepciones/explorar`)**: el servidor tiene que devolver el
+# index en cualquiera de ellas, o recargar una vista interna da 404. Sin `force`, un archivo que
+# existe gana sobre la regla.
+[[redirects]]
+  from = "/encuesta-percepciones/*"
+  to = "/encuesta-percepciones/index.html"
   status = 200
 
 # El JS y el CSS llevan hash en el nombre y se pueden cachear para siempre. `encuesta.json` no:
 # con el mismo nombre en cada despliegue, un caché largo deja a un lector mirando los datos de
 # la publicación anterior sin que nada lo diga.
 [[headers]]
-  for = "/assets/*"
+  for = "/encuesta-percepciones/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/data/*"
+  for = "/encuesta-percepciones/data/*"
   [headers.values]
     Cache-Control = "public, max-age=300, must-revalidate"
 
 [[headers]]
-  for = "/descargas/*"
+  for = "/encuesta-percepciones/descargas/*"
   [headers.values]
     Cache-Control = "public, max-age=300, must-revalidate"

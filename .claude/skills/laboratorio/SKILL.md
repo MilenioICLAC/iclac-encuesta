@@ -31,7 +31,7 @@ está en la documentación interna.
 - **Script:** en `package.json`,
   `"lab:<tema>": "node scripts/laboratorio.mjs laboratorio/<tema>.html public/laboratorio-<tema>.html"`,
   y la salida en `.gitignore`: es herramienta, no producto.
-- **Enlace:** `http://localhost:5180/laboratorio-<tema>.html` (el servidor es `npm run dev`; desde
+- **Enlace:** `http://localhost:5180/encuesta-percepciones/laboratorio-<tema>.html` (el servidor es `npm run dev`; desde
   otra máquina, por su nombre de host o su IP en el mismo puerto). El del recorrido, por ser el primero, es `laboratorio.html`.
 - **No se publica como artefacto.** Un artefacto es de la cuenta que lo publica, y Felipe trabaja
   desde dos.

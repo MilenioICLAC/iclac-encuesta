@@ -7,27 +7,27 @@ historia.
 ## Qué es
 
 Visualizador de la **Encuesta de Percepciones sobre China en Chile** (ICLAC, una oleada por año:
-2023, 2024, 2025). Cuatro vistas con ruta por hash:
+2023, 2024, 2025). Cuatro vistas, cada una con su ruta:
 
-- **Historias** (raíz, menú de tarjetas; cada una en `#/historias/<id>`, y `#/recorrido` redirige al
+- **Historias** (raíz, menú de tarjetas; cada una en `/historias/<id>`, y `/recorrido` redirige al
   menú): capas a pantalla completa que avanzan con el scroll. Portada, escenas separadas por pausas
   («respiros») y cierre. Una por bloque de la guía de contexto de ICLAC que sostuvo alguna hipótesis.
-- **Explorador** (`#/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas; pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas; el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`#/descargas`) y **Ficha técnica** (`#/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`).
+- **Explorador** (`/explorar`: cualquier pregunta, **una oleada a la vez**, filtro y un corte; las comparaciones, «Entre oleadas» (solo entre oleadas con la misma pregunta) y con corte, son mancuernas (una fila por categoría y un punto por oleada o por grupo), salvo el termómetro y las de dos categorías, que van en barras; las ocho abiertas van como las diez palabras más dichas; pregunta, oleada y corte en una sola barra pegada, cuyo N es el total de la oleada y el de la figura las respuestas; el estado va en la dirección, `?p=&vista=&ola=&corte=`), **Descargas** (`/descargas`) y **Ficha técnica** (`/ficha`: la encuesta en sí, solo descriptiva; `FichaTecnica.tsx`).
 
 **El método no tiene vista propia: se abre donde está la figura** (Felipe, 29-09-2026, a pedido de
 ICLAC). Cada figura de una historia abre en un pop-up su nota y las pruebas que la sostienen; el
 «Método» de la barra y el «Cómo se hizo» del cierre abren el de la historia entera; y el menú abre
-la metodología completa, con la tabla de todas las comparaciones. `#/datos` («Sobre los datos») ya
-no existe: sus hashes llegan al menú.
+la metodología completa, con la tabla de todas las comparaciones. `/datos` («Sobre los datos») ya
+no existe: esa ruta llega al menú.
 
 El tablero, que reconstruía módulo por módulo el monitor Shiny que ICLAC publica hoy desde la cuenta
 de un tercero, **salió de la app** (Felipe, 22-09-2026): sumaba las oleadas activas en cada módulo.
-`#/tablero` lleva al explorador. El código del monitor (de Bastián Olea, especificación y no
+`/tablero` lleva al explorador. El código del monitor (de Bastián Olea, especificación y no
 dependencia) se conserva en la documentación interna, con el inventario figura por figura.
 
 ## Mapa del código
 
-React + TypeScript + Vite, Tailwind 3.4, `HashRouter`. Los números de línea son aproximados. Para
+React + TypeScript + Vite, Tailwind 3.4, `BrowserRouter` con la base `/encuesta-percepciones/` (`vite.config.ts`). Los números de línea son aproximados. Para
 quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local se rehace con
 `uvx --from "code-review-graph[embeddings]" code-review-graph update`.
 
@@ -67,7 +67,7 @@ quién llama a qué, el MCP `code-review-graph` (`.mcp.json`); su índice local 
 ## Comandos
 
 ```bash
-npm run dev          # Vite en 5180
+npm run dev          # Vite en 5180, en http://localhost:5180/encuesta-percepciones/
 npm run typecheck && npm run lint && npm test    # lo mínimo antes de cerrar algo
 npm run datos        # etl:combinada + descargas
 npm run iconos       # rehace el ícono de la app desde el junco

@@ -74,7 +74,7 @@ async function mirar (id) {
   const pagina = await navegador.newPage({ viewport: { width: ancho, height: 780 }, deviceScaleFactor: 2 })
   // Cada historia es una ruta: se entra por ella y no por el menú, que anima la transición de la
   // tarjeta y no es lo que se mide acá.
-  await pagina.goto(`http://localhost:${puerto}/?lng=${idioma}#/historias/${id}`, { waitUntil: 'networkidle' })
+  await pagina.goto(`http://localhost:${puerto}/encuesta-percepciones/historias/${id}?lng=${idioma}`, { waitUntil: 'networkidle' })
   await pagina.waitForSelector('[role="dialog"]')
   // La geometría de la pista se fija después del primer cuadro, cuando se conoce el alto de la capa.
   await pagina.waitForTimeout(1000)

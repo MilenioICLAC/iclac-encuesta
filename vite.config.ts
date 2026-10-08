@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  // El visualizador se sirve desde `app.iclac.cl/encuesta-percepciones/`. Si la ruta cambia, cambia
+  // acá y en `netlify.toml`. Los archivos quedan en `dist/encuesta-percepciones/`, igual que sus URL.
+  base: '/encuesta-percepciones/',
+  build: { outDir: 'dist/encuesta-percepciones' },
   plugins: [react()],
   resolve: {
     alias: {

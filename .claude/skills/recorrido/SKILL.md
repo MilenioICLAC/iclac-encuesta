@@ -33,7 +33,7 @@ ola de 1,5 px y 40 px de largo con período fijo en píxeles (no se estira con e
 de 20 px centrado en la punta, que se inclina con la mitad de la pendiente y va derecho con
 movimiento reducido. La barra mide 27 px y la franja de arriba 44 (antes 6 y 43).
 
-Desde el 22-09-2026 hay **seis historias**, cada una una capa propia en `#/historias/<id>`, con
+Desde el 22-09-2026 hay **seis historias**, cada una una capa propia en `/historias/<id>`, con
 registro en `src/historias/indice.tsx` y menú en la raíz:
 
 | Historia | Archivo | Escenas |
@@ -215,7 +215,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 - **El bloque de la figura no se encoge entre pasos:** `Escena` guarda su mayor alto por ancho con
   `useLayoutEffect`.
 - **Pantallas bajas:** media query por alto (`max-height: 700px`); el aire es lo primero que cede.
-- **La capa es una ruta** (`#/historias/<id>`). Sin `pushState` propio. Salir lleva al menú de historias y
+- **La capa es una ruta** (`/historias/<id>`). Sin `pushState` propio. Salir lleva al menú de historias y
   el botón lo dice («Volver a las historias», prop `salida`). En iOS, bloquear el fondo pide `position: fixed` con `top: -scrollY`.
 
 ## Escritorio: dos columnas
