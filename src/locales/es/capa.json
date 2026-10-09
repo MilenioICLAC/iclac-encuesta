@@ -3,6 +3,8 @@
   "salir": "Salir",
   "avance": "Avance de la historia",
   "metodo": "Método",
+  "verQuieta": "Ver sin animación",
+  "verAnimada": "Ver con animación",
   "anterior": "Anterior",
   "siguiente": "Siguiente",
   "invitarMouse": "Haz scroll para desplazarte",

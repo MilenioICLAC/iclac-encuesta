@@ -3,6 +3,8 @@
   "salir": "Exit",
   "avance": "Story progress",
   "metodo": "Method",
+  "verQuieta": "View without animation",
+  "verAnimada": "View with animation",
   "anterior": "Previous",
   "siguiente": "Next",
   "invitarMouse": "Scroll to move through the story",
