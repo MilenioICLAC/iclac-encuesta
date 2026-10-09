@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 /**
  * El recorrido avanza con el scroll: cada frase del relato enciende los puntos de los que
@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from 'react'
  *  2. **Ocultar no es borrar.** Los puntos apagados siguen en el documento con opacidad cero,
  *     así que están al imprimir y para un lector de pantalla. La animación es una capa de
  *     lectura sobre una figura que ya está completa.
- *  3. **Quien pide menos movimiento ve la figura entera desde el principio.** No una versión
- *     recortada: `prefers-reduced-motion` salta al último paso, que es el que tiene todo.
+ *  3. **La vista quieta ve la figura entera desde el principio.** No una versión recortada:
+ *     salta al último paso, que es el que tiene todo (ver `usePreferenciaVista`).
  */
 
 /**
@@ -48,6 +48,72 @@ export function useMovimientoReducido () {
   }, [])
   return reducido
 }
+
+/**
+ * **Qué vista de las historias se lee: la animada, con pasos, o la quieta, con todo a la vista.**
+ *
+ * Por omisión la decide el sistema: quien activó «reducir movimiento» (Windows con los efectos de
+ * animación apagados, iOS con «Reducir movimiento») recibe la quieta. Hasta el 08-10-2026 eso era
+ * la misma capa pegada sin pista, que nadie diseñó y se desbordaba en pantallas bajas y en el
+ * teléfono (`estado.md` §2.9). Ahora es una vista propia, y un interruptor deja pasar de una a otra
+ * en los dos sentidos: hay quien tiene el ajuste puesto sin haberlo elegido (el ahorro de energía
+ * de Windows lo activa) y quien prefiere leer de corrido sin tenerlo.
+ *
+ * La elección se guarda en el navegador y manda sobre el sistema. **Lo que no cambia es el
+ * movimiento:** `sistema` sigue diciendo si el sistema pidió menos movimiento, y con eso se apagan
+ * las transiciones (el CSS de `prefers-reduced-motion` no se toca). Quien tiene el ajuste y elige la
+ * animada recibe los pasos, sin animación entre ellos.
+ */
+export type Vista = 'quieta' | 'animada'
+
+const CLAVE_VISTA = 'vista-historias'
+
+function vistaGuardada (): Vista | null {
+  try {
+    const valor = localStorage.getItem(CLAVE_VISTA)
+    return valor === 'quieta' || valor === 'animada' ? valor : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Si la vista elegida es la quieta, leída fuera de una capa (el menú, antes de abrir una historia).
+ * La misma regla que `usePreferenciaVista`: lo guardado manda y, si no hay nada, el sistema.
+ */
+export function vistaQuietaElegida () {
+  const guardada = vistaGuardada()
+  if (guardada) return guardada === 'quieta'
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+export interface PreferenciaVista {
+  /** La vista quieta: todo a la vista, sin pista ni pasos. */
+  quieta: boolean
+  /** Si el sistema pidió menos movimiento, elija el lector la vista que elija. */
+  sistema: boolean
+  /** Pasa a la otra vista y lo recuerda. */
+  cambiar: () => void
+}
+
+export function usePreferenciaVista (): PreferenciaVista {
+  const sistema = useConsulta('(prefers-reduced-motion: reduce)')
+  const [guardada, setGuardada] = useState<Vista | null>(vistaGuardada)
+  const quieta = guardada ? guardada === 'quieta' : sistema
+  const cambiar = useCallback(() => {
+    const nueva: Vista = quieta ? 'animada' : 'quieta'
+    try { localStorage.setItem(CLAVE_VISTA, nueva) } catch { /* sin almacenamiento, vale por esta visita */ }
+    setGuardada(nueva)
+  }, [quieta])
+  return { quieta, sistema, cambiar }
+}
+
+/**
+ * La preferencia, publicada por `CapaRecorrido` para sus piezas (portada, escenas, pausas y
+ * cierre), que son hijas del `children` de cada historia y no la reciben por props. Fuera de una
+ * capa vale `null`, y quien la lea cae al ajuste del sistema.
+ */
+export const ContextoVista = createContext<PreferenciaVista | null>(null)
 
 /**
  * Cuál de los pasos está en la banda de lectura, que es el 10 % central de la pantalla.
@@ -86,10 +152,13 @@ export function pasoActivo (dentro: ReadonlyMap<number, boolean>, actual: number
 export function usePasoActivo (cantidad: number, raiz?: HTMLElement | null) {
   const refs = useRef<(HTMLElement | null)[]>([])
   const [activo, setActivo] = useState(0)
-  const reducido = useMovimientoReducido()
+  const vista = useContext(ContextoVista)
+  const sistema = useMovimientoReducido()
+  // `reducido` es «el relato entero de una vez»: la vista quieta, o sin capa, el ajuste del sistema.
+  const reducido = vista ? vista.quieta : sistema
 
   useEffect(() => {
-    // Sin observador o con movimiento reducido, el último paso: el que muestra todo.
+    // Sin observador o en la vista quieta, el último paso: el que muestra todo.
     if (reducido || typeof IntersectionObserver === 'undefined') {
       setActivo(cantidad - 1)
       return

@@ -39,11 +39,14 @@ export function CucharaPortada ({ tamano = 64, clase = 'cuchara-portada' }: { ta
 
 /**
  * La cuchara de la portada, sin el círculo, redibujada en 24 para que el trazo no quede en un
- * píxel. Se dibuja hacia abajo y se gira para ir hacia arriba.
+ * píxel. Se dibuja hacia abajo y se gira para ir hacia arriba, o hacia los lados en la botonera de
+ * la vista quieta, donde se avanza de lado.
  */
-export function CucharaBoton ({ hacia }: { hacia: 'arriba' | 'abajo' }) {
+const GIRO_BOTON = { abajo: '', arriba: 'rotate-180', derecha: '-rotate-90', izquierda: 'rotate-90' } as const
+
+export function CucharaBoton ({ hacia }: { hacia: keyof typeof GIRO_BOTON }) {
   return (
-    <svg aria-hidden viewBox="0 0 24 24" className={`h-[26px] w-[26px] ${hacia === 'arriba' ? 'rotate-180' : ''}`}>
+    <svg aria-hidden viewBox="0 0 24 24" className={`h-[26px] w-[26px] ${GIRO_BOTON[hacia]}`}>
       <ellipse cx={12} cy={7.4} rx={3.9} ry={4.4} fill="currentColor" fillOpacity={0.12} stroke="currentColor" strokeWidth={1.8} />
       <path d="M11 11.6L13 11.6L12.55 21.2Q12 22.2 11.45 21.2Z" fill="currentColor" />
     </svg>

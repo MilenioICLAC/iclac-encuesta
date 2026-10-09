@@ -94,13 +94,18 @@ const BAJO_TITULO = 28
  * mango, sin el círculo). Con un giro de 180° el largo sigue siendo el alto de su caja.
  */
 interface Cuchara { x: number, y: number, largo: number, giro: number }
-function cucharaDe (svg: Element, giro = 0): Cuchara {
+/**
+ * Sin giro dado, el que el CSS le puso al ícono con `rotate` (la portada de la vista quieta apunta
+ * a la derecha): girada un cuarto de vuelta, el largo es el ancho de su caja.
+ */
+function cucharaDe (svg: Element, giro = parseFloat(getComputedStyle(svg).rotate) || 0): Cuchara {
   const partes = [...svg.querySelectorAll('ellipse, path')].map((p) => p.getBoundingClientRect())
   const izquierda = Math.min(...partes.map((r) => r.left))
   const derecha = Math.max(...partes.map((r) => r.right))
   const arriba = Math.min(...partes.map((r) => r.top))
   const abajo = Math.max(...partes.map((r) => r.bottom))
-  return { x: (izquierda + derecha) / 2, y: (arriba + abajo) / 2, largo: abajo - arriba, giro }
+  const acostada = Math.abs(giro) % 180 === 90
+  return { x: (izquierda + derecha) / 2, y: (arriba + abajo) / 2, largo: acostada ? derecha - izquierda : abajo - arriba, giro }
 }
 
 function geometria ({ indice, cajas }: Eleccion) {

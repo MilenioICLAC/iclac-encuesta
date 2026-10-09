@@ -81,8 +81,8 @@ termina en cero.
   (0,4) y aparece con un fundido (`data-salida`, también de `Respiro`) mientras la frase de la pausa
   se va hacia arriba. La pausa cuesta 2 pasos en escritorio y 1,5 en el teléfono; antes, 4,4 y 2,3,
   y su tramo en la barra confundía. En escritorio la frase de la pausa **corre**: entra al 80 % y
-  sube con el scroll, y las flechas la dejan centrada. Con movimiento reducido la subida vuelve a
-  ser una pantalla: sin pasos, la escena entre dos pausas solo se lee mientras sube.
+  sube con el scroll, y las flechas la dejan centrada. En la vista quieta no hay subida: cada pausa
+  es una diapositiva (ver «Vista quieta»).
 - **Las frases entran desde abajo y salen hacia arriba**, 20 px, 500 ms, curva
   `cubic-bezier(0.2, 0.8, 0.2, 1)`, en todos los pasos y anchos, por `data-lugar` (`antes`,
   `activa`, `despues`); al volver atrás cada una vuelve por donde se fue. Tiempo fijo, no atado al
@@ -191,12 +191,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   sale `paradasDeCambio`). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
   **El botón de la portada va por el mismo `irA`** (contexto `Avance`), no por el alto de su sección:
   con el texto que corre eso dejaba la primera frase 306 px más abajo que la flecha (29-09-2026).
-- **Con movimiento reducido se avanza una pantalla, no una parada** (0,85 del alto, en `irA`). Sin
-  pista no hay pasos, y las pausas no sirven de parada porque comparten tramo de scroll con la escena
-  que las precede: yendo de parada en parada, «La mirada» iba de la portada al cierre en tres teclas
-  sin mostrar una figura (29-09-2026). Con una pantalla por acción se pasa por las tres escenas y las
-  dos pausas. La excepción es el botón de la portada, que sigue usando el alto de su sección para
-  dejar la escena 1 justo al empezar.
+- **En la vista quieta `irA` cambia de diapositiva**, no mueve el scroll (ver «Vista quieta»). Las
+  paradas de arriba son solo de la animada.
 - **Los botones existen por quien no tiene rueda** (Fran, 25-09-2026): un clic en la barra de scroll
   baja 87,5 % de la pantalla y se saltaba frases; arrastrarla mueve de 10 a 23 px por píxel. Van abajo
   a la derecha y **solo con puntero fino** (`.flechas-recorrido`, media query de puntero, no de ancho).
@@ -211,9 +207,10 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   cambia el alto sin que sea una rotación).
 - **El bloque de texto no cambia de alto:** todas las frases en la misma celda de una grilla, una
   frase por paso en todos los anchos (con el texto que corre, esa celda queda invisible y lo que se
-  lee son las tarjetas). Con movimiento reducido el párrafo **no** lleva la grilla.
+  lee son las tarjetas). En la vista quieta el párrafo **no** lleva la grilla.
 - **El bloque de la figura no se encoge entre pasos:** `Escena` guarda su mayor alto por ancho con
-  `useLayoutEffect`.
+  `useLayoutEffect`. En la vista quieta ese mínimo no se aplica: no hay pasos, y le impediría a la
+  diapositiva achicar sus filas.
 - **Pantallas bajas:** media query por alto (`max-height: 700px`); el aire es lo primero que cede.
 - **La capa es una ruta** (`/historias/<id>`). Sin `pushState` propio. Salir lleva al menú de historias y
   el botón lo dice («Volver a las historias», prop `salida`). En iOS, bloquear el fondo pide `position: fixed` con `top: -scrollY`.
@@ -245,12 +242,56 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 
 ## Accesibilidad
 
-- Texto entero en el DOM siempre, con opacidad, nunca `display: none`.
+- Texto entero en el DOM siempre, con opacidad, nunca `display: none`. La excepción es la vista
+  quieta, donde lo que no es la diapositiva actual va con `display: none` a propósito: el lector de
+  pantalla lee la pieza que está en pantalla, y el tabulador no entra a las otras.
 - Botón de salida siempre visible, `Escape`, barra de avance como `progressbar` y el titular en pantalla
   en texto (`sr-only`, `aria-live="polite"`), sin número de escena ni de paso.
 - Trampa de foco con los focos **filtrados por visibilidad** (`checkVisibility()`, respaldo
   `getClientRects().length > 0`), foco al abrir y devuelto al cerrar.
-- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista**, cuchara de la portada quieta, sin emanata; el énfasis estático se queda.
+- **Vista quieta** (`data-vista="quieta"` en la capa; por omisión con movimiento reducido, y con el
+  interruptor en cualquier caso): escena completa desde el primer píxel, **sin pista**, en
+  diapositivas. Con movimiento reducido del sistema, además, cuchara de la portada quieta y sin
+  emanata, en las dos vistas; el énfasis estático se queda.
+
+## Vista quieta (borrador diapositivas)
+
+Con `data-vista="quieta"` la historia se lee **una pieza a la vez**: portada, cada escena, cada
+pausa y el cierre, en el orden de los hijos de la capa. Borrador del 08-10-2026, rama
+`vista-quieta-diapositivas`.
+
+- **Las piezas siguen montadas y se cuentan en el DOM** (`:scope > section` de la capa, con un
+  `MutationObserver`: una historia agrega escenas al llegar los datos). La actual lleva
+  `data-actual`; las demás, `display: none`. Cada sección lleva `data-pieza` (0 portada, N escena,
+  negativo pausa, −99 cierre), que es lo que se conserva al cambiar de vista.
+- **La capa es una columna sin scroll:** barra, diapositiva (`flex: 1`, con scroll propio) y
+  botonera. La botonera ocupa su franja; no tapa nada.
+- **Caber:** en `useLayoutEffect`, con `--escala-filas: 1` se mide el contenido contra el alto de la
+  diapositiva; el exceso se reparte entre las filas `[data-fila-figura]` (`ajustarDiapositiva`,
+  hasta tres vueltas), con el piso de `escalaFila`. Lo que no cabe ni así se lee con el scroll de la
+  diapositiva, con un degradado sobre la botonera mientras quede. Nunca se corta. Se rehace con un
+  `ResizeObserver` (un cuadro después, no dentro del observador).
+- **Navegación:** «Anterior»/«Siguiente» abajo en todos los anchos y punteros; el botón de la
+  portada dice «Siguiente» y su cuchara apunta a la derecha. Teclado: derecha e izquierda cambian
+  siempre; abajo, `PageDown` y espacio avanzan y arriba, `PageUp` y `Shift+Espacio` retroceden,
+  **pero primero recorren lo que la diapositiva tenga bajo el borde**; `Home` y `End`. Espacio sobre
+  un botón lo aprieta. Deslizar de lado: 50 px y más horizontal que vertical. Sin animación.
+- **Dirección:** `?escena=n` (número de diapositiva; sin parámetro en la portada) con `replace`:
+  recargar conserva la diapositiva y Atrás sigue cerrando la historia.
+- **Barra de avance:** `n / (total − 1)`. El `aria-live` dice el titular de la pieza a la vista.
+- **Foco:** no se roba. Si quedó en la diapositiva que se fue o en un botón que se apagó, va a la
+  sección nueva (`tabindex="-1"`).
+- **Texto:** las frases como párrafo, a 17 px en el teléfono y 18 desde 640; titulares del cierre a
+  17 y 20. Dos columnas desde 900 px, igual que la animada.
+- **Al pasar a la animada** se va al comienzo de la pieza y se sostiene ahí (un `ResizeObserver`
+  sobre las secciones) hasta que el lector mueva algo o pase un segundo: las pistas se terminan de
+  medir un cuadro después y corrían la escena 646 px.
+- **Medido (08-10-2026):** 10 viewports × 6 historias, 440 diapositivas: en escritorio (1280×600 a
+  1920×1090) caben las 264, con escala mínima 0,50 y ninguna fila en el piso. En el teléfono
+  (360×640 a 390×664) 49 de 76 escenas y 4 de 24 cierres necesitan el scroll de la diapositiva aun
+  con las filas en el piso; en todas se alcanza el último elemento sin que la botonera lo tape. Las
+  más largas son de texto: el párrafo entero va antes de la figura. La vista animada no cambió
+  (`mirar_recorrido.mjs` 360 y 768 contra la base, corridos de a uno).
 
 ## Lo que no se hace
 
@@ -279,7 +320,8 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 6. Con teclado **y con los botones** de punta a punta en los dos sentidos: un cambio por acción, sin
    pasos saltados ni acciones sin cambio; con el texto que corre, cada llegada deja la frase centrada
    en la figura, entera y en tinta plena. `Shift+Tab` no escapa.
-7. Con movimiento reducido: todo encendido, frases sin superponerse, sin pista.
+7. En la vista quieta: todo encendido, frases sin superponerse, sin pista, y la lista de
+   «Vista quieta» de abajo.
 8. Con `mouse.wheel` en los dos sentidos: cada frase cambia en su parada y la salida se alcanza.
 9. Si vino de un laboratorio: contra el JSON, parámetro por parámetro, textos verbatim.
 10. Lo que el emulador no reproduce (barra del navegador móvil) se reporta como no verificado.
