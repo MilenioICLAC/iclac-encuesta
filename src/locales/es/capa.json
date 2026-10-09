@@ -5,6 +5,7 @@
   "metodo": "Método",
   "verQuieta": "Ver sin animación",
   "verAnimada": "Ver con animación",
+  "avisoSistema": "Tu dispositivo pide reducir el movimiento, así que la historia se muestra sin animaciones.",
   "anterior": "Anterior",
   "siguiente": "Siguiente",
   "invitarMouse": "Haz scroll para desplazarte",

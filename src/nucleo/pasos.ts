@@ -92,7 +92,9 @@ export interface PreferenciaVista {
   quieta: boolean
   /** Si el sistema pidió menos movimiento, elija el lector la vista que elija. */
   sistema: boolean
-  /** Pasa a la otra vista y lo recuerda. */
+  /** Si la vista quieta la puso el sistema y no una elección del lector: solo así se avisa. */
+  porSistema: boolean
+  /** Pasa a la otra vista y lo recuerda, salvo que sea la que pide el sistema. */
   cambiar: () => void
 }
 
@@ -100,12 +102,23 @@ export function usePreferenciaVista (): PreferenciaVista {
   const sistema = useConsulta('(prefers-reduced-motion: reduce)')
   const [guardada, setGuardada] = useState<Vista | null>(vistaGuardada)
   const quieta = guardada ? guardada === 'quieta' : sistema
+  /*
+   * **Solo se guarda lo que contradice al sistema.** Si la elección coincide con lo que pide el
+   * sistema, se borra lo guardado y la vista vuelve a seguir el ajuste: así, quien tocó el botón
+   * una vez no queda atado a esa elección para siempre (cambia el ajuste del teléfono y la app lo
+   * sigue). Antes no había forma de volver a «que decida el sistema» salvo borrando los datos del
+   * sitio.
+   */
   const cambiar = useCallback(() => {
     const nueva: Vista = quieta ? 'animada' : 'quieta'
-    try { localStorage.setItem(CLAVE_VISTA, nueva) } catch { /* sin almacenamiento, vale por esta visita */ }
-    setGuardada(nueva)
-  }, [quieta])
-  return { quieta, sistema, cambiar }
+    const delSistema: Vista = sistema ? 'quieta' : 'animada'
+    try {
+      if (nueva === delSistema) localStorage.removeItem(CLAVE_VISTA)
+      else localStorage.setItem(CLAVE_VISTA, nueva)
+    } catch { /* sin almacenamiento, vale por esta visita */ }
+    setGuardada(nueva === delSistema ? null : nueva)
+  }, [quieta, sistema])
+  return { quieta, sistema, porSistema: quieta && !guardada, cambiar }
 }
 
 /**

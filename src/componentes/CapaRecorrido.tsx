@@ -683,6 +683,12 @@ export function Portada ({ raiz, titulo, children }: {
         )}
         {/* El mismo interruptor de la barra, a la vista antes de empezar: quien abre la historia es
             quien más necesita saber que hay otra manera de leerla. */}
+        {/* El aviso, solo si la vista quieta la puso el ajuste del sistema: quien la eligió con el
+            botón ya sabe por qué no hay animaciones. Sin él, quien tiene el ajuste puesto sin
+            saberlo (el ahorro de energía de Windows lo activa) cree que la historia es así. */}
+        {vista?.quieta && vista.porSistema && (
+          <p className="aviso-vista max-w-[34ch] text-balance text-[13px] leading-snug text-gray-500">{t('avisoSistema')}</p>
+        )}
         {vista && (
           <button
             type="button"
