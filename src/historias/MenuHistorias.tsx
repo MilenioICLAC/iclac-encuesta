@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { vistaQuietaElegida } from '../nucleo/pasos'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Encuesta } from '../nucleo/tipos'
 import { useTranslation } from 'react-i18next'
@@ -62,7 +63,9 @@ export default function MenuHistorias ({ encuesta }: { encuesta: Encuesta }) {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
     e.preventDefault()
     if (enCurso) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(`/historias/${HISTORIAS[i].id}`); return }
+    // Sin transición en la vista quieta, también cuando se eligió con el interruptor y no la pidió el
+    // sistema: «Ver sin animación» vale desde el menú (Codex, 08-10-2026).
+    if (vistaQuietaElegida()) { navegar(`/historias/${HISTORIAS[i].id}`); return }
     // Las cucharas flotan juntas: el punto del vaivén de la elegida es el de todas.
     const vaiven = tarjetas.current[i]?.querySelector('[data-cuchara] .cuchara')?.getAnimations()[0]?.currentTime
     iniciar({ indice: i, cajas: tarjetas.current.map((t) => t!.getBoundingClientRect()), vaiven: typeof vaiven === 'number' ? vaiven : undefined, desde: '/' })

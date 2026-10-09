@@ -333,6 +333,9 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     volverA.current = actual?.indice ?? 0
     vista.cambiar()
   }
+  // Las piezas cambian de vista por acá, no por `vista.cambiar`: así el interruptor de la portada
+  // también guarda adónde volver (Codex, 08-10-2026).
+  const vistaPublicada = { ...vista, cambiar: cambiarVista }
   useLayoutEffect(() => {
     const indice = volverA.current
     const el = capa.current
@@ -496,7 +499,7 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     // El pop-up de método lo abren la barra, cada figura y el cierre: la capa publica una vez de
     // qué historia y de qué datos se arma, en vez de que cada pieza lo reciba por props.
     <DatosMetodo.Provider value={datosMetodo}>
-    <ContextoVista.Provider value={vista}>
+    <ContextoVista.Provider value={vistaPublicada}>
     <div
       role="dialog"
       aria-modal="true"
@@ -1270,6 +1273,8 @@ export function Cierre ({ raiz, titulo, frases }: {
   // Una frase por paso, y uno más para la salida.
   const pasos = frases.length + 1
   const { activo, refs, reducido } = usePasoActivo(pasos, raiz)
+  // Con el ajuste del sistema y la vista animada elegida, igual sin scroll suave.
+  const sistema = useContext(ContextoVista)?.sistema ?? false
   const seccion = useRef<HTMLElement | null>(null)
   const escena = useRef<HTMLDivElement | null>(null)
   const informar = useContext(Registro)
@@ -1297,7 +1302,7 @@ export function Cierre ({ raiz, titulo, frases }: {
   // Mismo cálculo que el teclado de la capa: contra el contenedor, nunca con `offsetTop`.
   const irA = (destino: Element | null | undefined) => {
     if (!raiz || !destino) return
-    raiz.scrollTo({ top: inicioDe(raiz, destino), behavior: reducido ? 'auto' : 'smooth' })
+    raiz.scrollTo({ top: inicioDe(raiz, destino), behavior: reducido || sistema ? 'auto' : 'smooth' })
   }
 
   // Los titulares se escriben sin punto final porque van de encabezado; acá son oraciones. En chino
@@ -1377,7 +1382,7 @@ export function Cierre ({ raiz, titulo, frases }: {
               </BotonMetodo>
               <button
                 type="button"
-                onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
+                onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido || sistema ? 'auto' : 'smooth' }) }}
                 className="underline underline-offset-2 hover:text-brand-dark"
               >
                 {/* Sin espacio antes: el subrayado lo tomaría solo, y la caja girada del ícono ya
