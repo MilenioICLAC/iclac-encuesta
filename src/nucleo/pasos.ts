@@ -77,6 +77,16 @@ function vistaGuardada (): Vista | null {
   }
 }
 
+/**
+ * Si la vista elegida es la quieta, leída fuera de una capa (el menú, antes de abrir una historia).
+ * La misma regla que `usePreferenciaVista`: lo guardado manda y, si no hay nada, el sistema.
+ */
+export function vistaQuietaElegida () {
+  const guardada = vistaGuardada()
+  if (guardada) return guardada === 'quieta'
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export interface PreferenciaVista {
   /** La vista quieta: todo a la vista, sin pista ni pasos. */
   quieta: boolean
