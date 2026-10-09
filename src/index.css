@@ -450,7 +450,7 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
  * scroll. Mismas condiciones que el texto que corre (`corre` en `Escena`).
  */
 @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
-  .escena-recorrido + .respiro-recorrido > .escena {
+  .capa-recorrido:not([data-vista="quieta"]) .escena-recorrido + .respiro-recorrido > .escena {
     position: absolute;
     left: 0;
     right: 0;
@@ -534,18 +534,22 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
     transform: none;
   }
 
-  /* Sin pasos, la escena entre dos pausas no tiene tiempo quieto: la pausa siguiente la tapa apenas
-     llega, y solo se lee mientras sube. Con la subida corta serían 0,4 de pantalla; acá sigue
-     subiendo una entera y la frase de la pausa se va con ella, como antes. `!important` porque la
-     variable llega en línea desde `CapaRecorrido`. */
-  .capa-recorrido {
-    --subida-tras-pausa: 1 !important;
-  }
+}
 
-  .escena-recorrido + .respiro-recorrido[data-cruzada][data-salida] .bloque-texto {
-    opacity: 1;
-    transform: none;
-  }
+/* **Lo que sigue es de la vista quieta, no del ajuste del sistema** (`data-vista` en la capa; ver
+   `usePreferenciaVista`): el lector puede elegir la otra.
+
+   Sin pasos, la escena entre dos pausas no tiene tiempo quieto: la pausa siguiente la tapa apenas
+   llega, y solo se lee mientras sube. Con la subida corta serían 0,4 de pantalla; acá sigue
+   subiendo una entera y la frase de la pausa se va con ella, como antes. `!important` porque la
+   variable llega en línea desde `CapaRecorrido`. */
+.capa-recorrido[data-vista="quieta"] {
+  --subida-tras-pausa: 1 !important;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido[data-cruzada][data-salida] .bloque-texto {
+  opacity: 1;
+  transform: none;
 }
 
 /* Todas las frases en la misma celda de una grilla de una sola celda: el bloque mide lo que la
