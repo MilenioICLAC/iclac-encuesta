@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ContextoVista, useConsulta, usePasoActivo, usePreferenciaVista } from '../nucleo/pasos'
 import { useTransicionHistoria } from '../historias/contextoTransicion'
@@ -568,7 +568,11 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
       <Registro.Provider value={informar}>
-        <Avance.Provider value={irA}>{children(raiz)}</Avance.Provider>
+        {/* **Las piezas se vuelven a montar al cambiar de vista** (`key`). Cada una guarda altos
+            medidos en la vista de antes (el de la escena para su pista, el mayor de su figura), y
+            nada de eso cambia de ancho al cambiar de vista, así que no se remedía solo: la pista
+            quedaba corrida y la figura con el alto de dos figuras apiladas (Codex, 08-10-2026). */}
+        <Avance.Provider value={irA}><Fragment key={vista.quieta ? 'quieta' : 'animada'}>{children(raiz)}</Fragment></Avance.Provider>
       </Registro.Provider>
     </div>
     </ContextoVista.Provider>
@@ -1191,12 +1195,14 @@ function TarjetaSiguiente ({ siguiente }: { siguiente: HistoriaSiguiente }) {
   const navegar = useNavigate()
   const tarjeta = useRef<HTMLAnchorElement | null>(null)
   const indice = siguiente.numero - 1
+  const quieta = useContext(ContextoVista)?.quieta ?? false
 
   const elegir = (e: React.MouseEvent) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
     e.preventDefault()
     if (enCurso || !tarjeta.current) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(siguiente.ruta); return }
+    // La vista quieta tampoco anima la salida, aunque el sistema no lo pida: se eligió sin animación.
+    if (quieta || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { navegar(siguiente.ruta); return }
     const caja = tarjeta.current.getBoundingClientRect()
     const vaiven = tarjeta.current.querySelector('[data-cuchara] .cuchara')?.getAnimations()[0]?.currentTime
     iniciar({

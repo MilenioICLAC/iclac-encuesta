@@ -536,6 +536,25 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
 
 }
 
+/* «Ver sin animación» es sin animación aunque el sistema no la haya pedido: la cuchara que flota, los
+   gestos de entrada de un dato y las transiciones se apagan dentro de la vista quieta igual que con
+   `prefers-reduced-motion`. */
+.capa-recorrido[data-vista="quieta"] .cuchara,
+.capa-recorrido[data-vista="quieta"] .dato-nuevo {
+  animation: none;
+}
+
+.capa-recorrido[data-vista="quieta"] .emanata,
+.capa-recorrido[data-vista="quieta"] .dato-emanata::after {
+  display: none;
+}
+
+.capa-recorrido[data-vista="quieta"] *,
+.capa-recorrido[data-vista="quieta"] *::before,
+.capa-recorrido[data-vista="quieta"] *::after {
+  transition: none !important;
+}
+
 /*
  * **La vista quieta es un artículo** (borrador A, 08-10-2026): la historia se lee como una página
  * que baja, sin nada pegado ni nada que tape nada. Todo cuelga de `data-vista="quieta"` en la capa
