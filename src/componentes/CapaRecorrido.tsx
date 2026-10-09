@@ -99,12 +99,11 @@ function paradasDeCambio (capa: HTMLElement) {
   const tope = capa.scrollHeight - capa.clientHeight
   const arriba = capa.getBoundingClientRect().top - capa.scrollTop
   /*
-   * **Esta lista no se usa con movimiento reducido.** Sin pista no hay `.paso-recorrido`, y
-   * quedarían solo la portada, las pausas y el final: avanzar por ahí saltaba de pausa en pausa
-   * sin parar en ninguna escena (medido el 29-09-2026: de la portada al cierre en tres teclas, sin
-   * ver una figura). Separar escena y pausa no se puede, porque en ese modo comparten tramo de
-   * scroll a propósito (la escena se lee mientras sube). En ese modo `irA` avanza una pantalla y
-   * no consulta estas paradas.
+   * **Esta lista no se usa en la vista quieta.** Sin pista no hay `.paso-recorrido`, y quedarían
+   * solo la portada, las pausas y el final: avanzar por ahí saltaba de pausa en pausa sin parar en
+   * ninguna escena (medido el 29-09-2026: de la portada al cierre en tres teclas, sin ver una
+   * figura). En esa vista, que es una página que baja, el teclado es del navegador y las flechas
+   * de la pantalla avanzan una pantalla (`irA`).
    */
   const lista = paradas(capa, '.portada-recorrido, .respiro-recorrido, .paso-recorrido')
   if (lista[lista.length - 1] !== tope) lista.push(tope)
@@ -147,6 +146,15 @@ function paradasDeCambio (capa: HTMLElement) {
     if (k >= 0) lista[k] = Math.min(tope, Math.round(destino))
   }
   return lista.sort((a, b) => a - b)
+}
+
+function inicioDe (capa: HTMLElement, destino: Element) {
+  // El scroll que deja el borde de arriba de `destino` en el de la capa, **menos su
+  // `scroll-margin-top`**: en la vista quieta las secciones lo llevan igual al alto de la barra
+  // (`index.css`), para que el titular no quede debajo de ella. En la animada vale cero.
+  const arriba = capa.getBoundingClientRect().top - capa.scrollTop
+  const margen = parseFloat(getComputedStyle(destino).scrollMarginTop) || 0
+  return Math.max(0, destino.getBoundingClientRect().top - arriba - margen)
 }
 
 /**
@@ -248,21 +256,24 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     // Quien pide menos movimiento no quiere ver el recorrido pasar volando, en ninguna de las dos
     // vistas. Y en la quieta no hay pasos.
     const { quieta: quieto, sistema } = vistaRef.current
-    /*
-     * **En la vista quieta no hay paradas que valgan: se avanza una pantalla.** Sin pista no
-     * hay pasos, y las únicas paradas son las pausas, que en ese modo comparten tramo de scroll
-     * con la escena que las precede (la escena se lee mientras sube). Ir de parada en parada
-     * saltaba de pausa en pausa sin parar en ninguna escena. Una pantalla menos un poco es lo que
-     * hace `PageDown`, que es lo que la tecla ya hace en este modo.
-     */
-    if (quieto) {
-      const antes = el.scrollTop
-      el.scrollBy({ top: sentido * 0.85 * el.clientHeight, behavior: 'auto' })
-      destino.current = null
-      return el.scrollTop !== antes
-    }
     const d = destino.current
     const pendiente = d !== null && performance.now() - d.t < 1200 && Math.abs(el.scrollTop - d.y) > 4
+    /*
+     * **En la vista quieta no hay paradas: se avanza una pantalla.** Es una página que baja (vista
+     * «artículo»), sin pasos ni pausas montadas, así que «el siguiente» no significa nada más que
+     * lo que sigue abajo. 0,85 de la capa es lo que hace `PageDown` en el navegador, y deja una
+     * franja de lo ya leído por encima de la barra pegada. El teclado no pasa por acá en esta vista
+     * (lo maneja el navegador, ver `alTeclear`): esto es para las flechas de la pantalla.
+     */
+    if (quieto) {
+      const tope = el.scrollHeight - el.clientHeight
+      const desde = pendiente ? d.y : el.scrollTop
+      const y = Math.round(Math.max(0, Math.min(tope, desde + sentido * 0.85 * el.clientHeight)))
+      if (Math.abs(y - desde) < 1) return false
+      destino.current = { y, t: performance.now() }
+      el.scrollTo({ top: y, behavior: sistema ? 'auto' : 'smooth' })
+      return true
+    }
     const y = paradaVecina(el, pendiente ? d.y : el.scrollTop, sentido)
     if (y === undefined) return false
     destino.current = { y, t: performance.now() }
@@ -321,8 +332,33 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       ? el.querySelector(`#escena-${indice}`)
       : indice === -99 ? el.querySelector('.cierre-recorrido') : null
     if (!destino) { el.scrollTo({ top: 0 }); return }
-    const arriba = el.getBoundingClientRect().top - el.scrollTop
-    el.scrollTo({ top: Math.max(0, destino.getBoundingClientRect().top - arriba) })
+    el.scrollTo({ top: inicioDe(el, destino) })
+    /*
+     * La animada termina su geometría (alto de la capa en cada sección, pistas, figura) en efectos
+     * de los cuadros siguientes, y eso corría la escena 66 px después del salto (medido a 1280×690).
+     * Durante medio segundo se vuelve a apuntar cada cuadro, salvo que el lector ya se haya movido.
+     */
+    const hasta = performance.now() + 500
+    let cuadro = 0
+    let soltar = false
+    const soltarYa = () => { soltar = true }
+    el.addEventListener('wheel', soltarYa, { passive: true })
+    el.addEventListener('touchstart', soltarYa, { passive: true })
+    document.addEventListener('keydown', soltarYa)
+    const quitar = () => {
+      cancelAnimationFrame(cuadro)
+      el.removeEventListener('wheel', soltarYa)
+      el.removeEventListener('touchstart', soltarYa)
+      document.removeEventListener('keydown', soltarYa)
+    }
+    const apuntar = () => {
+      if (soltar || performance.now() > hasta) { quitar(); return }
+      const y = inicioDe(el, destino)
+      if (Math.abs(el.scrollTop - y) > 1) el.scrollTo({ top: y })
+      cuadro = requestAnimationFrame(apuntar)
+    }
+    cuadro = requestAnimationFrame(apuntar)
+    return quitar
   }, [vista.quieta])
 
   useEffect(() => {
@@ -361,7 +397,13 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
        */
       const teclas: Record<string, number> = { PageDown: 1, PageUp: -1, ArrowDown: 1, ArrowUp: -1 }
       const sentido = teclas[e.key]
-      if (sentido && capa.current) {
+      /*
+       * **En la vista quieta el teclado es del navegador.** Es una página que baja: `PageDown`,
+       * `Espacio`, las flechas, `Inicio` y `Fin` hacen lo de siempre sobre el contenedor de la capa
+       * (el foco está adentro, así que es él el que se desplaza). Interceptarlas solo serviría para
+       * imitar peor lo que el navegador ya hace.
+       */
+      if (sentido && capa.current && !vistaRef.current.quieta) {
         const activo = document.activeElement
         // Un campo o un control se queda con sus flechas: ahí significan otra cosa.
         const enControl = activo instanceof HTMLElement &&
@@ -602,6 +644,11 @@ export function Portada ({ raiz, titulo, children }: {
     >
       <div className="escena sticky flex flex-col items-center gap-6 px-4 py-6 text-center sm:px-6">
         {children}
+        {/* **En la vista quieta no hay invitación.** Es una página: que sigue abajo se ve, y la
+            cuchara que baja y vuelve es justo el movimiento que esta vista no tiene. Sin el ícono,
+            la cuchara que viaja desde el menú no tiene dónde posarse y `Transicion` termina sin
+            dividirla. */}
+        {!vista?.quieta && (
         <button
           type="button"
           onClick={avanzar}
@@ -615,13 +662,14 @@ export function Portada ({ raiz, titulo, children }: {
           </span>
           <CucharaPortada />
         </button>
+        )}
         {/* El mismo interruptor de la barra, a la vista antes de empezar: quien abre la historia es
             quien más necesita saber que hay otra manera de leerla. */}
         {vista && (
           <button
             type="button"
             onClick={() => { vista.cambiar() }}
-            className="interruptor-vista -mt-4 mb-2 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark"
+            className={`interruptor-vista ${vista.quieta ? '' : '-mt-4 '}mb-2 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark`}
           >
             {vista.quieta ? t('verAnimada') : t('verQuieta')}
           </button>
@@ -712,9 +760,12 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
   }, [raiz])
 
   // Montada sobre la escena, la sección toca la banda antes de verse: se anuncia recién cruzada.
+  // En la vista quieta no va montada y mide menos de media pantalla, así que nunca estaría a la vez
+  // cruzada y en la banda: ahí se anuncia cuando la cruza la banda, como una escena.
+  const quieta = useContext(ContextoVista)?.quieta ?? false
   useEffect(() => {
-    informar?.({ indice, titulo, enVista: enVista && cruzada })
-  }, [informar, indice, titulo, enVista, cruzada])
+    informar?.({ indice, titulo, enVista: enVista && (cruzada || quieta) })
+  }, [informar, indice, titulo, enVista, cruzada, quieta])
 
   return (
     // El alto de la capa va en la sección y no en la escena: su parada la deja en el borde del
@@ -754,8 +805,9 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
  * se copian, se buscan y las lee un lector de pantalla. En pantalla ancha no hace falta y el
  * párrafo va entero, encendiéndose por frase.
  *
- * Con `prefers-reduced-motion` el párrafo va entero también en el teléfono: quien pide menos
- * movimiento ve todo, no una versión recortada.
+ * En la vista quieta (`data-vista="quieta"`, por omisión con `prefers-reduced-motion`) el párrafo
+ * va entero también en el teléfono, sin pista, sin pegarse y sin dos columnas: la escena es una
+ * sección de un artículo que baja (ver `index.css`).
  */
 export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota, medidas, recta = false, raiz, dosColumnas = false }: {
   /** Qué número de escena es, la clave con que se registra en la capa. Va explícito y no contado solo: las
@@ -774,7 +826,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
   frases: React.ReactNode[]
   /**
    * La figura del paso. `reducido` avisa que se está mostrando el relato entero de una vez
-   * (`prefers-reduced-motion`), y una escena que **cambia de figura** entre pasos tiene que
+   * (la vista quieta), y una escena que **cambia de figura** entre pasos tiene que
    * mostrarlas todas ahí: si no, la mitad del texto habla de algo que no está dibujado.
    */
   figura: (activo: number, reducido: boolean) => React.ReactNode
@@ -915,7 +967,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
         ref={escena}
         // `.escena` usa el alto de la capa (heredado de la sección) para su `min-height`, que es lo
         // que le da a `justify-center` espacio que repartir (ver `index.css`).
-        className={`escena${dosColumnas ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''}${corre ? ' texto-corre' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
+        className={`escena${dosColumnas && !reducido ? ' en-columnas' : ''}${sinFigura ? ' sin-figura' : ''}${corre ? ' texto-corre' : ''} sticky flex flex-col justify-center gap-6 px-4 pb-6 pt-6 sm:px-6`}
       >
         {/* El titular y la frase son la misma voz, así que viajan juntos: en escritorio son una
             columna y la figura es la otra. En angosto el envoltorio es `display: contents` y no
@@ -953,7 +1005,9 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           // 21 px al aparecer la leyenda de pendientes, y eso movía el titular y la frase. El
           // mínimo es el mayor alto que este bloque ya tuvo **en este ancho**, así que no hay
           // ningún número escrito a mano y se rehace solo al rotar el teléfono.
-          style={altoFigura > 0 ? { minHeight: altoFigura } : undefined}
+          // Sin pasos (vista quieta) no hay entre qué encogerse, y el mayor alto guardado en la
+          // animada abriría un hueco bajo la figura.
+          style={altoFigura > 0 && !reducido ? { minHeight: altoFigura } : undefined}
         >
           {cabecera?.(activo)}
           {dibujo}
@@ -967,7 +1021,8 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
               etiqueta={t('metodoFigura')}
               titulo={t('metodoFigura')}
               className="text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark"
-              tabIndex={enVista ? undefined : -1}
+              // En la vista quieta todo está a la vista, y todo se tabula.
+              tabIndex={enVista || reducido ? undefined : -1}
             >
               <CuerpoMetodo
                 nota={typeof nota === 'function' ? nota(activo, reducido) : nota}
@@ -1005,9 +1060,9 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
  * **La comparten la escena y el cierre**, y por eso es un componente: la geometría de abajo costó
  * dos errores medidos, y dos copias se desincronizan a la primera corrección.
  *
- * **Con movimiento reducido no se dibuja.** La pista existe para medir el scroll que enciende los
- * pasos, y con `prefers-reduced-motion` no hay pasos que encender: la escena se muestra entera
- * desde el primer píxel. Dejarla igual le cobraba al lector el costo de una animación que pidió no
+ * **En la vista quieta no se dibuja.** La pista existe para medir el scroll que enciende los
+ * pasos, y en esa vista no hay pasos que encender: la escena se muestra entera desde el primer
+ * píxel. Dejarla igual le cobraba al lector el costo de una animación que pidió no
  * ver: medido el 08-09-2026, diecisiete tramos y unos 18.000 px de scroll sin nada nuevo. Ahora
  * cada escena cuesta su propio alto.
  */
@@ -1225,8 +1280,7 @@ export function Cierre ({ raiz, titulo, frases }: {
   // Mismo cálculo que el teclado de la capa: contra el contenedor, nunca con `offsetTop`.
   const irA = (destino: Element | null | undefined) => {
     if (!raiz || !destino) return
-    const arriba = raiz.getBoundingClientRect().top - raiz.scrollTop
-    raiz.scrollTo({ top: destino.getBoundingClientRect().top - arriba, behavior: reducido ? 'auto' : 'smooth' })
+    raiz.scrollTo({ top: inicioDe(raiz, destino), behavior: reducido ? 'auto' : 'smooth' })
   }
 
   // Los titulares se escriben sin punto final porque van de encabezado; acá son oraciones. En chino

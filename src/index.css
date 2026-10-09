@@ -536,20 +536,191 @@ html[data-cuchara-viaja~='siguiente'] .flechas-recorrido button:last-child svg {
 
 }
 
-/* **Lo que sigue es de la vista quieta, no del ajuste del sistema** (`data-vista` en la capa; ver
-   `usePreferenciaVista`): el lector puede elegir la otra.
-
-   Sin pasos, la escena entre dos pausas no tiene tiempo quieto: la pausa siguiente la tapa apenas
-   llega, y solo se lee mientras sube. Con la subida corta serían 0,4 de pantalla; acá sigue
-   subiendo una entera y la frase de la pausa se va con ella, como antes. `!important` porque la
-   variable llega en línea desde `CapaRecorrido`. */
-.capa-recorrido[data-vista="quieta"] {
-  --subida-tras-pausa: 1 !important;
+/*
+ * **La vista quieta es un artículo** (borrador A, 08-10-2026): la historia se lee como una página
+ * que baja, sin nada pegado ni nada que tape nada. Todo cuelga de `data-vista="quieta"` en la capa
+ * (ver `usePreferenciaVista`), no de `prefers-reduced-motion`: el lector puede elegir la otra, y la
+ * animada no se toca.
+ *
+ * Hasta acá esta vista era la misma capa pegada sin pista, y lo que medía más que la pantalla
+ * quedaba bajo el borde con la pausa encima (58 piezas en 10 pantallas, hasta +257 px en 360×640).
+ * Ahora: contenido en flujo, sin `sticky`, sin alto de pantalla en ninguna sección, y la geometría
+ * de las pausas (margen negativo, `::after`, `data-cruzada`, `data-salida`) neutralizada. Los
+ * selectores repiten los de la animada con la capa delante: tienen que ganarles en especificidad.
+ */
+.capa-recorrido[data-vista="quieta"] .escena {
+  position: static;
+  min-height: 0;
 }
 
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido,
+.capa-recorrido[data-vista="quieta"] .portada-recorrido {
+  min-height: 0;
+}
+
+/* El enlace del cierre y el cambio de vista llevan a la sección menos este margen: el titular queda
+   bajo la barra y no detrás (`inicioDe` en `CapaRecorrido`). */
+.capa-recorrido[data-vista="quieta"] .escena-recorrido,
+.capa-recorrido[data-vista="quieta"] .cierre-recorrido {
+  scroll-margin-top: var(--barra-capa, 2.75rem);
+}
+
+/* Las pausas, sin montar: ni la cola de la escena, ni el margen negativo, ni el fundido. */
+.capa-recorrido[data-vista="quieta"] .escena-recorrido:has(+ .respiro-recorrido)::after {
+  content: none;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido,
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido + .escena-recorrido {
+  z-index: auto;
+  margin-top: 0;
+  min-height: 0;
+  pointer-events: auto;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido > .escena,
+.capa-recorrido[data-vista="quieta"] .escena-recorrido:has(+ .respiro-recorrido[data-cruzada]) > .escena,
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido + .escena-recorrido > .escena,
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido .bloque-texto,
 .capa-recorrido[data-vista="quieta"] .escena-recorrido + .respiro-recorrido[data-cruzada][data-salida] .bloque-texto {
   opacity: 1;
   transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition: none;
+}
+
+/* **El aire separa, no la pantalla.** Cada escena con 3 rem arriba y abajo (más el relleno de la
+   escena), un filete entre dos escenas seguidas, y la pausa entre dos filetes cortos. */
+.capa-recorrido[data-vista="quieta"] .escena-recorrido {
+  padding-block: 1.5rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido > .escena {
+  gap: 1rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido + .escena-recorrido .bloque-encabezado {
+  border-top: 1px solid theme("colors.gray.200");
+  padding-top: 2.5rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido > .escena {
+  padding-block: 2.5rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido > .escena::before,
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido > .escena::after {
+  content: "";
+  width: 3rem;
+  height: 1px;
+  background: theme("colors.gray.300");
+}
+
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido > .escena::before {
+  margin-bottom: 2rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido > .escena::after {
+  margin-top: 2rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .respiro-recorrido .bloque-texto {
+  font-size: 20px;
+  line-height: 1.45;
+  max-width: 32rem;
+}
+
+/* La portada, compacta: el logo y la pregunta, sin la invitación (que no se dibuja). */
+.capa-recorrido[data-vista="quieta"] .portada-recorrido > .escena {
+  padding-top: 2.5rem;
+  padding-bottom: 1rem;
+}
+
+/* El titular de la escena es el de una sección de artículo, y la bajada se lee sin entornar. */
+.capa-recorrido[data-vista="quieta"] .escena-recorrido h3 {
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.capa-recorrido[data-vista="quieta"] .escena-recorrido .bajada-escena {
+  font-size: 14px;
+  margin-top: 0.375rem;
+}
+
+/* Las filas de figura con su alto de siempre: la vista quieta no tiene que caber en una pantalla. */
+@media (max-height: 700px) {
+  .capa-recorrido[data-vista="quieta"] .escena {
+    --alto-fila-divergente-ancho: initial;
+    gap: 1.5rem;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido > .escena,
+  .capa-recorrido[data-vista="quieta"] .cierre-recorrido > .escena {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .escena .divergente {
+    row-gap: normal;
+  }
+}
+
+/* El cierre, después de un filete, con todas sus frases y la salida. */
+.capa-recorrido[data-vista="quieta"] .cierre-recorrido {
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+}
+
+.capa-recorrido[data-vista="quieta"] .cierre-recorrido .bloque-cierre {
+  border-top: 1px solid theme("colors.gray.200");
+  padding-top: 2.5rem;
+}
+
+/* Escritorio: una columna de lectura (sin la grilla de dos, que `Escena` no pone en esta vista) y
+   la figura un poco más ancha que el texto. */
+@media (min-width: 900px) {
+
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido h3 {
+    font-size: 27px;
+    line-height: 1.2;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido .bajada-escena {
+    font-size: 16px;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido .bloque-texto > p {
+    font-size: 20px;
+    line-height: 1.6;
+  }
+
+  /* «Estados Unidos» entero, como en las dos columnas. */
+  .capa-recorrido[data-vista="quieta"] .escena {
+    --ancho-etiqueta-ancho: 9.5rem;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .respiro-recorrido .bloque-texto {
+    font-size: 26px;
+    line-height: 1.35;
+    max-width: 38rem;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .portada-recorrido .pregunta-portada {
+    font-size: 48px;
+  }
+
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido {
+    padding-block: 2rem;
+  }
+}
+
+/* La figura algo más ancha que el texto, salvo en ventanas bajas: las de SVG crecen en alto con el
+   ancho, y a 48 rem la de ideología de «La mirada» mide 598 px, más que los 556 útiles de 1280×600. */
+@media (min-width: 900px) and (min-height: 701px) {
+  .capa-recorrido[data-vista="quieta"] .escena-recorrido .bloque-figura {
+    max-width: 48rem;
+  }
 }
 
 /* Todas las frases en la misma celda de una grilla de una sola celda: el bloque mide lo que la
