@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ContextoVista, useConsulta, usePasoActivo, usePreferenciaVista } from '../nucleo/pasos'
 import { useTransicionHistoria } from '../historias/contextoTransicion'
 import { ContenidoTarjeta, TARJETA_MINI } from '../historias/TarjetaHistoria'
@@ -175,6 +175,64 @@ const Registro = createContext<((estado: EstadoEscena) => void) | null>(null)
 const Avance = createContext<((sentido: number) => boolean) | null>(null)
 
 /**
+ * **La vista quieta se lee de a una pieza: diapositivas** (portada, cada escena, cada pausa y el
+ * cierre, en el orden en que la historia las escribe). Las piezas siguen montadas, porque registran
+ * su titular y la capa no las conoce de antemano, pero solo la actual se dibuja: las demás van con
+ * `display: none`, fuera de la pantalla, del tabulador y del árbol de accesibilidad (`index.css`).
+ *
+ * El contexto lo publica la capa **solo en la vista quieta** (en la animada vale `null`), para que
+ * la portada y el cierre cambien de diapositiva en vez de hacer scroll.
+ */
+interface Diapositivas {
+  /** Una diapositiva más o una menos. */
+  mover: (sentido: number) => void
+  /** La diapositiva que contiene a `el` (una escena por su `#escena-N`, por ejemplo). */
+  irAElemento: (el: Element | null | undefined) => void
+  /** Una diapositiva por su número de orden. */
+  irA: (k: number) => void
+}
+const ContextoDiapositivas = createContext<Diapositivas | null>(null)
+
+/** Las piezas de la historia: las secciones hijas directas de la capa, en orden. */
+function piezasDe (capa: HTMLElement) {
+  return [...capa.querySelectorAll<HTMLElement>(':scope > section')]
+}
+
+/**
+ * **Que la diapositiva quepa en la pantalla, achicando solo las filas de la figura.**
+ *
+ * Con la escala en 1 se mide el contenido contra el alto de la diapositiva (la capa menos la barra
+ * y la botonera, que es lo que mide la sección en la vista quieta). Si sobra, el exceso se reparte
+ * entre las filas marcadas con `data-fila-figura`, que son lo único que se puede achicar sin sacar
+ * información: `escala = (R − exceso) / R`, con `R` la suma de sus altos. Cada fila tiene piso
+ * (`escalaFila`), así que puede no alcanzar: se vuelve a medir y se corrige, tres veces como
+ * mucho. Lo que siga sin caber se lee con el scroll de la diapositiva, nunca cortado.
+ *
+ * Devuelve la escala aplicada; la deja además en `data-escala` para quien mide.
+ */
+function ajustarDiapositiva (seccion: HTMLElement) {
+  const escena = seccion.querySelector<HTMLElement>(':scope > .escena')
+  seccion.style.setProperty('--escala-filas', '1')
+  let escala = 1
+  if (escena) {
+    const util = seccion.clientHeight
+    for (let vuelta = 0; vuelta < 3; vuelta++) {
+      const exceso = escena.offsetHeight - util
+      if (exceso <= 0) break
+      const filas = [...escena.querySelectorAll<HTMLElement>('[data-fila-figura]')]
+      const r = filas.reduce((suma, f) => suma + f.getBoundingClientRect().height, 0)
+      if (r <= 0) break
+      const nueva = Math.max(0, escala * (r - exceso) / r)
+      if (Math.abs(nueva - escala) < 0.001) break
+      escala = nueva
+      seccion.style.setProperty('--escala-filas', escala.toFixed(4))
+    }
+  }
+  seccion.dataset.escala = escala.toFixed(3)
+  return escala
+}
+
+/**
  * Si un elemento puede recibir el foco de verdad, no solo hacer juego con el selector.
  *
  * `checkVisibility()` es lo correcto donde exista; el respaldo es contar cajas, que da cero con
@@ -230,6 +288,51 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
   vistaRef.current = vista
 
   /*
+   * **La diapositiva de la vista quieta**, por su número de orden entre las secciones de la capa.
+   * Se lee de `?escena=` al abrir, así que recargar la conserva; la dirección se reemplaza y no se
+   * apila (ver el efecto de abajo). `total` lo cuenta la capa en el DOM, porque las piezas son hijas
+   * del `children` de cada historia y algunas aparecen recién con los datos.
+   */
+  const [params, setParams] = useSearchParams()
+  const [diapositiva, setDiapositiva] = useState(() => {
+    const n = Number(params.get('escena'))
+    return Number.isInteger(n) && n > 0 ? n : 0
+  })
+  const [total, setTotal] = useState(0)
+  const [versionPiezas, setVersionPiezas] = useState(0)
+  const enPantalla = total > 0 ? Math.min(diapositiva, total - 1) : diapositiva
+  const enPantallaRef = useRef(enPantalla)
+  enPantallaRef.current = enPantalla
+  const totalRef = useRef(total)
+  totalRef.current = total
+  // El titular de la pieza a la vista (su `data-pieza`), para el anuncio; y si queda contenido bajo
+  // el borde de la diapositiva, para el degradado que lo avisa.
+  const [piezaVisible, setPiezaVisible] = useState(0)
+  const [hayMas, setHayMas] = useState(false)
+  // Si el último cambio de diapositiva lo pidió el lector: solo entonces se revisa dónde quedó el
+  // foco (ver el efecto que muestra la diapositiva).
+  const cambioPedido = useRef(false)
+  const irADiapositiva = useCallback((k: number) => {
+    const n = totalRef.current
+    const destino = Math.max(0, n > 0 ? Math.min(k, n - 1) : k)
+    if (destino === enPantallaRef.current) return false
+    cambioPedido.current = true
+    setDiapositiva(destino)
+    return true
+  }, [])
+  const moverDiapositiva = useCallback((sentido: number) => irADiapositiva(enPantallaRef.current + sentido), [irADiapositiva])
+  const diapositivas = useMemo<Diapositivas>(() => ({
+    mover: (sentido) => { moverDiapositiva(sentido) },
+    irA: (k) => { irADiapositiva(k) },
+    irAElemento: (el) => {
+      const capaEl = capa.current
+      if (!capaEl || !el) return
+      const k = piezasDe(capaEl).findIndex((s) => s === el || s.contains(el))
+      if (k >= 0) irADiapositiva(k)
+    },
+  }), [irADiapositiva, moverDiapositiva])
+
+  /*
    * Ir a la parada siguiente o anterior (ver `paradasDeCambio`). La comparten el teclado y las
    * flechas de la pantalla, así que llevan exactamente al mismo lugar.
    *
@@ -248,19 +351,8 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     // Quien pide menos movimiento no quiere ver el recorrido pasar volando, en ninguna de las dos
     // vistas. Y en la quieta no hay pasos.
     const { quieta: quieto, sistema } = vistaRef.current
-    /*
-     * **En la vista quieta no hay paradas que valgan: se avanza una pantalla.** Sin pista no
-     * hay pasos, y las únicas paradas son las pausas, que en ese modo comparten tramo de scroll
-     * con la escena que las precede (la escena se lee mientras sube). Ir de parada en parada
-     * saltaba de pausa en pausa sin parar en ninguna escena. Una pantalla menos un poco es lo que
-     * hace `PageDown`, que es lo que la tecla ya hace en este modo.
-     */
-    if (quieto) {
-      const antes = el.scrollTop
-      el.scrollBy({ top: sentido * 0.85 * el.clientHeight, behavior: 'auto' })
-      destino.current = null
-      return el.scrollTop !== antes
-    }
+    // **En la vista quieta no hay scroll de la capa: se cambia de diapositiva.**
+    if (quieto) return moverDiapositiva(sentido)
     const d = destino.current
     const pendiente = d !== null && performance.now() - d.t < 1200 && Math.abs(el.scrollTop - d.y) > 4
     const y = paradaVecina(el, pendiente ? d.y : el.scrollTop, sentido)
@@ -268,7 +360,7 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     destino.current = { y, t: performance.now() }
     el.scrollTo({ top: y, behavior: sistema ? 'auto' : 'smooth' })
     return true
-  }, [])
+  }, [moverDiapositiva])
   useEffect(() => {
     const el = raiz
     if (!el) return
@@ -298,14 +390,18 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     () => Object.values(escenas).sort((a, b) => a.indice - b.indice),
     [escenas],
   )
-  // La pieza en vista, y si ninguna lo está todavía (primer cuadro), la portada.
-  const actual = lista.find((e) => e.enVista) ?? escenas[0] ?? lista[0]
+  // La pieza en vista, y si ninguna lo está todavía (primer cuadro), la portada. En la vista quieta
+  // no se adivina por el scroll: es la diapositiva a la vista.
+  const actual = vista.quieta
+    ? (escenas[piezaVisible] ?? escenas[0] ?? lista[0])
+    : (lista.find((e) => e.enVista) ?? escenas[0] ?? lista[0])
 
   /*
-   * **Al cambiar de vista, el lector sigue en la escena que estaba leyendo.** Las dos vistas miden
-   * distinto, así que el scroll viejo no dice nada en la nueva: se guarda el índice de la escena
-   * en vista y, ya dibujada la otra, se vuelve a su comienzo. Una pausa o la portada vuelven al
-   * principio; el cierre, a su sección.
+   * **Al cambiar de vista, el lector sigue en la pieza que estaba leyendo.** Las dos vistas miden
+   * distinto, así que el scroll viejo no dice nada en la nueva: se guarda qué pieza se leía (su
+   * `data-pieza`: 0 la portada, N la escena N, negativo una pausa, −99 el cierre) y, ya dibujada
+   * la otra vista, se va a ella. En la animada, al comienzo de su sección; en la quieta, a su
+   * diapositiva.
    */
   const volverA = useRef<number | null>(null)
   const cambiarVista = () => {
@@ -313,17 +409,210 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
     vista.cambiar()
   }
   useLayoutEffect(() => {
-    const indice = volverA.current
+    const pieza = volverA.current
     const el = capa.current
     volverA.current = null
-    if (indice === null || !el) return
-    const destino = indice > 0
-      ? el.querySelector(`#escena-${indice}`)
-      : indice === -99 ? el.querySelector('.cierre-recorrido') : null
-    if (!destino) { el.scrollTo({ top: 0 }); return }
+    if (!el) return
+    // La capa no tiene scroll en la vista quieta: el que traía de la animada no vale.
+    if (vista.quieta) el.scrollTop = 0
+    if (pieza === null) return
+    const destino = el.querySelector<HTMLElement>(`:scope > section[data-pieza="${pieza}"]`)
+    if (vista.quieta) {
+      const k = destino ? piezasDe(el).indexOf(destino) : 0
+      setDiapositiva(Math.max(0, k))
+      return
+    }
+    if (!destino || pieza === 0) { el.scrollTo({ top: 0 }); return }
     const arriba = el.getBoundingClientRect().top - el.scrollTop
     el.scrollTo({ top: Math.max(0, destino.getBoundingClientRect().top - arriba) })
   }, [vista.quieta])
+
+  /*
+   * Las piezas se cuentan en el DOM y se vuelven a contar si cambian: una historia agrega escenas
+   * cuando llegan sus datos (`hayLugar` en «China cotidiana»).
+   */
+  useLayoutEffect(() => {
+    const el = raiz
+    if (!el) return
+    const contar = () => {
+      setTotal(piezasDe(el).length)
+      setVersionPiezas((v) => v + 1)
+    }
+    contar()
+    const observador = new MutationObserver(contar)
+    observador.observe(el, { childList: true })
+    return () => { observador.disconnect() }
+  }, [raiz])
+
+  /*
+   * **Mostrar la diapositiva**, antes de pintar: `data-actual` en la sección que toca (el CSS
+   * esconde las demás), ajustar sus filas a la pantalla y, si el cambio lo pidió el lector, revisar
+   * el foco. En la animada no queda rastro: ni el atributo, ni la escala, ni el `tabindex`.
+   */
+  useLayoutEffect(() => {
+    const el = raiz
+    if (!el) return
+    const lista = piezasDe(el)
+    lista.forEach((seccion, k) => {
+      if (vista.quieta && k === enPantalla) seccion.setAttribute('data-actual', '')
+      else seccion.removeAttribute('data-actual')
+      if (vista.quieta) {
+        seccion.tabIndex = -1
+      } else {
+        seccion.removeAttribute('tabindex')
+        seccion.style.removeProperty('--escala-filas')
+        delete seccion.dataset.escala
+      }
+    })
+    if (!vista.quieta) { setHayMas(false); return }
+    const seccion = lista[enPantalla]
+    if (!seccion) return
+    seccion.scrollTop = 0
+    ajustarDiapositiva(seccion)
+    setPiezaVisible(Number(seccion.dataset.pieza ?? 0))
+    setHayMas(seccion.scrollHeight - seccion.scrollTop - seccion.clientHeight > 2)
+    /*
+     * **El foco no se roba.** Si el lector cambió de diapositiva con «Siguiente», el foco se queda
+     * en el botón: es donde va a volver a apretar. Solo se mueve si quedó donde no se ve (dentro de
+     * la diapositiva que se fue, o en un botón que se apagó al llegar al final): a la diapositiva
+     * nueva, que es lo que hay que leer.
+     */
+    if (cambioPedido.current) {
+      cambioPedido.current = false
+      const activo = document.activeElement
+      const perdido = !(activo instanceof HTMLElement) || activo === document.body ||
+        !el.contains(activo) || !visible(activo) || (activo instanceof HTMLButtonElement && activo.disabled)
+      if (perdido) seccion.focus({ preventScroll: true })
+    }
+  }, [raiz, vista.quieta, enPantalla, versionPiezas])
+
+  /*
+   * Rehacer el ajuste si cambia el tamaño de la diapositiva (la ventana) o el de su contenido (una
+   * figura que se termina de medir, la fuente que llega). Un cuadro después y no dentro del
+   * observador: escribir la escala ahí mismo le cambia el tamaño a lo observado en el mismo ciclo.
+   * Y el degradado de «hay más» se actualiza con el scroll de la diapositiva.
+   */
+  useEffect(() => {
+    const el = raiz
+    if (!el || !vista.quieta) return
+    const seccion = piezasDe(el)[enPantalla]
+    const escena = seccion?.querySelector<HTMLElement>(':scope > .escena')
+    if (!seccion) return
+    const mas = () => { setHayMas(seccion.scrollHeight - seccion.scrollTop - seccion.clientHeight > 2) }
+    let cuadro = 0
+    const rehacer = () => {
+      if (cuadro) return
+      cuadro = requestAnimationFrame(() => { cuadro = 0; ajustarDiapositiva(seccion); mas() })
+    }
+    const observador = new ResizeObserver(rehacer)
+    observador.observe(seccion)
+    if (escena) observador.observe(escena)
+    seccion.addEventListener('scroll', mas, { passive: true })
+    return () => {
+      observador.disconnect()
+      cancelAnimationFrame(cuadro)
+      seccion.removeEventListener('scroll', mas)
+    }
+  }, [raiz, vista.quieta, enPantalla, versionPiezas])
+
+  /*
+   * **La dirección dice la diapositiva** (`?escena=n`, sin el parámetro en la portada), para que
+   * recargar la conserve y se pueda enlazar. Se **reemplaza** la entrada: Atrás sigue cerrando la
+   * historia, como en la animada, y no recorre diapositivas una por una. En la animada el parámetro
+   * no significa nada y se quita.
+   */
+  useEffect(() => {
+    if (vista.quieta && total === 0) return
+    const quiere = vista.quieta && enPantalla > 0 ? String(enPantalla) : null
+    if (params.get('escena') === quiere) return
+    setParams((previos) => {
+      const nuevos = new URLSearchParams(previos)
+      if (quiere === null) nuevos.delete('escena')
+      else nuevos.set('escena', quiere)
+      return nuevos
+    }, { replace: true })
+  }, [vista.quieta, enPantalla, total, params, setParams])
+
+  /*
+   * **Deslizar de lado cambia de diapositiva** en la vista quieta, sin animación. Con umbral: 50 px
+   * y más horizontal que vertical, para que el scroll de una diapositiva larga no la cambie.
+   */
+  useEffect(() => {
+    const el = raiz
+    if (!el || !vista.quieta) return
+    let inicio: { x: number, y: number } | null = null
+    const empezar = (e: TouchEvent) => {
+      inicio = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null
+    }
+    const terminar = (e: TouchEvent) => {
+      const t0 = inicio
+      inicio = null
+      const toque = e.changedTouches[0]
+      if (!t0 || !toque) return
+      const dx = toque.clientX - t0.x
+      const dy = toque.clientY - t0.y
+      if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy)) moverDiapositiva(dx < 0 ? 1 : -1)
+    }
+    const cancelar = () => { inicio = null }
+    el.addEventListener('touchstart', empezar, { passive: true })
+    el.addEventListener('touchend', terminar, { passive: true })
+    el.addEventListener('touchcancel', cancelar, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', empezar)
+      el.removeEventListener('touchend', terminar)
+      el.removeEventListener('touchcancel', cancelar)
+    }
+  }, [raiz, vista.quieta, moverDiapositiva])
+
+  /*
+   * **El teclado en la vista quieta: una diapositiva por tecla.** Derecha e izquierda cambian
+   * siempre. Abajo, `PageDown` y la barra espaciadora avanzan, y arriba, `PageUp` y
+   * `Shift+Espacio` retroceden, **salvo que la diapositiva tenga más que leer en ese sentido**: ahí
+   * mueven su scroll, como en cualquier página, y recién en el borde cambian. Sin eso, quien lee
+   * con teclado no tendría cómo ver lo que no cupo, y saltarlo es cortarlo. `Home` y `End`, a la
+   * primera y a la última. Un campo de texto se queda con sus teclas, y un botón o un enlace con el
+   * espacio, que lo aprieta.
+   *
+   * Devuelve si la tecla era suya.
+   */
+  const teclaDiapositiva = useCallback((e: KeyboardEvent, capaEl: HTMLElement) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return false
+    const activo = document.activeElement
+    if (activo instanceof HTMLElement && (['INPUT', 'SELECT', 'TEXTAREA'].includes(activo.tagName) || activo.isContentEditable)) return false
+    const espacio = e.key === ' ' || e.key === 'Spacebar'
+    if (espacio && activo instanceof HTMLElement && activo.closest('button, a[href], summary')) return false
+    const seccion = piezasDe(capaEl)[enPantallaRef.current]
+    const desplazar = (sentido: number, cuanto: number) => {
+      if (!seccion) return false
+      const queda = sentido > 0
+        ? seccion.scrollHeight - seccion.clientHeight - seccion.scrollTop
+        : seccion.scrollTop
+      if (queda <= 2) return false
+      seccion.scrollBy({ top: sentido * Math.min(queda, cuanto), behavior: 'auto' })
+      return true
+    }
+    const pantalla = (seccion?.clientHeight ?? 0) * 0.85
+    let sentido = 0
+    let cuanto = 0
+    switch (e.key) {
+      case 'ArrowRight': sentido = 1; break
+      case 'ArrowLeft': sentido = -1; break
+      case 'ArrowDown': sentido = 1; cuanto = 64; break
+      case 'ArrowUp': sentido = -1; cuanto = 64; break
+      case 'PageDown': sentido = 1; cuanto = pantalla; break
+      case 'PageUp': sentido = -1; cuanto = pantalla; break
+      case 'Home': e.preventDefault(); irADiapositiva(0); return true
+      case 'End': e.preventDefault(); irADiapositiva(Number.MAX_SAFE_INTEGER); return true
+      default:
+        if (!espacio) return false
+        sentido = e.shiftKey ? -1 : 1
+        cuanto = pantalla
+    }
+    e.preventDefault()
+    if (cuanto > 0 && desplazar(sentido, cuanto)) return true
+    moverDiapositiva(sentido)
+    return true
+  }, [irADiapositiva, moverDiapositiva])
 
   useEffect(() => {
     if (!abierta) return
@@ -344,6 +633,8 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
 
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { alCerrarRef.current(); return }
+
+      if (vistaRef.current.quieta && capa.current && teclaDiapositiva(e, capa.current)) return
 
       /*
        * **El teclado avanza de a un paso, no de a una pantalla.**
@@ -408,7 +699,7 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       window.scrollTo(0, desplazado)
       anterior?.focus()
     }
-  }, [abierta, irA])
+  }, [abierta, irA, teclaDiapositiva])
 
   // El alto real de la barra, publicado para que la escena se pegue justo debajo. Escrito a mano
   // en el CSS decía 2,5 rem y la barra mide 43 px: la escena quedaba 3 px más alta que el hueco
@@ -461,7 +752,7 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       <div ref={barra} className="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-2 backdrop-blur sm:px-6">
         {/* Cuánto falta: la tinta avanza con el scroll, sin rótulo (cómo se llama cada tramo es
             vocabulario nuestro) y sin cortes, ni en lo recorrido ni en lo que falta. */}
-        <BarraDeAvance avance={avance} />
+        <BarraDeAvance avance={vista.quieta ? (total > 1 ? enPantalla / (total - 1) : 0) : avance} />
 
         {/* El titular de lo que está en pantalla, para quien no ve la barra. `polite` y no
             `assertive`: avisa cuando el lector termina lo que estaba leyendo, no encima del scroll. */}
@@ -526,8 +817,38 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
 
       {/* El final lo pone la página con `Cierre`, que conoce los titulares de las escenas. */}
       <Registro.Provider value={informar}>
-        <Avance.Provider value={irA}>{children(raiz)}</Avance.Provider>
+        <Avance.Provider value={irA}>
+          <ContextoDiapositivas.Provider value={vista.quieta ? diapositivas : null}>
+            {children(raiz)}
+          </ContextoDiapositivas.Provider>
+        </Avance.Provider>
       </Registro.Provider>
+
+      {/* **Anterior y siguiente de la vista quieta**, abajo, en todos los anchos y con cualquier
+          puntero: es la única manera de avanzar con el mouse, y en el teléfono quedan bajo el
+          pulgar. Ocupan su propia franja (la capa es una columna, `index.css`), así que no tapan
+          nada: la diapositiva mide lo que queda. El degradado de arriba avisa que la diapositiva
+          sigue más abajo, mientras siga. */}
+      {vista.quieta && (
+        <nav className="botonera-diapositivas" aria-label={t('avance')}>
+          <div aria-hidden className="indicador-mas" hidden={!hayMas} />
+          <div className="botonera-diapositivas-fila">
+            {([['anterior', -1, 'izquierda', enPantalla <= 0], ['siguiente', 1, 'derecha', total > 0 && enPantalla >= total - 1]] as const).map(([nombre, sentido, hacia, apagada]) => (
+              <button
+                key={nombre}
+                type="button"
+                disabled={apagada}
+                onClick={() => { moverDiapositiva(sentido) }}
+                className={`presionable flex min-h-11 items-center gap-1 rounded-full border border-gray-300 bg-white py-1.5 text-sm font-medium text-brand-dark shadow-sm hover:border-brand-dark disabled:text-gray-400 disabled:shadow-none disabled:hover:border-gray-300 ${sentido < 0 ? 'pl-2 pr-4' : 'pl-4 pr-2'}`}
+              >
+                {sentido < 0 && <CucharaBoton hacia={hacia} />}
+                {t(nombre)}
+                {sentido > 0 && <CucharaBoton hacia={hacia} />}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
     </ContextoVista.Provider>
     </DatosMetodo.Provider>
@@ -561,6 +882,7 @@ export function Portada ({ raiz, titulo, children }: {
   const informar = useContext(Registro)
   const irA = useContext(Avance)
   const vista = useContext(ContextoVista)
+  const diapositivas = useContext(ContextoDiapositivas)
   const [enVista, setEnVista] = useState(true)
 
   useEffect(() => {
@@ -579,6 +901,8 @@ export function Portada ({ raiz, titulo, children }: {
   }, [informar, titulo, enVista])
 
   const avanzar = () => {
+    // En la vista quieta, la diapositiva siguiente: lo mismo que «Siguiente».
+    if (diapositivas) { diapositivas.mover(1); return }
     const nodo = seccion.current
     if (!raiz || !nodo) return
     // **Lo mismo que la flecha y que la tecla**, no el alto de esta sección: con el texto que
@@ -598,6 +922,7 @@ export function Portada ({ raiz, titulo, children }: {
     <section
       ref={seccion}
       className="portada-recorrido relative"
+      data-pieza={0}
       style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
     >
       <div className="escena sticky flex flex-col items-center gap-6 px-4 py-6 text-center sm:px-6">
@@ -609,9 +934,17 @@ export function Portada ({ raiz, titulo, children }: {
         >
           {/* El texto va según el puntero y no según el ancho: hay tablets anchas que se deslizan
               y portátiles angostos con mouse. Los dos van en el marcado y el CSS esconde uno. */}
+          {/* En la vista quieta no hay scroll al que invitar: se pasa a la siguiente, y la cuchara
+              apunta hacia allá (`.portada-recorrido` en la vista quieta, `index.css`). */}
           <span className="texto-invitar leading-snug">
-            <span className="texto-mouse">{t('invitarMouse')}</span>
-            <span className="texto-tactil">{t('invitarTactil')}</span>
+            {diapositivas
+              ? t('siguiente')
+              : (
+                <>
+                  <span className="texto-mouse">{t('invitarMouse')}</span>
+                  <span className="texto-tactil">{t('invitarTactil')}</span>
+                </>
+                )}
           </span>
           <CucharaPortada />
         </button>
@@ -723,6 +1056,7 @@ export function Respiro ({ raiz, indice = -1, titulo, children }: {
     <section
       ref={seccion}
       className="respiro-recorrido relative"
+      data-pieza={indice}
       data-cruzada={cruzada ? '' : undefined}
       data-salida={salida ? '' : undefined}
       style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
@@ -904,6 +1238,7 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
       ref={seccion}
       id={`escena-${indice}`}
       className="escena-recorrido relative"
+      data-pieza={indice}
       style={alto ? ({ '--alto-capa': `${alto}px` } as React.CSSProperties) : undefined}
     >
       {/* `top` y el alto viven en `.escena` (index.css), atados a la barra de la capa. El aire de
@@ -953,7 +1288,9 @@ export function Escena ({ indice, titulo, bajada, frases, figura, cabecera, nota
           // 21 px al aparecer la leyenda de pendientes, y eso movía el titular y la frase. El
           // mínimo es el mayor alto que este bloque ya tuvo **en este ancho**, así que no hay
           // ningún número escrito a mano y se rehace solo al rotar el teléfono.
-          style={altoFigura > 0 ? { minHeight: altoFigura } : undefined}
+          // En la vista quieta no hay pasos entre los que crecer, y el mínimo guardado le
+          // impediría al bloque achicarse cuando la diapositiva escala sus filas para caber.
+          style={altoFigura > 0 && !reducido ? { minHeight: altoFigura } : undefined}
         >
           {cabecera?.(activo)}
           {dibujo}
@@ -1201,6 +1538,7 @@ export function Cierre ({ raiz, titulo, frases }: {
   const seccion = useRef<HTMLElement | null>(null)
   const escena = useRef<HTMLDivElement | null>(null)
   const informar = useContext(Registro)
+  const diapositivas = useContext(ContextoDiapositivas)
   const [enVista, setEnVista] = useState(false)
 
   useEffect(() => {
@@ -1224,6 +1562,8 @@ export function Cierre ({ raiz, titulo, frases }: {
 
   // Mismo cálculo que el teclado de la capa: contra el contenedor, nunca con `offsetTop`.
   const irA = (destino: Element | null | undefined) => {
+    // En la vista quieta, la diapositiva de esa escena.
+    if (diapositivas) { diapositivas.irAElemento(destino); return }
     if (!raiz || !destino) return
     const arriba = raiz.getBoundingClientRect().top - raiz.scrollTop
     raiz.scrollTo({ top: destino.getBoundingClientRect().top - arriba, behavior: reducido ? 'auto' : 'smooth' })
@@ -1235,7 +1575,7 @@ export function Cierre ({ raiz, titulo, frases }: {
   const salidaVisible = reducido || activo >= frases.length
 
   return (
-    <section ref={seccion} className="cierre-recorrido relative">
+    <section ref={seccion} className="cierre-recorrido relative" data-pieza={-99}>
       <div
         ref={escena}
         className="escena sticky flex flex-col justify-center px-4 py-6 sm:px-6"
@@ -1306,7 +1646,10 @@ export function Cierre ({ raiz, titulo, frases }: {
               </BotonMetodo>
               <button
                 type="button"
-                onClick={() => { raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' }) }}
+                onClick={() => {
+                  if (diapositivas) { diapositivas.irA(0); return }
+                  raiz?.scrollTo({ top: 0, behavior: reducido ? 'auto' : 'smooth' })
+                }}
                 className="underline underline-offset-2 hover:text-brand-dark"
               >
                 {/* Sin espacio antes: el subrayado lo tomaría solo, y la caja girada del ícono ya
