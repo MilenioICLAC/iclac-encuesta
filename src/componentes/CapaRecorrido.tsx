@@ -423,8 +423,32 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
       return
     }
     if (!destino || pieza === 0) { el.scrollTo({ top: 0 }); return }
-    const arriba = el.getBoundingClientRect().top - el.scrollTop
-    el.scrollTo({ top: Math.max(0, destino.getBoundingClientRect().top - arriba) })
+    /*
+     * **Y se sostiene mientras la animada termina de medirse.** La pista de cada escena toma su alto
+     * de la escena un cuadro después (`useAltoDe`), y eso corre todo lo que viene abajo: medido el
+     * 08-10-2026, la escena 2 de «La mirada» quedaba 646 px más arriba a 1280×690. Mientras cambien
+     * de tamaño las secciones se vuelve a ir al comienzo de la pieza, hasta que el lector mueva algo
+     * o pase un segundo.
+     */
+    const ir = () => {
+      const arriba = el.getBoundingClientRect().top - el.scrollTop
+      el.scrollTo({ top: Math.max(0, destino.getBoundingClientRect().top - arriba) })
+    }
+    ir()
+    const observador = new ResizeObserver(ir)
+    piezasDe(el).forEach((s) => { observador.observe(s) })
+    const soltar = () => {
+      observador.disconnect()
+      clearTimeout(plazo)
+      el.removeEventListener('wheel', soltar)
+      el.removeEventListener('touchstart', soltar)
+      document.removeEventListener('keydown', soltar)
+    }
+    const plazo = setTimeout(soltar, 1000)
+    el.addEventListener('wheel', soltar, { passive: true })
+    el.addEventListener('touchstart', soltar, { passive: true })
+    document.addEventListener('keydown', soltar)
+    return soltar
   }, [vista.quieta])
 
   /*
