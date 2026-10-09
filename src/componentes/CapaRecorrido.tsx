@@ -404,6 +404,16 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
    * diapositiva.
    */
   const volverA = useRef<number | null>(null)
+  const interruptor = useRef<HTMLButtonElement | null>(null)
+  /*
+   * **El foco no se pierde al cambiar de vista.** Las piezas se vuelven a montar (ver el `key` de
+   * más abajo), así que el interruptor de la portada, que tenía el foco, ya no existe y el foco cae
+   * en `body`, fuera de la trampa. Va al de la barra, que es el mismo control y no se desmonta.
+   */
+  useLayoutEffect(() => {
+    const el = capa.current
+    if (el && !el.contains(document.activeElement)) interruptor.current?.focus()
+  }, [vista.quieta])
   const cambiarVista = () => {
     volverA.current = actual?.indice ?? 0
     vista.cambiar()
@@ -798,6 +808,7 @@ export default function CapaRecorrido ({ abierta, encuesta, alCerrar, titulo, me
         {/* La otra vista, en todos los anchos: quien recibió la quieta por un ajuste que no eligió
             tiene que poder salir de ella, y al revés (ver `usePreferenciaVista`). */}
         <button
+          ref={interruptor}
           type="button"
           onClick={cambiarVista}
           className="interruptor-vista shrink-0 text-xs text-gray-500 underline underline-offset-2 hover:text-brand-dark"
