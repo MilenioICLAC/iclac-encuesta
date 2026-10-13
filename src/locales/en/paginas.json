@@ -36,6 +36,9 @@
     "fila": "{{n}} row",
     "filas": "{{n}} rows",
     "antes": "Before using them",
+    "citar": "How to cite",
+    "copiar": "Copy",
+    "copiado": "Copied",
     "archivos": {
       "combinada": "All three waves together",
       "oleada": "{{anio}} wave",

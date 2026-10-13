@@ -36,6 +36,9 @@
     "fila": "{{n}}行",
     "filas": "{{n}}行",
     "antes": "使用前须知",
+    "citar": "引用方式",
+    "copiar": "复制",
+    "copiado": "已复制",
     "archivos": {
       "combinada": "三轮合并",
       "oleada": "{{anio}}年调查",

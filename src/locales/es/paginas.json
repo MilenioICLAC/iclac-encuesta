@@ -36,6 +36,9 @@
     "fila": "{{n}} fila",
     "filas": "{{n}} filas",
     "antes": "Antes de usarlos",
+    "citar": "Cómo citar",
+    "copiar": "Copiar",
+    "copiado": "Copiado",
     "archivos": {
       "combinada": "Las tres oleadas juntas",
       "oleada": "Oleada {{anio}}",

@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { decimal, numero, plural, useIdioma, type Idioma } from '../locale'
+import { decimal, lista, numero, plural, useIdioma, type Idioma } from '../locale'
 
 /**
  * Las bases para descargar, con su documentación al lado.
@@ -20,6 +20,11 @@ import { decimal, numero, plural, useIdioma, type Idioma } from '../locale'
  * dice. El título de cada archivo lo escribe `scripts/descargas.mjs` en el manifiesto; en español se
  * muestra ese, y en los otros idiomas el de `paginas.json` (`descargas.archivos`), elegido por el
  * nombre del archivo.
+ *
+ * **La página abre con cómo citar la base** (`CITA`), antes de los archivos y con botón de copiar.
+ * Hasta el 13-10-2026 esa cadena vivía solo en la página del monitor de iclac.cl, que redirige acá:
+ * si no estuviera en la app, el sitio dejaría de decir cómo se citan estos datos. La «Ficha técnica»
+ * cita el Policy Paper, que es otra cosa.
  */
 
 interface Archivo {
@@ -108,10 +113,58 @@ const AVISOS: Record<Idioma, (quitadas: number) => ReactNode[]> = {
   ],
 }
 
+/** Los años de oleada publicados, leídos del manifiesto: una oleada nueva entra sola en la cita. */
+function oleadasDe (archivos: Archivo[]): string[] {
+  const anios = archivos
+    .map((a) => a.archivo.match(/^ICLAC_encuesta_(\d{4})\.\w+$/)?.[1])
+    .filter((anio): anio is string => anio !== undefined)
+  return [...new Set(anios)].sort()
+}
+
+/**
+ * El año de publicación de esta versión de la base. No se deriva de los datos, porque no está en
+ * ellos: cambiarlo es decisión de ICLAC.
+ */
+const ANIO_CITA = 2026
+const ENLACE_CITA = 'https://app.iclac.cl/encuesta-percepciones/'
+const ENLACE = <a href={ENLACE_CITA} className="break-all text-brand-dark underline decoration-gray-300 underline-offset-2 hover:decoration-brand-dark">{ENLACE_CITA}</a>
+
+/**
+ * **Cómo citar la base**, un bloque por idioma.
+ *
+ * El orden de autores es alfabético por apellido, el mismo de las referencias de la «Ficha
+ * técnica» (Felipe, 13-10-2026); la página del monitor en iclac.cl usaba otro, y dos órdenes en
+ * el mismo sitio se leen como dos fuentes. **Sin DOI**: el de la «Ficha técnica» es del Policy
+ * Paper, no de la base, y usarlo acá citaría otra cosa.
+ *
+ * El título del conjunto va en español en los tres idiomas, porque es su nombre, con la glosa al
+ * lado donde hace falta. Es la misma regla que ya aplica a los nombres de archivo.
+ */
+/**
+ * Sin portapapeles no se dibuja el botón: un control que no hace nada no se publica, y el texto
+ * está a la vista para seleccionarlo a mano.
+ */
+const PUEDE_COPIAR = typeof navigator !== 'undefined' && navigator.clipboard !== undefined
+
+const CITA: Record<Idioma, (oleadas: string) => ReactNode> = {
+  es: (oleadas) => <>Jenne, N., Labarca, C., Montt, M. y Urdinez, F. ({ANIO_CITA}). <i>Encuesta de
+    Percepciones sobre China en Chile</i>, oleadas {oleadas} [conjunto de datos]. Núcleo Milenio
+    ICLAC. {ENLACE}</>,
+  en: (oleadas) => <>Jenne, N., Labarca, C., Montt, M., and Urdinez, F. ({ANIO_CITA}). <i>Encuesta de
+    Percepciones sobre China en Chile</i> (Survey on Perceptions of China in Chile), {oleadas} waves
+    [data set]. ICLAC Millennium Nucleus. {ENLACE}</>,
+  cn: (oleadas) => <>Jenne, N., Labarca, C., Montt, M., Urdinez, F.（{ANIO_CITA}）。<i>Encuesta de
+    Percepciones sobre China en Chile</i>（智利对华认知调查），{oleadas}年各轮调查[数据集]。智利天主教大学ICLAC千禧年研究中心。{ENLACE}</>,
+}
+
 export default function Descargas () {
   const { t } = useTranslation('paginas')
   const idioma = useIdioma()
   const [manifiesto, setManifiesto] = useState<Manifiesto | null>(null)
+  const [copiado, setCopiado] = useState(false)
+  // La cita se copia leyendo lo que se dibujó, no una segunda versión en texto plano: dos copias
+  // de la misma frase se separan en cuanto alguien edita una.
+  const cita = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}descargas/manifiesto.json`)
@@ -120,6 +173,12 @@ export default function Descargas () {
       // Sin manifiesto la sección no se muestra: es preferible a ofrecer enlaces rotos.
       .catch(() => setManifiesto(null))
   }, [])
+
+  useEffect(() => {
+    if (!copiado) return
+    const id = setTimeout(() => setCopiado(false), 2000)
+    return () => clearTimeout(id)
+  }, [copiado])
 
   if (!manifiesto) return null
 
@@ -130,6 +189,15 @@ export default function Descargas () {
   const datos = manifiesto.archivos.filter((a) => a.tipo === 'datos')
   const docs = manifiesto.archivos.filter((a) => a.tipo === 'documentacion')
   const avisoIdioma = t('descargas.idioma')
+  const oleadas = lista(oleadasDe(datos))
+
+  const copiar = () => {
+    const texto = cita.current?.innerText
+    if (texto === undefined) return
+    navigator.clipboard.writeText(texto).then(() => setCopiado(true), () => {
+      // Sin permiso de portapapeles no hay nada que avisar: la cita está a la vista y se selecciona.
+    })
+  }
 
   return (
     <section className="mx-auto max-w-5xl px-4 pb-16 pt-10">
@@ -137,7 +205,24 @@ export default function Descargas () {
       <p className="mt-2 max-w-2xl text-sm text-gray-600">{t('descargas.bajada')}</p>
       {avisoIdioma && <p className="mt-2 max-w-2xl text-sm font-medium text-gray-800">{avisoIdioma}</p>}
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <div className="mt-5 rounded-lg border border-gray-200 bg-white p-4 text-sm leading-relaxed text-gray-700">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-display text-base font-semibold text-gray-900">{t('descargas.citar')}</h3>
+          {PUEDE_COPIAR && (
+            <button
+              type="button"
+              onClick={copiar}
+              aria-live="polite"
+              className="presionable flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:bg-gray-50"
+            >
+              {t(copiado ? 'descargas.copiado' : 'descargas.copiar')}
+            </button>
+          )}
+        </div>
+        <p ref={cita} className="mt-2 max-w-3xl">{CITA[idioma](oleadas)}</p>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
         <Grupo titulo={t('descargas.respuestas')} archivos={datos} tituloDe={titulo} />
         <Grupo titulo={t('descargas.documentacion')} archivos={docs} tituloDe={titulo} />
       </div>
