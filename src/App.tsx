@@ -203,7 +203,9 @@ const INSTITUCIONES = [
   { src: 'uc.png', clave: 'uc', href: 'https://www.uc.cl/', alto: 'h-14 sm:h-16' },
   { src: 'uchile.png', clave: 'uchile', href: 'https://uchile.cl/', alto: 'h-14 sm:h-16' },
   { src: 'ucn.png', clave: 'ucn', href: 'https://www.ucn.cl/', alto: 'h-14 sm:h-16' },
-  { src: 'uta.png', clave: 'uta', href: 'https://www.uta.cl/', alto: 'h-14 sm:h-16' }
+  { src: 'uta.png', clave: 'uta', href: 'https://www.uta.cl/', alto: 'h-14 sm:h-16' },
+  // El de la UDP viene en blanco sobre transparente y sin margen: el filtro lo vuelve gris como los demás.
+  { src: 'udp.png', clave: 'udp', href: 'https://www.udp.cl/', alto: 'h-8 sm:h-10 brightness-0 opacity-50' }
 ]
 
 /**
@@ -234,7 +236,7 @@ function Marco () {
         <Outlet />
       </main>
       <footer className="border-t border-gray-200 bg-white">
-        <ul className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 pt-5 sm:gap-x-6">
+        <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 pt-5 sm:gap-x-6">
           {INSTITUCIONES.map(l => (
             <li key={l.src}>
               <a href={l.href} target="_blank" rel="noopener noreferrer" className="block">
