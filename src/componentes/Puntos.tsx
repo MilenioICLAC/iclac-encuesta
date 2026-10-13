@@ -2,6 +2,7 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { textoExplorador as t } from '../nucleo/explorador'
 import RotuloFigura from './RotuloFigura'
+import { escalaFila } from '../nucleo/escala'
 
 /**
  * Gráfico de puntos: una fila por entidad, un punto por grupo sobre esa misma fila.
@@ -313,7 +314,10 @@ export default function Puntos ({
               <div
                 ref={fila === filas[0] ? setLienzo : undefined}
                 className="relative"
-                style={{ height: 'var(--alto-fila-ancho, var(--alto-fila))', marginLeft: MARGEN, marginRight: MARGEN }}
+                // `escalaFila`: la vista que tenga que caber en una pantalla achica las filas con un
+                // piso; sin `--escala-filas` en un ancestro, el alto queda como estaba.
+                data-fila-figura=""
+                style={{ height: escalaFila('var(--alto-fila-ancho, var(--alto-fila))', 28), marginLeft: MARGEN, marginRight: MARGEN }}
               >
                 {cortes.map((f) => (
                   <span key={f} className="absolute inset-y-0 w-px bg-gray-100" style={{ left: `${f * 100}%` }} />

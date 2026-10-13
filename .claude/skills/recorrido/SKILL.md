@@ -81,8 +81,8 @@ termina en cero.
   (0,4) y aparece con un fundido (`data-salida`, también de `Respiro`) mientras la frase de la pausa
   se va hacia arriba. La pausa cuesta 2 pasos en escritorio y 1,5 en el teléfono; antes, 4,4 y 2,3,
   y su tramo en la barra confundía. En escritorio la frase de la pausa **corre**: entra al 80 % y
-  sube con el scroll, y las flechas la dejan centrada. Con movimiento reducido la subida vuelve a
-  ser una pantalla: sin pasos, la escena entre dos pausas solo se lee mientras sube.
+  sube con el scroll, y las flechas la dejan centrada. Todo esto es de la vista animada: en la
+  quieta la pausa no se monta sobre nada (ver «Vista quieta»).
 - **Las frases entran desde abajo y salen hacia arriba**, 20 px, 500 ms, curva
   `cubic-bezier(0.2, 0.8, 0.2, 1)`, en todos los pasos y anchos, por `data-lugar` (`antes`,
   `activa`, `despues`); al volver atrás cada una vuelve por donde se fue. Tiempo fijo, no atado al
@@ -125,7 +125,7 @@ Están también en `src/nucleo/pasos.ts`:
 1. **La escala nunca depende de lo visible.** Se calcula con todos los datos y se pasa hecha.
 2. **Ocultar no es borrar.** Lo apagado queda en el DOM con opacidad cero. Solo el trazo y los rótulos
    se calculan sobre lo encendido.
-3. **El último paso enciende todo**, y es el estado con movimiento reducido o sin JavaScript.
+3. **El último paso enciende todo**, y es el estado de la vista quieta o sin JavaScript.
 
 No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre mediciones.
 
@@ -191,12 +191,9 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   sale `paradasDeCambio`). Sin restarlo, PageUp no salía del cierre (21-09-2026). No es scroll-jacking: rueda y gesto quedan intactos.
   **El botón de la portada va por el mismo `irA`** (contexto `Avance`), no por el alto de su sección:
   con el texto que corre eso dejaba la primera frase 306 px más abajo que la flecha (29-09-2026).
-- **Con movimiento reducido se avanza una pantalla, no una parada** (0,85 del alto, en `irA`). Sin
-  pista no hay pasos, y las pausas no sirven de parada porque comparten tramo de scroll con la escena
-  que las precede: yendo de parada en parada, «La mirada» iba de la portada al cierre en tres teclas
-  sin mostrar una figura (29-09-2026). Con una pantalla por acción se pasa por las tres escenas y las
-  dos pausas. La excepción es el botón de la portada, que sigue usando el alto de su sección para
-  dejar la escena 1 justo al empezar.
+- **En la vista quieta no hay paradas** (ver «Vista quieta»): el teclado es del navegador y las
+  flechas de la pantalla avanzan 0,85 de pantalla. Las paradas de pausa en pausa llevaban a «La
+  mirada» de la portada al cierre en tres teclas sin mostrar una figura (29-09-2026).
 - **Los botones existen por quien no tiene rueda** (Fran, 25-09-2026): un clic en la barra de scroll
   baja 87,5 % de la pantalla y se saltaba frases; arrastrarla mueve de 10 a 23 px por píxel. Van abajo
   a la derecha y **solo con puntero fino** (`.flechas-recorrido`, media query de puntero, no de ancho).
@@ -211,7 +208,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   cambia el alto sin que sea una rotación).
 - **El bloque de texto no cambia de alto:** todas las frases en la misma celda de una grilla, una
   frase por paso en todos los anchos (con el texto que corre, esa celda queda invisible y lo que se
-  lee son las tarjetas). Con movimiento reducido el párrafo **no** lleva la grilla.
+  lee son las tarjetas). En la vista quieta el párrafo **no** lleva la grilla.
 - **El bloque de la figura no se encoge entre pasos:** `Escena` guarda su mayor alto por ancho con
   `useLayoutEffect`.
 - **Pantallas bajas:** media query por alto (`max-height: 700px`); el aire es lo primero que cede.
@@ -226,7 +223,7 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   en la otra. Envoltorio `display: contents` bajo el umbral. No hacer que la figura ocupe dos filas.
 - Texto a 27 px (titular) y 34 px (frase); filas de 58 px y nombres a 14 px. Revisar que «Estados
   Unidos» no salga cortado.
-- **Solo en escenas con una figura** (`dosColumnas` en `Escena`).
+- **Solo en escenas con una figura** (`dosColumnas` en `Escena`), y solo en la vista animada.
 - **El texto corre** (laboratorio del scroll, 25-09-2026; `corre` en `Escena`, clase `.texto-corre`):
   con dos columnas, desde 900 px y sin movimiento reducido, cada frase es una tarjeta
   (`.tarjeta-frase`) dentro de su paso de la pista y sube con el scroll; la figura queda pegada y
@@ -243,6 +240,49 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   salta al entrar). El destino pendiente de las flechas dura lo que un scroll suave (1,2 s) y se
   olvida con la rueda o el dedo: con el destino viejo, un clic tras la rueda devolvía 589 px.
 
+## Vista quieta (borrador artículo, 08-10-2026)
+
+Dos vistas, elegidas por `usePreferenciaVista` (`nucleo/pasos.ts`): la quieta por omisión si el
+sistema pide movimiento reducido, y un interruptor en la barra y en la portada que la cambia y la
+guarda (`localStorage` `vista-historias`). La capa lleva `data-vista="quieta|animada"`, y **todo lo
+de la quieta cuelga de `.capa-recorrido[data-vista="quieta"]`** en `index.css` o de `vista.quieta`
+(`reducido` en las piezas) en el código. La animada no se toca: se verifica con
+`mirar_recorrido.mjs` contra la rama anterior, número por número.
+
+En la quieta la historia **es una página que baja**: misma capa (fija, barra con avance, Método,
+interruptor y salida, `Escape`, trampa de foco), contenido en flujo.
+
+- **Nada pegado ni con alto de pantalla:** `.escena` sin `sticky` ni `min-height`; portada y pausas
+  sin `--alto-capa`. Antes, lo que medía más que la pantalla quedaba bajo el borde con la pausa
+  encima (58 piezas en 10 pantallas, hasta +257 px en 360×640).
+- **La pausa no se monta:** sin el `::after` de la escena, sin margen negativo, sin `z-index`, y
+  `data-cruzada`/`data-salida` no ocultan nada (opacidad 1, `visibility: visible`, sin transición).
+  Los selectores repiten los de la animada con la capa delante, para ganarles en especificidad.
+- **Una columna de lectura** (`max-w-2xl`): `Escena` no pone `en-columnas` en esta vista. Desde
+  900 px la figura va a 48 rem, salvo en ventanas de 700 px de alto o menos (las de SVG crecen en
+  alto con el ancho: la de ideología de «La mirada» medía 598 px contra 556 útiles a 1280×600).
+  «Estados Unidos» entero: `--ancho-etiqueta-ancho: 9.5rem` desde 900 px, como en dos columnas.
+- **Filas de figura con su alto normal**, sin `--escala-filas` y sin el apretado de `max-height:
+  700px`: la escena no tiene que caber en una pantalla. Tampoco el mínimo de alto de la figura entre
+  pasos (no hay pasos).
+- **Portada compacta:** logo, pregunta (48 px en escritorio) y el interruptor; sin la invitación ni
+  la cuchara, que es movimiento. Sin ese ícono la cuchara que viaja desde el menú no se divide.
+- **Escena:** titular (21 px, 27 en escritorio), bajada, el párrafo entero (20 px en escritorio),
+  la figura en su último paso y su botón de método, siempre tabulable. 3 rem de aire arriba y abajo
+  de cada escena (3,5 en escritorio) y un filete si dos escenas van seguidas.
+- **Pausa:** la frase sola y centrada (20 px, 26 en escritorio) entre dos filetes cortos de 3 rem;
+  se anuncia al lector de pantalla cuando cruza la banda, como una escena.
+- **Cierre:** tras un filete, todas las frases y la salida a la vista, sin alto de pantalla.
+- **Teclado del navegador:** `alTeclear` no intercepta `PageUp`/`PageDown`/flechas en esta vista
+  (el foco está dentro de la capa, así que es ella la que se desplaza; `Espacio`, `Inicio` y `Fin`
+  también). Las flechas de la pantalla siguen (son para quien no tiene rueda) y avanzan 0,85 de
+  pantalla, lo mismo que `PageDown`, contando desde el último destino pedido.
+- **Enlaces que llevan a una sección** (frases del cierre, cambio de vista) usan `inicioDe`, que
+  resta el `scroll-margin-top` de la sección: en la quieta es el alto de la barra y el titular queda
+  justo debajo; en la animada vale cero. Al cambiar de vista se vuelve a apuntar cada cuadro durante
+  medio segundo, porque la animada asienta su geometría en efectos posteriores (corría la escena
+  66 px a 1280×690).
+
 ## Accesibilidad
 
 - Texto entero en el DOM siempre, con opacidad, nunca `display: none`.
@@ -250,7 +290,10 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
   en texto (`sr-only`, `aria-live="polite"`), sin número de escena ni de paso.
 - Trampa de foco con los focos **filtrados por visibilidad** (`checkVisibility()`, respaldo
   `getClientRects().length > 0`), foco al abrir y devuelto al cerrar.
-- **Movimiento reducido:** escena completa desde el primer píxel, **sin pista**, cuchara de la portada quieta, sin emanata; el énfasis estático se queda.
+- **Vista quieta** (por omisión con movimiento reducido; ver arriba): escena completa desde el
+  primer píxel, **sin pista** y sin nada pegado. **Movimiento reducido del sistema**, en cualquiera
+  de las dos vistas: cuchara de la portada quieta, sin emanata, sin transiciones; el énfasis
+  estático se queda.
 
 ## Lo que no se hace
 
@@ -279,7 +322,9 @@ No se interpolan anchos entre oleadas ni se le pone fecha a un cruce entre medic
 6. Con teclado **y con los botones** de punta a punta en los dos sentidos: un cambio por acción, sin
    pasos saltados ni acciones sin cambio; con el texto que corre, cada llegada deja la frase centrada
    en la figura, entera y en tinta plena. `Shift+Tab` no escapa.
-7. Con movimiento reducido: todo encendido, frases sin superponerse, sin pista.
+7. Vista quieta (con `reducedMotion: 'reduce'`, o el interruptor): todo encendido, sin pista, nada
+   pegado ni tapado, cada titular, figura y último hijo entero bajo la barra en algún momento, y el
+   final alcanzado, también en pantallas bajas (1280×600, 1366×657).
 8. Con `mouse.wheel` en los dos sentidos: cada frase cambia en su parada y la salida se alcanza.
 9. Si vino de un laboratorio: contra el JSON, parámetro por parámetro, textos verbatim.
 10. Lo que el emulador no reproduce (barra del navegador móvil) se reporta como no verificado.

@@ -3,6 +3,7 @@ import Enfasis from './Enfasis'
 import RotuloFigura from './RotuloFigura'
 import { numero } from '../locale'
 import { tintaSobre } from '../nucleo/paleta'
+import { escalaFila } from '../nucleo/escala'
 
 export interface FilaBarra {
   clave: string
@@ -86,7 +87,8 @@ export default function BarrasDeEscena ({ filas, max, formato, descripcion, rotu
               </span>
               <div
                 className="relative rounded-sm bg-gray-100"
-                style={{ height: `var(--alto-fila-barra-ancho, var(--alto-fila-barra, ${altoFila}px))` }}
+                data-fila-figura=""
+                style={{ height: escalaFila(`var(--alto-fila-barra-ancho, var(--alto-fila-barra, ${altoFila}px))`, 28) }}
                 title={t('valorBarra', { etiqueta: fila.etiqueta, valor: formato(fila.valor), n: numero(fila.n) })}
               >
                 <div

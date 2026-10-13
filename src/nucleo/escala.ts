@@ -44,3 +44,16 @@ export function topePorcentaje (valores: number[]): number {
   const max = Math.max(0, ...valores.filter((v) => Number.isFinite(v)))
   return Math.min(100, Math.max(20, Math.ceil(max / 20) * 20))
 }
+
+/**
+ * El alto de una fila de figura, achicable por `--escala-filas` sin bajar de `piso` píxeles.
+ *
+ * Lo usan `Puntos`, `BarrasDeEscena` y `Divergente`, y lo pone en un ancestro la vista de las
+ * historias que tenga que caber en una pantalla. **Nunca agranda:** con la escala en 1 (o sin la
+ * variable, como en el explorador) el alto es exactamente el de antes, aunque sea menor que el
+ * piso. Cada fila lleva además `data-fila-figura`, para que quien calcula la escala sepa cuánto
+ * alto es de filas.
+ */
+export function escalaFila (alto: string, piso: number) {
+  return `min(${alto}, max(${piso}px, calc(${alto} * var(--escala-filas, 1))))`
+}

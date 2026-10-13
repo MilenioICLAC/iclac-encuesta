@@ -2,6 +2,7 @@ import type React from 'react'
 import Enfasis from './Enfasis'
 import { tintaSobre } from '../nucleo/paleta'
 import RotuloFigura from './RotuloFigura'
+import { escalaFila } from '../nucleo/escala'
 
 /**
  * Barras apiladas **divergentes**: una fila por entidad, los segmentos repartidos a los dos lados
@@ -141,7 +142,8 @@ export default function Divergente ({
                     capa hermana sin recorte, posicionada sobre el centro del segmento que enfatiza. */}
                 <div
                   className="relative grow"
-                  style={{ height: 'var(--alto-fila-divergente-ancho, var(--alto-fila-divergente))' }}
+                  data-fila-figura=""
+                  style={{ height: escalaFila('var(--alto-fila-divergente-ancho, var(--alto-fila-divergente))', 20) }}
                 >
                   <div className="absolute inset-0 overflow-hidden rounded-[3px]">
                   <div
